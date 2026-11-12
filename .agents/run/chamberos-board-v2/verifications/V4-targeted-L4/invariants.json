@@ -1,0 +1,34 @@
+{
+  "baseline": "28af19b",
+  "reviewed_application": "a1225f0",
+  "effective_head": "b07dd941ee6f6df5e496631335473d9876b19680",
+  "fix_parent": "0cef002f5401d54483c2c037fea998702fc5da08",
+  "checks": {
+    "reviewed_sha_is_a1225f0": true,
+    "worktree_matches_reviewed_app": true,
+    "source_unchanged_since_reviewed_app": true,
+    "fix_touched_only_app_and_client_test": true,
+    "protected_server_panel_service": true,
+    "markdown_arrange_packages_unchanged": true,
+    "dot_grid_segment_byte_identical": true,
+    "Canvas_EN_FR": true,
+    "List_EN_FR": true,
+    "sidebar_preserved": true,
+    "floor_055": true,
+    "no_banned_words": true,
+    "no_pictographic_glyphs": true,
+    "no_HTML_inline_style": true,
+    "no_JS_generated_HTML_inline_style": true,
+    "manifest_identity": true,
+    "CSP_unchanged_server": true,
+    "touch_sheet_targets": true,
+    "sheet_reduced_motion": true,
+    "V4_1_L4_untracked": true
+  },
+  "grid_sha256": "160742fe4f202ecb026aef42f552f8ec3e2cd29be5e84108311cebb4ac29b458",
+  "changed_source": [
+    "web/public/app.js",
+    "web/tests/v3-ux-client.test.mjs"
+  ],
+  "note": "Dot-grid identical to 28af19b. Freeze verified against the fix diff (parent..a1225f0), then source compared to a1225f0 exactly."
+}

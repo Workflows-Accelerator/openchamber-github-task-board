@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/evidence-integrity.py", line 171, in <module>
+    and end['pending'] is False and end['focus'] is None
+                                    ~~~^^^^^^^^^
+KeyError: 'focus'

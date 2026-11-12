@@ -1,0 +1,10 @@
+{
+  "checks": {},
+  "failures": [
+    "D38 expanded desktop rail toggle visible and labelled"
+  ],
+  "browser": "156.0.8078.4",
+  "sheets": 6,
+  "d38": 3
+}
+EXIT:1 ELAPSED:30s

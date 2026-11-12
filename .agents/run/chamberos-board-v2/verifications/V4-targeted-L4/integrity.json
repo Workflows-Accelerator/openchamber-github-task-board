@@ -1,0 +1,375 @@
+{
+  "reviewed_application": "a1225f023a736da70f6b06798c16a91b655cf01d",
+  "dispatch_head": "b07dd941ee6f6df5e496631335473d9876b19680",
+  "effective_head": "b07dd941ee6f6df5e496631335473d9876b19680",
+  "checks": {
+    "branch_feat_board_v3": true,
+    "reviewed_full_sha": true,
+    "reviewed_is_dispatch_ancestor": true,
+    "all_tested_source_exact_to_reviewed": true,
+    "V4-1-L4_matches_prior_inventory": true,
+    "V4-final-L4_matches_prior_inventory": true,
+    "V4-final-L4_exact_to_dispatch_blobs": true,
+    "V4-bounded-fix_exact_to_dispatch_blobs": true,
+    "V4_1_L4_untracked_unstaged": true,
+    "all_14_R2_strict_numeric_returns": true,
+    "targeted_zero_failures_diagnostics": true,
+    "R1_32_explicit_20_complete_12_incomplete": true,
+    "R1_incomplete_truthful_no_overlapping_cards_no_absent_endpoint_labels": true,
+    "R1_complete_no_false_limit": true,
+    "filtered_28_complete_8_incomplete": true,
+    "regression_zero_failures_unexpected_errors": true,
+    "Arrange_Undo_strict_all_6_positions": true,
+    "smoke_14_PASS": true,
+    "invariants_20_PASS": true,
+    "staging_evidence_only": true,
+    "no_unstaged_tracked_changes_outside_owned_evidence": true,
+    "staged_whitespace_check": true
+  },
+  "source_file_count": 142,
+  "source_hash_manifest": "reviewed-source.sha256",
+  "source_mismatches": [],
+  "prior_evidence": {
+    "V4-1-L4_prior_inventory": {
+      "expected_files": 327,
+      "actual_files": 327,
+      "exact": true,
+      "mismatches": []
+    },
+    "V4-final-L4_prior_inventory": {
+      "expected_files": 647,
+      "actual_files": 647,
+      "exact": true,
+      "mismatches": []
+    },
+    "V4-final-L4_dispatch_blobs": {
+      "tracked_files": 647,
+      "actual_files": 647,
+      "exact": true,
+      "mismatches": []
+    },
+    "V4-bounded-fix_dispatch_blobs": {
+      "tracked_files": 479,
+      "actual_files": 479,
+      "exact": true,
+      "mismatches": []
+    }
+  },
+  "R2_strict_numeric_checks": [
+    {
+      "width": 360,
+      "scenario": "dependency-only",
+      "expected": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "actual": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "strict_checks": {
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 360,
+      "scenario": "clear-under-focus-second-cycle",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "deferred_A_under_focus": true,
+        "distinct_second_cycle_exact_B": true,
+        "second_cycle_consumed": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 360,
+      "scenario": "change-filter-without-clearing",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "deferred_change_preserved_A": true,
+        "handoff_preserved_A": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 360,
+      "scenario": "exit-with-filter-active-then-clear",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "exact_true_pre_focus_on_exit": true,
+        "exit_preserved_A": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 360,
+      "scenario": "list-clear-reload-canvas",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "list_clear_deferred_A": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 360,
+      "scenario": "search-only",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "search_never_captures_or_moves": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 360,
+      "scenario": "filter-during-focus",
+      "expected": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "actual": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "strict_checks": {
+        "captured_true_pre_focus": true,
+        "deferred_under_focus": true,
+        "consumed_pending_preserved_return": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 1280,
+      "scenario": "dependency-only",
+      "expected": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "actual": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "strict_checks": {
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 1280,
+      "scenario": "clear-under-focus-second-cycle",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "deferred_A_under_focus": true,
+        "distinct_second_cycle_exact_B": true,
+        "second_cycle_consumed": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 1280,
+      "scenario": "change-filter-without-clearing",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "deferred_change_preserved_A": true,
+        "handoff_preserved_A": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 1280,
+      "scenario": "exit-with-filter-active-then-clear",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "exact_true_pre_focus_on_exit": true,
+        "exit_preserved_A": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 1280,
+      "scenario": "list-clear-reload-canvas",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "list_clear_deferred_A": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 1280,
+      "scenario": "search-only",
+      "expected": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "actual": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "strict_checks": {
+        "search_never_captures_or_moves": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    },
+    {
+      "width": 1280,
+      "scenario": "filter-during-focus",
+      "expected": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "actual": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "strict_checks": {
+        "captured_true_pre_focus": true,
+        "deferred_under_focus": true,
+        "consumed_pending_preserved_return": true,
+        "exact_final_numbers": true,
+        "final_memory_storage_pending_focus_consumed": true
+      },
+      "pass": true
+    }
+  ],
+  "R1_incomplete_dependency_tags": [
+    "spread-360-en-light",
+    "spread-360-en-dark",
+    "spread-360-fr-light",
+    "spread-360-fr-dark",
+    "spread-390-en-light",
+    "spread-390-en-dark",
+    "spread-390-fr-light",
+    "spread-390-fr-dark",
+    "spread-769-en-light",
+    "spread-769-en-dark",
+    "spread-769-fr-light",
+    "spread-769-fr-dark"
+  ],
+  "raw_capture_files_hashed": 274,
+  "staged_file_count_at_check": 286,
+  "staged_paths": "staged-paths.txt",
+  "staging_was_nonempty": true,
+  "whitespace_exit": 0,
+  "whitespace_output": "",
+  "notes": [
+    "No browser probes, test suites or smoke rerun by this integrity script.",
+    "Staged path list proves names/scope, not self-referential final commit hashes.",
+    "Exact raw-capture hashes exclude the integrity log being generated by this invocation."
+  ]
+}

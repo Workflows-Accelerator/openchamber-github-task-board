@@ -1,0 +1,577 @@
+{
+  "checks": {},
+  "sheets": [
+    {
+      "width": 360,
+      "theme": "dark",
+      "lang": "fr",
+      "kind": "filter",
+      "forward": true,
+      "backward": true,
+      "locked": true,
+      "closed": {
+        "open": false,
+        "focus": "applied-filter-btn"
+      },
+      "small": []
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "lang": "fr",
+      "kind": "settings",
+      "forward": true,
+      "backward": true,
+      "locked": true,
+      "closed": {
+        "open": false,
+        "focus": "settings-btn"
+      },
+      "small": []
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "lang": "fr",
+      "kind": "sort",
+      "forward": true,
+      "backward": true,
+      "locked": true,
+      "closed": {
+        "open": false,
+        "focus": "applied-filter-btn"
+      },
+      "small": []
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "kind": "filter",
+      "forward": true,
+      "backward": true,
+      "locked": true,
+      "closed": {
+        "open": false,
+        "focus": "applied-filter-btn"
+      },
+      "small": []
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "kind": "settings",
+      "forward": true,
+      "backward": true,
+      "locked": true,
+      "closed": {
+        "open": false,
+        "focus": "settings-btn"
+      },
+      "small": []
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "kind": "sort",
+      "forward": true,
+      "backward": true,
+      "locked": true,
+      "closed": {
+        "open": false,
+        "focus": "applied-filter-btn"
+      },
+      "small": []
+    }
+  ],
+  "d38": [
+    {
+      "viewport": 1280,
+      "expanded": {
+        "sidebar": {
+          "x": 0,
+          "width": 230,
+          "right": 230
+        },
+        "toggle": {
+          "x": 191,
+          "y": 14,
+          "width": 24,
+          "height": 24,
+          "hit": true,
+          "label": "Collapse sidebar",
+          "expanded": "true"
+        },
+        "stored": null
+      },
+      "collapsed": {
+        "sidebar": {
+          "x": 0,
+          "width": 56,
+          "right": 56
+        },
+        "toggle": {
+          "x": 5.5,
+          "y": 8,
+          "width": 44,
+          "height": 44,
+          "hit": true,
+          "label": "Expand sidebar",
+          "expanded": "false"
+        },
+        "stored": "1"
+      },
+      "afterReload": {
+        "sidebar": {
+          "x": 0,
+          "width": 56,
+          "right": 56
+        },
+        "toggle": {
+          "x": 5.5,
+          "y": 8,
+          "width": 44,
+          "height": 44,
+          "hit": true,
+          "label": "Expand sidebar",
+          "expanded": "false"
+        },
+        "stored": "1"
+      },
+      "reopened": {
+        "sidebar": {
+          "x": 0,
+          "width": 230,
+          "right": 230
+        },
+        "toggle": {
+          "x": 191,
+          "y": 14,
+          "width": 24,
+          "height": 24,
+          "hit": true,
+          "label": "Collapse sidebar",
+          "expanded": "true"
+        },
+        "stored": "0"
+      },
+      "reopenedReload": {
+        "sidebar": {
+          "x": 0,
+          "width": 230,
+          "right": 230
+        },
+        "toggle": {
+          "x": 191,
+          "y": 14,
+          "width": 24,
+          "height": 24,
+          "hit": true,
+          "label": "Collapse sidebar",
+          "expanded": "true"
+        },
+        "stored": "0"
+      }
+    },
+    {
+      "viewport": 360,
+      "preference": "1",
+      "before": {
+        "width": 44,
+        "height": 44,
+        "hit": true,
+        "display": "flex",
+        "stored": "1"
+      },
+      "opened": {
+        "x": 0,
+        "width": 280,
+        "right": 280,
+        "navVisible": true,
+        "open": true
+      },
+      "closed": false
+    },
+    {
+      "viewport": 360,
+      "preference": "0",
+      "before": {
+        "width": 44,
+        "height": 44,
+        "hit": true,
+        "display": "flex",
+        "stored": "0"
+      },
+      "opened": {
+        "x": 0,
+        "width": 280,
+        "right": 280,
+        "navVisible": true,
+        "open": true
+      },
+      "closed": false
+    }
+  ],
+  "drag": {
+    "before": {
+      "x": 460,
+      "y": 90
+    },
+    "moved": {
+      "x": 523,
+      "y": 137
+    },
+    "reloaded": {
+      "x": 523,
+      "y": 137
+    },
+    "status": 200,
+    "payload": {
+      "issue": {
+        "id": 10100002,
+        "createdAt": "2026-10-01T09:00:00Z",
+        "closedAt": null,
+        "description": "## Overview\nReduce poll overhead.",
+        "order": null,
+        "canvas": {
+          "x": 523,
+          "y": 137
+        },
+        "fingerprint": "291ff26801043ccbd29f48904bfcdc670200c589a7fe627e5c66a976e32a320e",
+        "dependencies": [],
+        "textDependencies": [],
+        "blockedBy": [],
+        "blocking": [],
+        "pendingItems": [],
+        "number": 2,
+        "key": "chamberos/platform#2",
+        "repository": {
+          "id": 101,
+          "owner": "chamberos",
+          "name": "platform",
+          "full": "chamberos/platform",
+          "archived": false,
+          "hasIssues": true,
+          "disabled": false,
+          "private": false,
+          "openIssuesCount": 5,
+          "pushedAt": "2026-10-20T10:00:00Z",
+          "available": true,
+          "lastSeenAt": "2026-11-12T12:25:56.025Z"
+        },
+        "title": "Wire conditional ETag revalidation across board routes",
+        "friendlyTitle": null,
+        "state": "open",
+        "htmlUrl": "https://github.com/chamberos/platform/issues/2",
+        "body": "## Overview\nReduce poll overhead.",
+        "bodyMarkdown": "## Overview\nReduce poll overhead.",
+        "labels": [
+          "status:in-progress",
+          "priority:high"
+        ],
+        "statusLabel": "status:in-progress",
+        "effectiveStage": "in-progress",
+        "isExplicitDraft": false,
+        "phase": "execution",
+        "attention": "none",
+        "column": "in-progress",
+        "updatedAt": "2026-11-12T12:26:07.885Z",
+        "editableSections": [
+          {
+            "id": "overview",
+            "title": "Overview",
+            "text": "Reduce poll overhead."
+          }
+        ],
+        "openQuestions": [],
+        "humanTasks": [],
+        "acceptanceCriteria": [],
+        "subtasks": [],
+        "testPlan": {
+          "issue": [],
+          "batch": []
+        }
+      },
+      "listItem": {
+        "id": 10100002,
+        "createdAt": "2026-10-01T09:00:00Z",
+        "closedAt": null,
+        "description": "## Overview\nReduce poll overhead.",
+        "order": null,
+        "canvas": {
+          "x": 523,
+          "y": 137
+        },
+        "fingerprint": "291ff26801043ccbd29f48904bfcdc670200c589a7fe627e5c66a976e32a320e",
+        "dependencies": [],
+        "textDependencies": [],
+        "blockedBy": [],
+        "blocking": [],
+        "pendingItems": [],
+        "number": 2,
+        "key": "chamberos/platform#2",
+        "repository": {
+          "id": 101,
+          "owner": "chamberos",
+          "name": "platform",
+          "full": "chamberos/platform",
+          "archived": false,
+          "hasIssues": true,
+          "disabled": false,
+          "private": false,
+          "openIssuesCount": 5,
+          "pushedAt": "2026-10-20T10:00:00Z",
+          "available": true,
+          "lastSeenAt": "2026-11-12T12:25:56.025Z"
+        },
+        "title": "Wire conditional ETag revalidation across board routes",
+        "friendlyTitle": null,
+        "state": "open",
+        "htmlUrl": "https://github.com/chamberos/platform/issues/2",
+        "labels": [
+          "status:in-progress",
+          "priority:high"
+        ],
+        "statusLabel": "status:in-progress",
+        "effectiveStage": "in-progress",
+        "isExplicitDraft": false,
+        "phase": "execution",
+        "attention": "none",
+        "column": "in-progress",
+        "updatedAt": "2026-11-12T12:26:07.885Z",
+        "counts": {
+          "subtasks": {
+            "total": 0,
+            "done": 0,
+            "open": 0
+          },
+          "openQuestions": {
+            "total": 0,
+            "done": 0,
+            "open": 0
+          },
+          "humanTasks": {
+            "total": 0,
+            "done": 0,
+            "open": 0
+          }
+        },
+        "openQuestions": [],
+        "humanTasks": [],
+        "overview": "Reduce poll overhead."
+      },
+      "savedAt": "2026-11-12T12:26:07.893Z",
+      "statusOptions": [
+        {
+          "value": "status:draft",
+          "label": "Draft"
+        },
+        {
+          "value": "status:backlog",
+          "label": "Backlog"
+        },
+        {
+          "value": "status:todo",
+          "label": "To Do"
+        },
+        {
+          "value": "status:planned",
+          "label": "Planned"
+        },
+        {
+          "value": "status:in-progress",
+          "label": "In Progress"
+        },
+        {
+          "value": "status:needs-human",
+          "label": "Needs Human"
+        },
+        {
+          "value": "status:in-review",
+          "label": "In Review"
+        },
+        {
+          "value": "status:done",
+          "label": "Done"
+        }
+      ]
+    }
+  },
+  "refusal": {
+    "refusalBefore": {
+      "x": 523,
+      "y": 137
+    },
+    "refusalAfter": {
+      "x": 523,
+      "y": 137
+    },
+    "refusals": 1,
+    "notice": "Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.",
+    "unhandled": [],
+    "expectedConsole": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    ]
+  },
+  "arrange": {
+    "dialog": {
+      "open": true,
+      "scopeAll": true,
+      "confirm": true
+    },
+    "before": [
+      {
+        "key": "acme/vanilla-sdk#11",
+        "x": 460,
+        "y": 560
+      },
+      {
+        "key": "chamberos/platform#1",
+        "x": 80,
+        "y": 90
+      },
+      {
+        "key": "chamberos/platform#2",
+        "x": 523,
+        "y": 137
+      },
+      {
+        "key": "chamberos/platform#3",
+        "x": 840,
+        "y": 90
+      },
+      {
+        "key": "chamberos/platform#4",
+        "x": 460,
+        "y": 300
+      },
+      {
+        "key": "chamberos/platform#5",
+        "x": 1240,
+        "y": 520
+      }
+    ],
+    "arranged": [
+      {
+        "key": "acme/vanilla-sdk#11",
+        "x": 120,
+        "y": 796
+      },
+      {
+        "key": "chamberos/platform#1",
+        "x": 120,
+        "y": 80
+      },
+      {
+        "key": "chamberos/platform#2",
+        "x": 520,
+        "y": 80
+      },
+      {
+        "key": "chamberos/platform#3",
+        "x": 920,
+        "y": 80
+      },
+      {
+        "key": "chamberos/platform#4",
+        "x": 520,
+        "y": 486
+      },
+      {
+        "key": "chamberos/platform#5",
+        "x": 120,
+        "y": 486
+      }
+    ],
+    "undone": [
+      {
+        "key": "acme/vanilla-sdk#11",
+        "x": 460,
+        "y": 560
+      },
+      {
+        "key": "chamberos/platform#1",
+        "x": 80,
+        "y": 90
+      },
+      {
+        "key": "chamberos/platform#2",
+        "x": 523,
+        "y": 137
+      },
+      {
+        "key": "chamberos/platform#3",
+        "x": 840,
+        "y": 90
+      },
+      {
+        "key": "chamberos/platform#4",
+        "x": 460,
+        "y": 300
+      },
+      {
+        "key": "chamberos/platform#5",
+        "x": 1240,
+        "y": 520
+      }
+    ],
+    "movedKeys": [
+      "acme/vanilla-sdk#11",
+      "chamberos/platform#1",
+      "chamberos/platform#2",
+      "chamberos/platform#3",
+      "chamberos/platform#4",
+      "chamberos/platform#5"
+    ],
+    "undoVisible": true
+  },
+  "reducedMotion": {
+    "early": {
+      "panX": -184.65000000000003,
+      "panY": 255.89999999999998,
+      "scale": 0.55
+    },
+    "late": {
+      "panX": -184.65000000000003,
+      "panY": 255.89999999999998,
+      "scale": 0.55
+    }
+  },
+  "keyboard": {
+    "360": {
+      "open": true,
+      "title": "Wire conditional ETag revalidation across board routes"
+    },
+    "1280": {
+      "open": true,
+      "title": "Wire conditional ETag revalidation across board routes"
+    }
+  },
+  "errors": [],
+  "console": [],
+  "failures": [
+    {
+      "label": "D38 expanded desktop rail toggle visible and labelled",
+      "details": {
+        "sidebar": {
+          "x": 0,
+          "width": 230,
+          "right": 230
+        },
+        "toggle": {
+          "x": 191,
+          "y": 14,
+          "width": 24,
+          "height": 24,
+          "hit": true,
+          "label": "Collapse sidebar",
+          "expanded": "true"
+        },
+        "stored": null
+      }
+    }
+  ],
+  "browser": "156.0.8078.4"
+}

@@ -1,0 +1,30 @@
+{
+  "checks": {
+    "branch_feat_board_v3": true,
+    "reviewed_full_sha": true,
+    "reviewed_is_dispatch_ancestor": true,
+    "all_tested_source_exact_to_reviewed": true,
+    "V4-1-L4_matches_prior_inventory": true,
+    "V4-final-L4_matches_prior_inventory": true,
+    "V4-final-L4_exact_to_dispatch_blobs": true,
+    "V4-bounded-fix_exact_to_dispatch_blobs": true,
+    "V4_1_L4_untracked_unstaged": true,
+    "all_14_R2_strict_numeric_returns": true,
+    "targeted_zero_failures_diagnostics": true,
+    "R1_32_explicit_20_complete_12_incomplete": true,
+    "R1_incomplete_truthful_no_overlapping_cards_no_absent_endpoint_labels": true,
+    "R1_complete_no_false_limit": true,
+    "filtered_28_complete_8_incomplete": true,
+    "regression_zero_failures_unexpected_errors": true,
+    "Arrange_Undo_strict_all_6_positions": true,
+    "smoke_14_PASS": true,
+    "invariants_20_PASS": true,
+    "staging_evidence_only": true,
+    "no_unstaged_tracked_changes_outside_owned_evidence": true,
+    "staged_whitespace_check": true
+  },
+  "source_files": 142,
+  "strict_R2_scenarios": 14,
+  "staged_files": 286,
+  "failed": []
+}

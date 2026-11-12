@@ -1,0 +1,13 @@
+phase	working_directory	command	exit_code	result	log
+required-1	worktree root	npm test	0	618 tests; 618 pass; 0 fail/cancel/skip	logs/npm-test.log
+required-2	worktree root	node --test --test-timeout=30000 web/tests/*.test.mjs	0	631 tests; 631 pass; 0 fail/cancel/skip	logs/web-tests.log
+required-3	worktree root	npm run typecheck	0	tsc --noEmit completed	logs/typecheck.log
+required-4	worktree root	npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/opencode/v4-targeted-review-server.mjs	0	bundle 224.6kb	logs/server-bundle.log
+required-5	worktree root	DELIVERY_DIR="$PWD/.agents/run/chamberos-board-v2/verifications/V4-targeted-L4/smoke" node scripts/generate-delivery-smoke.mjs	0	one smoke execution; 14/14 sections PASS; 112 sheet surfaces; 32 Canvas-control cases	logs/delivery-smoke.log
+probe-targeted-initial	worktree root	node .agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/targeted-review.mjs	1	10 harness expectation failures preserved; no product change	logs/targeted-review-initial.log
+probe-targeted-final	worktree root	node .agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/targeted-review.mjs	0	40 automatic dependency cases; 32 explicit dependency clicks; 40 automatic filtered cases; 36 explicit filtered cases; 14 R2 scenarios; 4 breakpoint transitions; 0 failures; case counts are not assertion counts	logs/targeted-review.log
+probe-regression-initial	worktree root	node .agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/regression-review.mjs	1	1 harness expectation failure for existing 24px expanded desktop toggle	logs/regression-review-initial.log
+probe-regression-final	worktree root	node .agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/regression-review.mjs	0	6 sheet cases; 1 desktop D38 sequence plus 2 phone preferences; drag/reload; refused-save rollback; Arrange/Undo; reduced motion; Enter/Back; 0 failures	logs/regression-review.log
+invariants-final	worktree root	python3 .agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/invariants.py	0	20/20 source/freeze checks	logs/invariants.log
+integrity-initial	worktree root	python3 .agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/evidence-integrity.py	1	KeyError: 'focus'; optional undefined state omitted by JSON; raw data unchanged	logs/evidence-integrity-initial.log
+integrity-final	worktree root	python3 .agents/run/chamberos-board-v2/verifications/V4-targeted-L4/scripts/evidence-integrity.py	0	22/22 checks; 142 source hashes exact; 14 strict numeric returns; prior evidence exact; evidence-only staging	logs/evidence-integrity.log

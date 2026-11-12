@@ -1,0 +1,80 @@
+case normal 360 en light
+case normal 360 en dark
+case normal 360 fr light
+case normal 360 fr dark
+case normal 390 en light
+case normal 390 en dark
+case normal 390 fr light
+case normal 390 fr dark
+case normal 768 en light
+case normal 768 en dark
+case normal 768 fr light
+case normal 768 fr dark
+case normal 769 en light
+case normal 769 en dark
+case normal 769 fr light
+case normal 769 fr dark
+case normal 1280 en light
+case normal 1280 en dark
+case normal 1280 fr light
+case normal 1280 fr dark
+case spread 360 en light
+case spread 360 en dark
+case spread 360 fr light
+case spread 360 fr dark
+case spread 390 en light
+case spread 390 en dark
+case spread 390 fr light
+case spread 390 fr dark
+case spread 768 en light
+case spread 768 en dark
+case spread 768 fr light
+case spread 768 fr dark
+case spread 769 en light
+case spread 769 en dark
+case spread 769 fr light
+case spread 769 fr dark
+case spread 1280 en light
+case spread 1280 en dark
+case spread 1280 fr light
+case spread 1280 fr dark
+r2 360 dependency-only
+r2 360 clear-under-focus-second-cycle
+r2 360 change-filter-without-clearing
+r2 360 exit-with-filter-active-then-clear
+r2 360 list-clear-reload-canvas
+r2 360 search-only
+r2 360 filter-during-focus
+r2 1280 dependency-only
+r2 1280 clear-under-focus-second-cycle
+r2 1280 change-filter-without-clearing
+r2 1280 exit-with-filter-active-then-clear
+r2 1280 list-clear-reload-canvas
+r2 1280 search-only
+r2 1280 filter-during-focus
+{
+  "summary": {
+    "r1AutomaticExplicit": 112,
+    "r1Cases": 112,
+    "truthOtherDirection": 20,
+    "filterLimit": 36,
+    "filterComplete": 28,
+    "r2": 14,
+    "breakpoint": 4,
+    "failures": 10,
+    "browser": "156.0.8078.4"
+  },
+  "failureLabels": [
+    "breakpoint 768",
+    "breakpoint 768",
+    "360 exit focus with a filter returns to the filtered view",
+    "360 first filter during focus captures the pre-focus view A",
+    "360 original A survives the focused filter",
+    "360 clearing the focused filter returns exactly to A",
+    "1280 exit focus with a filter returns to the filtered view",
+    "1280 first filter during focus captures the pre-focus view A",
+    "1280 original A survives the focused filter",
+    "1280 clearing the focused filter returns exactly to A"
+  ]
+}
+EXIT:1 ELAPSED:226s

@@ -1,0 +1,5130 @@
+{
+  "browser": "156.0.8078.4",
+  "reviewedApplication": "a1225f0",
+  "dispatchHead": "b07dd94",
+  "r1": [
+    {
+      "kind": "automatic",
+      "tag": "normal-360-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-360-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-360-en-light",
+        "scale": 0.315,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 135.9,
+          "y": 352.35,
+          "width": 88.2,
+          "height": 59.988,
+          "right": 224.1,
+          "bottom": 412.338
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-360-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-360-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-360-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-360-en-dark",
+        "scale": 0.315,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 135.9,
+          "y": 352.35,
+          "width": 88.2,
+          "height": 59.988,
+          "right": 224.1,
+          "bottom": 412.338
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-360-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-360-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-360-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-360-fr-light",
+        "scale": 0.315,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 135.9,
+          "y": 352.35,
+          "width": 88.2,
+          "height": 59.988,
+          "right": 224.1,
+          "bottom": 412.338
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-360-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-360-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-360-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-360-fr-dark",
+        "scale": 0.315,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 135.9,
+          "y": 352.35,
+          "width": 88.2,
+          "height": 59.988,
+          "right": 224.1,
+          "bottom": 412.338
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-360-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-390-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-390-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-390-en-light",
+        "scale": 0.344,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 146.24,
+          "y": 342.96,
+          "width": 96.32,
+          "height": 65.51,
+          "right": 242.56,
+          "bottom": 408.471
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-390-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-390-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-390-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-390-en-dark",
+        "scale": 0.344,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 146.24,
+          "y": 342.96,
+          "width": 96.32,
+          "height": 65.51,
+          "right": 242.56,
+          "bottom": 408.471
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-390-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-390-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-390-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-390-fr-light",
+        "scale": 0.344,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 146.24,
+          "y": 342.96,
+          "width": 96.32,
+          "height": 65.51,
+          "right": 242.56,
+          "bottom": 408.471
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-390-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-390-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-390-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-390-fr-dark",
+        "scale": 0.344,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 146.24,
+          "y": 342.96,
+          "width": 96.32,
+          "height": 65.51,
+          "right": 242.56,
+          "bottom": 408.471
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-390-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-768-en-light",
+      "scale": 0.708,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 11.323,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-768-en-light",
+      "scale": 0.694,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-768-en-dark",
+      "scale": 0.708,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 11.323,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-768-en-dark",
+      "scale": 0.694,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-768-fr-light",
+      "scale": 0.708,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 11.323,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-768-fr-light",
+      "scale": 0.694,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-768-fr-dark",
+      "scale": 0.708,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 11.323,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-768-fr-dark",
+      "scale": 0.694,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-769-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-769-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-769-en-light",
+        "scale": 0.488,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 431.02,
+          "y": 395.83,
+          "width": 136.36,
+          "height": 92.743,
+          "right": 567.38,
+          "bottom": 488.573
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-769-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-769-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-769-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-769-en-dark",
+        "scale": 0.488,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 431.02,
+          "y": 395.83,
+          "width": 136.36,
+          "height": 92.743,
+          "right": 567.38,
+          "bottom": 488.573
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-769-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-769-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-769-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-769-fr-light",
+        "scale": 0.488,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 431.02,
+          "y": 395.83,
+          "width": 136.36,
+          "height": 92.743,
+          "right": 567.38,
+          "bottom": 488.573
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-769-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-769-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "normal-769-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 3,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "normal-769-fr-dark",
+        "scale": 0.488,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 431.02,
+          "y": 395.83,
+          "width": 136.36,
+          "height": 92.743,
+          "right": 567.38,
+          "bottom": 488.573
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-769-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 3,
+      "contained": 1
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-1280-en-light",
+      "scale": 0.785,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 12.558,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-1280-en-light",
+      "scale": 0.915,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-1280-en-dark",
+      "scale": 0.785,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 12.558,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-1280-en-dark",
+      "scale": 0.915,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-1280-fr-light",
+      "scale": 0.785,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 12.558,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-1280-fr-light",
+      "scale": 0.915,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "normal-1280-fr-dark",
+      "scale": 0.785,
+      "floored": false,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 12.558,
+      "note": [],
+      "showAllVisible": false,
+      "visibleLabels": 3,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "filtered",
+      "tag": "normal-1280-fr-dark",
+      "scale": 0.915,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 3,
+      "contained": 3
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-360-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-360-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-360-en-light",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 154,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 210,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Zoom limit reached. Some linked tasks remain outside this view. Pan the canvas to see them.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 310,
+            "height": 36,
+            "right": 335,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-360-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-360-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-360-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-360-en-dark",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 154,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 210,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Zoom limit reached. Some linked tasks remain outside this view. Pan the canvas to see them.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 310,
+            "height": 36,
+            "right": 335,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-360-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-360-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-360-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-360-fr-light",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 154,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 210,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Limite de zoom atteinte. Des tâches liées restent hors de cette vue. Déplacez le canevas pour les voir.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 310,
+            "height": 36,
+            "right": 335,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-360-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-360-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-360-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-360-fr-dark",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 154,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 210,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Limite de zoom atteinte. Des tâches liées restent hors de cette vue. Déplacez le canevas pour les voir.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 310,
+            "height": 36,
+            "right": 335,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-360-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-390-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-390-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-390-en-light",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 169,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 225,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Zoom limit reached. Some linked tasks remain outside this view. Pan the canvas to see them.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 334,
+            "height": 36,
+            "right": 359,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-390-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-390-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-390-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-390-en-dark",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 169,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 225,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Zoom limit reached. Some linked tasks remain outside this view. Pan the canvas to see them.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 334,
+            "height": 36,
+            "right": 359,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-390-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-390-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-390-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-390-fr-light",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 169,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 225,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Limite de zoom atteinte. Des tâches liées restent hors de cette vue. Déplacez le canevas pour les voir.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 334,
+            "height": 36,
+            "right": 359,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-390-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-390-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-390-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-390-fr-dark",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": true,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 169,
+          "y": 438,
+          "width": 56,
+          "height": 38.088,
+          "right": 225,
+          "bottom": 476.088
+        },
+        "limitNote": {
+          "text": "Limite de zoom atteinte. Des tâches liées restent hors de cette vue. Déplacez le canevas pour les voir.",
+          "rect": {
+            "x": 25,
+            "y": 213,
+            "width": 334,
+            "height": 36,
+            "right": 359,
+            "bottom": 249
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 0,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-390-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-768-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-768-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-768-en-light",
+        "scale": 0.245,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 351.25,
+          "y": 455.5,
+          "width": 68.6,
+          "height": 46.657,
+          "right": 419.85,
+          "bottom": 502.157
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-768-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-768-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-768-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-768-en-dark",
+        "scale": 0.245,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 351.25,
+          "y": 455.5,
+          "width": 68.6,
+          "height": 46.657,
+          "right": 419.85,
+          "bottom": 502.157
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-768-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-768-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-768-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-768-fr-light",
+        "scale": 0.245,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 351.25,
+          "y": 455.5,
+          "width": 68.6,
+          "height": 46.657,
+          "right": 419.85,
+          "bottom": 502.157
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-768-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-768-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-768-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-768-fr-dark",
+        "scale": 0.245,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 351.25,
+          "y": 455.5,
+          "width": 68.6,
+          "height": 46.657,
+          "right": 419.85,
+          "bottom": 502.157
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-768-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-769-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-769-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-769-en-light",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 474,
+          "y": 538,
+          "width": 56,
+          "height": 38.088,
+          "right": 530,
+          "bottom": 576.088
+        },
+        "limitNote": {
+          "text": "Zoom limit reached. Some linked tasks remain outside this view. Pan the canvas to see them.",
+          "rect": {
+            "x": 255,
+            "y": 261,
+            "width": 334,
+            "height": 36,
+            "right": 589,
+            "bottom": 297
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-769-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-769-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-769-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-769-en-dark",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 474,
+          "y": 538,
+          "width": 56,
+          "height": 38.088,
+          "right": 530,
+          "bottom": 576.088
+        },
+        "limitNote": {
+          "text": "Zoom limit reached. Some linked tasks remain outside this view. Pan the canvas to see them.",
+          "rect": {
+            "x": 255,
+            "y": 261,
+            "width": 334,
+            "height": 36,
+            "right": 589,
+            "bottom": 297
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-769-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-769-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-769-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-769-fr-light",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 474,
+          "y": 538,
+          "width": 56,
+          "height": 38.088,
+          "right": 530,
+          "bottom": 576.088
+        },
+        "limitNote": {
+          "text": "Limite de zoom atteinte. Des tâches liées restent hors de cette vue. Déplacez le canevas pour les voir.",
+          "rect": {
+            "x": 255,
+            "y": 261,
+            "width": 334,
+            "height": 36,
+            "right": 589,
+            "bottom": 297
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-769-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-769-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-769-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-769-fr-dark",
+        "scale": 0.2,
+        "missing": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": "dependent",
+            "fullyOutside": false,
+            "contained": false
+          }
+        ],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 474,
+          "y": 538,
+          "width": 56,
+          "height": 38.088,
+          "right": 530,
+          "bottom": 576.088
+        },
+        "limitNote": {
+          "text": "Limite de zoom atteinte. Des tâches liées restent hors de cette vue. Déplacez le canevas pour les voir.",
+          "rect": {
+            "x": 255,
+            "y": 261,
+            "width": 334,
+            "height": 36,
+            "right": 589,
+            "bottom": 297
+          },
+          "hidden": false,
+          "hit": true
+        },
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": true
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-769-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "showAllVisible": true,
+      "cards": 2,
+      "contained": 0
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-1280-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-1280-en-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-1280-en-light",
+        "scale": 0.263,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 721.35,
+          "y": 502.7,
+          "width": 73.64,
+          "height": 50.085,
+          "right": 794.99,
+          "bottom": 552.785
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-1280-en-light",
+      "scale": 0.595,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 2,
+      "contained": 2
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-1280-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-1280-en-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Connected tasks are outside this view."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-1280-en-dark",
+        "scale": 0.263,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 721.35,
+          "y": 502.7,
+          "width": 73.64,
+          "height": 50.085,
+          "right": 794.99,
+          "bottom": 552.785
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-1280-en-dark",
+      "scale": 0.595,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 2,
+      "contained": 2
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-1280-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-1280-fr-light",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-1280-fr-light",
+        "scale": 0.263,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 721.35,
+          "y": 502.7,
+          "width": 73.64,
+          "height": 50.085,
+          "right": 794.99,
+          "bottom": 552.785
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-1280-fr-light",
+      "scale": 0.595,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 2,
+      "contained": 2
+    },
+    {
+      "kind": "automatic",
+      "tag": "spread-1280-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0
+    },
+    {
+      "kind": "explicit",
+      "tag": "spread-1280-fr-dark",
+      "scale": 0.55,
+      "floored": true,
+      "limited": false,
+      "selectedContained": true,
+      "selectedEffectiveTitlePx": 8.8,
+      "note": [
+        "Des tâches liées sont hors de cette vue."
+      ],
+      "showAllVisible": true,
+      "visibleLabels": 0,
+      "misleadingLabels": 0,
+      "explicit": {
+        "prefix": "R1 dependency",
+        "tag": "spread-1280-fr-dark",
+        "scale": 0.263,
+        "missing": [],
+        "selectedContained": true,
+        "selectedRect": {
+          "x": 721.35,
+          "y": 502.7,
+          "width": 73.64,
+          "height": 50.085,
+          "right": 794.99,
+          "bottom": 552.785
+        },
+        "limitNote": null,
+        "noteOverlapsSelected": false,
+        "noteOverlapsAnyCard": false,
+        "legendOverlapsSelected": false,
+        "legendOverlapsAnyCard": false,
+        "visibleLabelCount": 3,
+        "misleadingLabels": [],
+        "legendShowAllVisible": false,
+        "barShowAllVisible": false,
+        "stateLimited": false
+      }
+    },
+    {
+      "kind": "filtered",
+      "tag": "spread-1280-fr-dark",
+      "scale": 0.595,
+      "floored": false,
+      "limited": false,
+      "showAllVisible": false,
+      "cards": 2,
+      "contained": 2
+    }
+  ],
+  "truthOtherDirection": [
+    {
+      "tag": "normal-360-en-light",
+      "scale": 0.315,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-360-en-dark",
+      "scale": 0.315,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-360-fr-light",
+      "scale": 0.315,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-360-fr-dark",
+      "scale": 0.315,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-390-en-light",
+      "scale": 0.344,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-390-en-dark",
+      "scale": 0.344,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-390-fr-light",
+      "scale": 0.344,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-390-fr-dark",
+      "scale": 0.344,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-769-en-light",
+      "scale": 0.488,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-769-en-dark",
+      "scale": 0.488,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-769-fr-light",
+      "scale": 0.488,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "normal-769-fr-dark",
+      "scale": 0.488,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-768-en-light",
+      "scale": 0.245,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-768-en-dark",
+      "scale": 0.245,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-768-fr-light",
+      "scale": 0.245,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-768-fr-dark",
+      "scale": 0.245,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-1280-en-light",
+      "scale": 0.263,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-1280-en-dark",
+      "scale": 0.263,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-1280-fr-light",
+      "scale": 0.263,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    },
+    {
+      "tag": "spread-1280-fr-dark",
+      "scale": 0.263,
+      "missing": 0,
+      "note": null,
+      "allContained": true,
+      "legendShowAll": false
+    }
+  ],
+  "filterLimit": [
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-en-light",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-en-dark",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-fr-light",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-fr-dark",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-en-light",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-en-dark",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-fr-light",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-fr-dark",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-en-light",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-en-dark",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-fr-light",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-fr-dark",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-en-light",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-360-en-light",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Zoom limit reached. Some tasks remain outside this view. Pan the canvas to see them.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-en-dark",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-360-en-dark",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Zoom limit reached. Some tasks remain outside this view. Pan the canvas to see them.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-fr-light",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-360-fr-light",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Limite de zoom atteinte. Des tâches restent hors de cette vue. Déplacez le canevas pour les voir.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-fr-dark",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-360-fr-dark",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Limite de zoom atteinte. Des tâches restent hors de cette vue. Déplacez le canevas pour les voir.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-en-light",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-390-en-light",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Zoom limit reached. Some tasks remain outside this view. Pan the canvas to see them.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-en-dark",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-390-en-dark",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Zoom limit reached. Some tasks remain outside this view. Pan the canvas to see them.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-fr-light",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-390-fr-light",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Limite de zoom atteinte. Des tâches restent hors de cette vue. Déplacez le canevas pour les voir.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-fr-dark",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "stage-todo",
+      "tag": "spread-390-fr-dark",
+      "scale": 0.2,
+      "cards": 4,
+      "missing": [
+        {
+          "key": "chamberos/platform#3",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#4",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#7",
+          "fullyOutside": true
+        },
+        {
+          "key": "chamberos/platform#6",
+          "fullyOutside": true
+        }
+      ],
+      "warning": "Limite de zoom atteinte. Des tâches restent hors de cette vue. Déplacez le canevas pour les voir.",
+      "warningHit": true,
+      "stateLimited": true,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-en-light",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-en-dark",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-fr-light",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-fr-dark",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-en-light",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-en-dark",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-fr-light",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-fr-dark",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false
+    }
+  ],
+  "filterComplete": [
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-en-light",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-en-dark",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-fr-light",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-360-fr-dark",
+      "scale": 0.309,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-en-light",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-en-dark",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-fr-light",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-390-fr-dark",
+      "scale": 0.338,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-en-light",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-en-dark",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-fr-light",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "normal-769-fr-dark",
+      "scale": 0.478,
+      "cards": 3,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-en-light",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-en-dark",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-fr-light",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-360-fr-dark",
+      "scale": 0.201,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-en-light",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-en-dark",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-fr-light",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-390-fr-dark",
+      "scale": 0.22,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-en-light",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-en-dark",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-fr-light",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-768-fr-dark",
+      "scale": 0.452,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-en-light",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-en-dark",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-fr-light",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    },
+    {
+      "kind": "priority-high",
+      "tag": "spread-769-fr-dark",
+      "scale": 0.311,
+      "cards": 2,
+      "missing": [],
+      "warning": null,
+      "stateLimited": false,
+      "barShowAllVisible": false,
+      "overlapsCard": false,
+      "overlapsViewport": false,
+      "allContained": true
+    }
+  ],
+  "r2": [
+    {
+      "width": 360,
+      "scenario": "dependency-only",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "focus": {
+            "panX": -150,
+            "panY": 281.75,
+            "scale": 0.55,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": true,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 360,
+      "scenario": "clear-under-focus-second-cycle",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "filtered": {
+            "panX": -364.5,
+            "panY": 83.77499999999998,
+            "scale": 0.55,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        },
+        {
+          "focused": {
+            "panX": -150,
+            "panY": 281.75,
+            "scale": 0.55,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": true,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        },
+        {
+          "clearedWhileFocused": {
+            "panX": -150,
+            "panY": 281.75,
+            "scale": 0.55,
+            "pending": true,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": true,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "secondEnd": {
+        "panX": -201.625,
+        "panY": 93.375,
+        "scale": 1.237,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 360,
+      "scenario": "change-filter-without-clearing",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "filtered": {
+            "panX": -364.5,
+            "panY": 83.77499999999998,
+            "scale": 0.55,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        },
+        {
+          "duringChange": {
+            "panX": -150,
+            "panY": 281.75,
+            "scale": 0.55,
+            "pending": true,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [
+              "stage:in-progress"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": true,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        },
+        {
+          "afterClose": {
+            "panX": -420,
+            "panY": 118.5,
+            "scale": 1,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": null,
+            "returnView": null,
+            "filters": [
+              "stage:in-progress"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 360,
+      "scenario": "exit-with-filter-active-then-clear",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "filtered": {
+            "panX": -364.5,
+            "panY": 83.77499999999998,
+            "scale": 0.55,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        },
+        {
+          "preFocus": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        },
+        {
+          "afterClose": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": null,
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 360,
+      "scenario": "list-clear-reload-canvas",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "clearedInList": {
+            "panX": -364.5,
+            "panY": 83.77499999999998,
+            "scale": 0.55,
+            "pending": true,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 360,
+      "scenario": "search-only",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "searching": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "returnView": null,
+            "filters": [],
+            "search": "Wire",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 360,
+      "scenario": "filter-during-focus",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "preFocus": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "returnView": null,
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          },
+          "focused": {
+            "panX": -150,
+            "panY": 281.75,
+            "scale": 0.55,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": true,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "filterDuringFocus": {
+            "panX": -150,
+            "panY": 281.75,
+            "scale": 0.55,
+            "pending": true,
+            "filterView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": true,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "afterClose": {
+            "panX": -364.5,
+            "panY": 83.77499999999998,
+            "scale": 0.55,
+            "pending": false,
+            "filterView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+            "focus": null,
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": true
+          }
+        }
+      ],
+      "end": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 1280,
+      "scenario": "dependency-only",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "focus": {
+            "panX": 54.09090909090912,
+            "panY": 67.36363636363637,
+            "scale": 0.7848484848484848,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 1280,
+      "scenario": "clear-under-focus-second-cycle",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "filtered": {
+            "panX": -380.9433962264151,
+            "panY": -5.580188679245282,
+            "scale": 0.9150943396226415,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "focused": {
+            "panX": -265,
+            "panY": 212,
+            "scale": 1,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "clearedWhileFocused": {
+            "panX": -265,
+            "panY": 212,
+            "scale": 1,
+            "pending": true,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "secondEnd": {
+        "panX": -201.625,
+        "panY": 93.375,
+        "scale": 1.237,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 1280,
+      "scenario": "change-filter-without-clearing",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "filtered": {
+            "panX": -380.9433962264151,
+            "panY": -5.580188679245282,
+            "scale": 0.9150943396226415,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "duringChange": {
+            "panX": -265,
+            "panY": 212,
+            "scale": 1,
+            "pending": true,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [
+              "stage:in-progress"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "afterClose": {
+            "panX": -75,
+            "panY": 175,
+            "scale": 1,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": null,
+            "returnView": null,
+            "filters": [
+              "stage:in-progress"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 1280,
+      "scenario": "exit-with-filter-active-then-clear",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "filtered": {
+            "panX": -380.9433962264151,
+            "panY": -5.580188679245282,
+            "scale": 0.9150943396226415,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "preFocus": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "afterClose": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1,
+            "pending": false,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "focus": null,
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 1280,
+      "scenario": "list-clear-reload-canvas",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "clearedInList": {
+            "panX": -380.9433962264151,
+            "panY": -5.580188679245282,
+            "scale": 0.9150943396226415,
+            "pending": true,
+            "filterView": {
+              "panX": 123.125,
+              "panY": -47.875,
+              "scale": 0.873
+            },
+            "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+            "returnView": null,
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 1280,
+      "scenario": "search-only",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "searching": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "returnView": null,
+            "filters": [],
+            "search": "Wire",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    },
+    {
+      "width": 1280,
+      "scenario": "filter-during-focus",
+      "start": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      },
+      "steps": [
+        {
+          "preFocus": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "returnView": null,
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          },
+          "focused": {
+            "panX": 54.09090909090912,
+            "panY": 67.36363636363637,
+            "scale": 0.7848484848484848,
+            "pending": false,
+            "filterView": null,
+            "stored": null,
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "filterDuringFocus": {
+            "panX": 54.09090909090912,
+            "panY": 67.36363636363637,
+            "scale": 0.7848484848484848,
+            "pending": true,
+            "filterView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+            "focus": "chamberos/platform#2",
+            "returnView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        },
+        {
+          "afterClose": {
+            "panX": -380.9433962264151,
+            "panY": -5.580188679245282,
+            "scale": 0.9150943396226415,
+            "pending": false,
+            "filterView": {
+              "panX": -436,
+              "panY": -40,
+              "scale": 1
+            },
+            "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+            "focus": null,
+            "returnView": null,
+            "filters": [
+              "priority:high"
+            ],
+            "search": "",
+            "dependencyFocusLimited": false,
+            "dependencyFocusFloored": false,
+            "canvasFitLimited": false,
+            "canvasFitFloored": false
+          }
+        }
+      ],
+      "end": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1,
+        "pending": false,
+        "filterView": null,
+        "stored": null,
+        "focus": null,
+        "returnView": null,
+        "filters": [],
+        "search": "",
+        "dependencyFocusLimited": false,
+        "dependencyFocusFloored": false,
+        "canvasFitLimited": false,
+        "canvasFitFloored": false
+      }
+    }
+  ],
+  "geometry": [],
+  "breakpoint": [
+    {
+      "width": 768,
+      "sidebar": {
+        "x": 0,
+        "width": 280,
+        "right": 280
+      },
+      "toggle": {
+        "x": 6,
+        "y": 3.5,
+        "width": 44,
+        "height": 44,
+        "hit": false,
+        "label": "Toggle navigation"
+      },
+      "compactDisplay": "flex",
+      "compactBeforeOpen": {
+        "x": 6,
+        "y": 3.5,
+        "width": 44,
+        "height": 44,
+        "hit": true
+      }
+    },
+    {
+      "width": 769,
+      "sidebar": {
+        "x": 0,
+        "width": 56,
+        "right": 56
+      },
+      "toggle": {
+        "x": 5.5,
+        "y": 8,
+        "width": 44,
+        "height": 44,
+        "hit": true,
+        "label": "Expand sidebar"
+      },
+      "compactDisplay": "flex",
+      "compactBeforeOpen": null
+    },
+    {
+      "width": 768,
+      "sidebar": {
+        "x": 0,
+        "width": 280,
+        "right": 280
+      },
+      "toggle": {
+        "x": 6,
+        "y": 3.5,
+        "width": 44,
+        "height": 44,
+        "hit": false,
+        "label": "Toggle navigation"
+      },
+      "compactDisplay": "flex",
+      "compactBeforeOpen": {
+        "x": 6,
+        "y": 3.5,
+        "width": 44,
+        "height": 44,
+        "hit": true
+      }
+    },
+    {
+      "width": 769,
+      "sidebar": {
+        "x": 0,
+        "width": 56,
+        "right": 56
+      },
+      "toggle": {
+        "x": 5.5,
+        "y": 8,
+        "width": 44,
+        "height": 44,
+        "hit": true,
+        "label": "Expand sidebar"
+      },
+      "compactDisplay": "flex",
+      "compactBeforeOpen": null
+    }
+  ],
+  "failures": [],
+  "errors": [],
+  "console": [],
+  "csp": []
+}
