@@ -25,122 +25,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 78.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 78.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 101.40625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 121.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 139.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 116,
+          "width": 106.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 82.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 100,
+          "width": 91.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 77.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 73.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 197,
+          "width": 177.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 114.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 133.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 164,
+          "width": 150.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 241,
+          "width": 243.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -184,42 +184,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 58.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 62,
+          "width": 57.671875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 108.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.890625,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 311,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 311,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -230,7 +240,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -240,7 +250,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -250,17 +260,7 @@
         },
         {
           "width": 311,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 311,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 311,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -294,9 +294,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 569,
+      "y": 414,
       "width": 360,
-      "height": 231,
+      "height": 386,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
@@ -308,28 +308,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -377,7 +377,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -392,12 +392,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 248,
+          "width": 250.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -441,7 +441,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -476,7 +476,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 108.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -520,7 +520,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -584,17 +584,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -638,122 +638,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 114,
+          "width": 104.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 96,
+          "width": 89.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 102,
+          "width": 95.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 105.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 122,
+          "width": 111.125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 115,
+          "width": 106.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 93,
+          "width": 86.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 92,
+          "width": 88.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.90625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 226,
+          "width": 201.46875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 137.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 183,
+          "width": 164.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 168,
+          "width": 152.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 218,
+          "width": 225.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -797,42 +797,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 81.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 56.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 78.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 150,
+          "width": 134.953125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 142.71875,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 311,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 311,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -843,7 +853,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -853,7 +863,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -863,17 +873,7 @@
         },
         {
           "width": 311,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 311,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 311,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -907,9 +907,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 569,
+      "y": 414,
       "width": 360,
-      "height": 231,
+      "height": 386,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
@@ -921,28 +921,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -976,9 +976,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 358,
+      "y": 380.5,
       "width": 360,
-      "height": 442,
+      "height": 419.5,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
@@ -990,7 +990,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -1005,12 +1005,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 241,
+          "width": 246.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -1040,13 +1040,13 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 229,
+      "y": 239,
       "width": 360,
-      "height": 571,
+      "height": 561,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
-      "footerHeight": 79,
+      "footerHeight": 69,
       "bodyOverflow": "auto",
       "overscroll": "contain",
       "forward": true,
@@ -1054,7 +1054,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -1089,8 +1089,8 @@
           "tag": "BUTTON"
         },
         {
-          "width": 78,
-          "height": 54,
+          "width": 105.203125,
+          "height": 44,
           "tag": "BUTTON"
         }
       ],
@@ -1133,7 +1133,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -1197,17 +1197,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -1251,122 +1251,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 78.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 78.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 101.40625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 121.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 139.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 116,
+          "width": 106.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 82.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 100,
+          "width": 91.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 77.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 73.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 197,
+          "width": 177.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 114.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 133.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 164,
+          "width": 150.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 241,
+          "width": 243.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -1410,42 +1410,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 58.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 62,
+          "width": 57.671875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 108.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.890625,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 311,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 311,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -1456,7 +1466,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -1466,7 +1476,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -1476,17 +1486,7 @@
         },
         {
           "width": 311,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 311,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 311,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -1520,9 +1520,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 569,
+      "y": 414,
       "width": 360,
-      "height": 231,
+      "height": 386,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
@@ -1534,28 +1534,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -1603,7 +1603,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -1618,12 +1618,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 248,
+          "width": 250.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -1667,7 +1667,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -1702,7 +1702,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 108.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -1746,7 +1746,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -1810,17 +1810,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -1864,122 +1864,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 114,
+          "width": 104.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 96,
+          "width": 89.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 102,
+          "width": 95.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 105.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 122,
+          "width": 111.125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 115,
+          "width": 106.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 93,
+          "width": 86.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 92,
+          "width": 88.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.90625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 226,
+          "width": 201.46875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 137.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 183,
+          "width": 164.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 168,
+          "width": 152.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 218,
+          "width": 225.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -2023,42 +2023,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 81.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 56.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 78.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 150,
+          "width": 134.953125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 142.71875,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 311,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 311,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -2069,7 +2079,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -2079,7 +2089,7 @@
         },
         {
           "width": 311,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -2089,17 +2099,7 @@
         },
         {
           "width": 311,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 311,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 311,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -2133,9 +2133,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 569,
+      "y": 414,
       "width": 360,
-      "height": 231,
+      "height": 386,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
@@ -2147,28 +2147,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 311,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -2202,9 +2202,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 358,
+      "y": 380.5,
       "width": 360,
-      "height": 442,
+      "height": 419.5,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
@@ -2216,7 +2216,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -2231,12 +2231,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 241,
+          "width": 246.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -2266,13 +2266,13 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 229,
+      "y": 239,
       "width": 360,
-      "height": 571,
+      "height": 561,
       "right": 360,
       "bottom": 800,
       "footerBottom": 800,
-      "footerHeight": 79,
+      "footerHeight": 69,
       "bodyOverflow": "auto",
       "overscroll": "contain",
       "forward": true,
@@ -2280,7 +2280,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -2315,8 +2315,8 @@
           "tag": "BUTTON"
         },
         {
-          "width": 78,
-          "height": 54,
+          "width": 105.203125,
+          "height": 44,
           "tag": "BUTTON"
         }
       ],
@@ -2359,7 +2359,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -2423,17 +2423,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -2477,122 +2477,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 78.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 78.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 101.40625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 121.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 139.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 116,
+          "width": 106.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 82.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 100,
+          "width": 91.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 77.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 73.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 197,
+          "width": 177.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 114.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 133.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 164,
+          "width": 150.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 271,
+          "width": 273.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -2636,42 +2636,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 58.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 62,
+          "width": 57.671875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 108.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.890625,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 341,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 341,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -2682,7 +2692,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -2692,7 +2702,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -2702,17 +2712,7 @@
         },
         {
           "width": 341,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 341,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 341,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -2746,9 +2746,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 613,
+      "y": 458,
       "width": 390,
-      "height": 231,
+      "height": 386,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -2760,28 +2760,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -2815,9 +2815,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 425.5,
+      "y": 448,
       "width": 390,
-      "height": 418.5,
+      "height": 396,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -2829,7 +2829,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -2844,12 +2844,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 278,
+          "width": 280.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -2893,7 +2893,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -2928,7 +2928,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 112,
+          "width": 138.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -2972,7 +2972,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -3036,17 +3036,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -3090,122 +3090,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 114,
+          "width": 104.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 96,
+          "width": 89.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 102,
+          "width": 95.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 105.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 122,
+          "width": 111.125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 115,
+          "width": 106.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 93,
+          "width": 86.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 92,
+          "width": 88.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.90625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 226,
+          "width": 201.46875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 137.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 183,
+          "width": 164.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 168,
+          "width": 152.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 248,
+          "width": 255.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -3249,42 +3249,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 81.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 56.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 78.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 150,
+          "width": 134.953125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 142.71875,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 341,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 341,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -3295,7 +3305,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -3305,7 +3315,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -3315,17 +3325,7 @@
         },
         {
           "width": 341,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 341,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 341,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -3359,9 +3359,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 613,
+      "y": 458,
       "width": 390,
-      "height": 231,
+      "height": 386,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -3373,28 +3373,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -3428,9 +3428,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 424.5,
+      "y": 448,
       "width": 390,
-      "height": 419.5,
+      "height": 396,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -3442,7 +3442,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -3457,12 +3457,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 271,
+          "width": 276.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -3506,7 +3506,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -3541,7 +3541,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 108,
+          "width": 135.203125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -3585,7 +3585,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -3649,17 +3649,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -3703,122 +3703,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 78.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 78.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 101.40625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 121.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 139.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 116,
+          "width": 106.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 82.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 100,
+          "width": 91.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 77.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 73.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 197,
+          "width": 177.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 114.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 133.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 164,
+          "width": 150.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 271,
+          "width": 273.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -3862,42 +3862,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 58.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 62,
+          "width": 57.671875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 108.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.890625,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 341,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 341,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -3908,7 +3918,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -3918,7 +3928,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -3928,17 +3938,7 @@
         },
         {
           "width": 341,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 341,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 341,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -3972,9 +3972,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 613,
+      "y": 458,
       "width": 390,
-      "height": 231,
+      "height": 386,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -3986,28 +3986,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -4041,9 +4041,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 425.5,
+      "y": 448,
       "width": 390,
-      "height": 418.5,
+      "height": 396,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -4055,7 +4055,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -4070,12 +4070,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 278,
+          "width": 280.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -4119,7 +4119,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -4154,7 +4154,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 112,
+          "width": 138.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -4198,7 +4198,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -4262,17 +4262,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -4316,122 +4316,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 114,
+          "width": 104.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 96,
+          "width": 89.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 102,
+          "width": 95.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 105.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 122,
+          "width": 111.125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 115,
+          "width": 106.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 93,
+          "width": 86.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 92,
+          "width": 88.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.90625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 226,
+          "width": 201.46875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 137.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 183,
+          "width": 164.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 168,
+          "width": 152.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 248,
+          "width": 255.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -4475,42 +4475,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 81.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 56.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 78.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 150,
+          "width": 134.953125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 142.71875,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 341,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 341,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -4521,7 +4531,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -4531,7 +4541,7 @@
         },
         {
           "width": 341,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -4541,17 +4551,7 @@
         },
         {
           "width": 341,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 341,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 341,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -4585,9 +4585,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 613,
+      "y": 458,
       "width": 390,
-      "height": 231,
+      "height": 386,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -4599,28 +4599,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 341,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -4654,9 +4654,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 424.5,
+      "y": 448,
       "width": 390,
-      "height": 419.5,
+      "height": 396,
       "right": 390,
       "bottom": 844,
       "footerBottom": 844,
@@ -4668,7 +4668,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -4683,12 +4683,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 271,
+          "width": 276.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -4732,7 +4732,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -4767,7 +4767,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 108,
+          "width": 135.203125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -4811,7 +4811,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -4861,12 +4861,12 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 634.1091918945312,
+      "y": 634,
       "width": 390,
       "height": 210,
       "right": 390,
-      "bottom": 844.1091918945312,
-      "footerBottom": 844.1091918945312,
+      "bottom": 844,
+      "footerBottom": 844,
       "footerHeight": 69,
       "bodyOverflow": "auto",
       "overscroll": "contain",
@@ -4875,17 +4875,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -4929,122 +4929,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 78.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 78.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 101.40625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 121.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 139.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 116,
+          "width": 106.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 82.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 100,
+          "width": 91.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 77.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 73.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 197,
+          "width": 177.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 114.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 133.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 164,
+          "width": 150.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 649,
+          "width": 651.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -5088,42 +5088,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 58.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 62,
+          "width": 57.671875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 108.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.890625,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 719,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 719,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -5134,7 +5144,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -5144,7 +5154,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -5154,17 +5164,7 @@
         },
         {
           "width": 719,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 719,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 719,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -5198,9 +5198,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 691.5,
+      "y": 514,
       "width": 768,
-      "height": 208.5,
+      "height": 386,
       "right": 768,
       "bottom": 900,
       "footerBottom": 900,
@@ -5212,28 +5212,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -5281,7 +5281,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -5296,12 +5296,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 656,
+          "width": 658.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -5345,7 +5345,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -5380,7 +5380,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 490,
+          "width": 516.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -5424,7 +5424,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -5488,17 +5488,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -5542,122 +5542,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 114,
+          "width": 104.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 96,
+          "width": 89.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 102,
+          "width": 95.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 105.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 122,
+          "width": 111.125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 115,
+          "width": 106.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 93,
+          "width": 86.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 92,
+          "width": 88.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.90625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 226,
+          "width": 201.46875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 137.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 183,
+          "width": 164.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 168,
+          "width": 152.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 626,
+          "width": 633.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -5701,42 +5701,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 81.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 56.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 78.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 150,
+          "width": 134.953125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 142.71875,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 719,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 719,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -5747,7 +5757,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -5757,7 +5767,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -5767,17 +5777,7 @@
         },
         {
           "width": 719,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 719,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 719,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -5811,9 +5811,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 691.5,
+      "y": 514,
       "width": 768,
-      "height": 208.5,
+      "height": 386,
       "right": 768,
       "bottom": 900,
       "footerBottom": 900,
@@ -5825,28 +5825,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -5894,7 +5894,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -5909,12 +5909,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 649,
+          "width": 654.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -5958,7 +5958,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -5993,7 +5993,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 486,
+          "width": 513.203125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -6037,7 +6037,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -6101,17 +6101,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -6155,122 +6155,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 78.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 78.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 101.40625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 121.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 139.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 116,
+          "width": 106.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 82.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 100,
+          "width": 91.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 77.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 73.875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 197,
+          "width": 177.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 114.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 133.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 164,
+          "width": 150.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 649,
+          "width": 651.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -6314,42 +6314,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.859375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 58.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 62,
+          "width": 57.671875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 108.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.890625,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 719,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 719,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -6360,7 +6370,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -6370,7 +6380,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -6380,17 +6390,7 @@
         },
         {
           "width": 719,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 719,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 719,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -6424,9 +6424,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 691.5,
+      "y": 514,
       "width": 768,
-      "height": 208.5,
+      "height": 386,
       "right": 768,
       "bottom": 900,
       "footerBottom": 900,
@@ -6438,28 +6438,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -6507,7 +6507,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -6522,12 +6522,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 656,
+          "width": 658.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -6571,7 +6571,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -6606,7 +6606,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 490,
+          "width": 516.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -6650,7 +6650,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -6714,17 +6714,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -6768,122 +6768,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 114,
+          "width": 104.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 96,
+          "width": 89.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 102,
+          "width": 95.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 105.546875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 122,
+          "width": 111.125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 115,
+          "width": 106.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 99.703125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 109,
+          "width": 99.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 93,
+          "width": 86.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 92,
+          "width": 88.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 102.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 131,
+          "width": 120.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 133,
+          "width": 122.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.90625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 226,
+          "width": 201.46875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 154,
+          "width": 137.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 183,
+          "width": 164.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 124,
+          "width": 113.890625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 168,
+          "width": 152.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 626,
+          "width": 633.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -6927,42 +6927,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 81.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 56.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 78.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 75.203125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 88,
+          "width": 83.53125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 150,
+          "width": 134.953125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 142.71875,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 719,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 719,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -6973,7 +6983,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -6983,7 +6993,7 @@
         },
         {
           "width": 719,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -6993,17 +7003,7 @@
         },
         {
           "width": 719,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 719,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 719,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -7037,9 +7037,9 @@
     "geometry": {
       "open": true,
       "x": 0,
-      "y": 691.5,
+      "y": 514,
       "width": 768,
-      "height": 208.5,
+      "height": 386,
       "right": 768,
       "bottom": 900,
       "footerBottom": 900,
@@ -7051,28 +7051,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 719,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -7120,7 +7120,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -7135,12 +7135,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 649,
+          "width": 654.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -7184,7 +7184,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -7219,7 +7219,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 486,
+          "width": 513.203125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -7263,7 +7263,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -7327,17 +7327,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -7381,122 +7381,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 76.140625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 76.15625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 97.1875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 126,
+          "width": 115.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 145,
+          "width": 132.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.828125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 79.265625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 95,
+          "width": 87.828125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 80,
+          "width": 74.59375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.59375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 75,
+          "width": 71.484375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 97.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
+          "width": 114.8125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 149,
+          "width": 136.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 126,
+          "width": 116.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 186,
+          "width": 167.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 109.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 139,
+          "width": 127.5,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.078125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 353,
+          "width": 355.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -7540,42 +7540,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 75,
+          "width": 68.796875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 61,
+          "width": 56.359375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 60,
+          "width": 55.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 79.6875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 103.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 96.828125,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 423,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 423,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -7586,7 +7596,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -7596,7 +7606,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -7606,17 +7616,7 @@
         },
         {
           "width": 423,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 423,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 423,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -7652,10 +7652,10 @@
       "x": 784,
       "y": 16,
       "width": 480,
-      "height": 216,
+      "height": 395,
       "right": 1264,
-      "bottom": 232,
-      "footerBottom": 231,
+      "bottom": 411,
+      "footerBottom": 410,
       "footerHeight": 77,
       "bodyOverflow": "auto",
       "overscroll": "contain",
@@ -7664,28 +7664,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -7721,10 +7721,10 @@
       "x": 784,
       "y": 16,
       "width": 480,
-      "height": 405,
+      "height": 404,
       "right": 1264,
-      "bottom": 421,
-      "footerBottom": 420,
+      "bottom": 420,
+      "footerBottom": 419,
       "footerHeight": 77,
       "bodyOverflow": "auto",
       "overscroll": "contain",
@@ -7733,7 +7733,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -7748,12 +7748,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 360,
+          "width": 362.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -7797,7 +7797,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -7832,7 +7832,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 194,
+          "width": 220.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -7876,7 +7876,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -7940,17 +7940,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -7994,122 +7994,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 100.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 94,
+          "width": 86.265625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 99,
+          "width": 91.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 108,
+          "width": 101.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 106.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 110,
+          "width": 101.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
+          "width": 95.59375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 90,
+          "width": 83.15625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 112,
+          "width": 103.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 89,
+          "width": 84.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 97.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
+          "width": 114.8125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 149,
+          "width": 136.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 126,
+          "width": 116.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 104.1875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 214,
+          "width": 190.578125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 145,
+          "width": 130.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 173,
+          "width": 156.3125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 160,
+          "width": 144.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 330,
+          "width": 337.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -8153,42 +8153,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 77.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 54.78125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 75.03125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 79.6875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 143,
+          "width": 127.6875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 134.9375,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 423,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 423,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -8199,7 +8209,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -8209,7 +8219,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -8219,17 +8229,7 @@
         },
         {
           "width": 423,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 423,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 423,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -8265,10 +8265,10 @@
       "x": 784,
       "y": 16,
       "width": 480,
-      "height": 237,
+      "height": 395,
       "right": 1264,
-      "bottom": 253,
-      "footerBottom": 252,
+      "bottom": 411,
+      "footerBottom": 410,
       "footerHeight": 77,
       "bodyOverflow": "auto",
       "overscroll": "contain",
@@ -8277,28 +8277,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -8346,7 +8346,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -8361,12 +8361,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 353,
+          "width": 358.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -8410,7 +8410,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -8445,7 +8445,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 190,
+          "width": 217.203125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -8489,7 +8489,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -8553,17 +8553,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -8607,122 +8607,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 83,
+          "width": 76.140625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 81,
+          "width": 76.15625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 97.1875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 126,
+          "width": 115.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 145,
+          "width": 132.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 101.828125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 79.265625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 95,
+          "width": 87.828125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 80,
+          "width": 74.59375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.59375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 75,
+          "width": 71.484375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 97.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
+          "width": 114.8125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 149,
+          "width": 136.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 126,
+          "width": 116.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 186,
+          "width": 167.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 109.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 139,
+          "width": 127.5,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 157,
+          "width": 143.078125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 353,
+          "width": 355.984375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -8766,42 +8766,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 75,
+          "width": 68.796875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 61,
+          "width": 56.359375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 60,
+          "width": 55.5625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 79.6875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 103.0625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 106,
+          "width": 96.828125,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 423,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 423,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -8812,7 +8822,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -8822,7 +8832,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -8832,17 +8842,7 @@
         },
         {
           "width": 423,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 423,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 423,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -8878,10 +8878,10 @@
       "x": 784,
       "y": 16,
       "width": 480,
-      "height": 216,
+      "height": 395,
       "right": 1264,
-      "bottom": 232,
-      "footerBottom": 231,
+      "bottom": 411,
+      "footerBottom": 410,
       "footerHeight": 77,
       "bodyOverflow": "auto",
       "overscroll": "contain",
@@ -8890,28 +8890,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 129,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 101,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -8947,10 +8947,10 @@
       "x": 784,
       "y": 16,
       "width": 480,
-      "height": 405,
+      "height": 404,
       "right": 1264,
-      "bottom": 421,
-      "footerBottom": 420,
+      "bottom": 420,
+      "footerBottom": 419,
       "footerHeight": 77,
       "bodyOverflow": "auto",
       "overscroll": "contain",
@@ -8959,7 +8959,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -8974,12 +8974,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 360,
+          "width": 362.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 66,
+          "width": 63.359375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -9023,7 +9023,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -9058,7 +9058,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 194,
+          "width": 220.53125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -9102,7 +9102,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -9166,17 +9166,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 66.96875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 64,
+          "width": 60.25,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -9220,122 +9220,122 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 111,
+          "width": 100.28125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 94,
+          "width": 86.265625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 99,
+          "width": 91.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 108,
+          "width": 101.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 118,
+          "width": 106.25,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 110,
+          "width": 101.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
+          "width": 95.59375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 104,
+          "width": 95.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 90,
+          "width": 83.15625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 112,
+          "width": 103.390625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 89,
+          "width": 84.71875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 107,
+          "width": 97.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 125,
+          "width": 114.8125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 149,
+          "width": 136.046875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 126,
+          "width": 116.609375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 113,
+          "width": 104.1875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 214,
+          "width": 190.578125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 145,
+          "width": 130.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 173,
+          "width": 156.3125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 117,
+          "width": 108.84375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 160,
+          "width": 144.640625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 330,
+          "width": 337.515625,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -9379,42 +9379,52 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 86,
+          "width": 77.375,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 59,
+          "width": 54.78125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 82,
+          "width": 75.03125,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 77,
+          "width": 71.921875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 79.6875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 143,
+          "width": 127.6875,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 148,
+          "width": 134.9375,
+          "height": 44,
+          "tag": "BUTTON"
+        },
+        {
+          "width": 423,
+          "height": 44,
+          "tag": "INPUT"
+        },
+        {
+          "width": 423,
           "height": 44,
           "tag": "BUTTON"
         },
@@ -9425,7 +9435,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -9435,7 +9445,7 @@
         },
         {
           "width": 423,
-          "height": 32,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -9445,17 +9455,7 @@
         },
         {
           "width": 423,
-          "height": 32,
-          "tag": "BUTTON"
-        },
-        {
-          "width": 423,
           "height": 44,
-          "tag": "INPUT"
-        },
-        {
-          "width": 423,
-          "height": 32,
           "tag": "BUTTON"
         },
         {
@@ -9491,10 +9491,10 @@
       "x": 784,
       "y": 16,
       "width": 480,
-      "height": 237,
+      "height": 395,
       "right": 1264,
-      "bottom": 253,
-      "footerBottom": 252,
+      "bottom": 411,
+      "footerBottom": 410,
       "footerHeight": 77,
       "bodyOverflow": "auto",
       "overscroll": "contain",
@@ -9503,28 +9503,28 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 63,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 162,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 138,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 105,
-          "height": 21,
+          "width": 423,
+          "height": 44,
           "tag": "BUTTON"
         },
         {
@@ -9572,7 +9572,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -9587,12 +9587,12 @@
           "tag": "INPUT"
         },
         {
-          "width": 353,
+          "width": 358.625,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 73,
+          "width": 67.375,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -9636,7 +9636,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -9671,7 +9671,7 @@
           "tag": "BUTTON"
         },
         {
-          "width": 190,
+          "width": 217.203125,
           "height": 44,
           "tag": "BUTTON"
         }
@@ -9715,7 +9715,7 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
@@ -9779,17 +9779,17 @@
       "focusInside": true,
       "hitBoxes": [
         {
-          "width": 46,
+          "width": 44,
           "height": 48,
           "tag": "BUTTON"
         },
         {
-          "width": 85,
+          "width": 76.75,
           "height": 44,
           "tag": "BUTTON"
         },
         {
-          "width": 70,
+          "width": 63.921875,
           "height": 44,
           "tag": "BUTTON"
         }

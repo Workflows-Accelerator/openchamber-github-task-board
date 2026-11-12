@@ -1,0 +1,33 @@
+{
+  "base": "6535937",
+  "checks": {
+    "dot_grid_function_byte_identical": true,
+    "restricted_paths_unchanged": true,
+    "html_no_inline_style_attribute": true,
+    "no_added_inline_style_attribute": true,
+    "one_phone_filter_entry": true,
+    "focus_close_wording": true,
+    "product_name": true,
+    "no_new_dependencies_or_build_step": true,
+    "web/public/app.js_no_banned_copy": true,
+    "web/public/app.js_no_pictographs": true,
+    "web/public/theme.css_no_banned_copy": true,
+    "web/public/theme.css_no_pictographs": true,
+    "web/public/index.html_no_banned_copy": true,
+    "web/public/index.html_no_pictographs": true,
+    ".sheet-content h3_rhythm_or_colours_unchanged": true,
+    ".sheet-intro_rhythm_or_colours_unchanged": true,
+    ".sheet-group_rhythm_or_colours_unchanged": true,
+    ":root_rhythm_or_colours_unchanged": true,
+    ":root[data-theme=\"light\"]_rhythm_or_colours_unchanged": true
+  },
+  "allPass": true,
+  "dotGridSha256": "692903b749bcd9e2dcd07a48d91574522c81d52b513eea8a6abff7ea92aec274",
+  "changedProductionPaths": [
+    "scripts/generate-delivery-smoke.mjs",
+    "web/public/app.js",
+    "web/public/index.html",
+    "web/public/theme.css",
+    "web/tests/v3-ux-client.test.mjs"
+  ]
+}

@@ -1,0 +1,914 @@
+{
+  "filterCases": 16,
+  "filterAllPass": true,
+  "filterFlooredCases": [
+    360,
+    360,
+    360,
+    360,
+    390,
+    390,
+    390,
+    390
+  ],
+  "filterMinEffectiveTitlePx": 8.8,
+  "dependencyCases": 16,
+  "dependencyAllPass": true,
+  "dependencyFlooredCases": [
+    360,
+    360,
+    360,
+    360,
+    390,
+    390,
+    390,
+    390
+  ],
+  "dependencyMinScale": 0.55,
+  "spreadCases": 16,
+  "spreadAllPass": true,
+  "clearFilter": [
+    {
+      "width": 360,
+      "path": "chip",
+      "before": {
+        "exactView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "viewport": {
+          "x": 0,
+          "y": 112,
+          "w": 360,
+          "h": 631
+        },
+        "scale": 0.873,
+        "pan": {
+          "x": 123.13,
+          "y": -47.87
+        },
+        "focus": null,
+        "canvasFitFloored": false,
+        "canvasFitCount": 0,
+        "dependencyFocusFloored": false,
+        "dependencyFocusCount": 0,
+        "cards": [
+          {
+            "key": "chamberos/platform#1",
+            "role": null,
+            "rect": {
+              "x": 192.8,
+              "y": 142.6,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 192.83999633789062,
+              "right": 437.2799987792969,
+              "top": 142.57000732421875,
+              "bottom": 307.512451171875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#5",
+            "role": null,
+            "rect": {
+              "x": 1205.5,
+              "y": 518,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 1205.52001953125,
+              "right": 1449.9600830078125,
+              "top": 517.9600219726562,
+              "bottom": 682.9024658203125
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": null,
+            "rect": {
+              "x": 856.3,
+              "y": 142.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 856.3200073242188,
+              "right": 1100.760009765625,
+              "top": 142.57000732421875,
+              "bottom": 308.82196044921875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#2",
+            "role": null,
+            "rect": {
+              "x": 524.6,
+              "y": 142.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 524.5800170898438,
+              "right": 769.02001953125,
+              "top": 142.57000732421875,
+              "bottom": 308.82196044921875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": null,
+            "rect": {
+              "x": 524.6,
+              "y": 325.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 524.5800170898438,
+              "right": 769.02001953125,
+              "top": 325.8999938964844,
+              "bottom": 492.1519470214844
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "acme/vanilla-sdk#11",
+            "role": null,
+            "rect": {
+              "x": 524.6,
+              "y": 552.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 524.5800170898438,
+              "right": 769.02001953125,
+              "top": 552.8800048828125,
+              "bottom": 719.1319580078125
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          }
+        ],
+        "labels": [],
+        "legend": {
+          "hidden": true,
+          "text": "",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": false,
+          "height": 0
+        },
+        "showAll": {
+          "visible": false,
+          "text": "Tout afficher (4)",
+          "height": 0,
+          "width": 0
+        },
+        "applied": [],
+        "chips": 0,
+        "canvasIssueCount": 6,
+        "boardIssueCount": 6
+      },
+      "applied": {
+        "exactView": {
+          "panX": -364.5,
+          "panY": 83.77499999999998,
+          "scale": 0.55
+        },
+        "viewport": {
+          "x": 0,
+          "y": 112,
+          "w": 360,
+          "h": 631
+        },
+        "scale": 0.55,
+        "pan": {
+          "x": -364.5,
+          "y": 83.77
+        },
+        "focus": null,
+        "canvasFitFloored": true,
+        "canvasFitCount": 3,
+        "dependencyFocusFloored": false,
+        "dependencyFocusCount": 0,
+        "cards": [
+          {
+            "key": "chamberos/platform#5",
+            "role": null,
+            "rect": {
+              "x": 318,
+              "y": 482,
+              "w": 154,
+              "h": 103.9,
+              "left": 318,
+              "right": 472,
+              "top": 482,
+              "bottom": 585.9156494140625
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 8.8
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": null,
+            "rect": {
+              "x": 98,
+              "y": 245.5,
+              "w": 154,
+              "h": 104.7,
+              "left": 98,
+              "right": 252,
+              "top": 245.5,
+              "bottom": 350.2406311035156
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 8.8
+          },
+          {
+            "key": "chamberos/platform#2",
+            "role": null,
+            "rect": {
+              "x": -111,
+              "y": 245.5,
+              "w": 154,
+              "h": 104.7,
+              "left": -111,
+              "right": 43,
+              "top": 245.5,
+              "bottom": 350.2406311035156
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 8.8
+          }
+        ],
+        "labels": [],
+        "legend": {
+          "hidden": true,
+          "text": "",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": false,
+          "height": 0
+        },
+        "showAll": {
+          "visible": true,
+          "text": "Show all (3)",
+          "height": 44,
+          "width": 89.4
+        },
+        "applied": [
+          "priority:high"
+        ],
+        "chips": 1,
+        "canvasIssueCount": 3,
+        "boardIssueCount": 6
+      },
+      "cleared": {
+        "exactView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "viewport": {
+          "x": 0,
+          "y": 112,
+          "w": 360,
+          "h": 631
+        },
+        "scale": 0.873,
+        "pan": {
+          "x": 123.13,
+          "y": -47.87
+        },
+        "focus": null,
+        "canvasFitFloored": false,
+        "canvasFitCount": 0,
+        "dependencyFocusFloored": false,
+        "dependencyFocusCount": 0,
+        "cards": [
+          {
+            "key": "chamberos/platform#1",
+            "role": null,
+            "rect": {
+              "x": 192.8,
+              "y": 142.6,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 192.83999633789062,
+              "right": 437.2799987792969,
+              "top": 142.57000732421875,
+              "bottom": 307.512451171875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#5",
+            "role": null,
+            "rect": {
+              "x": 1205.5,
+              "y": 518,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 1205.52001953125,
+              "right": 1449.9600830078125,
+              "top": 517.9600219726562,
+              "bottom": 682.9024658203125
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": null,
+            "rect": {
+              "x": 856.3,
+              "y": 142.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 856.3200073242188,
+              "right": 1100.760009765625,
+              "top": 142.57000732421875,
+              "bottom": 308.82196044921875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#2",
+            "role": null,
+            "rect": {
+              "x": 524.6,
+              "y": 142.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 524.5800170898438,
+              "right": 769.02001953125,
+              "top": 142.57000732421875,
+              "bottom": 308.82196044921875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": null,
+            "rect": {
+              "x": 524.6,
+              "y": 325.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 524.5800170898438,
+              "right": 769.02001953125,
+              "top": 325.8999938964844,
+              "bottom": 492.1519470214844
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "acme/vanilla-sdk#11",
+            "role": null,
+            "rect": {
+              "x": 524.6,
+              "y": 552.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 524.5800170898438,
+              "right": 769.02001953125,
+              "top": 552.8800048828125,
+              "bottom": 719.1319580078125
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          }
+        ],
+        "labels": [],
+        "legend": {
+          "hidden": true,
+          "text": "",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": false,
+          "height": 0
+        },
+        "showAll": {
+          "visible": false,
+          "text": "Show all (3)",
+          "height": 0,
+          "width": 0
+        },
+        "applied": [],
+        "chips": 0,
+        "canvasIssueCount": 6,
+        "boardIssueCount": 6
+      },
+      "restored": {
+        "panX": true,
+        "panY": true,
+        "scale": true,
+        "filteredPanDiffered": true,
+        "showAllHidden": true
+      }
+    },
+    {
+      "width": 1280,
+      "path": "sheet-reset",
+      "before": {
+        "exactView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "viewport": {
+          "x": 230,
+          "y": 160,
+          "w": 1050,
+          "h": 740
+        },
+        "scale": 0.873,
+        "pan": {
+          "x": 123.13,
+          "y": -47.87
+        },
+        "focus": null,
+        "canvasFitFloored": false,
+        "canvasFitCount": 0,
+        "dependencyFocusFloored": false,
+        "dependencyFocusCount": 0,
+        "cards": [
+          {
+            "key": "chamberos/platform#1",
+            "role": null,
+            "rect": {
+              "x": 422.8,
+              "y": 190.6,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 422.8399963378906,
+              "right": 667.280029296875,
+              "top": 190.57000732421875,
+              "bottom": 355.512451171875
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#5",
+            "role": null,
+            "rect": {
+              "x": 1435.5,
+              "y": 566,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 1435.52001953125,
+              "right": 1679.9600830078125,
+              "top": 565.9600219726562,
+              "bottom": 730.9024658203125
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": null,
+            "rect": {
+              "x": 1086.3,
+              "y": 190.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 1086.320068359375,
+              "right": 1330.760009765625,
+              "top": 190.57000732421875,
+              "bottom": 356.82196044921875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#2",
+            "role": null,
+            "rect": {
+              "x": 754.6,
+              "y": 190.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 754.5800170898438,
+              "right": 999.02001953125,
+              "top": 190.57000732421875,
+              "bottom": 356.82196044921875
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": null,
+            "rect": {
+              "x": 754.6,
+              "y": 373.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 754.5800170898438,
+              "right": 999.02001953125,
+              "top": 373.8999938964844,
+              "bottom": 540.1519775390625
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "acme/vanilla-sdk#11",
+            "role": null,
+            "rect": {
+              "x": 754.6,
+              "y": 600.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 754.5800170898438,
+              "right": 999.02001953125,
+              "top": 600.8800048828125,
+              "bottom": 767.1319580078125
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          }
+        ],
+        "labels": [],
+        "legend": {
+          "hidden": true,
+          "text": "",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": false,
+          "height": 0
+        },
+        "showAll": {
+          "visible": false,
+          "text": "Show all (3)",
+          "height": 0,
+          "width": 0
+        },
+        "applied": [],
+        "chips": 0,
+        "canvasIssueCount": 6,
+        "boardIssueCount": 6
+      },
+      "applied": {
+        "exactView": {
+          "panX": -380.9433962264151,
+          "panY": -5.580188679245282,
+          "scale": 0.9150943396226415
+        },
+        "viewport": {
+          "x": 230,
+          "y": 160,
+          "w": 1050,
+          "h": 740
+        },
+        "scale": 0.915,
+        "pan": {
+          "x": -380.94,
+          "y": -5.58
+        },
+        "focus": null,
+        "canvasFitFloored": false,
+        "canvasFitCount": 0,
+        "dependencyFocusFloored": false,
+        "dependencyFocusCount": 0,
+        "cards": [
+          {
+            "key": "chamberos/platform#5",
+            "role": null,
+            "rect": {
+              "x": 983.6,
+              "y": 629.8,
+              "w": 256.2,
+              "h": 172.9,
+              "left": 983.5999755859375,
+              "right": 1239.800048828125,
+              "top": 629.800048828125,
+              "bottom": 802.6778564453125
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14.6
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": null,
+            "rect": {
+              "x": 617.6,
+              "y": 236.4,
+              "w": 256.2,
+              "h": 174.3,
+              "left": 617.6000366210938,
+              "right": 873.800048828125,
+              "top": 236.35000610351562,
+              "bottom": 410.6003112792969
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14.6
+          },
+          {
+            "key": "chamberos/platform#2",
+            "role": null,
+            "rect": {
+              "x": 269.9,
+              "y": 236.4,
+              "w": 256.2,
+              "h": 174.3,
+              "left": 269.9000244140625,
+              "right": 526.1000366210938,
+              "top": 236.35000610351562,
+              "bottom": 410.6003112792969
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14.6
+          }
+        ],
+        "labels": [],
+        "legend": {
+          "hidden": true,
+          "text": "",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": false,
+          "height": 0
+        },
+        "showAll": {
+          "visible": false,
+          "text": "Show all (3)",
+          "height": 0,
+          "width": 0
+        },
+        "applied": [
+          "priority:high"
+        ],
+        "chips": 1,
+        "canvasIssueCount": 3,
+        "boardIssueCount": 6
+      },
+      "cleared": {
+        "exactView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "viewport": {
+          "x": 230,
+          "y": 160,
+          "w": 1050,
+          "h": 740
+        },
+        "scale": 0.873,
+        "pan": {
+          "x": 123.13,
+          "y": -47.87
+        },
+        "focus": null,
+        "canvasFitFloored": false,
+        "canvasFitCount": 0,
+        "dependencyFocusFloored": false,
+        "dependencyFocusCount": 0,
+        "cards": [
+          {
+            "key": "chamberos/platform#1",
+            "role": null,
+            "rect": {
+              "x": 422.8,
+              "y": 190.6,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 422.8399963378906,
+              "right": 667.280029296875,
+              "top": 190.57000732421875,
+              "bottom": 355.512451171875
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#5",
+            "role": null,
+            "rect": {
+              "x": 1435.5,
+              "y": 566,
+              "w": 244.4,
+              "h": 164.9,
+              "left": 1435.52001953125,
+              "right": 1679.9600830078125,
+              "top": 565.9600219726562,
+              "bottom": 730.9024658203125
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": null,
+            "rect": {
+              "x": 1086.3,
+              "y": 190.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 1086.320068359375,
+              "right": 1330.760009765625,
+              "top": 190.57000732421875,
+              "bottom": 356.82196044921875
+            },
+            "inside": false,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#2",
+            "role": null,
+            "rect": {
+              "x": 754.6,
+              "y": 190.6,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 754.5800170898438,
+              "right": 999.02001953125,
+              "top": 190.57000732421875,
+              "bottom": 356.82196044921875
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "chamberos/platform#4",
+            "role": null,
+            "rect": {
+              "x": 754.6,
+              "y": 373.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 754.5800170898438,
+              "right": 999.02001953125,
+              "top": 373.8999938964844,
+              "bottom": 540.1519775390625
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          },
+          {
+            "key": "acme/vanilla-sdk#11",
+            "role": null,
+            "rect": {
+              "x": 754.6,
+              "y": 600.9,
+              "w": 244.4,
+              "h": 166.3,
+              "left": 754.5800170898438,
+              "right": 999.02001953125,
+              "top": 600.8800048828125,
+              "bottom": 767.1319580078125
+            },
+            "inside": true,
+            "titleComputedPx": 16,
+            "effectiveTitlePx": 14
+          }
+        ],
+        "labels": [],
+        "legend": {
+          "hidden": true,
+          "text": "",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": false,
+          "height": 0
+        },
+        "showAll": {
+          "visible": false,
+          "text": "Show all (3)",
+          "height": 0,
+          "width": 0
+        },
+        "applied": [],
+        "chips": 0,
+        "canvasIssueCount": 6,
+        "boardIssueCount": 6
+      },
+      "restored": {
+        "panX": true,
+        "panY": true,
+        "scale": true,
+        "filteredPanDiffered": true,
+        "showAllHidden": true
+      }
+    }
+  ],
+  "clearFilterAllPass": true,
+  "sortSheetPass": true,
+  "settingsPass": true,
+  "dragFailure": {
+    "after": {
+      "x": 460,
+      "y": 90
+    },
+    "notice": {
+      "text": "Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.",
+      "error": true
+    },
+    "unhandledRejections": [],
+    "before": {
+      "x": 460,
+      "y": 90
+    },
+    "rejectedRequests": 1,
+    "expectedResourceErrors": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    ],
+    "checks": {
+      "requestRejected": true,
+      "noticeVisible": true,
+      "rollback": true,
+      "noUnhandledRejection": true,
+      "noNewPageError": true,
+      "onlyExpectedConsole": true
+    }
+  },
+  "dragFailurePass": true,
+  "reducedMotion": [
+    {
+      "lang": "en",
+      "early": {
+        "panX": -150,
+        "panY": 281.75,
+        "scale": 0.55
+      },
+      "late": {
+        "panX": -150,
+        "panY": 281.75,
+        "scale": 0.55
+      },
+      "pass": true
+    },
+    {
+      "lang": "fr",
+      "early": {
+        "panX": -150,
+        "panY": 281.75,
+        "scale": 0.55
+      },
+      "late": {
+        "panX": -150,
+        "panY": 281.75,
+        "scale": 0.55
+      },
+      "pass": true
+    }
+  ],
+  "reducedMotionPass": true,
+  "browserInvariants": {
+    "bannedCopy": false,
+    "pictographs": false,
+    "doubledPlus": []
+  },
+  "browserInvariantsPass": true,
+  "cspViolations": [],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failures": {
+    "filters": [],
+    "dependency": [],
+    "spread": []
+  }
+}

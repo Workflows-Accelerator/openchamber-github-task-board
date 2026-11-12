@@ -11,8 +11,8 @@
       "pass": true,
       "titleWidth": 256,
       "rowWidth": 328,
-      "metaTop": 241.5,
-      "mainBottom": 235.5
+      "metaTop": 221.25,
+      "mainBottom": 215.25
     },
     "drawer": {
       "pass": true,
@@ -68,8 +68,8 @@
       "pass": true,
       "titleWidth": 256,
       "rowWidth": 328,
-      "metaTop": 241.5,
-      "mainBottom": 235.5
+      "metaTop": 221.25,
+      "mainBottom": 215.25
     },
     "drawer": {
       "pass": true,
@@ -125,8 +125,8 @@
       "pass": true,
       "titleWidth": 256,
       "rowWidth": 328,
-      "metaTop": 241.5,
-      "mainBottom": 235.5
+      "metaTop": 221.25,
+      "mainBottom": 215.25
     },
     "drawer": {
       "pass": true,
@@ -182,8 +182,8 @@
       "pass": true,
       "titleWidth": 256,
       "rowWidth": 328,
-      "metaTop": 241.5,
-      "mainBottom": 235.5
+      "metaTop": 221.25,
+      "mainBottom": 215.25
     },
     "drawer": {
       "pass": true,
@@ -472,7 +472,7 @@
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 735
     },
     "picker": {
@@ -529,7 +529,7 @@
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 735
     },
     "picker": {
@@ -586,7 +586,7 @@
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 735
     },
     "picker": {
@@ -643,7 +643,7 @@
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 735
     },
     "picker": {
@@ -693,14 +693,14 @@
     },
     "list": {
       "pass": true,
-      "titleWidth": 557,
+      "titleWidth": 598.921875,
       "rowWidth": 1018,
       "metaTop": 239.875,
       "mainBottom": 269.25
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 487
     },
     "picker": {
@@ -750,14 +750,14 @@
     },
     "list": {
       "pass": true,
-      "titleWidth": 578,
+      "titleWidth": 618.09375,
       "rowWidth": 1018,
       "metaTop": 239.875,
       "mainBottom": 269.25
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 487
     },
     "picker": {
@@ -807,14 +807,14 @@
     },
     "list": {
       "pass": true,
-      "titleWidth": 557,
+      "titleWidth": 598.921875,
       "rowWidth": 1018,
       "metaTop": 239.875,
       "mainBottom": 269.25
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 487
     },
     "picker": {
@@ -864,14 +864,14 @@
     },
     "list": {
       "pass": true,
-      "titleWidth": 578,
+      "titleWidth": 618.09375,
       "rowWidth": 1018,
       "metaTop": 239.875,
       "mainBottom": 269.25
     },
     "drawer": {
       "pass": true,
-      "titleWidth": 477,
+      "titleWidth": 406.78125,
       "headWidth": 487
     },
     "picker": {

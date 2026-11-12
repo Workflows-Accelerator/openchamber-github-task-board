@@ -1,0 +1,7862 @@
+{
+  "surfaces": [
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 360,
+          "h": 386,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 360,
+          "h": 438,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 360,
+          "h": 432.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 360,
+          "h": 342,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 381.5,
+          "w": 360,
+          "h": 418.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 360,
+          "h": 210,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 360,
+          "h": 386,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 360,
+          "h": 438,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 360,
+          "h": 432.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 360,
+          "h": 342,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 380.5,
+          "w": 360,
+          "h": 419.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 360,
+          "h": 210,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 360,
+          "h": 386,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 360,
+          "h": 438,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 360,
+          "h": 432.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 360,
+          "h": 342,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 381.5,
+          "w": 360,
+          "h": 418.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 360,
+          "h": 210,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 360,
+          "h": 680,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 360,
+          "h": 386,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 360,
+          "h": 438,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 360,
+          "h": 432.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 360,
+          "h": 342,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 380.5,
+          "w": 360,
+          "h": 419.5,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 360,
+          "h": 210,
+          "right": 360,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 360,
+        "viewportRect": {
+          "x": 0,
+          "w": 360,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 390,
+          "h": 386,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 390,
+          "h": 438,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 390,
+          "h": 432.5,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 390,
+          "h": 342,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 404,
+          "w": 390,
+          "h": 396,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 390,
+          "h": 210,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 390,
+          "h": 386,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 390,
+          "h": 438,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 390,
+          "h": 432.5,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 390,
+          "h": 342,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 404,
+          "w": 390,
+          "h": 396,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 390,
+          "h": 210,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 390,
+          "h": 386,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 390,
+          "h": 438,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 390,
+          "h": 432.5,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 390,
+          "h": 342,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 404,
+          "w": 390,
+          "h": 396,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 390,
+          "h": 210,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 120,
+          "w": 390,
+          "h": 680,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 414,
+          "w": 390,
+          "h": 386,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 362,
+          "w": 390,
+          "h": 438,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 367.5,
+          "w": 390,
+          "h": 432.5,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 458,
+          "w": 390,
+          "h": 342,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 404,
+          "w": 390,
+          "h": 396,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 590,
+          "w": 390,
+          "h": 210,
+          "right": 390,
+          "bottom": 800
+        },
+        "footer": {
+          "bottom": 800,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 390,
+        "viewportRect": {
+          "x": 0,
+          "w": 390,
+          "h": 631
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 514,
+          "w": 768,
+          "h": 386,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 462,
+          "w": 768,
+          "h": 438,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 467.5,
+          "w": 768,
+          "h": 432.5,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 558,
+          "w": 768,
+          "h": 342,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 505,
+          "w": 768,
+          "h": 395,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 690,
+          "w": 768,
+          "h": 210,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 514,
+          "w": 768,
+          "h": 386,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 462,
+          "w": 768,
+          "h": 438,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 467.5,
+          "w": 768,
+          "h": 432.5,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 558,
+          "w": 768,
+          "h": 342,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 505,
+          "w": 768,
+          "h": 395,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 690,
+          "w": 768,
+          "h": 210,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 514,
+          "w": 768,
+          "h": 386,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 462,
+          "w": 768,
+          "h": 438,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 467.5,
+          "w": 768,
+          "h": 432.5,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 558,
+          "w": 768,
+          "h": 342,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 505,
+          "w": 768,
+          "h": 395,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 690,
+          "w": 768,
+          "h": 210,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 135,
+          "w": 768,
+          "h": 765,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 514,
+          "w": 768,
+          "h": 386,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 462,
+          "w": 768,
+          "h": 438,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 467.5,
+          "w": 768,
+          "h": 432.5,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 558,
+          "w": 768,
+          "h": 342,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 505,
+          "w": 768,
+          "h": 395,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 0,
+          "y": 690,
+          "w": 768,
+          "h": 210,
+          "right": 768,
+          "bottom": 900
+        },
+        "footer": {
+          "bottom": 900,
+          "height": 69
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 768,
+        "viewportRect": {
+          "x": 0,
+          "w": 768,
+          "h": 731
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 395,
+          "right": 1264,
+          "bottom": 411
+        },
+        "footer": {
+          "bottom": 410,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 447,
+          "right": 1264,
+          "bottom": 463
+        },
+        "footer": {
+          "bottom": 462,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 441.5,
+          "right": 1264,
+          "bottom": 457.5
+        },
+        "footer": {
+          "bottom": 456.5,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 351,
+          "right": 1264,
+          "bottom": 367
+        },
+        "footer": {
+          "bottom": 366,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 404,
+          "right": 1264,
+          "bottom": 420
+        },
+        "footer": {
+          "bottom": 419,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 211,
+          "right": 1264,
+          "bottom": 227
+        },
+        "footer": {
+          "bottom": 226,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 395,
+          "right": 1264,
+          "bottom": 411
+        },
+        "footer": {
+          "bottom": 410,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 447,
+          "right": 1264,
+          "bottom": 463
+        },
+        "footer": {
+          "bottom": 462,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 441.5,
+          "right": 1264,
+          "bottom": 457.5
+        },
+        "footer": {
+          "bottom": 456.5,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 351,
+          "right": 1264,
+          "bottom": 367
+        },
+        "footer": {
+          "bottom": 366,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 405,
+          "right": 1264,
+          "bottom": 421
+        },
+        "footer": {
+          "bottom": 420,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 211,
+          "right": 1264,
+          "bottom": 227
+        },
+        "footer": {
+          "bottom": 226,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filter tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Settings"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 395,
+          "right": 1264,
+          "bottom": 411
+        },
+        "footer": {
+          "bottom": 410,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Sort tasks"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 447,
+          "right": 1264,
+          "bottom": 463
+        },
+        "footer": {
+          "bottom": 462,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose view"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 441.5,
+          "right": 1264,
+          "bottom": 457.5
+        },
+        "footer": {
+          "bottom": 456.5,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choose project"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 351,
+          "right": 1264,
+          "bottom": 367
+        },
+        "footer": {
+          "bottom": 366,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "New task"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 404,
+          "right": 1264,
+          "bottom": 420
+        },
+        "footer": {
+          "bottom": 419,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 211,
+          "right": 1264,
+          "bottom": 227
+        },
+        "footer": {
+          "bottom": 226,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Remove link?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "filter",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 22,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Filtrer les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "settings",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 868,
+          "right": 1264,
+          "bottom": 884
+        },
+        "footer": {
+          "bottom": 883,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 13,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Paramètres"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "sort",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 395,
+          "right": 1264,
+          "bottom": 411
+        },
+        "footer": {
+          "bottom": 410,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Trier les tâches"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "view",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 447,
+          "right": 1264,
+          "bottom": 463
+        },
+        "footer": {
+          "bottom": 462,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "sheet-close",
+        "controlCount": 7,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir une vue"
+      },
+      "wrap": {
+        "firstId": "sheet-close",
+        "lastId": "sheet-apply"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "project",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 441.5,
+          "right": 1264,
+          "bottom": 457.5
+        },
+        "footer": {
+          "bottom": 456.5,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "repo-search-input",
+        "controlCount": 6,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Choisir un projet"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary sheet-project-done"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "composer",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 351,
+          "right": 1264,
+          "bottom": 367
+        },
+        "footer": {
+          "bottom": 366,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "quick-add-input",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Nouvelle tâche"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "button primary"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "arrange",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 405,
+          "right": 1264,
+          "bottom": 421
+        },
+        "footer": {
+          "bottom": 420,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "button sheet-dismiss",
+        "controlCount": 5,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Arrange cards"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "arrange-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "kind": "relationship",
+      "openGeo": {
+        "open": true,
+        "rect": {
+          "x": 784,
+          "y": 16,
+          "w": 480,
+          "h": 211,
+          "right": 1264,
+          "bottom": 227
+        },
+        "footer": {
+          "bottom": 226,
+          "height": 77
+        },
+        "bodyOverflowY": "auto",
+        "overscroll": "contain",
+        "bodyClass": "sheet-open",
+        "bodyOverflow": "hidden",
+        "scrollY": 0,
+        "documentWidth": 1280,
+        "viewportRect": {
+          "x": 230,
+          "w": 1050,
+          "h": 740
+        },
+        "focusInside": true,
+        "activeId": "wire-confirm-btn",
+        "controlCount": 3,
+        "minControlHeight": 44,
+        "tinyControls": [],
+        "titleText": "Supprimer le lien ?"
+      },
+      "wrap": {
+        "firstId": "button sheet-dismiss",
+        "lastId": "wire-cancel-btn"
+      },
+      "forward": true,
+      "backward": true,
+      "byButton": {
+        "open": false,
+        "bodyClass": "",
+        "restored": true
+      },
+      "byEscape": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "byBackdrop": {
+        "open": false,
+        "bodyClass": ""
+      },
+      "pass": true
+    }
+  ],
+  "nested": {
+    "both": {
+      "open": 2,
+      "body": "sheet-open"
+    },
+    "afterTop": {
+      "open": 1,
+      "body": "sheet-open",
+      "boardOpen": true
+    },
+    "afterLast": {
+      "open": 0,
+      "body": ""
+    },
+    "pass": true
+  },
+  "errors": [],
+  "console": [],
+  "csp": [],
+  "vision": {
+    "platform": "Linux x86_64",
+    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+    "vw": 360,
+    "vh": 800
+  },
+  "summary": {
+    "cases": 128,
+    "passed": 128,
+    "failed": [],
+    "minControlHeightAcross": 44,
+    "nested": {
+      "both": {
+        "open": 2,
+        "body": "sheet-open"
+      },
+      "afterTop": {
+        "open": 1,
+        "body": "sheet-open",
+        "boardOpen": true
+      },
+      "afterLast": {
+        "open": 0,
+        "body": ""
+      },
+      "pass": true
+    },
+    "errors": [],
+    "console": [],
+    "csp": []
+  }
+}
