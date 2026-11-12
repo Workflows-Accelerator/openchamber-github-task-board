@@ -1092,6 +1092,32 @@
         document.body.classList.add('sidebar-collapsed');
       }
     } catch (_) {}
+    syncSidebarToggle();
+  }
+
+  // The rail exists only above the phone breakpoint; on phones the sidebar is
+  // the off-canvas drawer, so its in-drawer button never reads as "expand".
+  function sidebarRailActive() {
+    if (typeof document === 'undefined' || !document.body || !document.body.classList) return false;
+    if (!document.body.classList.contains('sidebar-collapsed')) return false;
+    try {
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') return window.matchMedia('(min-width: 769px)').matches;
+    } catch (_) {}
+    return true;
+  }
+
+  function sidebarToggleLabel(fr) {
+    if (sidebarRailActive()) return fr ? 'Développer la navigation' : 'Expand sidebar';
+    return fr ? 'Réduire la navigation' : 'Collapse sidebar';
+  }
+
+  function syncSidebarToggle() {
+    var btn = $('sidebar-toggle-btn');
+    if (!btn) return;
+    var label = sidebarToggleLabel(getLanguage() === 'fr');
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+    btn.setAttribute('aria-expanded', sidebarRailActive() ? 'false' : 'true');
   }
 
   function toggleSidebarCollapse() {
@@ -1100,6 +1126,7 @@
     try {
       localStorage.setItem('tb_sidebar_collapsed', isCollapsed ? '1' : '0');
     } catch (_) {}
+    syncSidebarToggle();
   }
 
   function renderSkeleton() {
@@ -1172,6 +1199,9 @@
 
   function setSearchQuery(q) {
     state.searchQuery = q || '';
+    // Emptying the search can be the last narrowing to go: return to the
+    // remembered viewport then, as clearing the last filter does.
+    if (state.filterView && !state.viewState.filters.length && !state.searchQuery) state.canvasFitPending = true;
     var input = $('board-search');
     if (input && input.value !== state.searchQuery) {
       input.value = state.searchQuery;
@@ -1730,9 +1760,36 @@
   function boardIsNarrowed() {
     return state.viewState.filters.length > 0 || Boolean(state.searchQuery);
   }
+  // The return view outlives a reload: filters are persisted, so the viewport
+  // they narrowed must be too, or clearing them after a reload would re-frame.
+  var FILTER_VIEW_KEY = 'tb_canvas_filter_view';
+  function saveFilterView() {
+    try {
+      if (state.filterView) localStorage.setItem(FILTER_VIEW_KEY, JSON.stringify(state.filterView));
+      else localStorage.removeItem(FILTER_VIEW_KEY);
+    } catch (error) {}
+  }
+  function readFilterView() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(FILTER_VIEW_KEY));
+      if (saved && typeof saved.panX === 'number' && isFinite(saved.panX) && typeof saved.panY === 'number' && isFinite(saved.panY) &&
+          typeof saved.scale === 'number' && isFinite(saved.scale) && saved.scale >= 0.2 && saved.scale <= 2.5) {
+        return { panX: saved.panX, panY: saved.panY, scale: saved.scale };
+      }
+    } catch (error) {}
+    return null;
+  }
+  state.filterView = readFilterView();
+  // A stored return view with no filter left means the clear happened outside
+  // the canvas (list view) and was never applied: apply it on the next render.
+  if (state.filterView && !state.viewState.filters.length) state.canvasFitPending = true;
+  if (!state.filterView) saveFilterView();
   function rememberView() {
-    if (boardIsNarrowed() && !state.filterView) {
+    // Only a filter frames the canvas; a search alone never moves it, so it
+    // must not capture a return view that a later filter would then keep.
+    if (state.viewState.filters.length > 0 && !state.filterView) {
       state.filterView = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
+      saveFilterView();
     }
     try { localStorage.setItem(VIEW_STATE_KEY, JSON.stringify(state.viewState)); } catch (error) {}
     renderBoard();
@@ -5741,7 +5798,9 @@
     if ($('list-group-toggle')) $('list-group-toggle').hidden = state.activeViewMode === 'canvas';
     if (state.activeViewMode === 'canvas') {
       renderCanvasIssues(issues);
-      if (state.canvasFitPending) {
+      // A pending return view waits for cards: consuming it on an empty render
+      // (board still loading) would leave a stale view for the next filter.
+      if (state.canvasFitPending && !(issues.length === 0 && !boardIsNarrowed() && state.filterView)) {
         state.canvasFitPending = false;
         // A filter is a frame request, never a reason to hide cards that were
         // already on the canvas. Focus keeps its own framing when both apply.
@@ -5753,6 +5812,7 @@
             // had before the first one, instead of framing the whole board.
             var returnView = state.filterView;
             state.filterView = null;
+            saveFilterView();
             state.canvasFitFloored = false;
             state.canvasFitCount = 0;
             applyCanvasView(returnView);
@@ -6104,7 +6164,7 @@
     var dict = I18N[lang] || I18N.en;
     var labels = {
       'sidebar-toggle-btn-compact': fr ? 'Ouvrir la navigation' : 'Toggle navigation',
-      'sidebar-toggle-btn': fr ? 'Réduire la navigation' : 'Collapse sidebar',
+      'sidebar-toggle-btn': sidebarToggleLabel(fr),
       'refresh-btn': fr ? 'Actualiser' : 'Refresh',
       'settings-btn': fr ? 'Paramètres' : 'Settings',
       'lang-switch-btn': fr ? 'Changer de langue' : 'Switch language',
@@ -8249,6 +8309,10 @@
     if (sidebarToggleBtn) {
       sidebarToggleBtn.addEventListener('click', toggleSidebarCollapse);
     }
+    try {
+      var railQuery = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia('(min-width: 769px)') : null;
+      if (railQuery && typeof railQuery.addEventListener === 'function') railQuery.addEventListener('change', syncSidebarToggle);
+    } catch (_) {}
 
     var sidebarToggleBtnCompact = $('sidebar-toggle-btn-compact');
     if (sidebarToggleBtnCompact) {
@@ -8531,6 +8595,8 @@
       isIssueBlocked: isIssueBlocked,
       isIssueDecision: isIssueDecision,
       updateSidebarBadges: updateSidebarBadges,
+      applySidebarState: applySidebarState,
+      toggleSidebarCollapse: toggleSidebarCollapse,
       renderBlockedView: renderBlockedView,
       renderBlockedCard: renderBlockedCard,
       renderDecisionsView: renderDecisionsView,

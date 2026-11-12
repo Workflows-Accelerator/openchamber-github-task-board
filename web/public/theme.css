@@ -368,13 +368,22 @@ p {
     justify-content: center;
   }
 
+  /* The rail keeps its own expand control at the top: once collapsed, nothing
+     else on desktop can reopen it and the collapsed state persists. */
   body.sidebar-collapsed .sidebar-header {
-    padding: 12px 8px;
-    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 6px 12px;
+    justify-content: flex-start;
   }
 
   body.sidebar-collapsed .sidebar .sidebar-toggle-btn {
-    display: none;
+    order: -1;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--fg);
   }
 }
 

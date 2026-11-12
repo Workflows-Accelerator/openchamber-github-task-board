@@ -28,7 +28,7 @@ function browser(storage = {}) {
         add: (v) => classes.add(v),
         remove: (v) => classes.delete(v),
         contains: (v) => classes.has(v),
-        toggle: (v) => (classes.has(v) ? classes.delete(v) : classes.add(v)),
+        toggle: (v) => (classes.has(v) ? (classes.delete(v), false) : (classes.add(v), true)),
       },
       get className() { return Array.from(classes).join(' '); },
       set className(v) { classes.clear(); String(v).split(/\s+/).filter(Boolean).forEach((c) => classes.add(c)); },
@@ -75,15 +75,16 @@ function browser(storage = {}) {
     querySelectorAll: () => [],
     addEventListener(name, fn) { docListeners[name] = fn; },
   };
+  const win = {
+    location: { hash: '' },
+    addEventListener() {},
+    setTimeout: (fn) => fn(),
+    setInterval: (fn) => { intervals.push(fn); return intervals.length; },
+    matchMedia: () => ({ matches: false }),
+  };
   const context = {
     document: doc,
-    window: {
-      location: { hash: '' },
-      addEventListener() {},
-      setTimeout: (fn) => fn(),
-      setInterval: (fn) => { intervals.push(fn); return intervals.length; },
-      matchMedia: () => ({ matches: false }),
-    },
+    window: win,
     navigator: { onLine: true },
     localStorage: {
       getItem: (k) => store.get(k) ?? null,
@@ -103,6 +104,7 @@ function browser(storage = {}) {
     app: context.window.__taskBoard,
     get,
     doc,
+    win,
     docListeners,
     calls,
     intervals,
@@ -699,4 +701,52 @@ test('V4-1c: sort options and the rename action share the 44px control treatment
   assert.ok(Math.round(16 * 0.55) >= 9, 'the card title stays readable at the framing floor');
   const js = fs.readFileSync('web/public/app.js', 'utf8');
   assert.match(js, /class: 'sheet-option'/, 'the sort and view sheet renders the styled option');
+});
+
+test('V4-1d: the collapsed desktop rail keeps a labelled toggle that reopens it', () => {
+  const { app, doc, get, win } = browser({ tb_sidebar_collapsed: '1' });
+  let desktop = true;
+  win.matchMedia = (query) => ({ matches: query === '(min-width: 769px)' ? desktop : false });
+  app.applySidebarState();
+  const toggle = get('sidebar-toggle-btn');
+  assert.equal(doc.body.classList.contains('sidebar-collapsed'), true, 'the persisted preference collapses the rail');
+  assert.equal(toggle.getAttribute('aria-label'), 'Expand sidebar');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+
+  app.toggleSidebarCollapse();
+  assert.equal(doc.body.classList.contains('sidebar-collapsed'), false, 'the rail toggle reopens the sidebar');
+  assert.equal(toggle.getAttribute('aria-label'), 'Collapse sidebar');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+
+  app.toggleSidebarCollapse();
+  desktop = false;
+  app.applySidebarState();
+  assert.equal(toggle.getAttribute('aria-label'), 'Collapse sidebar', 'on a phone the drawer button never claims to expand a rail');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+
+  const css = fs.readFileSync('web/public/theme.css', 'utf8');
+  const rail = css.slice(css.indexOf('@media (min-width: 769px) {'), css.indexOf('\n.sidebar-header {', css.indexOf('@media (min-width: 769px) {')));
+  assert.match(rail, /body\.sidebar-collapsed \.sidebar \.sidebar-toggle-btn \{[^}]*min-height: 44px;/, 'the rail toggle is a 44px target');
+  assert.doesNotMatch(rail, /body\.sidebar-collapsed \.sidebar \.sidebar-toggle-btn \{[^}]*display: none/, 'the rail toggle is never hidden');
+});
+
+test('V4-1d: the return view survives a reload with filters active and is never captured by search alone', () => {
+  const saved = JSON.stringify({ panX: 12.5, panY: -7.25, scale: 0.8 });
+  const reloaded = browser({ openchamber_web_view_state: JSON.stringify({ view: 'simple', filters: ['priority:high'], sort: 'priority' }), tb_canvas_filter_view: saved });
+  assert.deepEqual(JSON.parse(JSON.stringify(reloaded.app.state.filterView)), { panX: 12.5, panY: -7.25, scale: 0.8 }, 'the pre-filter viewport is restored with the persisted filters');
+
+  const orphan = browser({ tb_canvas_filter_view: saved });
+  assert.deepEqual(JSON.parse(JSON.stringify(orphan.app.state.filterView)), { panX: 12.5, panY: -7.25, scale: 0.8 }, 'a return view left by a clear outside the canvas is kept');
+  assert.equal(orphan.app.state.canvasFitPending, true, 'and applied on the next canvas render');
+
+  const invalid = browser({ tb_canvas_filter_view: JSON.stringify({ panX: 1, panY: 2, scale: 9 }) });
+  assert.equal(invalid.app.state.filterView, null, 'an out-of-range stored view is ignored');
+
+  const { app } = browser();
+  app.state.board = null;
+  app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
+  app.state.searchQuery = 'ingress';
+  app.state.filterView = null;
+  app.rememberView();
+  assert.equal(app.state.filterView, null, 'a search alone never frames the canvas, so it captures no return view');
 });
