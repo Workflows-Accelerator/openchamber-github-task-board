@@ -94,6 +94,17 @@ for (const [status, payload, expected] of [[403, { message: 'Resource not access
     });
   });
 }
+test('V4-2 a 410 Gone comment refusal is definite, never an unknown outcome', async () => {
+  await fixture({ commentHook: () => ({ status: 410, payload: { message: 'Issues are disabled for this repo' } }) }, async ({ fake, session }) => {
+    const response = await session.request('/api/issues/1/notes', { method: 'POST', body: { text: 'Issues are disabled here' } });
+    assert.equal(response.status, 404);
+    assert.equal(response.json.error, 'not_found');
+    assert.equal(response.json.noteSent, undefined);
+    assert.match(response.json.message, /not saved/i);
+    assert.doesNotMatch(response.json.message, /outcome unknown/i);
+    assert.equal(fake.state.commentsFor(1).length, 0);
+  });
+});
 test('V4-2 a locked issue is reported as locked, not as a token problem', async () => {
   await fixture({ commentHook: () => ({ status: 403, payload: { message: 'Issue is locked' } }) }, async ({ fake, session }) => {
     const response = await session.request('/api/issues/1/notes', { method: 'POST', body: { text: 'Locked issue note' } });

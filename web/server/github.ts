@@ -141,6 +141,11 @@ function kindForStatus(
     return 'forbidden';
   }
   if (status === 404) return 'not_found';
+  // 410 Gone is a definite refusal: the issue or the repository's issues are no
+  // longer available (GitHub answers 410 when issues are disabled). Without this
+  // it fell through to 'server', so a refused comment was reported as an unknown
+  // write outcome and the user was told to check whether it had been saved.
+  if (status === 410) return 'not_found';
   // GitHub answers a malformed or precondition-carrying request with 400 before
   // it applies anything, so this is a definite refusal, never an unknown write
   // outcome. Reporting it as 'server' turned every rejected write into a 502
