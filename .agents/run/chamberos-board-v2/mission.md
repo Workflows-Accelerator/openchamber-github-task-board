@@ -1,14 +1,16 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `proving` V4-1c (sole active worker `ses_08535601c18ea3729d5baced`); previous independent review CHANGES REQUESTED, F3 FAIL. Write fix remains live `7339629-20261111`, origin/master last confirmed `28af19b`. All issues #53–#71 remain open. Historical entries below are NOT current status; tasks.md and resume-2026-11-12-v4-1c.md are current.
-- **Alignment:** D33–D36 CONFIRMED; D37 framing fallback PROPOSED, not approved. No release of the behavioural fork until explicit user choice; desktop rail reopening choice also unanswered.
+- **State:** `proving` V4 final independent review (sole active worker `ses_e85281d189897ffd77c9fc47`) at cd64af1. Previous review failed; D1–D7 fixes and D38 now await fresh independent verdict. Live still last confirmed `7339629-20261111`; origin/master last confirmed `28af19b`. All #53–#71 open. Historical entries below are NOT current status; tasks.md and resume-2026-11-12-v4-final.md are current.
+- **Alignment:** D33–D38 CONFIRMED by user. D37 readability-first and D38 visible desktop rail toggle approved via render form. Real-phone drag persistence on previous live release confirmed by user. No fresh review verdict yet; no V4 publication.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
 - **Base Commit:** `28af19b` (V4-1 start)
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
 - **Dispatched Sessions:**
-  - `ses_08535601c18ea3729d5baced` V4-1c D1–D7 fixes — RUNNING, sole worker in feat/board-v3; final suites and three smoke runs in progress, await completion wake. Stall diagnosis: root ./explore/oc_admin.sh absent; no second diagnostic call. No duplicate worker.
+  - `ses_e85281d189897ffd77c9fc47` V4 final independent L4 — RUNNING, genius requested, real model verification at completion; review-only app, evidence owned V4-final-L4/.
+  - `ses_07ed8c7e94adb5f03e3f9ddf` V4-1d interrupted-pass recovery — COMPLETED cd64af1 (fix 40cb1d8); 9router/genius verified at completion; manager inspected actual diff and README. Fresh independent verdict pending.
+  - `ses_08535601c18ea3729d5baced` V4-1c — COMPLETED 594cb21 after fixes; subsequent hostile/D38 follow-up INTERRUPTED with dirty app.js/theme.css. Confirmed idle and recovered by V4-1d (not duplicated). 9router/genius verified during failure diagnosis.
   - `ses_30438da1cc925fe4a75bac4d` independent V4-1 L4 — COMPLETED, Spec F3 FAIL / Quality CHANGES REQUESTED, seven defects D1–D7, no fixes.
   - `ses_66ea979b1568bb1ec1c774e2` V4-1b — COMPLETED at 6535937, builder PASS superseded by independent L4 failure.
   - `ses_c643c131b5afe41a0f030ac5` V4-1 — COMPLETED build + self-review at 5e283b7; `9router/genius` verified once.
