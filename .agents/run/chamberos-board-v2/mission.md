@@ -1,14 +1,17 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `building` V4-1 (D35/D36 feedback wave); write fix L4-approved, live `7339629-20261111`, origin/master `28af19b`. All issues #53–#71 remain open. Current dispatch/evidence: resume-2026-11-11-v4.md and tasks.md; historical entries below retained.
-- **Alignment:** `CONFIRMED` (D33–D36, see decisions.md)
+- **State:** `proving` V4-1c (sole active worker `ses_08535601c18ea3729d5baced`); previous independent review CHANGES REQUESTED, F3 FAIL. Write fix remains live `7339629-20261111`, origin/master last confirmed `28af19b`. All issues #53–#71 remain open. Historical entries below are NOT current status; tasks.md and resume-2026-11-12-v4-1c.md are current.
+- **Alignment:** D33–D36 CONFIRMED; D37 framing fallback PROPOSED, not approved. No release of the behavioural fork until explicit user choice; desktop rail reopening choice also unanswered.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
 - **Base Commit:** `28af19b` (V4-1 start)
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
 - **Dispatched Sessions:**
-  - `ses_c643c131b5afe41a0f030ac5` V4-1 sheets/filters/dependencies/branding — RUNNING, sole worker in feat/board-v3. `9router/genius` verified once by assistant session record. Await completion wake; do not poll.
+  - `ses_08535601c18ea3729d5baced` V4-1c D1–D7 fixes — RUNNING, sole worker in feat/board-v3; final suites and three smoke runs in progress, await completion wake. Stall diagnosis: root ./explore/oc_admin.sh absent; no second diagnostic call. No duplicate worker.
+  - `ses_30438da1cc925fe4a75bac4d` independent V4-1 L4 — COMPLETED, Spec F3 FAIL / Quality CHANGES REQUESTED, seven defects D1–D7, no fixes.
+  - `ses_66ea979b1568bb1ec1c774e2` V4-1b — COMPLETED at 6535937, builder PASS superseded by independent L4 failure.
+  - `ses_c643c131b5afe41a0f030ac5` V4-1 — COMPLETED build + self-review at 5e283b7; `9router/genius` verified once.
   - `ses_c34aadb9f369c94af523dadb` task-001 setup + discovery — COMPLETED
 - **GitHub issues (all status:planned, created 2026-11-03):** parent #55; A1 #56, A2 #57, A3 #58, A4 #59, A5 #60; B1 #61, B2 #62, B3 #63, B4 #64; C1 #65, C2 #66, C3 #67, C4 #68; D1 #69, D2 #70, D3 #71. Chain: each step "Blocked by" the previous one (text line; native dependencies not yet set).
 - **Evidence:** explore/discovery.md
