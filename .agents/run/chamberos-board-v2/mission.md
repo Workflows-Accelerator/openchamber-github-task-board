@@ -9,7 +9,7 @@
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
 - **Dispatched Sessions:**
   - `ses_01498c3c4f8c0d6245047a44` V4-2c smoke + npm-test base comparison + evidence commit + hostile review — RUNNING sole worker from b0718cc, brief tasks/wave4c-v4-2-close-evidence-and-hostile.md. Next: independent L4 of d1eef33..HEAD, then release.
-  - `ses_8265220b99cc6ff4ee784a4c` V4-2b — ENDED: committed 5430f36 + b0718cc; evidence and post-fix smoke left unfinished.
+  - `ses_8265220b99cc6ff4ee784a4c` V4-2b — DONE: 5430f36 source, b0718cc tests, aa9e1e3 evidence; smoke EXIT 0 6m11.8s; framing failures proven stale pre-D37 probe; npm test not green (panel-only, suspected flake, unproven).
   - `ses_9e0d1c9ef4415dc77f472bbf` V4-2 first attempt — ABANDONED (idle, no commit): 7 modified files, 3 new tests, evidence dir; smoke run cut by a 240 s tool timeout; two 360 px framing probes failing. Not resumed (a finished session cannot be prompted); recovered, not duplicated.
   - `ses_f35e847135ddf8c8b3dd21b2` V4 release — COMPLETED, LIVE `26fbc00-20261112`, 11/11 assets byte-identical, health 200, rollbacks intact; manager pushed origin/master `28af19b..d1eef33`.
   - `ses_a5380706cd701b2303be374f` targeted independent review — COMPLETED 26fbc00, SPEC PASS / QUALITY APPROVED within D39 scope (R1 20 complete/12 honest, R2 14/14).

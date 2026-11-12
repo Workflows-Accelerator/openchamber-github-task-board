@@ -8,8 +8,16 @@
 - Five earlier releases still pass their checksums. Rollback to `7339629-20261111` documented in `verifications/26fbc00-20261112/release-receipt.md`.
 - Receipts: approval https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/55#issuecomment-6829668305 · release https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/55#issuecomment-6830620985
 
+## V4-2 commits on feat/board-v3 (local, unreleased)
+- `5430f36` source: web/public/app.js, index.html, theme.css, web/server/app.ts, board.ts, github.ts.
+- `b0718cc` tests: fake-github.mjs + v4-2-client / v4-2-decisions / v4-2-notes.
+- `aa9e1e3` evidence: verifications/V4-2/ (410 files, README + logs + screenshots + JSON).
+- README verdicts: framing failures are a stale pre-D37 probe, proven by ancestry (`6535937` predates `38f6572`) and by a new promise probe (12/12, real clicks, D39 legend, Show all reaching 0.315/0.344 with 4/4 inside). `npm test` still not green: 617/618 then 615/618, panel-only, different failures, called flaky but unproven.
+- Worker found and fixed 4 real defects on its own hostile pass: locked-issue message, 403 collapsing to link-permission copy, `-  :: gist` turning the separator into a label, missing quoted-marker test.
+
 ## Active
-- Sole worker `ses_9e0d1c9ef4415dc77f472bbf` (first attempt) ended IDLE without committing. Its work is on disk, unverified: 7 modified files (`web/public/app.js`, `index.html`, `theme.css`, `web/server/app.ts`, `board.ts`, `github.ts`, `web/tests/fake-github.mjs`), three new test files, and `verifications/V4-2/` with 12 browser cases, 48 screenshots, measurements and logs.
+- Sole worker `ses_01498c3c4f8c0d6245047a44` (V4-2c, brief `tasks/wave4c-v4-2-close-evidence-and-hostile.md`): proves or disproves the npm-test flakiness by running the panel suite at HEAD and on a detached `d1eef33` worktree, then runs a hostile review of 5430f36+b0718cc with fixes only where genuinely broken. Its brief was written before `aa9e1e3` existed, so it expects uncommitted evidence; it must not rewrite history or discard the committed evidence.
+- Next: independent L4 of `d1eef33..HEAD` with `tasks/wave4d-v4-2-independent-L4.md` (fill the HEAD SHA at dispatch), then release per `tasks/wave3e-v4-release.md`.
 - Its own numbers: web tests 666/666 pass; a 12-case browser probe pass with note marker `<!-- board-note: 1 -->`, append-only comments, reload survival, retry-on-failure keeping text, lost-response reconciliation, 18 conditional comment requests and no extra render requests; Decisions Markdown with no raw markers and legacy free text still saved.
 - Two unresolved 360 px probes FAILED with `zoomAfterFit:0.55`, `neighbourhoodInside:false`, `filteredAllInside:false`, `cardsUnderHud`. The pattern looks like an old probe asserting pre-D37 containment at the readable floor — plausible, not proven.
 - The final delivery smoke was killed by a 240 s tool timeout and left an empty log.
