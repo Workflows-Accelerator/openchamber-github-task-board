@@ -40,12 +40,16 @@ import {
   buildBoardList,
   buildBoardListItem,
   buildIssueDetail,
+  buildNoteCommentBody,
   issueFingerprint,
   issueKey,
   labelNames,
+  NOTE_MAX_LENGTH,
+  parseIssueNotes,
   parseWebHumanTasks,
   statusLabelOf,
   toggleHumanTaskInMarkdown,
+  type IssueNoteView,
 } from './board.ts';
 
 export interface BoardServerOptions {
@@ -864,6 +868,15 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       });
     }
 
+    const noteMatch = /^\/api\/issues\/([^/]+)\/notes$/.exec(route);
+    if (noteMatch) {
+      if (method !== 'POST') return methodNotAllowed('POST');
+      requireCsrf(req, record);
+      const number = parseIssueNumberOrThrow(noteMatch[1]);
+      const body = await readJsonBody(req);
+      return createIssueNote(repository!, number, body);
+    }
+
     const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(route);
     if (detailMatch) {
       if (method === 'GET') {
@@ -877,10 +890,26 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
         read.item.blockedBy = deps.blockedBy;
         read.item.blocking = deps.blocking;
+        const detail = buildIssueDetail(read.item, repository);
+        // A note read adds one conditional request. A failure degrades the
+        // note surface instead of failing the whole drawer read.
+        let notesDegraded = false;
+        try {
+          const notes = await readIssueNotes(repository!, number, { commentCount: read.item.comments, timeoutMs: 5000 });
+          detail.notes = notes.notes;
+          detail.noteCount = notes.noteCount;
+          detail.noteCountPartial = notes.noteCountPartial;
+        } catch {
+          notesDegraded = true;
+          detail.notes = [];
+          detail.noteCount = 0;
+          detail.noteCountPartial = false;
+        }
+        if (notesDegraded) detail.notesDegraded = true;
         return {
           status: 200,
           body: {
-            issue: buildIssueDetail(read.item, repository),
+            issue: detail,
             fetchedAt: new Date(now()).toISOString(),
             statusOptions: statusOptions(),
           },
@@ -1240,6 +1269,82 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   const inFlightBoards = new Map<string, Promise<any>>();
   const inFlightClosed = new Map<string, Promise<CachedRepoClosed>>();
 
+  // ==========================================
+  // Notes: a note is a GitHub issue comment, so reading one always means reading
+  // that issue's comments. The read is conditional (If-None-Match), cached per
+  // issue and singleflight-deduplicated, so reopening a task revalidates a page
+  // instead of downloading it and an unchanged page costs no rate-limit budget.
+  // Nothing here polls: a read happens only when a drawer is opened or a note is
+  // sent, and the board's own list request is never extended by note support.
+  // ==========================================
+  interface CachedIssueNotes {
+    notes: IssueNoteView[];
+    noteCount: number;
+    noteCountPartial: boolean;
+    etag: string | null;
+    page: number;
+    cachedAt: number;
+  }
+  const NOTES_PER_PAGE = 100;
+  const NOTES_SHOWN = 20;
+  const issueNotesCache = new Map<string, CachedIssueNotes>();
+  const inFlightNotes = new Map<string, Promise<CachedIssueNotes>>();
+
+  function notesCacheKey(repository: RepositoryEntry, number: number): string {
+    return `${repository.full.toLowerCase()}#${number}`;
+  }
+
+  async function readIssueNotes(
+    repository: RepositoryEntry,
+    number: number,
+    opts: { forceRefresh?: boolean; timeoutMs?: number; commentCount?: number } = {},
+  ): Promise<CachedIssueNotes> {
+    const key = notesCacheKey(repository, number);
+    const version = repositoryCacheVersions.get(repository.full) || 0;
+    const pageNumber = Math.max(1, Math.ceil((opts.commentCount || 0) / NOTES_PER_PAGE));
+    const flightKey = `${key}:${pageNumber}`;
+    const previous = issueNotesCache.get(key);
+    const cached = previous?.page === pageNumber ? previous : undefined;
+    if (!opts.forceRefresh) {
+      const existing = inFlightNotes.get(flightKey);
+      if (existing) return existing;
+    }
+    const run = async (): Promise<CachedIssueNotes> => {
+      const client = clientFor(repository, opts.timeoutMs);
+      const page = await client.listIssueComments(number, {
+        ifNoneMatch: opts.forceRefresh ? null : cached?.etag ?? null,
+        perPage: NOTES_PER_PAGE,
+        page: pageNumber,
+      });
+      if (page.notModified && cached) {
+        cached.cachedAt = now();
+        return cached;
+      }
+      // Every comment can carry at most one note, so counting the parsed page
+      // is the exact note count for the page that was read.
+      const all = parseIssueNotes(page.items, page.items.length);
+      const entry: CachedIssueNotes = {
+        notes: all.slice(0, NOTES_SHOWN),
+        noteCount: all.length,
+        // A full page means older comments may hold further notes: the count is
+        // then a floor, never presented as exact.
+        noteCountPartial: pageNumber > 1 || page.items.length >= NOTES_PER_PAGE,
+        etag: page.etag,
+        page: pageNumber,
+        cachedAt: now(),
+      };
+      if ((repositoryCacheVersions.get(repository.full) || 0) === version) issueNotesCache.set(key, entry);
+      return entry;
+    };
+    const promise = run();
+    inFlightNotes.set(flightKey, promise);
+    try {
+      return await promise;
+    } finally {
+      if (inFlightNotes.get(flightKey) === promise) inFlightNotes.delete(flightKey);
+    }
+  }
+
   async function checkDependencyCycle(
     startNumber: number,
     startRepo: RepositoryEntry,
@@ -1370,6 +1475,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
 
       const { issues, excluded } = buildBoardList(listed.items, repository);
+      for (const row of issues) {
+        const notes = issueNotesCache.get(notesCacheKey(repository, row.number));
+        if (notes) Object.assign(row, { noteCount: notes.noteCount, noteCountPartial: notes.noteCountPartial });
+      }
       if ((repositoryCacheVersions.get(key) || 0) === version) repoBoardCache.set(key, {
         issues,
         excluded,
@@ -1943,6 +2052,169 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       },
       headers: { 'set-cookie': buildSessionCookie(created.cookieValue, created.maxAgeSeconds) },
     };
+  }
+
+  // A note is append-only: it never edits, replaces or deletes a comment, so it
+  // carries no fingerprint precondition and cannot conflict with a concurrent
+  // body edit. The GitHub comment is the only stored copy; the response is built
+  // from a read-back of that comment, never from what the request intended.
+  async function createIssueNote(
+    repository: RepositoryEntry,
+    number: number,
+    body: any,
+  ): Promise<HandlerResponse> {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new HttpError(400, 'invalid_note', 'A note is required');
+    }
+    const text = typeof body.text === 'string' ? body.text.trim() : '';
+    if (!text) {
+      throw new HttpError(400, 'invalid_note', 'Write the note before sending it');
+    }
+    if (text.length > NOTE_MAX_LENGTH) {
+      throw new HttpError(400, 'note_too_long', `A note cannot exceed ${NOTE_MAX_LENGTH} characters`);
+    }
+    const commentBody = buildNoteCommentBody(text, body.language === 'fr' ? 'fr' : 'en');
+
+    const runLocked = async (): Promise<HandlerResponse> => {
+      const target = await resolveRepository(repository.owner, repository.name);
+      const github = clientFor(target);
+      // Read dependency context before the append. A failed context read must
+      // not turn existing wires into an invented empty set in the response.
+      const [fresh, dependencies] = await Promise.all([
+        github.getIssue(number),
+        github.getIssueDependencies(number),
+      ]).catch(mapGitHubError);
+      if (fresh.item.pull_request) {
+        throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
+      }
+
+      let created: { item: any; etag: string | null };
+      try {
+        created = await github.createIssueComment(number, commentBody);
+      } catch (error) {
+        if (error instanceof GitHubError) {
+          if (error.kind === 'unauthorized') {
+            throw new HttpError(
+              403,
+              'note_forbidden',
+              'GitHub refused permission to comment on this issue; the note was not saved',
+            );
+          }
+          if (error.kind === 'forbidden') {
+            // A locked issue is also a 403. Saying "permission" there would send
+            // the user to retry a token that is fine, so the upstream reason is
+            // reported as its own state.
+            const upstream = typeof error.data?.message === 'string' ? error.data.message.trim() : '';
+            if (/locked/i.test(upstream)) {
+              throw new HttpError(
+                403,
+                'note_locked',
+                'This issue is locked on GitHub, so the note was not saved',
+              );
+            }
+            throw new HttpError(
+              403,
+              'note_forbidden',
+              'GitHub refused permission to comment on this issue; the note was not saved',
+            );
+          }
+          if (error.kind === 'not_found') {
+            throw new HttpError(
+              404,
+              'not_found',
+              'GitHub no longer offers this issue; the note was not saved',
+            );
+          }
+          if (error.kind === 'rate_limited') {
+            mapGitHubError(error);
+          }
+          if (error.kind === 'invalid') {
+            const upstreamErrors = Array.isArray(error.data?.errors) ? error.data.errors : [];
+            const upstreamError = upstreamErrors.find(
+              (entry: any) => typeof entry === 'string' && entry.trim(),
+            );
+            const upstreamMessage = typeof error.data?.message === 'string' ? error.data.message.trim() : '';
+            const reason = upstreamError || upstreamMessage || 'GitHub rejected the comment';
+            throw new HttpError(400, 'invalid_note', `GitHub rejected the note; nothing was saved (${reason})`);
+          }
+        }
+        // GitHub never answered, so the note may or may not exist. Say exactly
+        // that instead of a generic "outcome unknown".
+        throw new HttpError(
+          502,
+          'note_outcome_unknown',
+          'The note did not reach a confirmed state on GitHub; nothing here claims it was saved.',
+          { noteSent: true },
+        );
+      }
+
+      invalidateRepositoryCaches([target.full]);
+      // The issue read above predates the new comment, so the row's comment
+      // count is advanced by exactly the comment that was just created.
+      const previousComments = typeof fresh.item.comments === 'number' && Number.isFinite(fresh.item.comments)
+        ? fresh.item.comments
+        : 0;
+      // Re-read the issue count: GitHub comment lists are ascending and do not
+      // support sort/direction. Select the final page using the current count,
+      // but never trust a re-read that is older than the comment just created.
+      const afterComment = await github.getIssue(number).catch(() => null);
+      const afterComments = afterComment && typeof afterComment.item.comments === 'number' && Number.isFinite(afterComment.item.comments)
+        ? afterComment.item.comments
+        : 0;
+      const expectedComments = Math.max(afterComments, previousComments + 1);
+      let readBack: CachedIssueNotes;
+      try {
+        readBack = await readIssueNotes(target, number, { forceRefresh: true, commentCount: expectedComments });
+      } catch {
+        throw new HttpError(
+          502,
+          'note_outcome_unknown',
+          'The note was sent, but the board could not read it back from GitHub; refresh the task to see whether it is there.',
+          { noteSent: true },
+        );
+      }
+      const saved = readBack.notes.find((note) => note.id === created.item.id);
+      if (!saved) {
+        throw new HttpError(
+          502,
+          'note_outcome_unknown',
+          'GitHub accepted the note but does not list it back yet; refresh the task to see whether it is there.',
+          { noteSent: true },
+        );
+      }
+
+      const item = {
+        ...(afterComment?.item ?? fresh.item),
+        comments: Math.max(expectedComments, readBack.noteCount),
+        blockedBy: dependencies.blockedBy,
+        blocking: dependencies.blocking,
+      };
+      const detail = buildIssueDetail(item, target);
+      detail.notes = readBack.notes;
+      detail.noteCount = readBack.noteCount;
+      detail.noteCountPartial = readBack.noteCountPartial;
+      log(`write note issue=${number} comment=${created.item.id}`);
+      return {
+        status: 201,
+        body: {
+          issue: detail,
+          listItem: { ...buildBoardListItem(item, target), noteCount: readBack.noteCount, noteCountPartial: readBack.noteCountPartial },
+          note: saved,
+          notes: readBack.notes,
+          noteCount: readBack.noteCount,
+          noteCountPartial: readBack.noteCountPartial,
+          savedAt: new Date(now()).toISOString(),
+          statusOptions: statusOptions(),
+        },
+      };
+    };
+
+    const touched = new Set<string>([repository.full]);
+    try {
+      return await withIssueLock(issueKey(repository, number), runLocked);
+    } finally {
+      invalidateRepositoryCaches(touched);
+    }
   }
 
   async function writeIssue(

@@ -635,6 +635,49 @@ export class GitHubClient {
     return { item: data, etag: headers.get('etag') };
   }
 
+  // Issue comments are the transport for the board's quick notes. The read is
+  // conditional so reopening a task never re-downloads an unchanged page, and
+  // an unchanged page costs no rate-limit budget on GitHub.
+  async listIssueComments(
+    number: unknown,
+    options: { ifNoneMatch?: string | null; perPage?: number; page?: number } = {},
+  ): Promise<{ items: any[]; etag: string | null; notModified: boolean }> {
+    const safeNumber = parseIssueNumber(number);
+    const requested = Number(options.perPage ?? 50);
+    const perPage = Number.isFinite(requested) ? Math.min(Math.max(Math.trunc(requested), 1), 100) : 50;
+    const { status, headers, data } = await this.request(
+      `${this.issuesBase()}/issues/${safeNumber}/comments?per_page=${perPage}&page=${Math.max(1, Math.trunc(options.page ?? 1))}`,
+      { ifNoneMatch: options.ifNoneMatch ?? null },
+    );
+    if (status === 304) {
+      return { items: [], etag: options.ifNoneMatch ?? null, notModified: true };
+    }
+    if (!Array.isArray(data)) {
+      throw new GitHubError('server', 200, 'GitHub comment response was malformed');
+    }
+    return { items: data, etag: headers.get('etag'), notModified: false };
+  }
+
+  // A note is an append-only comment: no field of the issue is rewritten, so
+  // no fingerprint precondition applies and no existing comment is touched.
+  async createIssueComment(
+    number: unknown,
+    body: string,
+  ): Promise<{ item: any; etag: string | null }> {
+    const safeNumber = parseIssueNumber(number);
+    if (typeof body !== 'string' || !body.trim()) {
+      throw new GitHubError('invalid', 0, 'A comment body is required');
+    }
+    const { data, headers } = await this.request(`${this.issuesBase()}/issues/${safeNumber}/comments`, {
+      method: 'POST',
+      body: { body },
+    });
+    if (!data || typeof data !== 'object' || Array.isArray(data) || typeof data.id !== 'number') {
+      throw new GitHubError('server', 200, 'GitHub comment response was malformed');
+    }
+    return { item: data, etag: headers.get('etag') };
+  }
+
   async getIssueDependencies(number: unknown): Promise<{ blockedBy: any[]; blocking: any[] }> {
     const safeNumber = parseIssueNumber(number);
     const [blockedByRes, blockingRes] = await Promise.all([

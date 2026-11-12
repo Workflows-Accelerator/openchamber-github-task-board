@@ -3652,3 +3652,36 @@ body.sheet-open { overflow: hidden; }
 .legend-direction { display: block; flex: none; }
 .legend-offscreen { flex: 0 0 100%; margin: 0; color: var(--fg-muted); }
 .legend-show-all { width: 100%; }
+
+/* GitHub agent notes are activity, never canvas sticky notes. */
+.agent-notes { background: var(--surf); }
+.agent-notes h2 { margin: 0; }
+.agent-notes > .row { margin-bottom: 8px; }
+.agent-note-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-variant-numeric: tabular-nums; }
+.agent-note-entry { padding: 8px 0; overflow-wrap: anywhere; }
+.agent-note-body > :last-child { margin-bottom: 0; }
+.agent-note-older { border-top: 1px solid var(--border); }
+.agent-note-older summary, .question-other-answer summary { cursor: pointer; padding: 12px 0; min-height: 44px; }
+#agent-note-composer label { display: block; margin-bottom: 6px; }
+#agent-note-text { width: 100%; min-height: 88px; resize: vertical; }
+#agent-note-status:empty { display: none; }
+.note-count, .comment-count { font-variant-numeric: tabular-nums; }
+#agent-note-composer button, .drawer-add-note-btn { min-height: 44px; }
+.question-text, .decision-question-text { overflow-wrap: anywhere; }
+.question-text > :first-child, .decision-question-text > :first-child { margin-top: 0; }
+.question-options { display: grid; gap: 8px; margin: 12px 0; }
+.question-option-card { border: 1px solid var(--border-strong); border-radius: var(--rad); padding: 0 12px 8px; background: var(--surf); }
+.question-option-card:has(input:checked) { border-color: var(--prim); background: var(--prim-subtle); }
+.question-option-card:focus-within { outline: 2px solid var(--prim); outline-offset: 2px; }
+.question-option-select { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.question-option-select input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: var(--prim); }
+.question-option-label { font-weight: 600; }
+.question-option-label p, .question-option-gist p { margin: 0; }
+.question-option-gist { margin-left: 28px; color: var(--fg-muted); font-size: 0.875rem; }
+.question-option-disclosure { margin: 6px 0 0 28px; min-height: 44px; }
+.question-option-details { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; }
+.question-other-answer { flex-basis: 100%; }
+.question-other-answer input { width: 100%; }
+.question-submit-status { flex-basis: 100%; }
+.question-actions .button { min-height: 44px; }
+.question-actions { align-items: start; }

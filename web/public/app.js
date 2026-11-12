@@ -157,7 +157,7 @@
       state.board.issues = state.board.issues.map(function (row) {
         if (!sameIdentity(row, issue)) return row;
         var current = response.issue;
-        return Object.assign({}, row, current, {
+        return Object.assign({}, row, current, response.listItem || {}, {
           pendingItems: (current.humanTasks || []).concat(current.openQuestions || []).map(function (item) {
             return { text: item.text, completed: item.completed };
           }),
@@ -172,6 +172,9 @@
     }
     if (generation !== state.readGeneration || !state.detail || !sameIdentity(state.detail, issue)) return false;
     state.detail = response.issue;
+    if (response.issue.notes === undefined && issue.notes !== undefined) {
+      ['notes', 'noteCount', 'noteCountPartial', 'notesDegraded'].forEach(function (field) { state.detail[field] = issue[field]; });
+    }
     state.statusOptions = response.statusOptions;
     state.conflict = false;
     renderDetail(false);
@@ -296,6 +299,9 @@
     if (!Array.isArray(issue.openQuestions) || !issue.openQuestions.every(function (question, index) {
       if (!question || typeof question !== 'object' || Array.isArray(question) ||
           question.index !== index || typeof question.text !== 'string' || typeof question.completed !== 'boolean') return false;
+      if (question.options !== undefined && (!Array.isArray(question.options) || !question.options.every(function (option) {
+        return option && typeof option === 'object' && typeof option.label === 'string' && typeof option.gist === 'string' && typeof option.details === 'string';
+      }))) return false;
       return question.completed ? question.answerIndex === null : question.answerIndex === answerIndex++;
     })) return false;
     if (![issue.humanTasks, issue.acceptanceCriteria, issue.subtasks].every(function (items) {
@@ -308,6 +314,10 @@
       return option && typeof option === 'object' && !Array.isArray(option) &&
         typeof option.value === 'string' && typeof option.label === 'string';
     })) return false;
+    if (issue.notes !== undefined && (!Array.isArray(issue.notes) || !issue.notes.every(function (note) {
+      return note && typeof note === 'object' && Number.isSafeInteger(note.id) && note.id > 0 && typeof note.text === 'string' && typeof note.author === 'string' &&
+        (note.createdAt === null || typeof note.createdAt === 'string') && (note.url === null || typeof note.url === 'string');
+    }))) return false;
     if (payload.blockedBy !== undefined && !Array.isArray(payload.blockedBy)) return false;
     if (payload.blocking !== undefined && !Array.isArray(payload.blocking)) return false;
     return true;
@@ -418,6 +428,13 @@
         });
       }
 
+      // A note refusal has its own cause (permission or a locked issue) and its
+      // own sentence; collapsing it into the generic link-permission error
+      // would tell the user to check the token for a lock they cannot unlock.
+      if (payload && (payload.error === 'note_forbidden' || payload.error === 'note_locked')) {
+        throw new ApiError(payload.error, response.status, payload);
+      }
+
       if (response.status === 403 || (payload && (payload.error === 'github_forbidden' || payload.error === 'forbidden'))) {
         throw new ApiError('github_forbidden', response.status, {
           error: 'github_forbidden',
@@ -430,6 +447,10 @@
       // the write. Keep the cause instead of collapsing it into "outcome
       // unknown", which would tell the user to refresh and retry blindly.
       if (payload && (payload.error === 'github_unauthorized' || payload.error === 'github_rate_limited')) {
+        throw new ApiError(payload.error, response.status, payload);
+      }
+
+      if (payload && payload.error === 'note_outcome_unknown') {
         throw new ApiError(payload.error, response.status, payload);
       }
 
@@ -472,7 +493,7 @@
 
   function clearRenderedData() {
     getResponses.clear();
-    ['task-list', 'detail-meta', 'question-list', 'human-list', 'ac-list', 'subtasks-list', 'filter-chips', 'repo-options-list'].forEach(function (id) {
+    ['task-list', 'detail-meta', 'question-list', 'human-list', 'ac-list', 'subtasks-list', 'filter-chips', 'repo-options-list', 'agent-note-activity'].forEach(function (id) {
       var node = document.getElementById(id);
       if (node) node.textContent = '';
     });
@@ -486,6 +507,9 @@
     if (drafts) { drafts.textContent = ''; drafts.hidden = true; }
     var statusSelect = document.getElementById('status-select');
     if (statusSelect) statusSelect.textContent = '';
+    if (agentNoteDrafts) agentNoteDrafts.clear();
+    var agentText = document.getElementById('agent-note-text');
+    if (agentText) agentText.value = '';
     var overview = document.getElementById('overview-text');
     if (overview) overview.value = '';
     var count = document.getElementById('board-count');
@@ -745,6 +769,23 @@
       arrange_confirm: 'Arrange',
       arrange_cancel: 'Cancel',
       drawer_add_note: 'Add note',
+      agent_note_too_long: 'GitHub notes are limited to 4,000 characters. Shorten your text and retry.',
+      agent_note_rate_limited: 'GitHub is limiting requests. Your text is kept. Wait before retrying.',
+      agent_note_add: 'Note for the agent', agent_notes_title: 'Agent notes',
+      agent_note_label: 'Comment on this GitHub issue',
+      agent_note_hint: 'Saved as a GitHub comment, not a canvas sticky. Ctrl/Cmd+Enter sends.',
+      agent_note_send: 'Send note', agent_note_cancel: 'Cancel', agent_note_retry: 'Retry',
+      agent_note_sending: 'Sending note…', agent_note_saved: 'Note saved on GitHub.',
+      agent_note_empty: 'No agent notes yet.', agent_note_unavailable: 'GitHub comments could not be read. Reopen this task to retry.',
+      agent_note_failed: 'The note could not be saved on GitHub. Your text is kept. Retry when connected.',
+      agent_note_rejected: 'GitHub rejected the note; nothing was saved. Your text is kept.',
+      agent_note_not_found: 'This issue no longer exists on GitHub; nothing was saved. Your text is kept.',
+      agent_note_check_failed: 'The note was sent, but GitHub could not confirm it. Your text is kept. Retry checks GitHub before sending again.',
+      agent_note_missing: 'GitHub does not list the note yet. Your text is kept. Retrying may create a duplicate.',
+      agent_note_forbidden: 'GitHub refused permission to comment. Your text is kept. Check the token permissions before retrying.',
+      agent_note_locked: 'This issue is locked on GitHub, so the note was not saved. Your text is kept.',
+      question_details: 'Details', question_other: 'Write another answer',
+      question_answer: 'Answer this question', question_required: 'Choose an option or write an answer first.',
       note_add: 'Add note',
       note_delete: 'Delete note',
       note_delete_confirm: 'Delete note?',
@@ -930,6 +971,23 @@
       arrange_confirm: 'Organiser',
       arrange_cancel: 'Annuler',
       drawer_add_note: 'Ajouter une note',
+      agent_note_too_long: 'Les notes GitHub sont limitées à 4 000 caractères. Raccourcissez le texte puis réessayez.',
+      agent_note_rate_limited: 'GitHub limite les requêtes. Votre texte est conservé. Patientez avant de réessayer.',
+      agent_note_add: 'Note pour l’agent', agent_notes_title: 'Notes pour l’agent',
+      agent_note_label: 'Commentaire sur ce ticket GitHub',
+      agent_note_hint: 'Enregistré comme commentaire GitHub, pas comme note du canevas. Ctrl/Cmd+Entrée envoie.',
+      agent_note_send: 'Envoyer la note', agent_note_cancel: 'Annuler', agent_note_retry: 'Réessayer',
+      agent_note_sending: 'Envoi de la note…', agent_note_saved: 'Note enregistrée sur GitHub.',
+      agent_note_empty: 'Aucune note pour l’agent.', agent_note_unavailable: 'Lecture des commentaires GitHub impossible. Rouvrez ce ticket pour réessayer.',
+      agent_note_failed: 'Enregistrement de la note sur GitHub impossible. Votre texte est conservé. Réessayez une fois connecté.',
+      agent_note_rejected: 'GitHub a refusé la note ; rien n’a été enregistré. Votre texte est conservé.',
+      agent_note_not_found: 'Ce ticket n’existe plus sur GitHub ; rien n’a été enregistré. Votre texte est conservé.',
+      agent_note_check_failed: 'La note a été envoyée, mais GitHub ne la confirme pas. Votre texte est conservé. Réessayer vérifie GitHub avant un nouvel envoi.',
+      agent_note_missing: 'GitHub ne liste pas encore la note. Votre texte est conservé. Un nouvel envoi peut créer un doublon.',
+      agent_note_forbidden: 'GitHub refuse le commentaire. Votre texte est conservé. Vérifiez les permissions du jeton avant de réessayer.',
+      agent_note_locked: 'Ce ticket est verrouillé sur GitHub ; la note n’a pas été enregistrée. Votre texte est conservé.',
+      question_details: 'Détails', question_other: 'Écrire une autre réponse',
+      question_answer: 'Répondez à cette question', question_required: 'Choisissez une option ou écrivez une réponse.',
       note_add: 'Ajouter une note',
       note_delete: 'Supprimer la note',
       note_delete_confirm: 'Supprimer la note ?',
@@ -1231,7 +1289,14 @@
   function saveCachedBoard(board) {
     try {
       if (board && Array.isArray(board.issues) && board.repo !== 'Offline local drafts') {
-        localStorage.setItem(CACHED_BOARD_KEY, JSON.stringify(board));
+        // Saved agent notes are fetched from GitHub, never persisted in the
+        // board's offline snapshot. Only ordinary issue data/counts are cached.
+        var snapshot = Object.assign({}, board, { issues: board.issues.map(function (issue) {
+          var row = Object.assign({}, issue);
+          delete row.notes;
+          return row;
+        }) });
+        localStorage.setItem(CACHED_BOARD_KEY, JSON.stringify(snapshot));
       }
     } catch (e) {}
   }
@@ -2400,6 +2465,8 @@
     if (issue.repository && (!state.selected || state.selected === 'all')) {
       metaChildren.push(el('span', { class: 'badge repo-badge', text: shortName(issue.repository.full), title: issue.repository.full }));
     }
+    if (typeof issue.noteCount === 'number' && (issue.noteCount > 0 || issue.noteCountPartial)) metaChildren.push(el('span', { class: 'badge note-count', text: issue.noteCount + (issue.noteCountPartial ? '+' : '') + (getLanguage() === 'fr' ? (issue.noteCount === 1 && !issue.noteCountPartial ? ' note pour l’agent' : ' notes pour l’agent') : (issue.noteCount === 1 && !issue.noteCountPartial ? ' agent note' : ' agent notes')) }));
+    else if (issue.commentCount > 0) metaChildren.push(el('span', { class: 'badge comment-count', text: issue.commentCount + (getLanguage() === 'fr' ? (issue.commentCount === 1 ? ' commentaire' : ' commentaires') : (issue.commentCount === 1 ? ' comment' : ' comments')) }));
     if (countOf(issue, 'openQuestions')) {
       var qn = countOf(issue, 'openQuestions'); metaChildren.push(el('span', { class: 'badge attention', text: qn + (qn === 1 ? ' question' : ' questions') }));
     }
@@ -5932,7 +5999,16 @@
         list.appendChild(el('li', { class: 'pending-heading' }, [el('h2', { text: open ? 'Waiting on you' : 'All completed' })]));
         group.forEach(function (issue) {
           var todos = el('ul', { class: 'pending-todos' });
-          (issue.pendingItems || []).filter(function (item) { return item.completed !== open; }).forEach(function (item) { todos.appendChild(el('li', { class: item.completed ? 'pending-todo is-done' : 'pending-todo', text: item.text })); });
+          (issue.pendingItems || []).filter(function (item) { return item.completed !== open; }).forEach(function (item) {
+            var todo = el('li', { class: item.completed ? 'pending-todo is-done' : 'pending-todo', text: item.text });
+            // Keep the plain-text fallback when the renderer is unavailable;
+            // questions in this List surface use the same Markdown as Decisions.
+            if (typeof window.renderMarkdown === 'function') {
+              todo.textContent = '';
+              todo.appendChild(markdownQuestion(item.text));
+            }
+            todos.appendChild(todo);
+          });
           list.appendChild(el('li', { class: 'pending-task' }, [taskCard(issue, true), todos]));
         });
       });
@@ -6265,6 +6341,8 @@
     }
     var addNote = $('drawer-add-note-btn');
     if (addNote) addNote.title = dict.drawer_add_note;
+    var agentAddNote = $('agent-note-add-btn');
+    if (agentAddNote) agentAddNote.title = dict.agent_note_add;
   }
 
   function detailBadges(issue) {
@@ -6301,6 +6379,226 @@
     }
   }
 
+  // Only unsent composer drafts live in browser memory. Saved notes always
+  // come from GitHub comments, never from this map or localStorage.
+  var agentNoteDrafts = new Map();
+  function noteDraft(issue) {
+    var key = identity(issue);
+    if (!agentNoteDrafts.has(key)) agentNoteDrafts.set(key, { text: '', open: false, busy: false, uncertain: false, error: '', previousIds: [] });
+    return agentNoteDrafts.get(key);
+  }
+  function noteDictionary() { return I18N[getLanguage()] || I18N.en; }
+  function openAgentNote() {
+    if (!state.detail) return;
+    noteDraft(state.detail).open = true;
+    renderAgentNotes(state.detail);
+    var text = $('agent-note-text');
+    if (text && text.focus) text.focus();
+  }
+  function closeAgentNote() {
+    if (!state.detail || noteDraft(state.detail).busy) return;
+    noteDraft(state.detail).open = false;
+    renderAgentNotes(state.detail);
+    var trigger = $('agent-note-add-btn');
+    if (trigger && trigger.focus) trigger.focus();
+  }
+  function renderAgentNotes(issue) {
+    var panel = $('agent-notes');
+    var trigger = $('agent-note-add-btn');
+    var activity = $('agent-note-activity');
+    var form = $('agent-note-composer');
+    if (!panel || !activity || !form) return;
+    var dict = noteDictionary();
+    var draft = noteDraft(issue);
+    panel.hidden = state.clientPresentationMode;
+    if (trigger) {
+      trigger.hidden = state.clientPresentationMode;
+      trigger.setAttribute('aria-expanded', String(draft.open));
+      trigger.textContent = dict.agent_note_add;
+    }
+    form.hidden = !draft.open;
+    var text = $('agent-note-text');
+    if (text) { if (text.value !== draft.text) text.value = draft.text; text.disabled = draft.busy || draft.uncertain; }
+    var send = $('agent-note-send');
+    if (send) { send.disabled = draft.busy; send.textContent = draft.busy ? dict.agent_note_sending : draft.error ? dict.agent_note_retry : dict.agent_note_send; }
+    if ($('agent-note-cancel')) $('agent-note-cancel').disabled = draft.busy;
+    var statusNode = $('agent-note-status');
+    if (statusNode) {
+      // Only a real failure is an error; a send in progress is not.
+      statusNode.className = draft.error ? 'form-error' : 'muted small';
+      statusNode.textContent = draft.error ? dict[draft.error] : draft.busy ? dict.agent_note_sending : '';
+    }
+    var notes = Array.isArray(issue.notes) ? issue.notes : [];
+    if ($('agent-note-count')) $('agent-note-count').textContent = issue.notesDegraded ? '—' : String(issue.noteCount || 0) + (issue.noteCountPartial ? '+' : '');
+    activity.textContent = '';
+    if (!notes.length || issue.notesDegraded) {
+      activity.appendChild(el('p', { class: 'muted small', text: issue.notesDegraded ? dict.agent_note_unavailable : dict.agent_note_empty }));
+    }
+    notes.forEach(function (note, index) {
+      var content = el('div', { class: 'markdown-body agent-note-body' });
+      content.innerHTML = safeRenderMarkdown(note.text);
+      var meta = el('div', { class: 'agent-note-meta muted small' }, [
+        el('span', { text: note.author }),
+        el('time', { datetime: note.createdAt || '', text: note.createdAt ? new Date(note.createdAt).toLocaleString(getLanguage()) : '' }),
+      ]);
+      if (typeof note.url === 'string' && /^https:\/\//i.test(note.url)) meta.appendChild(el('a', { href: note.url, target: '_blank', rel: 'noopener noreferrer', text: 'GitHub' }));
+      var entry = el('article', { class: 'agent-note-entry' }, [meta, content]);
+      if (index === 0) activity.appendChild(entry);
+      else {
+        var older = el('details', { class: 'agent-note-older' }, [el('summary', { text: note.author + ' — ' + (note.createdAt ? new Date(note.createdAt).toLocaleString(getLanguage()) : '') }), entry]);
+        activity.appendChild(older);
+      }
+    });
+  }
+  async function sendAgentNote() {
+    if (!state.detail || state.busy) return;
+    var issue = state.detail;
+    var draft = noteDraft(issue);
+    if (state.uncertain.has(identity(issue)) && !draft.uncertain) return;
+    var text = $('agent-note-text');
+    if (draft.busy || !text || !text.value.trim()) { if (text && text.focus) text.focus(); return; }
+    draft.text = text.value;
+    var value = draft.text.trim();
+    var dict = noteDictionary();
+    var generation = ++state.readGeneration;
+    rememberDraft();
+    draft.busy = true;
+    state.busy = true;
+    draft.error = '';
+    renderAgentNotes(issue);
+    function visible() { return state.detail && sameIdentity(state.detail, issue); }
+    function saved(response) {
+      draft.text = ''; draft.open = false; draft.uncertain = false; draft.error = '';
+      publishMutation(response, issue, generation, 'note');
+      announce(dict.agent_note_saved);
+      if (visible()) {
+        renderAgentNotes(state.detail);
+        var trigger = $('agent-note-add-btn');
+        if (trigger && trigger.focus) trigger.focus();
+        var drawer = $('detail-view');
+        if (drawer) drawer.scrollTop = 0;
+      }
+    }
+    async function reconcile() {
+      var reread = await api(issuePath(issue));
+      if (!isValidMutationPayload(reread, issue) || reread.issue.notesDegraded || !Array.isArray(reread.issue.notes)) throw new Error('Note read failed');
+      var match = reread.issue.notes.find(function (note) { return note.text === value && draft.previousIds.indexOf(note.id) === -1; });
+      if (match) { saved(reread); return true; }
+      draft.uncertain = false;
+      state.uncertain.delete(identity(issue));
+      draft.error = 'agent_note_missing';
+      return false;
+    }
+    try {
+      // After a lost response, Retry first reconciles, never blindly appends.
+      if (draft.uncertain) { await reconcile(); return; }
+      draft.previousIds = (issue.notes || []).map(function (note) { return note.id; });
+      invalidateBoardForWrite(issue);
+      var response = await api(issuePath(issue) + '/notes', { expected: issue, method: 'POST', body: { text: value, language: getLanguage() } });
+      if (!response.note || !Array.isArray(response.issue.notes) || !response.issue.notes.some(function (note) { return note.id === response.note.id && note.text === value; })) {
+        throw new ApiError('note_outcome_unknown', 200, {});
+      }
+      saved(response);
+    } catch (error) {
+      if (error.code === 'note_outcome_unknown' || error.code === 'write_outcome_unknown' || error.code === 'network_timeout' || draft.uncertain) {
+        draft.uncertain = true;
+        state.uncertain.add(identity(issue));
+        draft.error = 'agent_note_check_failed';
+        try { await reconcile(); } catch (_) { /* Keep draft and check again on Retry. */ }
+      } else {
+        draft.error = error.code === 'note_locked' ? 'agent_note_locked'
+          : error.code === 'note_forbidden' || error.status === 403 ? 'agent_note_forbidden'
+          : error.code === 'note_too_long' ? 'agent_note_too_long'
+          : error.code === 'invalid_note' || error.status === 400 ? 'agent_note_rejected'
+          : error.code === 'not_found' || error.status === 404 ? 'agent_note_not_found'
+          : error.code === 'github_rate_limited' ? 'agent_note_rate_limited'
+          : 'agent_note_failed';
+      }
+    } finally {
+      draft.busy = false;
+      state.busy = false;
+      if (visible()) renderAgentNotes(state.detail);
+    }
+  }
+
+  var questionControlId = 0;
+  function markdownQuestion(text, className, id) {
+    var node = el('div', { class: (className || 'question-text') + ' markdown-body', id: id });
+    node.innerHTML = safeRenderMarkdown(text || '');
+    return node;
+  }
+  // Shared question UI in Decisions and the drawer. Native radios supply
+  // arrow-key selection; details buttons never change the selected answer.
+  function questionAnswerBlock(question, issue, drawer) {
+    var dict = noteDictionary();
+    var prefix = 'question-' + (++questionControlId);
+    var item = el(drawer ? 'li' : 'div', { class: drawer ? 'question-item' : 'decision-question-item' });
+    item.appendChild(markdownQuestion(question.text, drawer ? 'question-text' : 'decision-question-text', prefix + '-text'));
+    var options = Array.isArray(question.options) ? question.options : [];
+    var input = el('input', { type: 'text', id: drawer ? 'answer-' + question.answerIndex : prefix + '-answer', class: 'decision-answer-input', placeholder: dict.decisions_answer_placeholder, 'aria-label': options.length ? dict.question_other : dict.question_answer, 'aria-describedby': prefix + '-text' });
+    var group = null;
+    if (options.length) {
+      group = el('div', { class: 'question-options', role: 'radiogroup', 'aria-labelledby': prefix + '-text' });
+      options.forEach(function (option, index) {
+        var radio = el('input', { type: 'radio', name: prefix + '-option', value: option.label, 'aria-describedby': prefix + '-gist-' + index });
+        radio.addEventListener('change', function () { input.value = ''; });
+        var label = el('label', { class: 'question-option-select' }, [radio, markdownQuestion(option.label, 'question-option-label')]);
+        var card = el('div', { class: 'question-option-card' }, [label]);
+        card.appendChild(markdownQuestion(option.gist, 'question-option-gist', prefix + '-gist-' + index));
+        if (option.details) {
+          var details = markdownQuestion(option.details, 'question-option-details', prefix + '-details-' + index);
+          details.hidden = true;
+          var disclosure = el('button', { type: 'button', class: 'button small question-option-disclosure', 'aria-expanded': 'false', 'aria-controls': prefix + '-details-' + index, text: dict.question_details });
+          disclosure.addEventListener('click', function () { details.hidden = !details.hidden; disclosure.setAttribute('aria-expanded', String(!details.hidden)); });
+          card.appendChild(disclosure); card.appendChild(details);
+        }
+        group.appendChild(card);
+      });
+      item.appendChild(group);
+    } else {
+      var inlineOptions = parseQuestionOptions(question.text);
+      if (inlineOptions.length) item.appendChild(el('div', { class: 'question-option-chips' }, inlineOptions.map(function (value) {
+        return el('button', { type: 'button', class: 'question-option-btn', text: value, onclick: function () { input.value = value; submit(); } });
+      })));
+    }
+    var form = el('form', { class: 'question-actions decision-answer-form' });
+    if (options.length) {
+      var other = el('details', { class: 'question-other-answer' }, [el('summary', { text: dict.question_other }), input]);
+      form.appendChild(other);
+      input.addEventListener('input', function () { if (group && group.querySelectorAll) group.querySelectorAll('input').forEach(function (radio) { radio.checked = false; }); });
+    } else form.appendChild(input);
+    var button = el('button', { type: 'submit', class: 'button primary', text: dict.decisions_btn_answer });
+    var status = el('span', { class: 'question-submit-status small', role: 'status', 'aria-live': 'polite' });
+    form.appendChild(button); form.appendChild(status);
+    item.appendChild(form);
+    var sending = false;
+    async function submit() {
+      if (sending || state.uncertain.has(identity(issue))) return;
+      var checked = group && group.querySelector ? group.querySelector('input:checked') : null;
+      var value = input.value.trim() || (checked && checked.value) || '';
+      if (!value) { status.textContent = dict.question_required; input.focus(); return; }
+      sending = true; button.disabled = true; status.textContent = dict.decisions_answering; announce(dict.decisions_answering);
+      var original = input.value;
+      input.value = value;
+      try {
+        if (drawer) {
+          var result = await saveAnswer(question.answerIndex, input, issue);
+          status.textContent = result ? dict.decisions_answered_notice : (getLanguage() === 'fr' ? 'Réponse non enregistrée. Consultez le message du ticket.' : 'Answer not saved. Check the task message.');
+        }
+        else {
+          var response = await api(issuePath(issue) + '/questions/' + question.answerIndex + '/answer', { expected: issue, method: 'POST', body: { answer: value, fingerprint: issue.fingerprint } });
+          publishMutation(response, issue, state.readGeneration, 'question', question.answerIndex);
+          updateSidebarBadges(); renderDecisionsView(); announce(dict.decisions_answered_notice);
+        }
+      } catch (error) {
+        if (error.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+        status.textContent = error.message; setNotice(error.message, true);
+      } finally { sending = false; button.disabled = false; input.value = original; }
+    }
+    form.addEventListener('submit', function (event) { event.preventDefault(); submit(); });
+    return item;
+  }
+
   function renderQuestions(issue) {
     var list = $('question-list');
     list.textContent = '';
@@ -6313,63 +6611,15 @@
     questions.forEach(function (question) {
       if (!question) return;
       if (question.answerIndex === null || question.answerIndex === undefined) {
-        var text = question.text || '';
-        var answerMatch = /^(.*?)\s*\*\s*\(Answer:\s*([\s\S]*?)\)\s*\*$/i.exec(text);
-        var questionSpans = [];
-        if (answerMatch) {
-          questionSpans.push(el('span', { text: answerMatch[1] }));
-          questionSpans.push(el('span', { class: 'answer-text', text: (getLanguage() === 'fr' ? '— Réponse : ' : '— Answer: ') + answerMatch[2] }));
-        } else {
-          questionSpans.push(el('span', { text: text }));
-        }
-        questionSpans.push(el('span', { class: 'muted small', text: getLanguage() === 'fr' ? '(répondu)' : '(answered)' }));
-        list.appendChild(
-          el('li', { class: 'question-answered' }, questionSpans),
-        );
-        return;
-      }
-
-      var input = el('input', {
-        type: 'text',
-        id: 'answer-' + question.answerIndex,
-        placeholder: getLanguage() === 'fr' ? 'Répondre à cette question…' : 'Answer this question…',
-      });
-      var button = el('button', {
-        class: 'button primary',
-        type: 'button',
-        text: getLanguage() === 'fr' ? 'Répondre' : 'Answer',
-        onclick: function () {
-          saveAnswer(question.answerIndex, input, issue);
-        },
-      });
-      var options = parseQuestionOptions(question.text);
-      var actionsEl = el('div', { class: 'question-actions' }, [
-        el('label', { class: 'sr-only', for: 'answer-' + question.answerIndex, text: (getLanguage() === 'fr' ? 'Réponse : ' : 'Answer: ') + question.text }),
-        input,
-        button,
-      ]);
-      var itemChildren = [
-        el('p', { class: 'question-text', text: question.text }),
-      ];
-      if (options.length > 0) {
-        var chips = el('div', { class: 'question-option-chips' }, options.map(function (opt) {
-          return el('button', {
-            type: 'button',
-            class: 'question-option-btn',
-            text: opt,
-            onclick: function () {
-              input.value = opt;
-              saveAnswer(question.answerIndex, input, issue);
-            },
-          });
-        }));
-        itemChildren.push(chips);
-      }
-      itemChildren.push(actionsEl);
-
-      list.appendChild(
-        el('li', { class: 'question-item' }, itemChildren),
-      );
+        // Answered questions keep the released split: the answer is separated
+        // from the Markdown question and labelled in the current language.
+        var answeredText = question.text || '';
+        var answerMatch = /^(.*?)\s*\*\s*\(Answer:\s*([\s\S]*?)\)\s*\*$/i.exec(answeredText);
+        var answeredChildren = [markdownQuestion(answerMatch ? answerMatch[1] : answeredText)];
+        if (answerMatch) answeredChildren.push(el('span', { class: 'answer-text', text: (getLanguage() === 'fr' ? '— Réponse : ' : '— Answer: ') + answerMatch[2] }));
+        answeredChildren.push(el('span', { class: 'muted small', text: getLanguage() === 'fr' ? '(répondu)' : '(answered)' }));
+        list.appendChild(el('li', { class: 'question-answered' }, answeredChildren));
+      } else list.appendChild(questionAnswerBlock(question, issue, true));
     });
   }
 
@@ -6832,6 +7082,7 @@
       $('overview-empty').hidden = false;
     }
 
+    renderAgentNotes(issue);
     renderQuestions(issue);
     renderStatus(issue);
     renderHumanTasks(issue);
@@ -6941,6 +7192,15 @@
       if (generation !== state.readGeneration || writeGeneration !== state.writeGeneration) return;
       if (!isValidMutationPayload(response, target)) throw new ApiError('invalid_detail', 502, { message: 'Invalid task detail; last valid data retained' });
       state.detail = response.issue;
+      // The drawer read also resolves this issue's notes, so the List row can
+      // show a known note count without a separate per-row comment request.
+      if (state.board && Array.isArray(state.board.issues) && typeof response.issue.noteCount === 'number') {
+        state.board.issues.forEach(function (row) {
+          if (!sameIdentity(row, response.issue) || response.issue.notesDegraded) return;
+          row.noteCount = response.issue.noteCount;
+          row.noteCountPartial = response.issue.noteCountPartial;
+        });
+      }
       state.statusOptions = response.statusOptions;
       state.uncertain.delete(identity(target));
       state.conflict = false;
@@ -7063,8 +7323,11 @@
           message: 'Outcome unknown \u2014 refresh to check GitHub state',
         });
       }
-      if (!publishMutation(response, issue, generation, 'question', answerIndex)) return;
-      announce('Answer saved.');
+      // The answer is saved even when the current view moved on, so the
+      // composer reports success and let publishMutation decide what to redraw.
+      publishMutation(response, issue, generation, 'question', answerIndex);
+      announce(getLanguage() === 'fr' ? 'Réponse enregistrée.' : 'Answer saved.');
+      return true;
     } catch (error) {
       invalidateDetailForWrite(issue);
       invalidateBoardForWrite(issue);
@@ -7369,61 +7632,7 @@
       var qContainer = el('div', { class: 'decision-questions' });
       issue.openQuestions.forEach(function (q) {
         if (q.completed) return;
-        var qItem = el('div', { class: 'decision-question-item' });
-        var qText = el('div', { class: 'decision-question-text' }, q.text);
-        qItem.appendChild(qText);
-
-        var form = el('form', { class: 'decision-answer-form' });
-        var input = el('input', {
-          class: 'decision-answer-input',
-          type: 'text',
-          placeholder: dict.decisions_answer_placeholder || 'Type answer…',
-          required: 'required',
-        });
-        var btn = el('button', {
-          class: 'button primary small',
-          type: 'submit',
-        }, dict.decisions_btn_answer || 'Answer');
-
-        form.appendChild(input);
-        form.appendChild(btn);
-
-        form.addEventListener('submit', async function (e) {
-          e.preventDefault();
-          var ans = input.value.trim();
-          if (!ans) return;
-          input.disabled = true;
-          btn.disabled = true;
-          btn.textContent = dict.decisions_answering || 'Saving…';
-          try {
-            var endpoint = issuePath(issue) + '/questions/' + q.answerIndex + '/answer';
-            var response = await api(endpoint, {
-              method: 'POST',
-              body: { answer: ans, fingerprint: issue.fingerprint },
-            });
-            if (response && response.listItem) {
-              var idx = state.board.issues.findIndex(function (it) {
-                return sameIdentity(it, issue);
-              });
-              if (idx !== -1) {
-                state.board.issues[idx] = response.listItem;
-              }
-            } else {
-              await loadBoard();
-            }
-            updateSidebarBadges();
-            renderDecisionsView();
-            setNotice(dict.decisions_answered_notice || 'Question answered.');
-          } catch (err) {
-            input.disabled = false;
-            btn.disabled = false;
-            btn.textContent = dict.decisions_btn_answer || 'Answer';
-            setNotice(err.message || 'Could not save answer', true);
-          }
-        });
-
-        qItem.appendChild(form);
-        qContainer.appendChild(qItem);
+        qContainer.appendChild(questionAnswerBlock(q, issue, false));
       });
 
       card.appendChild(qContainer);
@@ -8361,6 +8570,22 @@
         }, 80);
       });
     }
+    var agentAddNoteBtn = $('agent-note-add-btn');
+    if (agentAddNoteBtn) agentAddNoteBtn.addEventListener('click', openAgentNote);
+    var noteForm = $('agent-note-composer');
+    if (noteForm) noteForm.addEventListener('submit', function (event) { event.preventDefault(); sendAgentNote(); });
+    if (noteForm) noteForm.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeAgentNote(); }
+    });
+    var noteText = $('agent-note-text');
+    if (noteText) {
+      noteText.addEventListener('input', function () { if (state.detail) noteDraft(state.detail).text = noteText.value; });
+      noteText.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeAgentNote(); }
+        else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); sendAgentNote(); }
+      });
+    }
+    if ($('agent-note-cancel')) $('agent-note-cancel').addEventListener('click', closeAgentNote);
     $('save-overview').addEventListener('click', saveOverview);
     $('apply-status').addEventListener('click', saveStatus);
     $('conflict-reload').addEventListener('click', function () {

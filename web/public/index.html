@@ -432,11 +432,24 @@
         <div class="detail-head">
           <div class="detail-head-title-row">
             <h1 id="detail-title" tabindex="-1"></h1>
+            <button id="agent-note-add-btn" class="button small drawer-add-note-btn" type="button" data-i18n="agent_note_add" aria-controls="agent-note-composer" aria-expanded="false">Note for the agent</button>
           </div>
           <p id="detail-subtitle" class="task-subtitle muted small" hidden></p>
           <div id="detail-meta" class="badges"></div>
           <p id="detail-freshness" class="muted small"></p>
         </div>
+
+        <section id="agent-notes" class="panel agent-notes" aria-labelledby="agent-notes-title">
+          <div class="row"><h2 id="agent-notes-title" data-i18n="agent_notes_title">Agent notes</h2><span id="agent-note-count" class="badge note-count"></span></div>
+          <form id="agent-note-composer" hidden>
+            <label for="agent-note-text" data-i18n="agent_note_label">Comment on this GitHub issue</label>
+            <textarea id="agent-note-text" rows="3" maxlength="4000" aria-describedby="agent-note-hint"></textarea>
+            <p id="agent-note-hint" class="muted small" data-i18n="agent_note_hint">Saved as a GitHub comment, not a canvas sticky. Ctrl/Cmd+Enter sends.</p>
+            <div class="row"><button id="agent-note-send" class="button primary" type="submit" data-i18n="agent_note_send">Send note</button><button id="agent-note-cancel" class="button" type="button" data-i18n="agent_note_cancel">Cancel</button></div>
+            <p id="agent-note-status" class="form-error" role="status" aria-live="polite"></p>
+          </form>
+          <div id="agent-note-activity" aria-live="polite"></div>
+        </section>
 
         <section class="panel drawer-controls" aria-labelledby="status-title">
           <h2 id="status-title" class="sr-only" data-i18n="drawer_status_title">Status</h2>

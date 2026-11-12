@@ -279,6 +279,90 @@ export function stripHiddenMarkers(body: string = ''): string {
   return stripCanvasMarker(stripOrderMarker(body));
 }
 
+// ==========================================
+// Quick notes: a note is a real GitHub issue comment carrying a hidden marker.
+// The GitHub comment stays the only stored copy; the board reads it back.
+//
+// Authoring convention, written by the board and never hand-edited:
+//
+//   <!-- board-note: 1 -->
+//   Note for the agent
+//
+//   <the text the user typed>
+//
+// Rules enforced by parseNoteComment:
+// - the marker must be the FIRST non-blank line, so a human comment that only
+//   quotes the marker further down can never be mistaken for a board note;
+// - the marker carries a version, so a future format stays recognisable;
+// - the visible lead-in is localised at write time and both languages are read;
+// - a note is append-only: the board never edits, replaces or deletes comments.
+// ==========================================
+export const NOTE_MARKER_VERSION = 1;
+export const NOTE_MAX_LENGTH = 4000;
+const noteMarkerLinePattern = /^ {0,3}<!--\s*board-note:\s*(\d+)\s*-->[ \t]*$/i;
+const noteLeadIns = ['note for the agent', 'note pour l’agent', 'note pour l\'agent'];
+
+export function buildNoteCommentBody(text: unknown, language: unknown = 'en'): string {
+  const clean = typeof text === 'string' ? text.trim() : '';
+  if (!clean) throw new BoardError('invalid', 'A note is required');
+  if (clean.length > NOTE_MAX_LENGTH) {
+    throw new BoardError('note_too_long', `A note cannot exceed ${NOTE_MAX_LENGTH} characters`);
+  }
+  const lead = language === 'fr' ? 'Note pour l’agent' : 'Note for the agent';
+  return `<!-- board-note: ${NOTE_MARKER_VERSION} -->\n${lead}\n\n${clean}`;
+}
+
+export interface IssueNoteView {
+  id: number;
+  text: string;
+  author: string;
+  createdAt: string | null;
+  url: string | null;
+}
+
+export function parseNoteComment(raw: any): IssueNoteView | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  if (typeof raw.id !== 'number' || !Number.isFinite(raw.id)) return null;
+  if (typeof raw.body !== 'string') return null;
+  const lines = raw.body.replace(/\r\n?/g, '\n').split('\n');
+  let i = 0;
+  while (i < lines.length && !lines[i].trim()) i += 1;
+  if (i >= lines.length) return null;
+  const marker = noteMarkerLinePattern.exec(lines[i]);
+  if (!marker) return null;
+  const version = Number(marker[1]);
+  if (!Number.isInteger(version) || version < 1 || version > NOTE_MARKER_VERSION) return null;
+  i += 1;
+  while (i < lines.length && !lines[i].trim()) i += 1;
+  if (i < lines.length) {
+    const lead = lines[i].trim().replace(/[:.]+$/, '').toLowerCase();
+    if (noteLeadIns.includes(lead)) i += 1;
+  }
+  while (i < lines.length && !lines[i].trim()) i += 1;
+  const text = lines.slice(i).join('\n').trim();
+  if (!text) return null;
+  const author = typeof raw.user?.login === 'string' ? raw.user.login : '';
+  const createdAt = typeof raw.created_at === 'string' ? raw.created_at : null;
+  const url = typeof raw.html_url === 'string' ? raw.html_url : null;
+  return { id: raw.id, text: text.slice(0, NOTE_MAX_LENGTH), author, createdAt, url };
+}
+
+export function parseIssueNotes(rawComments: unknown, limit = 20): IssueNoteView[] {
+  if (!Array.isArray(rawComments)) return [];
+  const notes: IssueNoteView[] = [];
+  for (const raw of rawComments) {
+    const note = parseNoteComment(raw);
+    if (note) notes.push(note);
+  }
+  notes.sort((a, b) => {
+    const timeA = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const timeB = b.createdAt ? Date.parse(b.createdAt) : 0;
+    if (timeB !== timeA) return timeB - timeA;
+    return b.id - a.id;
+  });
+  return notes.slice(0, Math.max(1, limit));
+}
+
 const ALLOWED_NOTE_COLORS = new Set(['yellow', 'pink', 'blue', 'green', 'purple']);
 
 export function setCanvasMarker(body: string = '', data: Record<string, any>): string {
@@ -490,12 +574,15 @@ function listFields(raw: any, repository: BoardRepository | null) {
     textDependencies,
     blockedBy,
     blocking,
+    commentCount: typeof raw.comments === 'number' && Number.isFinite(raw.comments) && raw.comments >= 0
+      ? raw.comments
+      : 0,
     pendingItems: [...(normalizedOf(raw)?.humanTasks ?? []), ...parseWebOpenQuestions(body)]
       .map((item) => ({ text: item.text, completed: item.completed })),
   };
 }
 
-export type BoardErrorCode = 'not_an_issue' | 'not_editable' | 'invalid';
+export type BoardErrorCode = 'not_an_issue' | 'not_editable' | 'invalid' | 'note_too_long' | 'body_too_long';
 
 export class BoardError extends Error {
   code: BoardErrorCode;
@@ -511,12 +598,70 @@ const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
 const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
 const headingRegex = /^[ ]{0,3}#{1,6}\s+/;
 
+// ==========================================
+// Preset answer options for an open question.
+//
+// Authoring convention (one convention only, parsed here and nowhere else):
+//
+//   ## Open Questions
+//   - [ ] Which database should we use?
+//     - PostgreSQL :: Mature and familiar :: **Operations stay unchanged**.
+//     - SQLite :: Zero operations :: A single file, but no concurrent writers.
+//
+// - Option lines are single-line list items indented 2 to 3 spaces and must directly follow
+//   the question line; a blank line, an indented code block or an unindented
+//   line ends the list.
+// - Fields are separated by " :: ". Only the label is required:
+//   `label :: one-line gist :: details paragraph`.
+//   The details field keeps any later " :: " separators and is Markdown.
+// - A nested checklist item (`  - [ ] step`) is a subtask, not an option.
+// - A question without such lines keeps rendering and answering exactly as
+//   before: no options are produced and the free-text answer stays primary.
+// Backward compatibility is therefore structural, not a version flag.
+// ==========================================
+export interface OpenQuestionOption {
+  label: string;
+  gist: string;
+  details: string;
+}
+
+export const QUESTION_OPTION_MAX = 8;
+const optionLinePattern = /^([ ]{2,3})(?:[-*+]|\d+[.)])[ \t]+(.*)$/;
+const optionFieldSeparator = /\s+::\s+/;
+
+function parseQuestionOptionLines(lines: string[], startIndex: number): OpenQuestionOption[] {
+  const options: OpenQuestionOption[] = [];
+  for (let i = startIndex; i < lines.length && options.length < QUESTION_OPTION_MAX; i += 1) {
+    const line = lines[i].replace(/\r$/, '');
+    if (!line.trim()) break;
+    if (!/^[ \t]/.test(line)) break;
+    if (indentedCodeLinePattern.test(line)) break;
+    if (fencePattern.test(line)) break;
+    const match = optionLinePattern.exec(line);
+    if (!match) break;
+    const content = match[2].trim();
+    if (!content) continue;
+    if (/^\[[ xX]\][ \t]+/.test(content)) break;
+    // "-  :: gist" has an empty label; trimming removed the space the
+    // separator needs, so without this the separator would become the label.
+    if (/^::(?:\s|$)/.test(content)) continue;
+    const fields = content.split(optionFieldSeparator);
+    const label = (fields[0] || '').trim();
+    if (!label || label.length > 120) continue;
+    const gist = (fields.length > 1 ? fields[1] : '').trim().slice(0, 200);
+    const details = (fields.length > 2 ? fields.slice(2).join(' :: ') : '').trim().slice(0, 2000);
+    options.push({ label, gist, details });
+  }
+  return options;
+}
+
 export function parseWebOpenQuestions(body: string | null | undefined): Array<{
   id: string;
   lineIndex: number;
   completed: boolean;
   text: string;
   rawLine: string;
+  options?: OpenQuestionOption[];
 }> {
   if (!body || typeof body !== 'string' || !body.includes('[')) return [];
   const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
@@ -529,6 +674,7 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
     completed: boolean;
     text: string;
     rawLine: string;
+    options?: OpenQuestionOption[];
   }> = [];
   let inQuestionsSection = false;
   let inHumanTasksSection = false;
@@ -592,12 +738,14 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
         }
       }
       if (text) {
+        const options = parseQuestionOptionLines(lines, i + 1);
         questions.push({
           id: `question-${i}`,
           lineIndex: i,
           completed,
           text,
           rawLine,
+          ...(options.length ? { options } : {}),
         });
       }
     } else if (!inHumanTasksSection) {
@@ -624,12 +772,14 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
         if (text && /^(?:\?|Q:|Question:)/i.test(text)) {
           const qText = text.replace(/^(?:\?|Q:|Question:)\s*/i, '').trim();
           if (qText) {
+            const options = parseQuestionOptionLines(lines, i + 1);
             questions.push({
               id: `question-${i}`,
               lineIndex: i,
               completed,
               text: qText,
               rawLine,
+              ...(options.length ? { options } : {}),
             });
           }
         }
@@ -787,6 +937,12 @@ export interface BoardListItem {
     openQuestions: { total: number; open: number };
     humanTasks: { total: number; open: number };
   };
+  // Every comment on the issue, straight from the GitHub payload already
+  // fetched for the board. Scoped to comments on purpose: a per-issue comment
+  // page for the whole board would cost one extra GitHub call per row.
+  commentCount?: number;
+  noteCount?: number;
+  noteCountPartial?: boolean;
   openQuestions?: OpenQuestionView[];
   humanTasks?: Array<{ index: number; text: string; completed: boolean; lineIndex?: number }>;
   overview?: string;
@@ -799,6 +955,9 @@ export interface OpenQuestionView {
   answerIndex: number | null;
   text: string;
   completed: boolean;
+  // Present only when the question uses the `label :: gist :: details`
+  // convention. Absent keeps the older single-text question shape intact.
+  options?: OpenQuestionOption[];
 }
 
 export interface IssueDetail {
@@ -849,6 +1008,12 @@ export interface IssueDetail {
     issue: Array<{ text: string; completed: boolean }>;
     batch: Array<{ text: string; completed: boolean }>;
   };
+  // Agent-facing note surface. The GitHub comment remains the only stored copy:
+  // these entries are read back from it, newest first.
+  notes?: IssueNoteView[];
+  noteCount?: number;
+  noteCountPartial?: boolean;
+  notesDegraded?: boolean;
 }
 
 export function labelNames(raw: any): string[] {
@@ -944,6 +1109,25 @@ function countsOf(items: Array<{ completed: boolean }> = []) {
   };
 }
 
+// One projection for both the board row and the drawer, so a question cannot
+// render differently in Decisions and in the drawer.
+function openQuestionViews(
+  questions: ReturnType<typeof parseWebOpenQuestions>,
+): OpenQuestionView[] {
+  let answerIndex = 0;
+  return questions.map((question, index) => {
+    const view: OpenQuestionView = {
+      index,
+      answerIndex: question.completed ? null : answerIndex,
+      text: question.text,
+      completed: question.completed,
+    };
+    if (question.options && question.options.length) view.options = question.options;
+    if (!question.completed) answerIndex += 1;
+    return view;
+  });
+}
+
 export function issueFingerprint(raw: any, repository: BoardRepository | null = null): string {
   const body = typeof raw?.body === 'string' ? raw.body : '';
   const labels = labelNames(raw)
@@ -970,17 +1154,7 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   const labels = labelNames(issue);
   const rawBody = issue.body ?? '';
   const questions = parseWebOpenQuestions(rawBody);
-  let answerIndex = 0;
-  const openQuestions: OpenQuestionView[] = questions.map((question, index) => {
-    const view: OpenQuestionView = {
-      index,
-      answerIndex: question.completed ? null : answerIndex,
-      text: question.text,
-      completed: question.completed,
-    };
-    if (!question.completed) answerIndex += 1;
-    return view;
-  });
+  const openQuestions = openQuestionViews(questions);
   const parsedHumanTasks = parseWebHumanTasks(rawBody);
   const humanTasks = (parsedHumanTasks.length > 0 ? parsedHumanTasks : (issue.humanTasks ?? [])).map((task, idx) => ({
     index: typeof (task as any).index === 'number' ? (task as any).index : idx,
@@ -1040,17 +1214,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
   const statusLabel = statusLabelOf(labels);
   const cleanBody = stripHiddenMarkers(issue.body ?? '');
   const questions = parseWebOpenQuestions(issue.body ?? '');
-  let answerIndex = 0;
-  const openQuestions: OpenQuestionView[] = questions.map((question, index) => {
-    const view: OpenQuestionView = {
-      index,
-      answerIndex: question.completed ? null : answerIndex,
-      text: question.text,
-      completed: question.completed,
-    };
-    if (!question.completed) answerIndex += 1;
-    return view;
-  });
+  const openQuestions = openQuestionViews(questions);
   const testPlan = parseTestPlan(issue.body);
   const friendly = parseFriendlyTitle(cleanBody, issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
