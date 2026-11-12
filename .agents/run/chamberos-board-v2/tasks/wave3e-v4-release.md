@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3
 Branch: feat/board-v3
-Base commit: [FILL_HEAD_SHA] (clean; L4 verdict recorded at [FILL_L4_PATH])
+Base commit: 26fbc00 (clean tracked tree; application code at a1225f0, reviewed and approved by the independent targeted L4 in verifications/V4-targeted-L4/report.md; D39 bounded correction)
 Root checkout: /workspace/code/openchamber-github-task-board on branch ops/task-board-activation (DO NOT modify or switch branches in root checkout)
 Live release dir: /workspace/releases/board/ (preserve every existing release intact: `7339629-20261111`, `0e6d237-20261111`, `5bf1c62-20261111`, `59e5d05-20261111`, `98261a8-20261103`)
 Current live: /workspace/releases/board/current -> 7339629-20261111
@@ -14,14 +14,14 @@ Do NOT run `git remote -v` or print any credential.
 Publish the reviewed V4 board (Workflows Board, unified sheets, applied filters, readable dependencies) to production with a verified rollback, rebuilding the server bundle from source at [FILL_HEAD_SHA].
 </goal>
 <steps>
-1. Rebuild the server bundle FROM SOURCE into the new release directory — never copy web/dist/server.mjs (stale, gitignored): `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/workspace/releases/board/[FILL_RELEASE]/web/dist/server.mjs`. Prove the built bundle contains zero `if-match` and does contain `write_rejected`.
-2. Stage /workspace/releases/board/[FILL_RELEASE] with package.json, web/dist/server.mjs, every file of web/public/ and checksums.sha256. Verify with `sha256sum -c --strict checksums.sha256` and exact coverage both ways.
+1. Rebuild the server bundle FROM SOURCE into the new release directory — never copy web/dist/server.mjs (stale, gitignored): `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/workspace/releases/board/26fbc00-20261112/web/dist/server.mjs`. Prove the built bundle contains zero `if-match` and does contain `write_rejected`.
+2. Stage /workspace/releases/board/26fbc00-20261112 with package.json, web/dist/server.mjs, every file of web/public/ and checksums.sha256. Verify with `sha256sum -c --strict checksums.sha256` and exact coverage both ways.
 3. Record pre-cutover state: current symlink target, supervisor and child PIDs, health payload; verify every previous release still passes its checksums.
 4. Atomically repoint /workspace/releases/board/current, gracefully kill -TERM the supervisor from /tmp/opencode/board-supervisor/supervisor.pid, wait for exit, then start /workspace/code/openchamber-config/tools/board/start.sh with a clean environment. Report only PIDs and health.
 5. Verify http://127.0.0.1:8787/health and https://board.workflows.ac/health return 200 and that served index.html, app.js, theme.css, arrange.js, markdown.js, manifest.json and icons are byte-identical to the staged files over HTTPS (sw.js must match 127.0.0.1:8787/sw.js, not the disk digest, because CACHE_VERSION is stamped at runtime).
-6. Prove the new client is live from the live origin, not from disk: fetch the served app.js over HTTPS and confirm the V4 strings are present (e.g. `frameDependencyFocus`, `computeFitView`, `applied-filter-btn`, "Workflows Board" in index.html). Confirm the served sw.js CACHE_VERSION is the V4 value so clients drop the old cache.
+6. Prove the new client is live from the live origin, not from disk: fetch the served app.js over HTTPS and confirm the V4 strings are present (`frameDependencyFocus`, `computeFitView`, `applied-filter-btn`, `canvasZoomLimitText`, `canvasFitContains`, `dependencyFocusLimited`) and "Workflows Board" in index.html. Confirm the served sw.js CACHE_VERSION is the V4 value (2.1.0 or later) so clients drop the old cache.
 7. Signed-out read-only Chromium smoke at 390x844 and 1280x900: PNGs, zero console errors, zero CSP violations. Do NOT sign in against production and do NOT write to any real repository.
-8. Write .agents/run/chamberos-board-v2/verifications/[FILL_RELEASE]/release-receipt.md with the hash table, PIDs, health codes, rollback target and the one-command rollback, plus which existing releases remain valid rollbacks. Commit on feat/board-v3 and set local master to the resulting HEAD. Do not push.
+8. Write .agents/run/chamberos-board-v2/verifications/26fbc00-20261112/release-receipt.md with the hash table, PIDs, health codes, rollback target and the one-command rollback, plus which existing releases remain valid rollbacks. Include the browser-safe proof that a client with the old cache drops it: the served sw.js CACHE_VERSION differs from the previous release. Commit on feat/board-v3 and set local master to the resulting HEAD. Do not push.
 </steps>
 <criteria>
 1. https://board.workflows.ac/health returns 200 and every served asset matches the staged bytes.
