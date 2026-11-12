@@ -1,0 +1,89 @@
+{
+  "origin": "https://board.workflows.ac",
+  "clientAssets": "live production origin",
+  "apiData": "synthetic local fixture (no production sign-in, no writes)",
+  "viewports": [
+    {
+      "viewport": "390x844",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "csp": [],
+      "shots": [
+        "screenshots/rendered-synthetic-list-390x844.png",
+        "screenshots/rendered-synthetic-canvas-390x844.png",
+        "screenshots/rendered-synthetic-drawer-390x844.png",
+        "screenshots/rendered-synthetic-decisions-390x844.png"
+      ],
+      "apiCalls": [
+        "GET /api/session (fixture)",
+        "GET /api/repos",
+        "GET /api/combined/board",
+        "GET /api/repos/owner/repo/issues/1"
+      ],
+      "mutationsRefused": 0,
+      "pageStatus": 200,
+      "servedAppHeader": "csp-present",
+      "list": {
+        "viewVisible": true,
+        "canvasHidden": true,
+        "cards": 0
+      },
+      "canvas": {
+        "viewVisible": true,
+        "boardBox": null
+      },
+      "drawer": {
+        "title": "Choose durable audit storage",
+        "noteComposer": true,
+        "optionCards": 4,
+        "decisions": 4
+      },
+      "decisions": {
+        "viewVisible": true,
+        "count": 1,
+        "text": "Repo\n#1\nChoose durable audit storage\nNeeds human\nHigh\n23d ago\nChoose storage with history and retention?\n\nPostgreSQL\n\nMature and familiar\n\nDetails\n\nSQLite\n\nZero operations\n\nDetails\nWrite another answe"
+      }
+    },
+    {
+      "viewport": "1280x900",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "csp": [],
+      "shots": [
+        "screenshots/rendered-synthetic-list-1280x900.png",
+        "screenshots/rendered-synthetic-canvas-1280x900.png",
+        "screenshots/rendered-synthetic-drawer-1280x900.png",
+        "screenshots/rendered-synthetic-decisions-1280x900.png"
+      ],
+      "apiCalls": [
+        "GET /api/session (fixture)",
+        "GET /api/repos",
+        "GET /api/combined/board",
+        "GET /api/repos/owner/repo/issues/1"
+      ],
+      "mutationsRefused": 0,
+      "pageStatus": 200,
+      "servedAppHeader": "csp-present",
+      "list": {
+        "viewVisible": true,
+        "canvasHidden": true,
+        "cards": 0
+      },
+      "canvas": {
+        "viewVisible": true,
+        "boardBox": null
+      },
+      "drawer": {
+        "title": "Choose durable audit storage",
+        "noteComposer": true,
+        "optionCards": 4,
+        "decisions": 4
+      },
+      "decisions": {
+        "viewVisible": true,
+        "count": 1,
+        "text": "Repo\n#1\nChoose durable audit storage\nNeeds human\nHigh\n23d ago\nChoose storage with history and retention?\n\nPostgreSQL\n\nMature and familiar\n\nDetails\n\nSQLite\n\nZero operations\n\nDetails\nWrite another answe"
+      }
+    }
+  ]
+}
