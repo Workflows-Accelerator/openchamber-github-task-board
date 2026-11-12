@@ -456,3 +456,120 @@ test('V4-1: pending checklist state is drawn, never a pictographic glyph', () =>
     assert.doesNotMatch(fs.readFileSync(file, 'utf8'), glyphs, file + ' must stay free of pictographic glyphs');
   }
 });
+
+test('V4-1b: dependency focus frames selected plus direct blockers and dependents, and never leaves the canvas', () => {
+  const { app } = browser();
+  const repository = { full: 'acme/core' };
+  const blocker = { number: 1, repository };
+  const selected = { number: 2, repository, blockedBy: [{ number: 1 }] };
+  const dependent = { number: 3, repository, blockedBy: [{ number: 2 }] };
+  const textDependent = { number: 11, repository, textDependencies: [2] };
+  const unrelated = { number: 9, repository };
+  const issues = [blocker, selected, dependent, textDependent, unrelated];
+  assert.deepEqual(
+    Array.from(app.dependencyNeighbourhoodKeys('acme/core#2', issues)),
+    ['acme/core#2', 'acme/core#1', 'acme/core#3', 'acme/core#11'],
+    'the neighbourhood is the selected task, its blockers and its dependents',
+  );
+  assert.deepEqual(Array.from(app.dependencyNeighbourhoodKeys(null, issues)), []);
+
+  const cards = [
+    { key: 'acme/core#1', x: 80, y: 90, w: 280, h: 200 },
+    { key: 'acme/core#2', x: 460, y: 90, w: 280, h: 200 },
+    { key: 'acme/core#3', x: 840, y: 90, w: 280, h: 200 },
+    { key: 'acme/core#11', x: 460, y: 340, w: 280, h: 200 },
+    { key: 'acme/core#9', x: 1240, y: 520, w: 280, h: 200 },
+  ];
+  const keys = Array.from(app.dependencyNeighbourhoodKeys('acme/core#2', issues));
+  const neighbourhood = cards.filter((card) => keys.includes(card.key));
+  const bounds = app.unionBounds(neighbourhood);
+  assert.deepEqual(JSON.parse(JSON.stringify(bounds)), { minX: 80, minY: 90, maxX: 1120, maxY: 540 });
+
+  const viewport = { width: 360, height: 520 };
+  const padding = app.canvasFitPadding({ narrow: true, legendHeight: 120, hudHeight: 64 });
+  assert.equal(padding.top, 140, 'the fit starts below the legend it must not hide behind');
+  assert.equal(padding.bottom, 84, 'the fit ends above the floating zoom bar');
+  const fit = app.computeFitView(bounds, viewport, { padding });
+  assert.ok(fit.scale >= 0.2 && fit.scale <= 1, 'fit scale stays inside the canvas zoom range');
+  for (const card of neighbourhood) {
+    const left = card.x * fit.scale + fit.panX;
+    const right = (card.x + card.w) * fit.scale + fit.panX;
+    const top = card.y * fit.scale + fit.panY;
+    const bottom = (card.y + card.h) * fit.scale + fit.panY;
+    assert.ok(left >= padding.left - 0.001, card.key + ' starts inside the left margin');
+    assert.ok(right <= viewport.width - padding.right + 0.001, card.key + ' ends inside the right margin');
+    assert.ok(top >= padding.top - 0.001, card.key + ' starts below the legend');
+    assert.ok(bottom <= viewport.height - padding.bottom + 0.001, card.key + ' ends above the bottom margin');
+  }
+  const stranger = cards[4];
+  const strangerRight = (stranger.x + stranger.w) * fit.scale + fit.panX;
+  assert.ok(strangerRight > viewport.width, 'framing the neighbourhood is not the same as fitting the whole canvas');
+
+  // Zoom limits: a fit never magnifies past 100% and never goes under the canvas minimum.
+  assert.equal(app.computeFitView({ minX: 0, minY: 0, maxX: 40, maxY: 40 }, { width: 1280, height: 900 }, {}).scale, 1);
+  assert.equal(app.computeFitView({ minX: 0, minY: 0, maxX: 100000, maxY: 100000 }, { width: 360, height: 520 }, { padding: { left: 8, right: 8, top: 8, bottom: 8 } }).scale, 0.2);
+  assert.equal(app.computeFitView(null, viewport, {}), null);
+  assert.equal(app.computeFitView(bounds, { width: 0, height: 0 }, {}), null);
+});
+
+test('V4-1b: edge labels clamp inside the visible canvas and off every card body', () => {
+  const { app } = browser();
+  const cards = [
+    { x: 80, y: 90, w: 280, h: 200 },
+    { x: 460, y: 90, w: 280, h: 200 },
+  ];
+  const viewport = { width: 360, height: 520, panX: 0, panY: 0 };
+
+  // A label whose wire midpoint sits left of the visible canvas edge.
+  const offLeft = app.computeWireLabelPosition({ midX: -60, midY: 190, width: 120, height: 18, scale: 1, viewport, cards: [] });
+  assert.ok(offLeft.x - 60 >= 8 - 0.001, 'the label left edge clears the viewport edge');
+  assert.ok(offLeft.x + 60 <= 360 - 8 + 0.001, 'the label right edge stays inside the viewport');
+
+  // A label between two card bodies must be pushed clear of both.
+  const between = app.computeWireLabelPosition({ midX: 410, midY: 190, width: 120, height: 18, scale: 1, viewport: { width: 1280, height: 900, panX: 0, panY: 0 }, cards });
+  const box = { x: between.x - 60, y: between.y - 9, w: 120, h: 18 };
+  for (const card of cards) {
+    const overlaps = box.x < card.x + card.w && box.x + box.w > card.x && box.y < card.y + card.h && box.y + box.h > card.y;
+    assert.equal(overlaps, false, 'label must not sit on a card body');
+  }
+
+  // The same label at 30% zoom is still fully inside the viewport.
+  const zoomedOut = app.computeWireLabelPosition({ midX: 410, midY: 190, width: 120, height: 18, scale: 0.3, viewport: { width: 360, height: 520, panX: 20, panY: 40 }, cards });
+  const halfW = 60 / 0.3;
+  assert.ok(zoomedOut.x - halfW >= -20 / 0.3 - 0.001, 'clamped label left edge inside the panned viewport');
+  assert.ok(zoomedOut.x + halfW <= (360 - 20) / 0.3 + 0.001, 'clamped label right edge inside the panned viewport');
+
+  // Already-placed labels are obstacles too, so two labels on one card never stack.
+  const first = app.computeWireLabelPosition({ midX: 410, midY: 190, width: 120, height: 18, scale: 1, viewport: { width: 1280, height: 900, panX: 0, panY: 0 }, cards });
+  const second = app.computeWireLabelPosition({
+    midX: 410, midY: 190, width: 120, height: 18, scale: 1,
+    viewport: { width: 1280, height: 900, panX: 0, panY: 0 },
+    cards: cards.concat([{ x: first.x - 60, y: first.y - 9, w: 120, h: 18 }]),
+  });
+  assert.ok(second.x !== first.x || second.y !== first.y, 'a second label on the same wire is displaced');
+});
+
+test('V4-1b: focus exit wording, single phone filter entry point and framing hooks', () => {
+  const js = fs.readFileSync('web/public/app.js', 'utf8');
+  const html = fs.readFileSync('web/public/index.html', 'utf8');
+  assert.doesNotMatch(js, /'Quitter'/, 'the focus exit never reads like leaving the app');
+  assert.match(js, /fr \? 'Fermer' : 'Close'/);
+  assert.doesNotMatch(js, /compact-filter/);
+  assert.doesNotMatch(html, /id="compact-filter"/, 'the phone keeps one filter entry point');
+  assert.match(html, /id="applied-filter-btn"/);
+
+  const select = js.slice(js.indexOf('function selectDependencyCard('), js.indexOf('function dependencyRole('));
+  assert.ok(select.includes('dependencyFocusReturn'), 'the pre-focus viewport is remembered');
+  assert.ok(select.includes('frameDependencyFocus'), 'selecting Dependencies frames the neighbourhood');
+  const legend = js.slice(js.indexOf('function applyDependencyFocus('), js.indexOf('function labelDependencyWire('));
+  assert.ok(legend.includes('clearDependencyFocus'), 'the legend exit restores the previous viewport');
+
+  assert.match(js, /state\.canvasFitPending = true/, 'applying or removing a filter requests a fit');
+  const board = js.slice(js.indexOf('function renderBoard('), js.indexOf('function renderPicker('));
+  assert.ok(board.includes('frameFilteredCanvas()'), 'the canvas frames the matching tasks after a filter');
+
+  const transform = js.slice(js.indexOf('function updateCanvasTransform('), js.indexOf('var getResponses'));
+  assert.ok(transform.includes('positionDependencyWireLabels()'), 'labels are re-clamped on every pan and zoom');
+  const position = js.slice(js.indexOf('function positionDependencyWireLabels('), js.indexOf('function createIssueCanvasCard('));
+  assert.ok(position.includes('scale(') && position.includes('1 / scale'), 'labels keep a constant screen size at every zoom');
+});

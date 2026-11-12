@@ -3432,7 +3432,6 @@ body:has(#client-view:not([hidden])) #client-presentation-banner { display: none
   #compact-project-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   #compact-count { color: var(--fg-muted); }
   #compact-new { background: var(--prim); color: var(--prim-fg); }
-  #compact-filter[data-active="true"] { color: var(--prim-hover); box-shadow: inset 0 -3px var(--prim-hover); }
   #compact-nav-dock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; flex: 0 0 auto; padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); background: var(--surf-muted); border-top: 1px solid var(--border); }
   body:has(#login-view:not([hidden])) #compact-nav-dock { display: none; }
   body:has(#login-view:not([hidden])) .compact-header { display: none; }

@@ -37,6 +37,9 @@
     canvasPanY: 60,
     canvasScale: 1.0,
     canvasHasSavedState: false,
+    canvasAnimating: false,
+    canvasFitPending: false,
+    dependencyFocusReturn: null,
     activeSectionView: null,
     archive: { backburner: [], closed: [], totalClosed: 0, hasMore: false, offset: 0, limit: 50, activeTab: 'backburner' },
     operations: null,
@@ -1792,7 +1795,7 @@
       return (!state.clientPresentationMode || !isDraftIssue(issue)) && (!state.searchQuery || matchesSearch(issue, state.searchQuery));
     });
   }
-  function clearFilters() { state.viewState.filters = []; state.searchQuery = ''; if ($('board-search')) $('board-search').value = ''; rememberView(); updateFilterSheet(); }
+  function clearFilters() { state.canvasFitPending = true; state.viewState.filters = []; state.searchQuery = ''; if ($('board-search')) $('board-search').value = ''; rememberView(); updateFilterSheet(); }
   function renderControls() {
     var l = getLanguage();
     var dict = I18N[l] || I18N.en;
@@ -1811,7 +1814,8 @@
     state.viewState.filters.forEach(function (token) {
       chips.appendChild(el('button', { type: 'button', class: 'filter-chip', text: filterLabel(token) + ' ×',
         'aria-label': (getLanguage() === 'fr' ? 'Retirer le filtre ' : 'Remove filter ') + filterLabel(token), onclick: function () {
-          state.viewState.filters = state.viewState.filters.filter(function (f) { return f !== token; }); rememberView();
+          state.viewState.filters = state.viewState.filters.filter(function (f) { return f !== token; });
+          state.canvasFitPending = true; rememberView();
         } }));
     });
     $('capture-hint').hidden = !quickCapture();
@@ -1951,6 +1955,7 @@
           var button = el('button', { type: 'button', class: 'filter-option', 'data-filter': token, 'aria-pressed': String(state.viewState.filters.includes(token)), onclick: function () {
             var filters = state.viewState.filters;
             state.viewState.filters = filters.includes(token) ? filters.filter(function (f) { return f !== token; }) : filters.concat(token);
+            state.canvasFitPending = true;
             rememberView(); updateFilterSheet();
           } }, [el('span', { text: filterLabel(token) }), el('span', { class: 'filter-count', 'aria-hidden': 'true' })]);
           options.appendChild(button);
@@ -2400,6 +2405,51 @@
     } catch (_) {}
     return false;
   }
+  // Animated viewport moves exist so a phone user sees where the focus fit
+  // travelled to. Reduced motion gets the same target as an instant jump.
+  var canvasViewAnimation = 0;
+  function prefersReducedMotion() {
+    try { return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; }
+  }
+  function cancelCanvasViewAnimation() {
+    canvasViewAnimation++;
+    state.canvasAnimating = false;
+  }
+  function applyCanvasView(target) {
+    if (!target) return;
+    cancelCanvasViewAnimation();
+    state.canvasPanX = target.panX;
+    state.canvasPanY = target.panY;
+    state.canvasScale = target.scale;
+    updateCanvasTransform();
+  }
+  function animateCanvasView(target, options) {
+    if (!target) return;
+    var duration = options && typeof options.duration === 'number' ? options.duration : 320;
+    var canAnimate = typeof window.requestAnimationFrame === 'function' && !prefersReducedMotion();
+    if (!canAnimate || duration <= 0 ||
+        (Math.abs(state.canvasPanX - target.panX) < 0.5 && Math.abs(state.canvasPanY - target.panY) < 0.5 && Math.abs(state.canvasScale - target.scale) < 0.001)) {
+      applyCanvasView(target);
+      return;
+    }
+    var from = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
+    var token = ++canvasViewAnimation;
+    var started = Date.now();
+    state.canvasAnimating = true;
+    function step() {
+      if (token !== canvasViewAnimation) return;
+      var progress = Math.min(1, (Date.now() - started) / duration);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      state.canvasPanX = from.panX + (target.panX - from.panX) * eased;
+      state.canvasPanY = from.panY + (target.panY - from.panY) * eased;
+      state.canvasScale = from.scale + (target.scale - from.scale) * eased;
+      updateCanvasTransform();
+      if (progress < 1) window.requestAnimationFrame(step);
+      else { state.canvasAnimating = false; saveCanvasViewState(); }
+    }
+    window.requestAnimationFrame(step);
+  }
+
   function updateCanvasTransform() {
     var plane = $('canvas-plane');
     var readout = $('canvas-zoom-readout');
@@ -2423,7 +2473,8 @@
     viewport.style.backgroundSize = gridStep.toFixed(2) + 'px ' + gridStep.toFixed(2) + 'px';
     viewport.style.backgroundPosition = state.canvasPanX.toFixed(2) + 'px ' + state.canvasPanY.toFixed(2) + 'px';
 
-    saveCanvasViewState();
+    positionDependencyWireLabels();
+    if (!state.canvasAnimating) saveCanvasViewState();
   }
 
   var getResponses = new Map();
@@ -2459,7 +2510,6 @@
     on('canvas-dependencies', function () { setDependenciesVisible(!dependenciesVisible()); });
     on('empty-reset', clearFilters);
     on('applied-filter-btn', function () { openSheet('filter', $('applied-filter-btn')); });
-    on('compact-filter', function () { openSheet('filter', $('compact-filter')); });
     on('compact-search', function () { document.body.classList.toggle('search-open'); $('board-search').focus(); });
     on('list-group-toggle', function () { state.flatList = !state.flatList; renderBoard(); });
     ['canvas', 'list', 'decisions', 'blocked'].forEach(function (name) {
@@ -2470,6 +2520,7 @@
   function zoomToPoint(clientX, clientY, targetScale) {
     var viewport = $('canvas-viewport');
     if (!viewport) return;
+    cancelCanvasViewAnimation();
     var rect = viewport.getBoundingClientRect();
     var cx = clientX - rect.left;
     var cy = clientY - rect.top;
@@ -2506,6 +2557,7 @@
   }
 
   function resetCanvasView() {
+    cancelCanvasViewAnimation();
     state.canvasPanX = 60;
     state.canvasPanY = 60;
     state.canvasScale = 1.0;
@@ -2515,6 +2567,7 @@
   function fitAllCanvasNodes() {
     var viewport = $('canvas-viewport');
     if (!viewport) return;
+    cancelCanvasViewAnimation();
     var nodes = viewport.querySelectorAll('.canvas-card, .canvas-sticky-note, .canvas-project-band-label');
     if (!nodes || nodes.length === 0) {
       resetCanvasView();
@@ -2630,9 +2683,240 @@
     try { localStorage.setItem('tb_dependencies', value ? 'shown' : 'hidden'); } catch (_) {}
     renderCanvasWires();
   }
-  function selectDependencyCard(issue) {
-    state.dependencyFocus = state.dependencyFocus === identity(issue) ? null : identity(issue);
+
+  /* Canvas framing maths. Dependency focus, applied-filter framing and their
+     regression tests share one measured fit: what a test asserts about a card
+     landing inside the viewport is the same arithmetic the phone runs. */
+  var CANVAS_MIN_SCALE = 0.2;
+  var CANVAS_MAX_SCALE = 2.5;
+  var CANVAS_FIT_MAX_SCALE = 1;
+  var WIRE_LABEL_SCREEN_HEIGHT = 18;
+  var WIRE_LABEL_PADDING = 8;
+  var WIRE_LABEL_CARD_GAP = 10;
+  var canvasCardRectsCache = null;
+
+  function unionBounds(rects) {
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    (Array.isArray(rects) ? rects : []).forEach(function (rect) {
+      if (!rect) return;
+      var x = Number(rect.x), y = Number(rect.y);
+      if (!isFinite(x) || !isFinite(y)) return;
+      var w = isFinite(Number(rect.w)) ? Number(rect.w) : 0;
+      var h = isFinite(Number(rect.h)) ? Number(rect.h) : 0;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x + w > maxX) maxX = x + w;
+      if (y + h > maxY) maxY = y + h;
+    });
+    if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) return null;
+    return { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+  }
+
+  // The legend sits over the canvas, so the framed cards start below it instead
+  // of underneath it. The floating zoom controls do the same at the bottom.
+  function canvasFitPadding(options) {
+    var opts = options || {};
+    var legend = typeof opts.legendHeight === 'number' && opts.legendHeight > 0 ? opts.legendHeight : 0;
+    var hud = typeof opts.hudHeight === 'number' && opts.hudHeight > 0 ? opts.hudHeight : 0;
+    var narrow = Boolean(opts.narrow);
+    return {
+      top: legend ? Math.round(legend) + 20 : (narrow ? 56 : 64),
+      right: narrow ? 16 : 40,
+      bottom: hud ? Math.round(hud) + 20 : (narrow ? 28 : 48),
+      left: narrow ? 16 : 40,
+    };
+  }
+
+  function computeFitView(bounds, viewport, options) {
+    if (!bounds || !viewport) return null;
+    var opts = options || {};
+    var pad = opts.padding || {};
+    var width = Number(viewport.width) || 0;
+    var height = Number(viewport.height) || 0;
+    if (width <= 0 || height <= 0) return null;
+    var left = typeof pad.left === 'number' ? pad.left : 32;
+    var right = typeof pad.right === 'number' ? pad.right : 32;
+    var top = typeof pad.top === 'number' ? pad.top : 32;
+    var bottom = typeof pad.bottom === 'number' ? pad.bottom : 32;
+    var minScale = typeof opts.minScale === 'number' ? opts.minScale : CANVAS_MIN_SCALE;
+    var maxScale = typeof opts.maxScale === 'number' ? opts.maxScale : CANVAS_FIT_MAX_SCALE;
+    // A fit never asks for a scale the canvas itself would refuse.
+    maxScale = Math.min(CANVAS_MAX_SCALE, Math.max(CANVAS_MIN_SCALE, maxScale));
+    if (maxScale < minScale) maxScale = minScale;
+    var minX = Number(bounds.minX) || 0;
+    var minY = Number(bounds.minY) || 0;
+    var contentW = Math.max(1, (Number(bounds.maxX) || 0) - minX);
+    var contentH = Math.max(1, (Number(bounds.maxY) || 0) - minY);
+    var availW = Math.max(1, width - left - right);
+    var availH = Math.max(1, height - top - bottom);
+    var scale = Math.min(availW / contentW, availH / contentH);
+    if (!isFinite(scale) || scale <= 0) scale = maxScale;
+    scale = Math.min(maxScale, Math.max(minScale, scale));
+    return {
+      scale: scale,
+      panX: left + (availW - contentW * scale) / 2 - minX * scale,
+      panY: top + (availH - contentH * scale) / 2 - minY * scale,
+    };
+  }
+
+  // Selected task plus its direct blockers and direct dependents, as identities.
+  function dependencyNeighbourhoodKeys(focused, issues) {
+    var key = typeof focused === 'string' ? focused.toLowerCase() : '';
+    if (!key) return [];
+    var keys = [key];
+    function add(candidate) { if (keys.indexOf(candidate) === -1) keys.push(candidate); }
+    (Array.isArray(issues) ? issues : []).forEach(function (issue) {
+      if (!issue) return;
+      var candidate = identity(issue).toLowerCase();
+      if (candidate === key) { blockerKeys(issue).forEach(add); return; }
+      if (blockerKeys(issue).indexOf(key) !== -1) add(candidate);
+    });
+    return keys;
+  }
+
+  function rectsOverlap(a, b, clearance) {
+    var pad = typeof clearance === 'number' ? clearance : 0;
+    return a.x < b.x + b.w + pad && a.x + a.w > b.x - pad && a.y < b.y + b.h + pad && a.y + a.h > b.y - pad;
+  }
+
+  /* Where an edge label belongs: fully inside the visible part of the canvas and
+     off every card body, tried from the wire midpoint outwards. Labels are drawn
+     at a constant screen size, so widths arrive in screen pixels and the offset
+     is divided by the canvas scale. */
+  function computeWireLabelPosition(params) {
+    var p = params || {};
+    var scale = typeof p.scale === 'number' && p.scale > 0 ? p.scale : 1;
+    var viewport = p.viewport || {};
+    var padding = (typeof p.padding === 'number' ? p.padding : WIRE_LABEL_PADDING) / scale;
+    var gap = (typeof p.gap === 'number' ? p.gap : WIRE_LABEL_CARD_GAP) / scale;
+    var halfW = Math.max(0, Number(p.width) || 0) / 2 / scale;
+    var halfH = Math.max(0, Number(p.height) || 0) / 2 / scale;
+    var viewLeft = -(Number(viewport.panX) || 0) / scale;
+    var viewTop = -(Number(viewport.panY) || 0) / scale;
+    var viewRight = viewLeft + (Number(viewport.width) || 0) / scale;
+    var viewBottom = viewTop + (Number(viewport.height) || 0) / scale;
+    var minX = viewLeft + padding + halfW, maxX = viewRight - padding - halfW;
+    var minY = viewTop + padding + halfH, maxY = viewBottom - padding - halfH;
+    function clamp(value, low, high) {
+      if (low > high) return (low + high) / 2;
+      return Math.min(high, Math.max(low, value));
+    }
+    var midX = Number(p.midX) || 0;
+    var midY = Number(p.midY) || 0;
+    var obstacles = (Array.isArray(p.cards) ? p.cards : []).filter(function (card) {
+      return card && isFinite(Number(card.x)) && isFinite(Number(card.y));
+    }).map(function (card) {
+      return { x: Number(card.x), y: Number(card.y), w: Number(card.w) || 0, h: Number(card.h) || 0 };
+    });
+    var lift = halfH + gap + 8 / scale;
+    var candidates = [];
+    for (var step = 0; step < 6; step++) {
+      var offset = lift + step * (halfH * 2 + gap);
+      candidates.push({ x: midX, y: midY - offset });
+      candidates.push({ x: midX, y: midY + offset });
+    }
+    candidates.push({ x: midX - (halfW + gap + 8 / scale), y: midY });
+    candidates.push({ x: midX + (halfW + gap + 8 / scale), y: midY });
+    var fallback = null;
+    for (var i = 0; i < candidates.length; i++) {
+      var center = { x: clamp(candidates[i].x, minX, maxX), y: clamp(candidates[i].y, minY, maxY) };
+      if (!fallback) fallback = center;
+      var box = { x: center.x - halfW, y: center.y - halfH, w: halfW * 2, h: halfH * 2 };
+      var clear = true;
+      for (var k = 0; k < obstacles.length; k++) {
+        if (rectsOverlap(box, obstacles[k], gap / 2)) { clear = false; break; }
+      }
+      if (clear) return { x: center.x, y: center.y };
+    }
+    return fallback || { x: midX, y: midY };
+  }
+
+  function canvasCardRects() {
+    if (canvasCardRectsCache) return canvasCardRectsCache;
+    var cardsLayer = $('canvas-cards');
+    var rects = [];
+    if (cardsLayer) cardsLayer.querySelectorAll('.canvas-card').forEach(function (card) {
+      rects.push({
+        key: card.getAttribute('data-issue-key'),
+        x: card.offsetLeft,
+        y: card.offsetTop,
+        w: card.offsetWidth || 280,
+        h: card.offsetHeight || 110,
+      });
+    });
+    canvasCardRectsCache = rects;
+    return rects;
+  }
+
+  function canvasViewportSize() {
+    var viewport = $('canvas-viewport');
+    if (!viewport) return null;
+    var width = viewport.clientWidth || 0;
+    var height = viewport.clientHeight || 0;
+    return width > 0 && height > 0 ? { width: width, height: height } : null;
+  }
+
+  function frameCanvasRects(rects, options) {
+    var size = canvasViewportSize();
+    var bounds = unionBounds(rects);
+    if (!size || !bounds) return false;
+    var target = computeFitView(bounds, size, options);
+    if (!target) return false;
+    animateCanvasView(target);
+    return true;
+  }
+
+  function frameDependencyFocus() {
+    var keys = dependencyNeighbourhoodKeys(state.dependencyFocus, state.currentCanvasIssues || []);
+    if (!keys.length) return false;
+    var rects = canvasCardRects().filter(function (rect) {
+      return rect.key && keys.indexOf(rect.key.toLowerCase()) !== -1;
+    });
+    var legend = $('dependency-legend');
+    var legendHeight = legend && !legend.hidden && legend.getBoundingClientRect ? legend.getBoundingClientRect().height : 0;
+    var size = canvasViewportSize();
+    return frameCanvasRects(rects, {
+      padding: canvasFitPadding({
+        legendHeight: legendHeight,
+        hudHeight: canvasHudHeight(),
+        narrow: Boolean(size && size.width <= 768),
+      }),
+    });
+  }
+
+  // The floating zoom bar is pinned to the bottom of the viewport; a framed
+  // card must not land underneath it.
+  function canvasHudHeight() {
+    var hud = $('canvas-controls');
+    if (!hud || hud.hidden || !hud.getBoundingClientRect) return 0;
+    var rect = hud.getBoundingClientRect();
+    return rect.height > 0 ? rect.height + 12 : 0;
+  }
+
+  function frameFilteredCanvas() {
+    var size = canvasViewportSize();
+    var rects = canvasCardRects().filter(function (rect) { return rect.w > 0 && rect.h > 0; });
+    return frameCanvasRects(rects, {
+      padding: canvasFitPadding({ hudHeight: canvasHudHeight(), narrow: Boolean(size && size.width <= 768) }),
+    });
+  }
+
+  function clearDependencyFocus() {
+    if (!state.dependencyFocus) return;
+    var saved = state.dependencyFocusReturn;
+    state.dependencyFocus = null;
+    state.dependencyFocusReturn = null;
     renderCanvasWires();
+    if (saved) animateCanvasView(saved);
+  }
+
+  function selectDependencyCard(issue) {
+    var key = identity(issue);
+    if (state.dependencyFocus === key) { clearDependencyFocus(); return; }
+    state.dependencyFocusReturn = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
+    state.dependencyFocus = key;
+    renderCanvasWires();
+    frameDependencyFocus();
   }
   function dependencyRole(key, focused, issues) {
     if (!focused) return '';
@@ -2645,6 +2929,10 @@
   function applyDependencyFocus() {
     var issues = state.currentCanvasIssues || [];
     var focused = issues.find(function (i) { return identity(i) === state.dependencyFocus; });
+    if (state.dependencyFocus && !focused) {
+      state.dependencyFocus = null;
+      state.dependencyFocusReturn = null;
+    }
     var layer = $('canvas-cards');
     if (layer) layer.querySelectorAll('.canvas-card').forEach(function (card) {
       var role = dependencyRole(card.getAttribute('data-issue-key'), focused, issues);
@@ -2660,7 +2948,7 @@
     if (!focused) return;
     legend.appendChild(el('div', { class: 'legend-head' }, [
       el('strong', { text: '#' + focused.number + ' ' + (fr ? 'Dépendances' : 'Dependencies') }),
-      el('button', { type: 'button', class: 'button', text: fr ? 'Quitter' : 'Clear', 'aria-label': fr ? 'Quitter la sélection' : 'Clear dependency selection', onclick: function () { state.dependencyFocus = null; renderCanvasWires(); } }),
+      el('button', { type: 'button', class: 'button', text: fr ? 'Fermer' : 'Close', 'aria-label': fr ? 'Fermer la vue des dépendances' : 'Close the dependency view', onclick: clearDependencyFocus }),
     ]));
     legend.appendChild(el('div', { class: 'legend-keys' }, [
       el('span', { class: 'legend-blocker', text: fr ? 'Bloque cette tâche' : 'Blocks this task' }),
@@ -2684,10 +2972,51 @@
     if (!labelsLayer) return;
     var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     label.setAttribute('class', 'dependency-wire-label');
-    label.setAttribute('x', String(curve.midX)); label.setAttribute('y', String(curve.midY - 16));
+    label.setAttribute('x', '0'); label.setAttribute('y', '0');
     label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('data-mid-x', String(curve.midX)); label.setAttribute('data-mid-y', String(curve.midY));
     label.textContent = '#' + blockerNumber + (getLanguage() === 'fr' ? ' bloque #' : ' blocks #') + targetNumber;
     labelsLayer.appendChild(label);
+    positionDependencyWireLabels();
+  }
+
+  /* Keeps every edge label at a constant screen size and inside the visible
+     canvas, whichever way the user pans or zooms. */
+  function positionDependencyWireLabels() {
+    var labelsLayer = $('canvas-wire-labels');
+    var size = canvasViewportSize();
+    if (!labelsLayer || !size) return;
+    var labels = labelsLayer.querySelectorAll('.dependency-wire-label');
+    if (!labels || !labels.length) return;
+    var scale = state.canvasScale > 0 ? state.canvasScale : 1;
+    var viewport = { width: size.width, height: size.height, panX: state.canvasPanX, panY: state.canvasPanY };
+    var obstacles = canvasCardRects().slice();
+    labels.forEach(function (label) {
+      var width = Number(label.getAttribute('data-screen-width')) || 0;
+      if (!width) {
+        try { width = label.getComputedTextLength(); } catch (_) { width = 0; }
+        if (!isFinite(width) || width <= 0) width = Math.max(48, (label.textContent || '').length * 7.6);
+        label.setAttribute('data-screen-width', String(Math.round(width * 10) / 10));
+      }
+      var placed = computeWireLabelPosition({
+        midX: Number(label.getAttribute('data-mid-x')) || 0,
+        midY: Number(label.getAttribute('data-mid-y')) || 0,
+        width: width,
+        height: WIRE_LABEL_SCREEN_HEIGHT,
+        scale: scale,
+        viewport: viewport,
+        cards: obstacles,
+        padding: WIRE_LABEL_PADDING,
+        gap: WIRE_LABEL_CARD_GAP,
+      });
+      obstacles.push({
+        x: placed.x - width / 2 / scale,
+        y: placed.y - WIRE_LABEL_SCREEN_HEIGHT / 2 / scale,
+        w: width / scale,
+        h: WIRE_LABEL_SCREEN_HEIGHT / scale,
+      });
+      label.setAttribute('transform', 'translate(' + (Math.round(placed.x * 10) / 10) + ' ' + (Math.round(placed.y * 10) / 10) + ') scale(' + (1 / scale).toFixed(4) + ')');
+    });
   }
 
   function createIssueCanvasCard(issue, pos) {
@@ -4365,6 +4694,7 @@
     existingGroups.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
     var labelsLayer = $('canvas-wire-labels');
     if (labelsLayer) labelsLayer.textContent = '';
+    canvasCardRectsCache = null;
 
     applyDependencyFocus();
     var visible = dependenciesVisible(), toggle = $('canvas-dependencies'), fr = getLanguage() === 'fr';
@@ -4381,6 +4711,7 @@
     var cardMap = new Map();
     var cardByKey = new Map();
     var allPoints = [];
+    var cardRects = [];
 
     cardElements.forEach(function (card) {
       var num = Number(card.getAttribute('data-issue-number'));
@@ -4394,9 +4725,11 @@
       };
       cardMap.set(num, pos);
       if (key) cardByKey.set(key, pos);
+      cardRects.push({ key: key, x: pos.x, y: pos.y, w: pos.w, h: pos.h });
       allPoints.push({ x: pos.x, y: pos.y });
       allPoints.push({ x: pos.x + pos.w, y: pos.y + pos.h });
     });
+    canvasCardRectsCache = cardRects;
 
     var cardList = Array.from(cardByKey.size > 0 ? cardByKey.values() : cardMap.values());
     var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
@@ -4947,6 +5280,7 @@
 
     viewport.addEventListener('wheel', function (e) {
       e.preventDefault();
+      cancelCanvasViewAnimation();
       if (e.ctrlKey || e.metaKey) {
         var zoomFactor = Math.exp(-e.deltaY * 0.005);
         var targetScale = Math.min(2.5, Math.max(0.2, state.canvasScale * zoomFactor));
@@ -4968,11 +5302,12 @@
       if (activeWireConfirmData && (!e.target || !e.target.closest || !e.target.closest('#canvas-wire-confirm'))) {
         hideWireDeleteConfirm();
       }
-      if (e.target && e.target.closest && (e.target.closest('#canvas-wire-confirm') || e.target.closest('#canvas-arrange-dialog'))) return;
+      if (e.target && e.target.closest && (e.target.closest('#canvas-wire-confirm') || e.target.closest('#canvas-arrange-dialog') || e.target.closest('#dependency-legend'))) return;
       if (e.button !== undefined && e.button !== 0) return;
       if (e.target.closest('.canvas-card') || e.target.closest('.canvas-sticky-note') || e.target.closest('.canvas-floating-controls') || e.target.closest('.canvas-wire-group') || e.target.closest('.canvas-arrange-dialog')) return;
 
       isPanning = true;
+      cancelCanvasViewAnimation();
       viewport.classList.add('is-panning');
       panStartX = e.clientX;
       panStartY = e.clientY;
@@ -5004,7 +5339,7 @@
     var touchState = { mode: null, startX: 0, startY: 0, initPanX: 0, initPanY: 0, startDist: 0, startScale: 1, midX: 0, midY: 0 };
 
     viewport.addEventListener('touchstart', function (e) {
-      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-sticky-note') || e.target.closest('.canvas-floating-controls') || e.target.closest('.canvas-arrange-dialog') || e.target.closest('button')) return;
+      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-sticky-note') || e.target.closest('.canvas-floating-controls') || e.target.closest('.canvas-arrange-dialog') || e.target.closest('#dependency-legend') || e.target.closest('button')) return;
 
       if (e.touches.length === 1) {
         touchState.mode = 'pan';
@@ -5158,7 +5493,6 @@
     document.title = name + ' — ' + (dict.brand_title || 'Workflows Board');
     if ($('compact-project-name')) $('compact-project-name').textContent = name;
     if ($('compact-count')) $('compact-count').textContent = String((board.issues || []).length);
-    if ($('compact-filter')) $('compact-filter').setAttribute('data-active', String(state.viewState.filters.length > 0));
     if ($('list-group-toggle')) $('list-group-toggle').textContent = state.flatList ? dict.grouped_list : dict.flat_list;
     updateDock();
     renderControls(); renderFreshness(); updateSidebarBadges();
@@ -5202,6 +5536,12 @@
     if ($('list-group-toggle')) $('list-group-toggle').hidden = state.activeViewMode === 'canvas';
     if (state.activeViewMode === 'canvas') {
       renderCanvasIssues(issues);
+      if (state.canvasFitPending) {
+        state.canvasFitPending = false;
+        // A filter is a frame request, never a reason to hide cards that were
+        // already on the canvas. Focus keeps its own framing when both apply.
+        if (issues.length > 0 && !state.dependencyFocus) frameFilteredCanvas();
+      }
       return;
     }
 
@@ -7948,6 +8288,14 @@
       setCanvasZoom: setCanvasZoom,
       resetCanvasView: resetCanvasView,
       fitAllCanvasNodes: fitAllCanvasNodes,
+      unionBounds: unionBounds,
+      computeFitView: computeFitView,
+      canvasFitPadding: canvasFitPadding,
+      computeWireLabelPosition: computeWireLabelPosition,
+      dependencyNeighbourhoodKeys: dependencyNeighbourhoodKeys,
+      clearDependencyFocus: clearDependencyFocus,
+      frameDependencyFocus: frameDependencyFocus,
+      frameFilteredCanvas: frameFilteredCanvas,
       renderCanvasWires: renderCanvasWires,
       renderDependencies: renderDependencies,
       addIssueDependencyAction: addIssueDependencyAction,
