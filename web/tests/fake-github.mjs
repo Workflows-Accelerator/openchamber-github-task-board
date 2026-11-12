@@ -5,6 +5,11 @@ import { createHash } from 'node:crypto';
 import http from 'node:http';
 
 let issueNodeCounter = 0;
+let commentIdCounter = 0;
+
+// Synthetic comment timestamps move forward deterministically, so "newest
+// first" ordering is a property of the fixture, never of the wall clock.
+const COMMENT_CLOCK_START = Date.parse('2026-10-20T10:00:00Z');
 
 export function makeIssue({
   number,
@@ -89,6 +94,26 @@ function repositorySpec(input, index) {
     }
     return copy;
   });
+  // Comments are keyed by issue number, exactly like GitHub stores them.
+  const comments = new Map();
+  for (const [key, list] of Object.entries(input.comments ?? {})) {
+    const number = Number(key);
+    const entries = (Array.isArray(list) ? list : []).map((comment) => {
+      commentIdCounter += 1;
+      return {
+        id: commentIdCounter,
+        body: typeof comment.body === 'string' ? comment.body : '',
+        user: { login: comment.user ?? 'board-owner', avatar_url: '' },
+        created_at: comment.created_at ?? new Date(COMMENT_CLOCK_START + commentIdCounter * 1000).toISOString(),
+        html_url: `https://github.com/${repo}/issues/${number}#issuecomment-${commentIdCounter}`,
+      };
+    });
+    comments.set(number, entries);
+    const seeded = clonedIssues.find((issue) => issue.number === number);
+    if (seeded && entries.length > 0) {
+      seeded.comments = Math.max(typeof seeded.comments === 'number' ? seeded.comments : 0, entries.length);
+    }
+  }
   return {
     repo,
     id,
@@ -99,6 +124,7 @@ function repositorySpec(input, index) {
     accessible: input.accessible !== false,
     failing: Boolean(input.failing),
     issues: clonedIssues,
+    comments,
     maxIssueNumber: clonedIssues.reduce((max, i) => Math.max(max, i.number), 0),
     dependencies: input.dependencies ? structuredClone(input.dependencies) : [],
     openIssuesCount: input.openIssuesCount,
@@ -131,6 +157,7 @@ export async function startFakeGitHub(options = {}) {
           {
             repo,
             issues: options.issues ?? [],
+            comments: options.comments ?? {},
             archived: options.archived,
             hasIssues: options.hasIssues,
             accessible: options.repoAccessible,
@@ -146,6 +173,7 @@ export async function startFakeGitHub(options = {}) {
     commentCalls: [],
     graphqlCalls: [],
     commentHook: options.commentHook ?? null,
+    commentsReadHook: options.commentsReadHook ?? null,
     graphqlHook: options.graphqlHook ?? null,
     unknownRepoHits: [],
     failAll: false,
@@ -162,6 +190,9 @@ export async function startFakeGitHub(options = {}) {
     activeIssueLists: 0,
     maxActiveIssueLists: 0,
     repositories: specs,
+    // Comments as the fixture currently stores them, so a test can prove that a
+    // failed note really left no comment behind.
+    commentsFor: (number) => [...(primary.comments.get(number) ?? [])],
   };
   Object.defineProperty(state, 'issues', {
     configurable: true,
@@ -354,14 +385,64 @@ export async function startFakeGitHub(options = {}) {
         return send(201, newIssue, { etag: etagFor(newIssue) });
       }
 
+      if (parts[3] === 'issues' && parts[5] === 'comments' && req.method === 'GET') {
+        const number = Number(parts[4]);
+        const issue = spec.issues.find((i) => i.number === number);
+        if (!issue) return send(404, { message: 'Not Found' });
+        if (state.commentsReadHook) {
+          const result = await state.commentsReadHook({ number, spec, url });
+          if (result) return send(result.status, result.payload ?? {});
+        }
+        const all = [...(spec.comments.get(number) ?? [])].sort((a, b) => {
+          const byTime = String(a.created_at).localeCompare(String(b.created_at));
+          return byTime !== 0 ? byTime : a.id - b.id;
+        });
+        const requestedPerPage = Number(url.searchParams.get('per_page') ?? perPage);
+        const size = requestedPerPage > 0 ? Math.min(requestedPerPage, perPage) : perPage;
+        const page = Math.max(1, Number(url.searchParams.get('page') ?? 1));
+        const items = all.slice((page - 1) * size, page * size);
+        const commentsEtag = `"${createHash('sha1').update(JSON.stringify(items)).digest('hex')}"`;
+        const headers = { etag: commentsEtag };
+        const ifNoneMatch = req.headers['if-none-match'];
+        if (state.honorIfNoneMatch && ifNoneMatch) {
+          const cleanMatch = ifNoneMatch.replace(/^W\//, '');
+          if (cleanMatch === commentsEtag.replace(/^W\//, '')) {
+            return send(304, undefined, headers);
+          }
+        }
+        return send(200, items, headers);
+      }
+
       if (parts[3] === 'issues' && parts[5] === 'comments' && req.method === 'POST') {
-        const payload = await readBody(req);
+        let payload;
+        try {
+          payload = await readBody(req);
+        } catch {
+          return send(400, { message: 'Bad Request' });
+        }
         if (state.commentHook) {
           const result = await state.commentHook(payload, spec);
           if (result) return send(result.status, result.payload ?? {});
         }
-        state.commentCalls.push({ repo: spec.repo, number: Number(parts[4]), payload });
-        return send(201, { id: state.commentCalls.length, ...payload });
+        const number = Number(parts[4]);
+        const issue = spec.issues.find((i) => i.number === number);
+        if (!issue) return send(404, { message: 'Not Found' });
+        if (!payload || typeof payload.body !== 'string' || !payload.body.trim()) {
+          return send(422, { message: 'Validation Failed', errors: [{ resource: 'IssueComment', field: 'body', code: 'missing' }] });
+        }
+        state.commentCalls.push({ repo: spec.repo, number, payload });
+        commentIdCounter += 1;
+        const comment = {
+          id: commentIdCounter,
+          body: payload.body,
+          user: { login, avatar_url: '' },
+          created_at: new Date(COMMENT_CLOCK_START + commentIdCounter * 1000).toISOString(),
+          html_url: `https://github.com/${spec.repo}/issues/${number}#issuecomment-${commentIdCounter}`,
+        };
+        if (!spec.comments.has(number)) spec.comments.set(number, []);
+        spec.comments.get(number).push(comment);
+        issue.comments = (typeof issue.comments === 'number' ? issue.comments : 0) + 1;
+        return send(201, comment, { etag: `"${createHash('sha1').update(String(comment.id)).digest('hex')}"` });
       }
       if (parts[3] === 'issues' && parts[5] === 'dependencies') {
         const number = Number(parts[4]);
