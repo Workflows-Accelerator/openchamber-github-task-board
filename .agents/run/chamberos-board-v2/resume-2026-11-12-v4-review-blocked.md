@@ -1,11 +1,14 @@
 # Current handover — V4 rejected again, alignment needed, 2026-11-12
 
-## Authoritative state
-- NO active worker. Final independent review `ses_e85281d189897ffd77c9fc47` completed, model `9router/genius` verified from final assistant record.
+## Authoritative state — UPDATE after user choice
+- User answered render form D39: "Correction limitée (recommandé)", no note. Approved only truthful zoom-limit message/labels and R2 state fix; no linked-task navigation or wider zoom range.
+- Active sole worker `ses_9e90b026f1e3847965793d7f`, genius requested, real model verify at completion. Brief tasks/wave3g-v4-r1-r2-bounded-fix.md, base 0cef002. Required failing-before/passing-after probes, local source/evidence commits, hostile self-check; then fresh independent targeted review. If review fails again, stop and ask.
+- Original rejection follows for context. Final independent review `ses_e85281d189897ffd77c9fc47` completed, model `9router/genius` verified from final assistant record.
 - Review result SPEC FAIL / QUALITY CHANGES REQUESTED. Evidence commit `0cef002f5401d54483c2c037fea998702fc5da08`, reviewed application `cd64af10bbc2e888990377143a2fcd1ce812bb7c`. Manager confirmed git log/status, read full report and actual R1 screenshot.
 - Worktree branch feat/board-v3 at 0cef002, tracked clean; prior untracked verifications/V4-1-L4/ untouched. Do not create duplicate or resume ended session.
 - Independent report: worktree `.agents/run/chamberos-board-v2/verifications/V4-final-L4/report.md`.
-- Issue receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/55#issuecomment-6822035849
+- Review-blocker receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/55#issuecomment-6822035849
+- D39 alignment/dispatch receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/55#issuecomment-6822211120
 
 ## Open defects (only these; don't redo accepted design)
 R1 P1 app.js:3039–3045,3176–3185,3228–3247: on spread fixture 360/390, explicit Show all reaches zoom min 0.2 without containing three neighbours. It then clears warning and shows endpoint labels as if contained. Reproduced 8/8. Automatic 0.55 D37 is correct. Minimal fix: honest persistent limit message and hide labels whose endpoints are absent. Actual full-fit would need approved changed bounds or new presentation/navigation; do not silently widen global scale or add nav.
@@ -18,7 +21,8 @@ R2 P2 app.js:5803–5823/3115–3124: apply filter → focus Dependencies → re
 - These broad suites do NOT cover R1/R2. Fresh targeted probes failed despite green suites.
 - Chromium synthetic only, no new production/authenticated/physical-device proof. Prior live drag already confirmed by user; don't ask again.
 
-## Stop and ask (do not automatically spin another builder)
+## Alignment checkpoint — completed (do not re-ask)
+User selected option 1 below as D39. This section preserves the alternatives; it is not a pending request.
 Two independent reviews failed. User already approved D37 readability-first, not misleading full-fit or new navigation. Offer one direction choice via render UI awaitAnswer:
 1. Bounded correction (recommended): truthful zoom-limit feedback/accurate offscreen labels, keep existing pan+zoom/navigation and 0.2 min, fix R2. No new feature.
 2. Direct access to linked tasks: add visible linked-task navigation (jump to neighbour), still preserving zoom constraints, plus R2. Broader scope and extra independent proof.
