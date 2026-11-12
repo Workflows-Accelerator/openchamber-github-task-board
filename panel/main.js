@@ -6538,7 +6538,7 @@ Instructions for the Agent:
      - [ ] Reproduce with test / define contract
      - [ ] Implement core changes
      - [ ] Run test suite and verify green
-   - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
+   - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify. When a question has up to 8 concrete recommendations, put each on its own line directly after the question, indented two spaces, as "  - label :: gist :: details" (label at most 120 characters, gist on one line, details optional Markdown). A malformed option line is skipped and a question with no valid options stays plain. Option lines are recommendation metadata only: the question must still read as self-contained prose with those lines removed, and every question must keep a free-text answer path (presets are suggestions, never a required choice).
    - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
    - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
@@ -6576,7 +6576,7 @@ Instructions for the Alignment Session:
    - Overview: "## Overview" with problem description and user value
    - Acceptance Criteria: "### Acceptance Criteria:" with testable checkboxes (- [ ])
    - Actionable Subtasks Checklist: "### Actionable Subtasks Checklist:" with discrete implementation steps (- [ ])
-   - Open Questions: "### Open Questions:" (- [ ] unresolved, - [x] answered)
+   - Open Questions: "### Open Questions:" (- [ ] unresolved, - [x] answered). When a question has up to 8 concrete recommendations, put each on its own line directly after the question, indented two spaces, as "  - label :: gist :: details" (label at most 120 characters, gist on one line, details optional Markdown); malformed option lines are skipped and fall back to a plain question. Option lines are recommendation metadata: the question must still read as self-contained prose without them, and every question must keep a free-text answer path.
    - Human Tasks: "### Human Tasks:" with verb-first items for verification
    - Test Plan: "## Test Plan (Issue):" with verification commands (- [ ])
    - Suggested worktree branch slug ("issue-<number>-<slug>")`;

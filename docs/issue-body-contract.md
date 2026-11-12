@@ -31,6 +31,27 @@ Checkboxes `- [ ]`. The agent's own work steps (parse: `parseSubtasks`, `panel/c
 ### 2.5 `### Open Questions:`
 Checkboxes `- [ ]`, each phrased as a question needing human alignment. Items must be **self-contained prose** (chambervoice reads raw issue bodies over REST and sees no drawer metadata). Unchecked = unanswered. Answering writes the answer inline and checks the box (`answerOpenQuestionInMarkdown`, `panel/core.ts`). Unanswered questions appear in the Questions view REGARDLESS of the issue's status column.
 
+#### Preset answer options (optional)
+
+A question may carry recommended answers. Put each recommendation on its own line directly after the question line, indented two spaces, in this exact form:
+
+```markdown
+## Open Questions
+- [ ] Which database should we use for the audit trail?
+  - PostgreSQL :: Mature and familiar :: **Operations stay unchanged**; `pg_dump` already works.
+  - SQLite :: Zero operations :: A single file, but no concurrent writers.
+```
+
+Format rules (`parseWebOpenQuestions` in `web/server/board.ts` is the only parser for these option lines):
+
+- `  - label :: gist :: details`: two spaces, a list marker (`-`, `*`, `+` or `1.`), the label, ` :: `, a one-line gist, then optional details. Only the label is required; the gist is one line; the details field is free Markdown and keeps any later ` :: ` separators.
+- At most 8 options per question. Labels are at most 120 characters. An option with an empty label, or a label longer than 120 characters, is skipped.
+- The option block ends at the first blank line, unindented line, indented code block or heading. A malformed line is skipped; when every line is invalid, the question falls back to the plain question with no options.
+- A nested checklist item (`  - [ ] step`) is a subtask, not an option.
+- Answering writes the answer inline and checks the box; the option lines stay in the body.
+
+**Reconciliation with self-contained prose.** Option lines are recommendation metadata that the board renders; they are not part of the question's prose. The question must still read correctly as plain prose when the option lines are stripped, because chambervoice and every raw-body reader never see the drawer. The free-text answer path always stays valid: presets are suggestions, never a required choice, and every question must remain answerable in prose.
+
 ### 2.6 `### Human Tasks:` (NEW in v1 — decision D1)
 Checkboxes `- [ ]`. Each item is ONE concrete action a human must take. Rules:
 - Verb first: "Approve ...", "Grant access to ...", "Answer: ...", "Review PR #N", "Merge ...", "Deploy ...", "Run ...".
@@ -133,9 +154,10 @@ Auto-transitions (`panel/labels.ts`, reconciler `StatusReconciler`):
 
 ## 5. Prompt contract
 
-`DEFAULT_AI_ISSUE_PROMPT` must instruct agents to emit sections 2.1-2.6 with these exact spellings, including `### Human Tasks:` with verb-first items when blocking or handing off. `test/ai-prompt.test.js` asserts the required strings and ordering. Any change to this doc must land with matching parser + prompt + test changes in the same commit series.
+`DEFAULT_AI_ISSUE_PROMPT` must instruct agents to emit sections 2.1-2.6 with these exact spellings, including `### Human Tasks:` with verb-first items when blocking or handing off. It and `DEFAULT_AI_ALIGNMENT_PROMPT` also name the §2.5 preset-option convention so generated questions can carry recommendations while keeping a free-text answer path. `test/ai-prompt.test.js` asserts the required strings and ordering. Any change to this doc must land with matching parser + prompt + test changes in the same commit series.
 
 ## 6. Versioning
 
 v1 = this file. Additions bump minor (v1.1), renames/removals bump major and must update parsers, prompt template, skill, and tests together.
 v1.1 = adds Section 2.8 Work Log contract with single-line work-type justification and proportionate paths (decision D1 / issue #30).
+v1.2 = documents preset answer options in Section 2.5 and their authoring prompts.
