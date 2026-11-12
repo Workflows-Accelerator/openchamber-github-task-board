@@ -1,9 +1,10 @@
+ 20:53:31 up 34 days, 21:08,  0 user,  load average: 5.68, 6.93, 7.09
 
   ../../../../../tmp/opencode/v4-2-client-check.js  401.4kb
 
-⚡ Done in 82ms
-
-  ../../../../../tmp/opencode/v4-2-server-check.mjs  230.5kb
-
 ⚡ Done in 60ms
+
+  ../../../../../tmp/opencode/v4-2-server-check.mjs  230.6kb
+
+⚡ Done in 56ms
 EXIT_CODE=0

@@ -1,7 +1,8 @@
 # V4-2 verification: agent notes as GitHub comments, Markdown decision options
 
-This branch is `feat/board-v3` and the base is `d1eef33`. Source commit `5430f36`, tests commit `b0718cc`. Every
-run below used a synthetic preview against the fake GitHub in
+This branch is `feat/board-v3` and the base is `d1eef33`. Source commit `5430f36`, tests commit `b0718cc`.
+The evidence commit is `aa9e1e3`; a later local `fix(v4-2)` commit adds the 410 mapping and its test (finding 1
+below). Every run below used a synthetic preview against the fake GitHub in
 `web/tests/fake-github.mjs`. The runs made no real GitHub requests and deployed nothing. This
 evidence does not say that V4-2 is live or that a human has accepted it.
 
@@ -59,28 +60,25 @@ I did not change D37, D38, D39 or the filter and dependency return-view state.
 
 | command | result | log |
 |---|---|---|
-| `node --test --test-timeout=30000 web/tests/*.test.mjs` | 669/669, EXIT 0 (baseline 631; 668 before the option fix, `web-tests-before-option-fix.log`) | `logs/web-tests.log` |
+| `node --test --test-timeout=30000 web/tests/*.test.mjs` | 670/670, EXIT 0 (before the 410 fix: 658 pass + 1 cancelled at a 30 s timeout, load 7.5, `web-tests-before-410-fix.log`) | `logs/web-tests.log` |
 | `npm run typecheck` | EXIT 0 | `logs/typecheck.log` |
-| esbuild client and server bundle check | EXIT 0 (401.4kb / 230.5kb) | `logs/esbuild.log` |
+| esbuild client and server bundle check | EXIT 0 (401.4kb / 230.6kb) | `logs/esbuild.log` |
 | `node scripts/browser.mjs` | pass true, 12 cases, 48 screenshots, EXIT 0 | `logs/browser.log` |
 | `node scripts/framing-promise.mjs` | 12/12, EXIT 0 | `logs/framing-promise.log` |
-| `DELIVERY_DIR=…/V4-2 node scripts/generate-delivery-smoke.mjs` | EXIT 0, real 6m11.8s, 14 sections, 191 captures (after option fix) | `logs/delivery-smoke.log`, `smoke.json`, timings in `logs/delivery-smoke-timing.log` |
-| `npm test` (panel suite `test/*.test.js`) | **not green**: attempt 1 617/618, attempt 2 615/618, EXIT 1 | `logs/npm-test-attempt-1.log`, `logs/npm-test.log` |
+| `DELIVERY_DIR=…/V4-2 node scripts/generate-delivery-smoke.mjs` | EXIT 0, real 6m01.0s, 14/14 PASS, 191 captures (attempt 5, post-410-fix) | `logs/delivery-smoke.log`, `smoke.json`, timings in `logs/delivery-smoke-timing.log` |
+| `npm test` (panel suite `test/*.test.js`) | **not green**: pre-existing load-sensitive flake, see the head-vs-base section | `logs/npm-test-*.log` |
 
-`npm test` failures:
-- `panel-simple-views` "quick capture… release is not a function" (attempt 1 only).
-- `panel-simple-views:117` drawer description `0 !== 1` (attempt 2 only).
-- `scale-and-adversarial` timing failures: 130ms > 100ms and 76ms > 60ms (attempt 2, load average about 12).
-
-The failing set was different in each run. Every failing file imports only `panel/**`, and `panel/**` has no diff.
-`panel-simple-views` passed 16/16 when run alone, twice. The two `test/` files that read `web/` source
-(`web-drawer-parity`, `offline-drafts`) passed 12/12 when run alone. I did not re-run the full suite in a loop.
+`npm test` failure names seen across runs: `scale-and-adversarial` "5,000 checkboxes … <50ms" (actual 59.39ms,
+59.01ms), `panel-simple-views:290` "quick capture … Cannot read properties of undefined (reading 'payload')",
+and earlier `panel-simple-views` "quick capture… release is not a function" and `panel-simple-views:117`
+drawer description `0 !== 1`. The failing test differs per run; no test was edited or weakened.
 
 Delivery smoke attempts:
 1. Missing `libglib-2.0.so.0`; exited 1 after 1.5 s.
 2. Fontconfig `FATAL SkFontMgr_FontConfigInterface.cpp:163`, which caused a login-form timeout.
-3. EXIT 0 in 5m13.9s with 14 sections. This was before the option fix; the log is kept as `logs/delivery-smoke-before-option-fix.log`.
-4. After the option fix: EXIT 0 in 6m11.8s with 14 sections and 191 captures (`logs/delivery-smoke.log`).
+3. EXIT 0 in 5m13.9s, 14 sections, before the option fix (`logs/delivery-smoke-before-option-fix.log`).
+4. EXIT 0 in 6m11.8s, 14 sections, after the option fix (`logs/delivery-smoke-before-410-fix.log`).
+5. EXIT 0 in 6m01.0s, 14/14 PASS, after the 410 fix — the current `logs/delivery-smoke.log` and `smoke.json`.
 
 ## Browser environment deviation
 
@@ -95,9 +93,12 @@ real Chromium here. Node is v22.23.5, not the Node 20 named in the brief.
 - Marker `<!-- board-note: 1 -->` must be the first non-blank line. A quoted or later marker is
   not treated as a note, and versions 0 and 2 are rejected. Comments are append-only: the board never PATCHes or DELETEs them.
 - `POST /api/issues/:n/notes` and `/api/repos/:o/:r/issues/:n/notes` require CSRF and take a per-issue lock.
-- Empty and oversized notes get a 400 before any POST. Refusals 403 (forbidden or locked), 404 and 422 are honest and
-  create nothing. On a lost response the client reconciles and creates no duplicate. A double send creates 1 comment.
-  An unsent draft survives closing and reopening the drawer.
+- Empty and oversized notes get a 400 before any POST. Refusals 403 (forbidden or locked), 404 and 410 create
+  nothing and are reported as definite. A 422 in GitHub's documented validation shape
+  (`errors[].resource/field/code`) is also definite (400 `invalid_note`). A 422 carrying only
+  `errors[].message` is treated as possibly committed and reported 502 `note_outcome_unknown`, with no
+  claim that it was saved. On a lost response the client reconciles and creates no duplicate. A double send
+  creates 1 comment. An unsent draft survives closing and reopening the drawer.
 - API cost: opening the drawer adds 1 conditional comments GET (304 when unchanged). The board list adds 0
   comment requests. A send costs getIssue, dependencies, POST, getIssue re-read and a forced comments GET.
   The browser run counted 19 conditional comments GETs.
@@ -120,7 +121,53 @@ real Chromium here. Node is v22.23.5, not the Node 20 named in the brief.
   `regression/screenshots/{focus-*,filter-applied-framed,m4-entry-points,m5-legend}-*.png` (the old probe).
 - The remaining files in `screenshots/` come from the delivery smoke (list, canvas, sheets, sidebar, filters, dependency, brand, settings).
 
-## Not verified
+## `npm test`: HEAD vs the released base `d1eef33`
+
+The repository has no lockfile, so the throwaway detached worktree at `d1eef33` reused this worktree's
+`node_modules` through a symlink. `git diff d1eef33 HEAD -- panel test` is empty, and
+`panel/core.ts` and `test/stage1-dual-mode-and-scoping.test.js` have identical md5 sums in both trees.
+
+| tree | full `npm test` | failing test | load at start |
+|---|---|---|---|
+| HEAD `aa9e1e3` (V4-2) | 617/618, EXIT 1 | `scale-and-adversarial`: 5,000 checkboxes, 59.39ms | 8.64 |
+| HEAD `aa9e1e3` run 2 | 617/618, EXIT 1 | same test, 59.01ms | 6.96 |
+| base `d1eef33` | 618/618, EXIT 0 | — | 7.20 |
+| base `d1eef33` run 2 | 618/618, EXIT 0 | — | 5.01 |
+| HEAD + 410 fix | 617/618, EXIT 1 | `panel-simple-views:290` quick capture, reading `'payload'` of undefined | 12.75 |
+
+- The 50 ms assertion is wall-clock inside a suite that runs files in parallel. The test passed 5/5 in
+  isolation on both trees at load 6.7–7.1. A direct 1,000-item parse loop over the same five parsers
+  measured 8–40 ms on both trees with no consistent ordering.
+- `panel-simple-views.test.js` alone in an alternating window at load 11.5: base failed 3/3, HEAD failed 2/3.
+  The test file last changed in `c9fb61b` (2026-10-29) and `panel/` in `7b7bbc5` (2026-11-02); both are
+  ancestors of `d1eef33`.
+- One full web-suite run cancelled `web/tests/app.test.mjs` at a 30 s timeout under load 7.5; that file
+  passes 42/42 alone.
+- Verdict: a pre-existing, load-sensitive flake, not a V4-2 regression. No assertion was changed or skipped.
+  A green `npm test` is still not demonstrated.
+
+Logs: `logs/npm-test-head.log`, `npm-test-head-run2.log`, `npm-test-base.log`, `npm-test-base-run2.log`,
+`npm-test-head-after-fix.log`.
+
+## Hostile review of `5430f36` and `b0718cc`
+
+| # | severity | finding | evidence | outcome |
+|---|---|---|---|---|
+| 1 | High | A GitHub 410 Gone comment refusal was reported as 502 `note_outcome_unknown` with `noteSent: true`, so the user was told the note might exist when it definitely did not. | Probe with a 410 `commentHook` returned 502 / `noteSent: true`. `kindForStatus` had no 410 branch, so it fell through to `server`. | **Fixed.** 410 maps to `not_found`. Test "a 410 Gone comment refusal is definite, never an unknown outcome"; before the fix the same request returned 502. |
+| 2 | Medium | A non-standard 422 (`errors[].message`, no `resource`/`field`/`code`) is reported 502 `note_outcome_unknown`, although GitHub rejects that shape before committing. | Probe `422-odd`. `kindForStatus` trusts only the documented validation contract. | Not fixed. A proxy or gateway 422 is indistinguishable; claiming "nothing was saved" would be a guess. The README claim is narrowed to the documented shape. |
+| 3 | Low | `issueNotesCache` grows without eviction, keyed per repository#issue. | `app.ts` Map; the key lowercases the full name, so no case variants. | Not fixed. No pressure observed; bounded by issues read in one process. Recorded. |
+| 4 | Low | Above 100 comments the note count comes from the last page only, so it can understate the total. | `readIssueNotes` sets `noteCountPartial` when page > 1 or the page is full. | Not fixed. Displayed as a floor, never as exact; at most 20 notes are shown. |
+| 5 | Info | A CSRF failure on the note route shows the generic forbidden page. | The route calls `requireCsrf`; every write route shares this. | Not fixed: pre-existing for all writes, outside this increment. |
+| 6 | Info | Any commenter can spoof the note marker as the first line. | `parseNoteComment` trusts the marker; the author login and timestamp are displayed and the body is escaped by the escape-first Markdown renderer. | Not fixed: no server-side privilege gained; the note is shown as that author's. |
+| 7 | Info, verified OK | ETag reuse across repositories or issues. | Two issues got separate ETags and separate 304s on re-read; no cross-issue reuse. | No change. |
+| 8 | Info, verified OK | Multi-repository note route authorization. | `POST /api/repos/other/place/issues/1/notes` returns 400 `repository_not_allowed`; the registry rejects repositories outside the configured set. | No change. |
+| 9 | Info, verified OK | Lock release on every error path. | `withIssueLock` releases in `finally`; every note failure throws inside `runLocked`. | No change. |
+| 10 | Info, verified OK | Body limits. | 64 KB request cap (413) and a 4000-character note cap (400), both before any GitHub write. | No change. |
+| 11 | Info, verified OK | Composer focus return, draft retention, double send, i18n, CSP, button label. | Browser probes: `escapeFocus`, `draftSurvivesClose`, `doubleSend.commentsCreated 1`, 0 CSP violations. 213 EN and 213 FR keys, none missing. The add control is a text button, with no inline `style=` added. | No change. |
+| 12 | Info, verified OK | Decisions parser backward compatibility and Markdown XSS. | Legacy free text saves; preset selection saves; `javascript:` links and `<script>` do not render; raw markers absent; malformed option lines degrade. | No change. |
+| 13 | Info, partly verified | Radiogroup keyboard behaviour. | Options are native radios sharing one `name` inside `role="radiogroup"`, so arrow keys are the browser's native behaviour; the browser probe asserted the group exists, not arrow-key movement. | No change; no separate arrow-key automation was run. |
+
+
 
 - Production, real GitHub, or any live or deployed instance.
 - Safari, Firefox, a physical phone, or a screen reader.
