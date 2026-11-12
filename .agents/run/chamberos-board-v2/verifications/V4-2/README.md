@@ -173,3 +173,46 @@ Logs: `logs/npm-test-head.log`, `npm-test-head-run2.log`, `npm-test-base.log`, `
 - Safari, Firefox, a physical phone, or a screen reader.
 - A board with 1000 cards.
 - A green `npm test`.
+
+## H1 correction (V4-2-L4 review)
+
+The reviewer's H1 is addressed in commit `88d66d1`. No parser syntax, panel behaviour, D37/D38/D39
+behaviour or other user-facing wording was changed.
+
+- `docs/issue-body-contract.md` §2.5 now documents `  - label :: gist :: details`: placement directly
+  after the question, two-space indent, 8-option and 120-character caps, one-line gist, free-Markdown
+  details, malformed-line skipping and the plain-question fallback. It reconciles the convention with
+  the self-contained-prose rule: options are recommendation metadata, the question must read as prose
+  when they are stripped, and the free-text answer path always stays valid. The contract is v1.2.
+- `DEFAULT_AI_ISSUE_PROMPT` and `DEFAULT_AI_ALIGNMENT_PROMPT` in `panel/core.ts` now name the convention
+  and keep the free-text answer requirement. `panel/main.js` carries the same two prompt strings because
+  it is the shipped copy; it was patched, not rebuilt, so unrelated stale bundle drift stays out of this
+  change. `test/shipped-parity.test.js` still passes 18/18.
+- `web/tests/issue-body-contract.test.mjs` extracts the fenced example from §2.5 at test time and parses
+  it with `parseWebOpenQuestions`. It also checks the documented 8-option and 120-character caps against
+  `QUESTION_OPTION_MAX` and the parser. Editing the document example or limits without changing the
+  parser fails the test.
+- Copy: `agent_note_not_found` now says the issue conversation is unavailable (issues disabled, or issue
+  deleted/transferred) and asks the user to reload; `agent_note_too_long` now attributes the 4,000
+  character cap to the board, not GitHub. EN and FR dictionaries remain 213 keys each with no missing
+  or extra key.
+
+| # | command | result | exit | log |
+|---|---|---|---|---|
+| 1 | `npm test` (first run) | 618 tests, 617 pass, 1 fail: `shipped-parity` prompt equality before `panel/main.js` was patched | 1 | shell |
+| 2 | `npm test` (second run) | 618 tests, 616 pass, 2 pre-existing wall-clock flakes (`buildDependencyGraph` 100.5ms, 5,000 checkboxes 57.5ms) at load 7.65 | 1 | `h1/logs/npm-test-flake.log` |
+| 3 | `npm test` (third run) | **618/618** | 0 | `h1/logs/npm-test.log` |
+| 4 | `node --test --test-timeout=60000 web/tests/*.test.mjs` | **672/672** (670 baseline + 2 contract tests), 0 cancelled, 46.8 s | 0 | `h1/logs/web-tests.log` |
+| 5 | `npm run typecheck` | clean | 0 | `h1/logs/typecheck.log` |
+| 6 | esbuild `web/public/app.js` and `web/server.ts` | 401.7 kb / 238.9 kb | 0 | `h1/logs/esbuild-client.log`, `esbuild-server.log` |
+| 7 | `node .../V4-2/h1/scripts/browser.mjs` | `pass:true`, 12 cases, 48 screenshots | 0 | `h1/logs/browser.log`, `h1/browser.json` |
+| 8 | `DELIVERY_DIR=.../V4-2/h1 node scripts/generate-delivery-smoke.mjs` | **14/14 PASS**, 191 captures, 336 s | 0 | `h1/logs/delivery-smoke.log`, `h1/smoke.json` |
+| 9 | `node --test web/tests/issue-body-contract.test.mjs` | 2/2 | 0 | `h1/logs/contract-test.log` |
+| 10 | `node --test test/shipped-parity.test.js` | 18/18 | 0 | `h1/logs/shipped-parity.log` |
+
+Run 1 was a real failure caused by this change: core prompt text changed while the shipped bundle still
+had the old text. Patching `panel/main.js` fixed it. Runs 2 and 3 reproduce the known load-sensitive
+performance flake, with different tests and values; no assertion was changed or skipped.
+
+Not verified: real GitHub or a deployed instance; that the drafting model emits the convention in
+practice; Safari, Firefox, a phone or a screen reader. No publication or human acceptance is claimed.
