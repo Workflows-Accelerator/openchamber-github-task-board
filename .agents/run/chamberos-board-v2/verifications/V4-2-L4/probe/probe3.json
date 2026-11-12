@@ -1,0 +1,24 @@
+{
+  "boardStatus": 200,
+  "commentRequestsAfterBoard": 0,
+  "drawer": {
+    "firstOpenAddsRequests": 0,
+    "totalAfterFirst": 1,
+    "totalAfterSecond": 2,
+    "notes": 1
+  },
+  "readDetail": [
+    {
+      "q": "?per_page=100&page=1",
+      "ifNoneMatch": false,
+      "status": 200
+    },
+    {
+      "q": "?per_page=100&page=1",
+      "ifNoneMatch": true,
+      "status": 304
+    }
+  ],
+  "sameNote": true,
+  "rawText": "one"
+}

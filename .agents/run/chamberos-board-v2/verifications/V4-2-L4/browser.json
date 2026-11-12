@@ -1,0 +1,322 @@
+{
+  "syntheticOnly": true,
+  "matrix": [
+    {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "en",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 130,
+      "triggerHeight": 44,
+      "scrollWidth": 360,
+      "shots": [
+        "screenshots/360-light-en-note-closed.png",
+        "screenshots/360-light-en-composer-open.png",
+        "screenshots/360-light-en-decisions-collapsed.png",
+        "screenshots/360-light-en-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "fr",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 125,
+      "triggerHeight": 44,
+      "scrollWidth": 360,
+      "shots": [
+        "screenshots/360-light-fr-note-closed.png",
+        "screenshots/360-light-fr-composer-open.png",
+        "screenshots/360-light-fr-decisions-collapsed.png",
+        "screenshots/360-light-fr-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "en",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 130,
+      "triggerHeight": 44,
+      "scrollWidth": 360,
+      "shots": [
+        "screenshots/360-dark-en-note-closed.png",
+        "screenshots/360-dark-en-composer-open.png",
+        "screenshots/360-dark-en-decisions-collapsed.png",
+        "screenshots/360-dark-en-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "fr",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 125,
+      "triggerHeight": 44,
+      "scrollWidth": 360,
+      "shots": [
+        "screenshots/360-dark-fr-note-closed.png",
+        "screenshots/360-dark-fr-composer-open.png",
+        "screenshots/360-dark-fr-decisions-collapsed.png",
+        "screenshots/360-dark-fr-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "en",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 130,
+      "triggerHeight": 44,
+      "scrollWidth": 390,
+      "shots": [
+        "screenshots/390-light-en-note-closed.png",
+        "screenshots/390-light-en-composer-open.png",
+        "screenshots/390-light-en-decisions-collapsed.png",
+        "screenshots/390-light-en-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "fr",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 125,
+      "triggerHeight": 44,
+      "scrollWidth": 390,
+      "shots": [
+        "screenshots/390-light-fr-note-closed.png",
+        "screenshots/390-light-fr-composer-open.png",
+        "screenshots/390-light-fr-decisions-collapsed.png",
+        "screenshots/390-light-fr-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "en",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 130,
+      "triggerHeight": 44,
+      "scrollWidth": 390,
+      "shots": [
+        "screenshots/390-dark-en-note-closed.png",
+        "screenshots/390-dark-en-composer-open.png",
+        "screenshots/390-dark-en-decisions-collapsed.png",
+        "screenshots/390-dark-en-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "fr",
+      "noteTop": 359.5,
+      "noteBottom": 411.5,
+      "triggerWidth": 125,
+      "triggerHeight": 44,
+      "scrollWidth": 390,
+      "shots": [
+        "screenshots/390-dark-fr-note-closed.png",
+        "screenshots/390-dark-fr-composer-open.png",
+        "screenshots/390-dark-fr-decisions-collapsed.png",
+        "screenshots/390-dark-fr-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "noteTop": 299.5,
+      "noteBottom": 351.5,
+      "triggerWidth": 130,
+      "triggerHeight": 44,
+      "scrollWidth": 1280,
+      "shots": [
+        "screenshots/1280-light-en-note-closed.png",
+        "screenshots/1280-light-en-composer-open.png",
+        "screenshots/1280-light-en-decisions-collapsed.png",
+        "screenshots/1280-light-en-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "noteTop": 299.5,
+      "noteBottom": 351.5,
+      "triggerWidth": 125,
+      "triggerHeight": 44,
+      "scrollWidth": 1280,
+      "shots": [
+        "screenshots/1280-light-fr-note-closed.png",
+        "screenshots/1280-light-fr-composer-open.png",
+        "screenshots/1280-light-fr-decisions-collapsed.png",
+        "screenshots/1280-light-fr-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "noteTop": 299.5,
+      "noteBottom": 351.5,
+      "triggerWidth": 130,
+      "triggerHeight": 44,
+      "scrollWidth": 1280,
+      "shots": [
+        "screenshots/1280-dark-en-note-closed.png",
+        "screenshots/1280-dark-en-composer-open.png",
+        "screenshots/1280-dark-en-decisions-collapsed.png",
+        "screenshots/1280-dark-en-decisions-expanded.png"
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "noteTop": 299.5,
+      "noteBottom": 351.5,
+      "triggerWidth": 125,
+      "triggerHeight": 44,
+      "scrollWidth": 1280,
+      "shots": [
+        "screenshots/1280-dark-fr-note-closed.png",
+        "screenshots/1280-dark-fr-composer-open.png",
+        "screenshots/1280-dark-fr-decisions-collapsed.png",
+        "screenshots/1280-dark-fr-decisions-expanded.png"
+      ]
+    }
+  ],
+  "probes": {
+    "notePreservesDependencies": true,
+    "note": {
+      "reload": true,
+      "author": "board-owner",
+      "createdAt": "2026-10-20T10:00:03.000Z",
+      "noteCount": 2,
+      "comments": 2,
+      "appendOnly": true,
+      "marker": "<!-- board-note: 1 -->",
+      "escapeFocus": true,
+      "shortcutSend": true
+    },
+    "offlineSnapshot": {
+      "agentNotes": true,
+      "canvasNotes": 1
+    },
+    "noteSurvivesOtherWrite": true,
+    "listChips": [
+      {
+        "title": "Choose durable audit storage",
+        "chips": [
+          "Needs human",
+          "High",
+          "Repo",
+          "2 agent notes",
+          "4 questions"
+        ]
+      },
+      {
+        "title": "Capacity boundary",
+        "chips": [
+          "In progress",
+          "Repo",
+          "blocked by 1"
+        ]
+      },
+      {
+        "title": "Review operations",
+        "chips": [
+          "Todo",
+          "Repo",
+          "1 comment",
+          "blocked by 1"
+        ]
+      }
+    ],
+    "pendingListMarkdown": true,
+    "failureRetry": {
+      "retained": true,
+      "plainError": true,
+      "retry": true,
+      "commentsCreated": 1
+    },
+    "lostResponse": {
+      "reconciled": true,
+      "commentsCreated": 3
+    },
+    "draftSurvivesClose": true,
+    "doubleSend": {
+      "commentsCreated": 1
+    },
+    "lockedIssue": {
+      "message": "This issue is locked on GitHub, so the note was not saved. Your text is kept."
+    },
+    "degradedNotes": {
+      "chip": "—",
+      "honestMessage": true
+    },
+    "decisions": {
+      "selectedOptionSaved": true,
+      "legacyFreeTextSaved": true,
+      "headingsListsInlineCodeLinksEmphasis": true,
+      "noRawMarkers": true,
+      "presetFreeTextFallbackSaved": true
+    },
+    "noRenderRequests": true,
+    "conditionalComments": 19,
+    "canvasStickyUnchanged": true,
+    "canvasNoteActionRestored": true,
+    "rail": true,
+    "dragSaveReloadRollback": {
+      "dragged": {
+        "x": 610,
+        "y": 150
+      },
+      "persisted": {
+        "x": 610,
+        "y": 150
+      },
+      "refused": {
+        "notice": "Position non enregistrée : ce tableau n’a pas le droit d’écrire dans ce dépôt. Vérifiez les permissions du jeton, puis déplacez à nouveau.",
+        "pos": {
+          "x": 610,
+          "y": 150
+        }
+      }
+    },
+    "arrangeUndo": {
+      "restoredExactly": true,
+      "movedCards": 3
+    }
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "expectedHttpErrors": [
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+  ],
+  "csp": [],
+  "pass": true
+}

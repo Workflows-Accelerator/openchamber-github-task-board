@@ -1,0 +1,16 @@
+{
+  "/api/repos/nope/nothing/issues/1/notes": {
+    "status": 400,
+    "error": "repository_not_allowed",
+    "message": "That repository is not available to this board token"
+  },
+  "/api/repos/owner/issues/1/notes": {
+    "status": 400,
+    "error": "repository_not_allowed",
+    "message": "That repository is not available to this board token"
+  },
+  "/api/repos/owner/repo/issues/1/notes": {
+    "status": 201
+  },
+  "commentCalls": 1
+}

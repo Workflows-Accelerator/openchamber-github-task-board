@@ -1,0 +1,79 @@
+{
+  "csrfPlain": 403,
+  "csrfQualified": 403,
+  "commentsAfterCsrf": 0,
+  "unknownRepo": {
+    "status": 201
+  },
+  "commentsAfterUnknownRepo": 1,
+  "empty": 400,
+  "tooLong": 400,
+  "bigBody": 413,
+  "nonObject": 400,
+  "commentsAfterCaps": 1,
+  "lockAfterThrow": {
+    "failedStatus": 502,
+    "failedError": "note_outcome_unknown",
+    "secondStatus": 201,
+    "waitedMs": 40
+  },
+  "failureLeftNoComment": 0,
+  "writeMethods": [
+    "GET",
+    "POST"
+  ],
+  "commentMutations": 0,
+  "issueBody": "<!-- board-canvas: {\"x\":10,\"y\":20,\"notes\":[]} -->\n## Overview\nKeep this body.",
+  "responseKeys": [
+    "issue",
+    "listItem",
+    "note",
+    "notes",
+    "noteCount",
+    "noteCountPartial",
+    "savedAt",
+    "statusOptions"
+  ],
+  "responseTextHasToken": false,
+  "conditional": {
+    "reads": 9,
+    "statuses": [
+      201,
+      200,
+      500,
+      201,
+      200,
+      304,
+      304,
+      200,
+      304
+    ],
+    "sent": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true
+    ],
+    "noteLists": [
+      1,
+      1,
+      0,
+      1
+    ]
+  },
+  "marker": {
+    "laterMarker": false,
+    "quoted": false,
+    "version2": false,
+    "insideFence": false,
+    "firstLineMarker": true,
+    "firstLineWithLead": true
+  },
+  "leadInCollision": "Note for the agent\nsecond line",
+  "serverDedupe": 2
+}
