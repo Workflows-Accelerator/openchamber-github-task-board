@@ -1,0 +1,8 @@
+file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/[eval1]:1
+import('/workspace/personal/lucas/charme-social/node_modules/playwright/index.js').then(async({chromium})=>{let b=await chromium.launch({headless:true,args:['--no-sandbox']}); console.log(await b.version());await b.close()})
+                                                                                                                                 ^
+
+TypeError: Cannot read properties of undefined (reading 'launch')
+    at file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/[eval1]:1:130
+
+Node.js v22.23.5

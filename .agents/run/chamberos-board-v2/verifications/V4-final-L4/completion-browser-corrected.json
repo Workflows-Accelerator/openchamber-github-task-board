@@ -1,0 +1,444 @@
+{
+  "failures": [
+    {
+      "label": "clear during focus returns original and consumes saved view",
+      "details": {
+        "original": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "filtered": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "cleared": {
+          "panX": -296.5,
+          "panY": 188.5,
+          "scale": 1,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -451.94345718901457,
+            "panY": -22.074313408723754,
+            "scale": 0.9563812600969306
+          }
+        },
+        "closed": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondStart": {
+          "panX": -201.625,
+          "panY": 93.375,
+          "scale": 1.237,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondEnd": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        }
+      }
+    },
+    {
+      "label": "second cycle after interleaving uses fresh return viewport",
+      "details": {
+        "original": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "filtered": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "cleared": {
+          "panX": -296.5,
+          "panY": 188.5,
+          "scale": 1,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -451.94345718901457,
+            "panY": -22.074313408723754,
+            "scale": 0.9563812600969306
+          }
+        },
+        "closed": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondStart": {
+          "panX": -201.625,
+          "panY": 93.375,
+          "scale": 1.237,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondEnd": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        }
+      }
+    }
+  ],
+  "pageErrors": [],
+  "console": [],
+  "csp": [],
+  "patches": [
+    {
+      "url": "http://127.0.0.1:40893/api/repos/chamberos/platform/issues/2/canvas",
+      "status": 200,
+      "body": "{\"issue\":{\"id\":10100002,\"createdAt\":\"2026-10-01T09:00:00Z\",\"closedAt\":null,\"description\":\"## Overview\\nReduce poll overhead.\",\"order\":null,\"canvas\":{\"x\":523,\"y\":137},\"fingerprint\":\"291ff26801043ccbd29f48904bfcdc670200c589a7fe627e5c66a976e32a320e\",\"dependencies\":[],\"textDependencies\":[],\"blockedBy\":[],\"blocking\":[],\"pendingItems\":[],\"number\":2,\"key\":\"chamberos/platform#2\",\"repository\":{\"id\":101,\"owner\":\"chamberos\",\"name\":\"platform\",\"full\":\"chamberos/platform\",\"archived\":false,\"hasIssues\":true,\"disabled\":false,\"private\":false,\"openIssuesCount\":5,\"pushedAt\":\"2026-10-20T10:00:00Z\",\"available\":true,\"lastSeenAt\":\"2026-11-12T10:50:54.798Z\"},\"title\":\"Wire conditional ETag revalidation across board routes\",\"friendlyTitle\":null,\"state\":\"open\",\"htmlUrl\":\"https://github.com/chamberos/platform/issues/2\",\"body\":\"## Overview\\nReduce poll overhead.\",\"bodyMarkdown\":\"## Overview\\nReduce poll overhead.\",\"labels\":[\"status:in-progress\",\"priority:high\"],\"statusLabel\":\"status:in-progress\",\"effectiveStage\":\"in-progress\",\"isExplicitDraft\":false,\"phase\":\"execution\",\"attention\":\"none\",\"column\":\"in-progress\",\"updatedAt\":\"2026-11-12T10:50:56.969Z\",\"editableSections\":[{\"id\":\"overview\",\"title\":\"Overview\",\"text\":\"Reduce poll overhead.\"}],\"openQuestions\":[],\"humanTasks\":[],\"acceptanceCriteria\":[],\"subtasks\":[],\"testPlan\":{\"issue\":[],\"batch\":[]}},\"listItem\":{\"id\":10100002,\"createdAt\":\"2026-10-01T09:00:00Z\",\"closedAt\":null,\"description\":\"## Overview\\nReduce poll overhead.\",\"order\":null,\"canvas\":{\"x\":523,\"y\":137},\"fingerprint\":\"291ff26801043ccbd29f48904bfcdc670200c589a7fe627e5c66a976e32a320e\",\"dependencies\":[],\"textDependencies\":[],\"blockedBy\":[],\"blocking\":[],\"pendingItems\":[],\"number\":2,\"key\":\"chamberos/platform#2\",\"repository\":{\"id\":101,\"owner\":\"chamberos\",\"name\":\"platform\",\"full\":\"chamberos/platform\",\"archived\":false,\"hasIssues\":true,\"disabled\":false,\"private\":false,\"openIssuesCount\":5,\"pushedAt\":\"2026-10-20T10:00:00Z\",\"available\":true,\"lastSeenAt\":\"2026-11-12T10:50:54.798Z\"},\"title\":\"Wire conditional ETag revalidation across board routes\",\"friendlyTitle\":null,\"state\":\"open\",\"htmlUrl\":\"https://github.com/chamberos/platform/issues/2\",\"labels\":[\"status:in-progress\",\"priority:high\"],\"statusLabel\":\"status:in-progress\",\"effectiveStage\":\"in-progress\",\"isExplicitDraft\":false,\"phase\":\"execution\",\"attention\":\"none\",\"column\":\"in-progress\",\"updatedAt\":\"2026-11-12T10:50:56.969Z\",\"counts\":{\"subtasks\":{\"total\":0,\"done\":0,\"open\":0},\"openQuestions\":{\"total\":0,\"done\":0,\"open\":0},\"humanTasks\":{\"total\":0,\"done\":0,\"open\":0}},\"openQuestions\":[],\"humanTasks\":[],\"overview\":\"Reduce poll overhead.\"},\"savedAt\":\"2026-11-12T10:50:56.979Z\",\"statusOptions\":[{\"value\":\"status:draft\",\"label\":\"Draft\"},{\"value\":\"status:backlog\",\"label\":\"Backlog\"},{\"value\":\"status:todo\",\"label\":\"To Do\"},{\"value\":\"status:planned\",\"label\":\"Planned\"},{\"value\":\"status:in-progress\",\"label\":\"In Progress\"},{\"value\":\"status:needs-human\",\"label\":\"Needs Human\"},{\"value\":\"status:in-review\",\"label\":\"In Review\"},{\"value\":\"status:done\",\"label\":\"Done\"}]}"
+    },
+    {
+      "url": "http://127.0.0.1:40893/api/repos/chamberos/platform/issues/2/canvas",
+      "status": 403,
+      "body": "{\"error\":\"github_forbidden\",\"message\":\"Synthetic review refusal\"}"
+    }
+  ],
+  "dragHit": {
+    "x": 913,
+    "y": 385,
+    "tag": "<div class=\"canvas-card-top\"><div class=\"canvas-card-repo\"><span class=\"canvas-card-repo-dot\"></span><span class=\"canvas-card-repo-name\">Platform #2</span></div><span class=\"canvas-card-status-chip status-in-progress\">In progress</span></div>"
+  },
+  "drag": {
+    "before": {
+      "x": 460,
+      "y": 90
+    },
+    "moved": {
+      "x": 523,
+      "y": 137
+    },
+    "reloaded": {
+      "x": 523,
+      "y": 137
+    },
+    "patchCount": 1
+  },
+  "refusal": {
+    "before": {
+      "x": 523,
+      "y": 137
+    },
+    "after": {
+      "x": 523,
+      "y": 137
+    },
+    "refused": 1,
+    "notice": "Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.",
+    "unhandled": [],
+    "expectedConsole": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    ]
+  },
+  "status": {
+    "focused": {
+      "role": "button",
+      "tabindex": 0
+    },
+    "value": "status:todo",
+    "reloaded": {
+      "status": "status:todo",
+      "stage": "todo"
+    }
+  },
+  "note": {
+    "h3": "Review note",
+    "strong": "Bold",
+    "notesZ": "20",
+    "cardsZ": "30"
+  },
+  "reducedMotion": {
+    "early": {
+      "panX": 54.09090909090915,
+      "panY": 67.36363636363637,
+      "scale": 0.7848484848484848,
+      "filterView": null,
+      "stored": null,
+      "pending": false,
+      "focus": "chamberos/platform#2",
+      "returnView": {
+        "panX": 60,
+        "panY": 60,
+        "scale": 1
+      }
+    },
+    "late": {
+      "panX": 54.09090909090915,
+      "panY": 67.36363636363637,
+      "scale": 0.7848484848484848,
+      "filterView": null,
+      "stored": null,
+      "pending": false,
+      "focus": "chamberos/platform#2",
+      "returnView": {
+        "panX": 60,
+        "panY": 60,
+        "scale": 1
+      }
+    }
+  },
+  "focusFilter": {
+    "original": {
+      "panX": 123.125,
+      "panY": -47.875,
+      "scale": 0.873,
+      "filterView": null,
+      "stored": null,
+      "pending": false,
+      "focus": null,
+      "returnView": null
+    },
+    "filtered": {
+      "panX": -451.94345718901457,
+      "panY": -22.074313408723754,
+      "scale": 0.9563812600969306,
+      "filterView": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+      "pending": false,
+      "focus": null,
+      "returnView": null
+    },
+    "cleared": {
+      "panX": -296.5,
+      "panY": 188.5,
+      "scale": 1,
+      "filterView": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+      "pending": false,
+      "focus": "chamberos/platform#2",
+      "returnView": {
+        "panX": -451.94345718901457,
+        "panY": -22.074313408723754,
+        "scale": 0.9563812600969306
+      }
+    },
+    "closed": {
+      "panX": -451.94345718901457,
+      "panY": -22.074313408723754,
+      "scale": 0.9563812600969306,
+      "filterView": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+      "pending": false,
+      "focus": null,
+      "returnView": null
+    },
+    "secondStart": {
+      "panX": -201.625,
+      "panY": 93.375,
+      "scale": 1.237,
+      "filterView": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+      "pending": false,
+      "focus": null,
+      "returnView": null
+    },
+    "secondEnd": {
+      "panX": 123.125,
+      "panY": -47.875,
+      "scale": 0.873,
+      "filterView": null,
+      "stored": null,
+      "pending": false,
+      "focus": null,
+      "returnView": null
+    }
+  },
+  "breakpoint": [
+    {
+      "width": 768,
+      "sidebar": {
+        "x": 0,
+        "width": 280,
+        "right": 280
+      },
+      "toggle": {
+        "x": 6,
+        "y": 3.5,
+        "width": 44,
+        "height": 44,
+        "hit": false,
+        "label": "Toggle navigation"
+      },
+      "open": true,
+      "compactBeforeOpen": {
+        "hit": true,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "width": 769,
+      "sidebar": {
+        "x": 0,
+        "width": 56,
+        "right": 56
+      },
+      "toggle": {
+        "x": 5.5,
+        "y": 8,
+        "width": 44,
+        "height": 44,
+        "hit": true,
+        "label": "Expand sidebar"
+      },
+      "open": false,
+      "compactBeforeOpen": {
+        "hit": false,
+        "width": 0,
+        "height": 0
+      }
+    },
+    {
+      "width": 768,
+      "sidebar": {
+        "x": 0,
+        "width": 280,
+        "right": 280
+      },
+      "toggle": {
+        "x": 6,
+        "y": 3.5,
+        "width": 44,
+        "height": 44,
+        "hit": false,
+        "label": "Toggle navigation"
+      },
+      "open": true,
+      "compactBeforeOpen": {
+        "hit": true,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "width": 769,
+      "sidebar": {
+        "x": 0,
+        "width": 56,
+        "right": 56
+      },
+      "toggle": {
+        "x": 5.5,
+        "y": 8,
+        "width": 44,
+        "height": 44,
+        "hit": true,
+        "label": "Expand sidebar"
+      },
+      "open": false,
+      "compactBeforeOpen": {
+        "hit": false,
+        "width": 0,
+        "height": 0
+      }
+    }
+  ]
+}

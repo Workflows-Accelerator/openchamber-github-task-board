@@ -1,0 +1,67 @@
+{
+  "failures": [
+    {
+      "label": "real pointer drag persists",
+      "details": {
+        "before": {
+          "x": 460,
+          "y": 90
+        },
+        "moved": {
+          "x": 523,
+          "y": 137
+        },
+        "reloaded": {
+          "x": 523,
+          "y": 137
+        },
+        "patchCount": 0
+      }
+    },
+    {
+      "label": "completion interrupted",
+      "details": "page.waitForFunction: Timeout 30000ms exceeded.\n    at /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/completion-browser.mjs:41:69"
+    }
+  ],
+  "pageErrors": [],
+  "console": [],
+  "csp": [],
+  "patches": [],
+  "dragHit": {
+    "x": 913,
+    "y": 385,
+    "tag": "<div class=\"canvas-card-top\"><div class=\"canvas-card-repo\"><span class=\"canvas-card-repo-dot\"></span><span class=\"canvas-card-repo-name\">Platform #2</span></div><span class=\"canvas-card-status-chip status-in-progress\">In progress</span></div>"
+  },
+  "drag": {
+    "before": {
+      "x": 460,
+      "y": 90
+    },
+    "moved": {
+      "x": 523,
+      "y": 137
+    },
+    "reloaded": {
+      "x": 523,
+      "y": 137
+    },
+    "patchCount": 0
+  },
+  "refusal": {
+    "before": {
+      "x": 523,
+      "y": 137
+    },
+    "after": {
+      "x": 523,
+      "y": 137
+    },
+    "refused": 1,
+    "notice": "Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.",
+    "unhandled": [],
+    "expectedConsole": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    ]
+  },
+  "fatal": "page.waitForFunction: Timeout 30000ms exceeded.\n    at /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/completion-browser.mjs:41:69"
+}

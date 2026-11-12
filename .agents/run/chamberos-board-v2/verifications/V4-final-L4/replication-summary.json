@@ -1,0 +1,1266 @@
+{
+  "d38Desktop": {
+    "count": 4,
+    "first": {
+      "theme": "light",
+      "lang": "en",
+      "expanded0": {
+        "collapsedClass": false,
+        "openClass": false,
+        "stored": "0",
+        "sidebar": {
+          "left": 0,
+          "width": 230,
+          "right": 230
+        },
+        "backdropHidden": true,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": 191,
+            "top": 14,
+            "width": 24,
+            "height": 24,
+            "right": 215,
+            "bottom": 38
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "collapsed": {
+        "collapsedClass": true,
+        "openClass": false,
+        "stored": "1",
+        "sidebar": {
+          "left": 0,
+          "width": 56,
+          "right": 56
+        },
+        "backdropHidden": true,
+        "labelsShown": 0,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": 5.5,
+            "top": 8,
+            "width": 44,
+            "height": 44,
+            "right": 49.5,
+            "bottom": 52
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Expand sidebar",
+          "ariaExpanded": "false",
+          "title": "Expand sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "collapsedReload": {
+        "collapsedClass": true,
+        "openClass": false,
+        "stored": "1",
+        "sidebar": {
+          "left": 0,
+          "width": 56,
+          "right": 56
+        },
+        "backdropHidden": true,
+        "labelsShown": 0,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": 5.5,
+            "top": 8,
+            "width": 44,
+            "height": 44,
+            "right": 49.5,
+            "bottom": 52
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Expand sidebar",
+          "ariaExpanded": "false",
+          "title": "Expand sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "reopened": {
+        "collapsedClass": false,
+        "openClass": false,
+        "stored": "0",
+        "sidebar": {
+          "left": 0,
+          "width": 230,
+          "right": 230
+        },
+        "backdropHidden": true,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": 191,
+            "top": 14,
+            "width": 24,
+            "height": 24,
+            "right": 215,
+            "bottom": 38
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "reopenedReload": {
+        "collapsedClass": false,
+        "openClass": false,
+        "stored": "0",
+        "sidebar": {
+          "left": 0,
+          "width": 230,
+          "right": 230
+        },
+        "backdropHidden": true,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": 191,
+            "top": 14,
+            "width": 24,
+            "height": 24,
+            "right": 215,
+            "bottom": 38
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "checks": {
+        "startsOpen": true,
+        "clickCollapses": true,
+        "reloadKeepsToggleVisible": true,
+        "compactHiddenOnDesktop": true,
+        "clickReopens": true,
+        "reloadStaysOpen": true
+      },
+      "pass": true
+    }
+  },
+  "d38Phone": {
+    "count": 8,
+    "first": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "preference": "1",
+      "closed0": {
+        "collapsedClass": true,
+        "openClass": false,
+        "stored": "1",
+        "sidebar": {
+          "left": -280,
+          "width": 280,
+          "right": 0
+        },
+        "backdropHidden": true,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": -59,
+            "top": 14,
+            "width": 44,
+            "height": 44,
+            "right": -15,
+            "bottom": 58
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 6,
+            "top": 3.5,
+            "width": 44,
+            "height": 44,
+            "right": 50,
+            "bottom": 47.5
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "opened": {
+        "collapsedClass": true,
+        "openClass": true,
+        "stored": "1",
+        "sidebar": {
+          "left": 0,
+          "width": 280,
+          "right": 280
+        },
+        "backdropHidden": false,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": 221,
+            "top": 14,
+            "width": 44,
+            "height": 44,
+            "right": 265,
+            "bottom": 58
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 6,
+            "top": 3.5,
+            "width": 44,
+            "height": 44,
+            "right": 50,
+            "bottom": 47.5
+          },
+          "inWindow": true,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "closed": {
+        "collapsedClass": true,
+        "openClass": false,
+        "stored": "1",
+        "sidebar": {
+          "left": -280,
+          "width": 280,
+          "right": 0
+        },
+        "backdropHidden": true,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": -59,
+            "top": 14,
+            "width": 44,
+            "height": 44,
+            "right": -15,
+            "bottom": 58
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 6,
+            "top": 3.5,
+            "width": 44,
+            "height": 44,
+            "right": 50,
+            "bottom": 47.5
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "reopened": {
+        "collapsedClass": true,
+        "openClass": true,
+        "stored": "1",
+        "sidebar": {
+          "left": 0,
+          "width": 280,
+          "right": 280
+        },
+        "backdropHidden": false,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": 221,
+            "top": 14,
+            "width": 44,
+            "height": 44,
+            "right": 265,
+            "bottom": 58
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 6,
+            "top": 3.5,
+            "width": 44,
+            "height": 44,
+            "right": 50,
+            "bottom": 47.5
+          },
+          "inWindow": true,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "reclosed": {
+        "collapsedClass": true,
+        "openClass": false,
+        "stored": "1",
+        "sidebar": {
+          "left": -280,
+          "width": 280,
+          "right": 0
+        },
+        "backdropHidden": true,
+        "labelsShown": 12,
+        "toggle": {
+          "exists": true,
+          "rect": {
+            "left": -59,
+            "top": 14,
+            "width": 44,
+            "height": 44,
+            "right": -15,
+            "bottom": 58
+          },
+          "inWindow": false,
+          "unobscured": false,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Collapse sidebar",
+          "ariaExpanded": "true",
+          "title": "Collapse sidebar"
+        },
+        "compact": {
+          "exists": true,
+          "rect": {
+            "left": 6,
+            "top": 3.5,
+            "width": 44,
+            "height": 44,
+            "right": 50,
+            "bottom": 47.5
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": "Toggle navigation",
+          "ariaExpanded": null,
+          "title": "Toggle navigation"
+        }
+      },
+      "checks": {
+        "preferenceApplied": true,
+        "compactVisible": true,
+        "drawerHiddenAtStart": true,
+        "opensFullWidthDrawer": true,
+        "drawerToggleNeverSaysExpand": true,
+        "closesFromBackdrop": true,
+        "reopens": true,
+        "recloses": true,
+        "preferenceUntouched": true
+      },
+      "pass": true
+    }
+  },
+  "phoneFocus": {
+    "count": 8,
+    "first": {
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "measured": {
+        "scale": 0.55,
+        "floored": true,
+        "count": 4,
+        "noteText": "Connected tasks are outside this view.",
+        "legendShowAll": {
+          "exists": true,
+          "rect": {
+            "left": 25,
+            "top": 239,
+            "width": 224.296875,
+            "height": 44,
+            "right": 249.296875,
+            "bottom": 283
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": null,
+          "ariaExpanded": null,
+          "title": null
+        },
+        "legendShowAllText": "Show all (4)",
+        "barShowAll": {
+          "exists": true,
+          "rect": {
+            "left": 86.671875,
+            "top": 60,
+            "width": 89.359375,
+            "height": 44,
+            "right": 176.03125,
+            "bottom": 104
+          },
+          "inWindow": true,
+          "unobscured": true,
+          "hidden": false,
+          "display": "flex",
+          "ariaLabel": null,
+          "ariaExpanded": null,
+          "title": null
+        },
+        "showAllOverlapsZoom": false,
+        "legendOverlapsZoom": false,
+        "legendRole": "status",
+        "neighbours": [
+          {
+            "key": "chamberos/platform#1",
+            "role": "blocker",
+            "fullyInside": false,
+            "underLegend": false,
+            "underZoom": false
+          },
+          {
+            "key": "chamberos/platform#3",
+            "role": "dependent",
+            "fullyInside": false,
+            "underLegend": false,
+            "underZoom": false
+          },
+          {
+            "key": "chamberos/platform#2",
+            "role": "selected",
+            "fullyInside": true,
+            "underLegend": false,
+            "underZoom": false
+          },
+          {
+            "key": "acme/vanilla-sdk#11",
+            "role": "dependent",
+            "fullyInside": false,
+            "underLegend": false,
+            "underZoom": true
+          }
+        ]
+      },
+      "checks": {
+        "flooredAt055": true,
+        "noteTextExact": true,
+        "noteTruthful": true,
+        "actionTextExact": true,
+        "actionInWindow": true,
+        "actionUnobscured": true,
+        "actionTouchTarget": true,
+        "actionClearOfZoomBar": true,
+        "selectedVisibleAndClear": true,
+        "announced": true,
+        "showAllFitsNeighbourhood": true
+      },
+      "after": {
+        "scale": 0.3153846153846154,
+        "note": false,
+        "inside": true
+      },
+      "pass": true
+    }
+  },
+  "arrange": {
+    "before": [
+      {
+        "key": "chamberos/platform#1",
+        "x": 80,
+        "y": 90,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Deploy regional ingress verification",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#5",
+        "x": 1240,
+        "y": 520,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Internal telemetry spike scratchpad",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#3",
+        "x": 840,
+        "y": 90,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Audit strict CSP headers on workspace shell",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#2",
+        "x": 460,
+        "y": 90,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Wire conditional ETag revalidation across board routes",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#4",
+        "x": 460,
+        "y": 300,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Publish release checksum manifest",
+        "titleTooltip": null
+      },
+      {
+        "key": "acme/vanilla-sdk#11",
+        "x": 460,
+        "y": 560,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Document TypeScript pagination iterator types",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#6",
+        "x": 840,
+        "y": 300,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Reconcile the regional ingress verification checklist with the published release checksum manifest before enabling client traffic",
+        "titleTooltip": null
+      }
+    ],
+    "arranged": [
+      {
+        "key": "chamberos/platform#1",
+        "x": 120,
+        "y": 80,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Deploy regional ingress verification",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#5",
+        "x": 120,
+        "y": 486,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Internal telemetry spike scratchpad",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#3",
+        "x": 920,
+        "y": 80,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Audit strict CSP headers on workspace shell",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#2",
+        "x": 520,
+        "y": 80,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Wire conditional ETag revalidation across board routes",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#4",
+        "x": 520,
+        "y": 486,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Publish release checksum manifest",
+        "titleTooltip": null
+      },
+      {
+        "key": "acme/vanilla-sdk#11",
+        "x": 120,
+        "y": 1030,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Document TypeScript pagination iterator types",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#6",
+        "x": 120,
+        "y": 721,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Reconcile the regional ingress verification checklist with the published release checksum manifest before enabling client traffic",
+        "titleTooltip": null
+      }
+    ],
+    "undone": [
+      {
+        "key": "chamberos/platform#1",
+        "x": 80,
+        "y": 90,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Deploy regional ingress verification",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#5",
+        "x": 1240,
+        "y": 520,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Internal telemetry spike scratchpad",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#3",
+        "x": 840,
+        "y": 90,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Audit strict CSP headers on workspace shell",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#2",
+        "x": 460,
+        "y": 90,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Wire conditional ETag revalidation across board routes",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#4",
+        "x": 460,
+        "y": 300,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Publish release checksum manifest",
+        "titleTooltip": null
+      },
+      {
+        "key": "acme/vanilla-sdk#11",
+        "x": 460,
+        "y": 560,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Document TypeScript pagination iterator types",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#6",
+        "x": 840,
+        "y": 300,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Reconcile the regional ingress verification checklist with the published release checksum manifest before enabling client traffic",
+        "titleTooltip": null
+      }
+    ],
+    "reloaded": [
+      {
+        "key": "chamberos/platform#1",
+        "x": 80,
+        "y": 90,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Deploy regional ingress verification",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#5",
+        "x": 1240,
+        "y": 520,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Internal telemetry spike scratchpad",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#3",
+        "x": 840,
+        "y": 90,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Audit strict CSP headers on workspace shell",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#2",
+        "x": 460,
+        "y": 90,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Wire conditional ETag revalidation across board routes",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#4",
+        "x": 460,
+        "y": 300,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Publish release checksum manifest",
+        "titleTooltip": null
+      },
+      {
+        "key": "acme/vanilla-sdk#11",
+        "x": 460,
+        "y": 560,
+        "w": 280,
+        "h": 190,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": false,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Document TypeScript pagination iterator types",
+        "titleTooltip": null
+      },
+      {
+        "key": "chamberos/platform#6",
+        "x": 840,
+        "y": 300,
+        "w": 280,
+        "h": 189,
+        "titleFont": 16,
+        "titleLines": 2,
+        "titleClamped": true,
+        "titleHorizontalOverflow": false,
+        "cardContentOverflow": false,
+        "titleText": "Reconcile the regional ingress verification checklist with the published release checksum manifest before enabling client traffic",
+        "titleTooltip": null
+      }
+    ],
+    "overlaps": [],
+    "tightGaps": [],
+    "longTitle": {
+      "key": "chamberos/platform#6",
+      "x": 840,
+      "y": 300,
+      "w": 280,
+      "h": 189,
+      "titleFont": 16,
+      "titleLines": 2,
+      "titleClamped": true,
+      "titleHorizontalOverflow": false,
+      "cardContentOverflow": false,
+      "titleText": "Reconcile the regional ingress verification checklist with the published release checksum manifest before enabling client traffic",
+      "titleTooltip": null
+    },
+    "checks": {
+      "titles16pxNoOverflow": true,
+      "longTitleClampedToTwoLines": true,
+      "arrangeMoved": true,
+      "noOverlapAfterArrange": true,
+      "columnGutterAtLeast45": true,
+      "undoRestoresExact": true,
+      "undoPersistsAcrossReload": true
+    },
+    "pass": true
+  },
+  "returnView": {
+    "count": 2,
+    "first": {
+      "width": 360,
+      "change": {
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "firstFilter": {
+          "panX": -364.5,
+          "panY": 83.77499999999998,
+          "scale": 0.55,
+          "filters": [
+            "priority:high"
+          ],
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "showAllHidden": false
+        },
+        "changed": {
+          "panX": -40,
+          "panY": 119,
+          "scale": 1,
+          "filters": [
+            "priority:urgent"
+          ],
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "showAllHidden": true
+        },
+        "cleared": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "checks": {
+          "filterFramed": true,
+          "changeKeepsFirstReturnView": true,
+          "changeReframed": true,
+          "clearRestoresExact": true
+        }
+      },
+      "reload": {
+        "startB": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "filteredB": {
+          "panX": -364.5,
+          "panY": 83.77499999999998,
+          "scale": 0.55,
+          "filters": [
+            "priority:high"
+          ],
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "showAllHidden": false
+        },
+        "afterReload": {
+          "panX": -364,
+          "panY": 84,
+          "scale": 0.55,
+          "filters": [
+            "priority:high"
+          ],
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "showAllHidden": true
+        },
+        "clearedB": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "checks": {
+          "filtersPersist": true,
+          "returnViewPersists": true,
+          "filteredViewNotLost": true,
+          "clearAfterReloadRestoresExact": true
+        }
+      },
+      "listClear": {
+        "startC": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "listReload": {
+          "panX": -364,
+          "panY": 84,
+          "scale": 0.55,
+          "filters": [],
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "showAllHidden": true
+        },
+        "backOnCanvas": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "checks": {
+          "filtersCleared": true,
+          "returnViewKeptUntilCanvas": true,
+          "canvasRestoresExact": true
+        }
+      },
+      "search": {
+        "startD": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "searchOnly": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "searchRemains": {
+          "panX": -260.00000000000006,
+          "panY": 44.99999999999997,
+          "scale": 0.55,
+          "filters": [],
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "showAllHidden": true
+        },
+        "searchCleared": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filters": [],
+          "filterView": null,
+          "stored": null,
+          "showAllHidden": true
+        },
+        "checks": {
+          "searchAloneCapturesNothing": true,
+          "filterClearedSearchKeepsReturnView": true,
+          "emptySearchRestoresExact": true
+        }
+      },
+      "pass": true
+    }
+  },
+  "console": {
+    "count": 0,
+    "first": null
+  },
+  "errors": {
+    "count": 0,
+    "first": null
+  },
+  "csp": {
+    "count": 0,
+    "first": null
+  }
+}

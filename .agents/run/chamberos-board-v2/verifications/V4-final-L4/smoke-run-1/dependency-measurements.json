@@ -1,0 +1,402 @@
+[
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 blocks #2",
+      "#2 blocks #3",
+      "#2 blocks #11"
+    ],
+    "legendWidth": 250.296875,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "selected": 1,
+    "blockers": 1,
+    "dependents": 2,
+    "unrelated": 6,
+    "dim": "0.22",
+    "edgeDim": "0.16",
+    "labels": 3,
+    "labelTexts": [
+      "#1 bloque #2",
+      "#2 bloque #3",
+      "#2 bloque #11"
+    ],
+    "legendWidth": 270.140625,
+    "hidden": true,
+    "restored": true,
+    "pass": true
+  }
+]

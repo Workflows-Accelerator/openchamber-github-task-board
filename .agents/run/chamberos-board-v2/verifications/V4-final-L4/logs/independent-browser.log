@@ -1,0 +1,871 @@
+{
+  "browser": "156.0.8078.4",
+  "framingCases": 32,
+  "storageCases": 7,
+  "failures": [
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 360,
+        "lang": "fr",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 360,
+        "lang": "fr",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 360,
+        "lang": "fr",
+        "theme": "light",
+        "labels": [
+          {
+            "text": "#2 bloque #3",
+            "hidden": false,
+            "rect": {
+              "x": 261.1,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 bloque #2",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 bloque #4",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 498.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 360,
+        "lang": "fr",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 360,
+        "lang": "fr",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 360,
+        "lang": "fr",
+        "theme": "dark",
+        "labels": [
+          {
+            "text": "#2 bloque #3",
+            "hidden": false,
+            "rect": {
+              "x": 261.1,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 bloque #2",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 bloque #4",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 498.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 360,
+        "lang": "en",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 360,
+        "lang": "en",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 360,
+        "lang": "en",
+        "theme": "light",
+        "labels": [
+          {
+            "text": "#2 blocks #3",
+            "hidden": false,
+            "rect": {
+              "x": 262.8,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 blocks #2",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 blocks #4",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 498.4,
+              "w": 89.3,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 360,
+        "lang": "en",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 360,
+        "lang": "en",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 360,
+        "lang": "en",
+        "theme": "dark",
+        "labels": [
+          {
+            "text": "#2 blocks #3",
+            "hidden": false,
+            "rect": {
+              "x": 262.8,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 blocks #2",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 blocks #4",
+            "hidden": false,
+            "rect": {
+              "x": 8,
+              "y": 498.4,
+              "w": 89.3,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 390,
+        "lang": "fr",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 390,
+        "lang": "fr",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 390,
+        "lang": "fr",
+        "theme": "light",
+        "labels": [
+          {
+            "text": "#2 bloque #3",
+            "hidden": false,
+            "rect": {
+              "x": 286.6,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 bloque #2",
+            "hidden": false,
+            "rect": {
+              "x": 14.6,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 bloque #4",
+            "hidden": false,
+            "rect": {
+              "x": 18.6,
+              "y": 498.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 390,
+        "lang": "fr",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 390,
+        "lang": "fr",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 390,
+        "lang": "fr",
+        "theme": "dark",
+        "labels": [
+          {
+            "text": "#2 bloque #3",
+            "hidden": false,
+            "rect": {
+              "x": 286.6,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 bloque #2",
+            "hidden": false,
+            "rect": {
+              "x": 14.6,
+              "y": 320.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 bloque #4",
+            "hidden": false,
+            "rect": {
+              "x": 18.6,
+              "y": 498.4,
+              "w": 90.9,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 390,
+        "lang": "en",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 390,
+        "lang": "en",
+        "theme": "light",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 390,
+        "lang": "en",
+        "theme": "light",
+        "labels": [
+          {
+            "text": "#2 blocks #3",
+            "hidden": false,
+            "rect": {
+              "x": 287.4,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 blocks #2",
+            "hidden": false,
+            "rect": {
+              "x": 15.4,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 blocks #4",
+            "hidden": false,
+            "rect": {
+              "x": 19.4,
+              "y": 498.4,
+              "w": 89.3,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "spread Show all actually shows all",
+      "details": {
+        "width": 390,
+        "lang": "en",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread missing cards remain announced after full fit",
+      "details": {
+        "width": 390,
+        "lang": "en",
+        "theme": "dark",
+        "scale": 0.2,
+        "missing": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#4"
+        ],
+        "legend": {
+          "hidden": false,
+          "text": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+          "hasOffscreenNote": false,
+          "hasShowAll": false,
+          "showAllText": null,
+          "inside": true,
+          "height": 118
+        }
+      }
+    },
+    {
+      "label": "spread labels honest after full fit",
+      "details": {
+        "width": 390,
+        "lang": "en",
+        "theme": "dark",
+        "labels": [
+          {
+            "text": "#2 blocks #3",
+            "hidden": false,
+            "rect": {
+              "x": 287.4,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#3",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#1 blocks #2",
+            "hidden": false,
+            "rect": {
+              "x": 15.4,
+              "y": 320.4,
+              "w": 89.2,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#1",
+            "targetKey": "chamberos/platform#2",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          },
+          {
+            "text": "#2 blocks #4",
+            "hidden": false,
+            "rect": {
+              "x": 19.4,
+              "y": 498.4,
+              "w": 89.3,
+              "h": 16.8
+            },
+            "inside": true,
+            "blockerKey": "chamberos/platform#2",
+            "targetKey": "chamberos/platform#4",
+            "bothEndpointsInside": false,
+            "anyEndpointFullyOutside": true
+          }
+        ]
+      }
+    },
+    {
+      "label": "clearing filters during focus eventually restores return viewport",
+      "details": {
+        "original": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": "{\"panX\":0,\"panY\":0,\"scale\":2.5}",
+          "filters": [],
+          "pending": false
+        },
+        "preFilter": {
+          "panX": -436,
+          "panY": -40,
+          "scale": 1,
+          "filterView": null,
+          "stored": "{\"panX\":0,\"panY\":0,\"scale\":2.5}",
+          "filters": [],
+          "pending": false
+        },
+        "clearedWhileFocused": {
+          "panX": -265,
+          "panY": 212,
+          "scale": 1,
+          "filterView": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1
+          },
+          "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+          "filters": [],
+          "pending": false,
+          "focus": "chamberos/platform#2"
+        },
+        "afterFocusClose": {
+          "panX": -436,
+          "panY": -40,
+          "scale": 1,
+          "filterView": {
+            "panX": -436,
+            "panY": -40,
+            "scale": 1
+          },
+          "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+          "filters": [],
+          "pending": false,
+          "focus": null
+        }
+      }
+    },
+    {
+      "label": "verification interrupted",
+      "details": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"\n    at regression (/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/independent-browser.mjs:180:51)\n    at async file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/independent-browser.mjs:231:63"
+    }
+  ],
+  "fatal": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"\n    at regression (/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/independent-browser.mjs:180:51)\n    at async file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/independent-browser.mjs:231:63"
+}

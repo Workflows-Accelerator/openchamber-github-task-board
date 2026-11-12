@@ -1,0 +1,428 @@
+Reviewed HEAD: cd64af10bbc2e888990377143a2fcd1ce812bb7c
+
+Branch: feat/board-v3
+
+Tracked changes before staging:
+
+Preserved prior evidence:
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/canvas-measurements.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/dependency-measurements.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/filter-measurements.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/final-sequential.log: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/invariants/dot-grid-base.txt: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/invariants/dot-grid-head.txt: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/invariants/dot-grid-proof.txt: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/invariants/invariants.txt: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/invariants/updateCanvasTransform.diff: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/l4-canvas.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/l4-consumer.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/l4-misc.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/l4-sheets.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/l4-sort.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/l4-spread.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/01-list-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/02-canvas-notes-wires-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/03-canvas-notes-wires-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/04-canvas-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/05-canvas-undo-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/06-list-vanilla-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/07-drawer-vanilla-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/08-drawer-vanilla-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/09-project-switcher-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/10-empty-repo-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/11-decisions-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/12-blocked-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/13-operations-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/14-client-view-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/15-composer-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/applied-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/brand-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/dependency-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/filter-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-dependency-focus-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-applied-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-filter-multigroup-360.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-list-toolbar-1280.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-list-toolbar-360.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-relationship-sheet-768.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-settings-bottom-360.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-filter-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-settings-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-sort-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sheet-view-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sidebar-360-collapsed0.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sidebar-360-collapsed1.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sidebar-390-collapsed0.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sidebar-390-collapsed1.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-sort-real-1280.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-spread-focus-1280.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-spread-focus-360.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-spread-focus-390.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/l4-write-failure.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-canvas-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-client-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-drawer-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-list-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-picker-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/matrix-undo-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-1280-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-1280-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-1280-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-1280-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-360-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-360-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-360-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-360-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-390-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-390-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-390-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-390-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-768-dark-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-768-dark-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-768-light-en.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/screenshots/settings-768-light-fr.png: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/scripts/l4-canvas.mjs: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/scripts/l4-consumer.mjs: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/scripts/l4-misc.mjs: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/scripts/l4-sheets.mjs: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/scripts/l4-sort.mjs: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/scripts/l4-spread.mjs: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/sheet-measurements.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/sidebar-measurements.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/smoke-run2-relationship-failure.log: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/smoke.json: OK
+.agents/run/chamberos-board-v2/verifications/V4-1-L4/surface-measurements.json: OK
+
+Reviewed source hashes:
+web/public/app.js: OK
+web/public/theme.css: OK
+web/public/index.html: OK
+web/public/manifest.json: OK
+web/public/sw.js: OK
+scripts/generate-delivery-smoke.mjs: OK
+web/tests/v3-ux-client.test.mjs: OK
+
+Syntax:
+independent-browser.mjs PASS
+completion-browser.mjs PASS
+completion-browser-corrected.mjs PASS
+replicate-d38.mjs PASS
+replicate-v41c.mjs PASS
+fixture-helpers.mjs PASS
+
+Invariants:
+{
+  "baseline": "28af19b",
+  "head": "cd64af10bbc2e888990377143a2fcd1ce812bb7c",
+  "checks": {
+    "reviewed_sha": true,
+    "protected_server_panel_service": true,
+    "markdown_arrange_packages_unchanged": true,
+    "dot_grid_segment_byte_identical": true,
+    "Canvas_EN_FR": true,
+    "List_EN_FR": true,
+    "sidebar_preserved": true,
+    "floor_055": true,
+    "no_banned_words": true,
+    "no_pictographic_glyphs": true,
+    "no_HTML_inline_style": true,
+    "no_JS_generated_HTML_inline_style": true,
+    "manifest_identity": true,
+    "CSP_unchanged_server": true,
+    "touch_sheet_targets": true,
+    "sheet_reduced_motion": true
+  },
+  "grid_sha256": "160742fe4f202ecb026aef42f552f8ec3e2cd29be5e84108311cebb4ac29b458",
+  "changed_source": [
+    "scripts/generate-delivery-smoke.mjs",
+    "scripts/generate-v4-1b-verification.mjs",
+    "web/public/app.js",
+    "web/public/index.html",
+    "web/public/manifest.json",
+    "web/public/sw.js",
+    "web/public/theme.css",
+    "web/tests/app.test.mjs",
+    "web/tests/sw.test.mjs",
+    "web/tests/v3-ux-client.test.mjs"
+  ],
+  "note": "Only the dot-grid computation/assignments must be byte-identical, not the enclosing transform function whose animation/label hooks intentionally changed."
+}
+
+Token contrast:
+{
+  "method": "WCAG sRGB contrast from reviewed CSS tokens, not a full rendered contrast audit",
+  "cases": [
+    {
+      "name": "light primary text",
+      "foreground": "#0F172A",
+      "background": "#FFFFFF",
+      "ratio": 17.85
+    },
+    {
+      "name": "light muted text",
+      "foreground": "#475569",
+      "background": "#FFFFFF",
+      "ratio": 7.58
+    },
+    {
+      "name": "dark primary text",
+      "foreground": "#F1F5F9",
+      "background": "#161A22",
+      "ratio": 15.91
+    },
+    {
+      "name": "dark muted text",
+      "foreground": "#94A3B8",
+      "background": "#161A22",
+      "ratio": 6.8
+    },
+    {
+      "name": "dark primary action",
+      "foreground": "#FFFFFF",
+      "background": "#2563EB",
+      "ratio": 5.17
+    }
+  ]
+}
+
+Diff check:

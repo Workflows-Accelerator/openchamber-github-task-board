@@ -1,0 +1,289 @@
+{
+  "counts": {
+    "framing": 32,
+    "storage": 7,
+    "cycles": 2,
+    "breakpoint": 4,
+    "sheets": 9,
+    "errors": 0,
+    "console": 0,
+    "csp": 0,
+    "failures": 26
+  },
+  "fatal": "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"\n    at regression (/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/independent-browser.mjs:180:51)\n    at async file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/independent-browser.mjs:231:63",
+  "failureCounts": {
+    "spread Show all actually shows all": 8,
+    "spread missing cards remain announced after full fit": 8,
+    "spread labels honest after full fit": 8,
+    "clearing filters during focus eventually restores return viewport": 1,
+    "verification interrupted": 1
+  },
+  "focusFilter": {
+    "original": {
+      "panX": 123.125,
+      "panY": -47.875,
+      "scale": 0.873,
+      "filterView": null,
+      "stored": "{\"panX\":0,\"panY\":0,\"scale\":2.5}",
+      "filters": [],
+      "pending": false
+    },
+    "preFilter": {
+      "panX": -436,
+      "panY": -40,
+      "scale": 1,
+      "filterView": null,
+      "stored": "{\"panX\":0,\"panY\":0,\"scale\":2.5}",
+      "filters": [],
+      "pending": false
+    },
+    "clearedWhileFocused": {
+      "panX": -265,
+      "panY": 212,
+      "scale": 1,
+      "filterView": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+      "filters": [],
+      "pending": false,
+      "focus": "chamberos/platform#2"
+    },
+    "afterFocusClose": {
+      "panX": -436,
+      "panY": -40,
+      "scale": 1,
+      "filterView": {
+        "panX": -436,
+        "panY": -40,
+        "scale": 1
+      },
+      "stored": "{\"panX\":-436,\"panY\":-40,\"scale\":1}",
+      "filters": [],
+      "pending": false,
+      "focus": null
+    }
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "view": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873
+      },
+      "applied": {
+        "panX": -380.9433962264151,
+        "panY": -5.580188679245282,
+        "scale": 0.9150943396226415,
+        "filterView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      },
+      "cleared": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "filterView": null,
+        "stored": null,
+        "filters": [],
+        "pending": false
+      }
+    },
+    {
+      "cycle": 2,
+      "view": {
+        "panX": -201.625,
+        "panY": 93.375,
+        "scale": 1.237
+      },
+      "applied": {
+        "panX": -380.9433962264151,
+        "panY": -5.580188679245282,
+        "scale": 0.9150943396226415,
+        "filterView": {
+          "panX": -201.625,
+          "panY": 93.375,
+          "scale": 1.237
+        },
+        "stored": "{\"panX\":-201.625,\"panY\":93.375,\"scale\":1.237}",
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      },
+      "cleared": {
+        "panX": -201.625,
+        "panY": 93.375,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "filters": [],
+        "pending": false
+      }
+    }
+  ],
+  "storage": [
+    {
+      "raw": "{",
+      "read": {
+        "panX": -202,
+        "panY": 93,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      }
+    },
+    {
+      "raw": "{\"panX\":1e999,\"panY\":0,\"scale\":1}",
+      "read": {
+        "panX": -202,
+        "panY": 93,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      }
+    },
+    {
+      "raw": "{\"panX\":0,\"panY\":0,\"scale\":9}",
+      "read": {
+        "panX": -202,
+        "panY": 93,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      }
+    },
+    {
+      "raw": "{\"panX\":0,\"panY\":0,\"scale\":0.1}",
+      "read": {
+        "panX": -202,
+        "panY": 93,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      }
+    },
+    {
+      "raw": "{\"panX\":0,\"panY\":0,\"scale\":\"0.8\"}",
+      "read": {
+        "panX": -202,
+        "panY": 93,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      }
+    },
+    {
+      "raw": "{\"panX\":0,\"panY\":0,\"scale\":0.2}",
+      "read": {
+        "panX": -202,
+        "panY": 93,
+        "scale": 1.237,
+        "filterView": {
+          "panX": 0,
+          "panY": 0,
+          "scale": 0.2
+        },
+        "stored": "{\"panX\":0,\"panY\":0,\"scale\":0.2}",
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      }
+    },
+    {
+      "raw": "{\"panX\":0,\"panY\":0,\"scale\":2.5}",
+      "read": {
+        "panX": -202,
+        "panY": 93,
+        "scale": 1.237,
+        "filterView": {
+          "panX": 0,
+          "panY": 0,
+          "scale": 2.5
+        },
+        "stored": "{\"panX\":0,\"panY\":0,\"scale\":2.5}",
+        "filters": [
+          "priority:high"
+        ],
+        "pending": false
+      }
+    }
+  ],
+  "breakpoint": [
+    {
+      "width": 768,
+      "sidebar": {
+        "x": -280,
+        "width": 280
+      },
+      "aria": "Collapse sidebar",
+      "compact": "flex",
+      "expanded": "true"
+    },
+    {
+      "width": 769,
+      "sidebar": {
+        "x": 0,
+        "width": 56
+      },
+      "aria": "Expand sidebar",
+      "compact": "flex",
+      "expanded": "false"
+    },
+    {
+      "width": 768,
+      "sidebar": {
+        "x": -280,
+        "width": 280
+      },
+      "aria": "Collapse sidebar",
+      "compact": "flex",
+      "expanded": "true"
+    },
+    {
+      "width": 769,
+      "sidebar": {
+        "x": 0,
+        "width": 56
+      },
+      "aria": "Expand sidebar",
+      "compact": "flex",
+      "expanded": "false"
+    }
+  ],
+  "regressions": {},
+  "errors": [],
+  "console": [],
+  "csp": []
+}

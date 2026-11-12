@@ -1,0 +1,27 @@
+{
+  "failures": [
+    {
+      "label": "real pointer drag persists",
+      "details": {
+        "before": {
+          "x": 460,
+          "y": 90
+        },
+        "moved": {
+          "x": 523,
+          "y": 137
+        },
+        "reloaded": {
+          "x": 523,
+          "y": 137
+        },
+        "patchCount": 0
+      }
+    },
+    {
+      "label": "completion interrupted",
+      "details": "page.waitForFunction: Timeout 30000ms exceeded.\n    at /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/completion-browser.mjs:41:69"
+    }
+  ],
+  "fatal": "page.waitForFunction: Timeout 30000ms exceeded.\n    at /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-final-L4/scripts/completion-browser.mjs:41:69"
+}

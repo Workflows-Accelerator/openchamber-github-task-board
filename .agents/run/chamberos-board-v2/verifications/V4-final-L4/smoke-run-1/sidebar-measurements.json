@@ -1,0 +1,146 @@
+[
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "sidebarOpen": true,
+    "sidebarClosed": true,
+    "pass": true
+  }
+]

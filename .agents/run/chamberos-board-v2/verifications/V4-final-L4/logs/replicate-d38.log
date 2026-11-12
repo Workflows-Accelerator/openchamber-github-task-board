@@ -1,0 +1,21 @@
+{
+  "d38DesktopCases": 4,
+  "d38DesktopPass": true,
+  "d38PhoneCases": 8,
+  "d38PhonePass": true,
+  "phoneFocusCases": 8,
+  "phoneFocusPass": true,
+  "arrangePass": true,
+  "returnViewCases": 2,
+  "returnViewPass": true,
+  "failures": {
+    "d38Desktop": [],
+    "d38Phone": [],
+    "phoneFocus": [],
+    "arrange": null,
+    "returnView": []
+  },
+  "cspViolations": [],
+  "pageErrors": [],
+  "consoleErrors": []
+}

@@ -1,0 +1,35 @@
+{
+  "method": "WCAG sRGB contrast from reviewed CSS tokens, not a full rendered contrast audit",
+  "cases": [
+    {
+      "name": "light primary text",
+      "foreground": "#0F172A",
+      "background": "#FFFFFF",
+      "ratio": 17.85
+    },
+    {
+      "name": "light muted text",
+      "foreground": "#475569",
+      "background": "#FFFFFF",
+      "ratio": 7.58
+    },
+    {
+      "name": "dark primary text",
+      "foreground": "#F1F5F9",
+      "background": "#161A22",
+      "ratio": 15.91
+    },
+    {
+      "name": "dark muted text",
+      "foreground": "#94A3B8",
+      "background": "#161A22",
+      "ratio": 6.8
+    },
+    {
+      "name": "dark primary action",
+      "foreground": "#FFFFFF",
+      "background": "#2563EB",
+      "ratio": 5.17
+    }
+  ]
+}

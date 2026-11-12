@@ -1,0 +1,36 @@
+{
+  "baseline": "28af19b",
+  "head": "cd64af10bbc2e888990377143a2fcd1ce812bb7c",
+  "checks": {
+    "reviewed_sha": true,
+    "protected_server_panel_service": true,
+    "markdown_arrange_packages_unchanged": true,
+    "dot_grid_segment_byte_identical": true,
+    "Canvas_EN_FR": true,
+    "List_EN_FR": true,
+    "sidebar_preserved": true,
+    "floor_055": true,
+    "no_banned_words": true,
+    "no_pictographic_glyphs": true,
+    "no_HTML_inline_style": true,
+    "no_JS_generated_HTML_inline_style": true,
+    "manifest_identity": true,
+    "CSP_unchanged_server": true,
+    "touch_sheet_targets": true,
+    "sheet_reduced_motion": true
+  },
+  "grid_sha256": "160742fe4f202ecb026aef42f552f8ec3e2cd29be5e84108311cebb4ac29b458",
+  "changed_source": [
+    "scripts/generate-delivery-smoke.mjs",
+    "scripts/generate-v4-1b-verification.mjs",
+    "web/public/app.js",
+    "web/public/index.html",
+    "web/public/manifest.json",
+    "web/public/sw.js",
+    "web/public/theme.css",
+    "web/tests/app.test.mjs",
+    "web/tests/sw.test.mjs",
+    "web/tests/v3-ux-client.test.mjs"
+  ],
+  "note": "Only the dot-grid computation/assignments must be byte-identical, not the enclosing transform function whose animation/label hooks intentionally changed."
+}

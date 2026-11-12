@@ -1,0 +1,11 @@
+Raw capture unchanged: application-review.diff 350e558ecc410d2ea10822bc50fd68271594535af54fc3001bc045e4c1621228
+Raw capture unchanged: logs/typecheck.log 87e893f7ce7c223477c7f6f0803880736ce687204e91f7f2c39155d39d2ad90d
+Raw capture unchanged: logs/staged-diff-check.log 2c7016d75db57234cd398dc900c145d43b548d0fbc54cbb02ae02988c0b9c869
+Raw patch byte-identical to reviewed Git increment: 9 source/test/smoke paths
+Initial diff-check exit-2 diagnostics explained: 54 required context spaces, one raw npm EOF blank
+Hash manifest valid: reviewed-source.sha256 7 files
+Hash manifest valid: preserved-inputs.sha256 327 files
+Evidence-only staged scope: 646 paths; no tracked product changes
+Scoped whitespace command: git diff --cached --check -- .agents/run/chamberos-board-v2/verifications/V4-final-L4/ :(exclude).agents/run/chamberos-board-v2/verifications/V4-final-L4/application-review.diff :(exclude).agents/run/chamberos-board-v2/verifications/V4-final-L4/logs/typecheck.log :(exclude).agents/run/chamberos-board-v2/verifications/V4-final-L4/logs/staged-diff-check.log
+Scoped whitespace exit: 0
+PASS: scope, reviewed sources, preserved prior evidence, exact raw captures, remaining whitespace
