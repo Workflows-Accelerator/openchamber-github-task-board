@@ -32,23 +32,23 @@ call; reason quoted).
 | 20 | Workflows-Accelerator/openchamber-github-task-board | 58 | `status:in-review` | `status:todo` | 6855950985 | 2026-11-13T14:32:44Z | applied / verified |
 | 21 | Workflows-Accelerator/openchamber-github-task-board | 59 | `status:in-review` | `status:todo` | 6855952721 | 2026-11-13T14:32:48Z | applied / verified |
 | 22 | Workflows-Accelerator/openchamber-github-task-board | 60 | `status:in-review` | `status:todo` | 6855954593 | 2026-11-13T14:32:52Z | applied / verified |
-| 23 | Workflows-Accelerator/openchamber-config | 72 | `status:needs-human` | `status:todo` | - | - | pending |
-| 24 | Workflows-Accelerator/openchamber-config | 63 | `status:needs-human` | `status:todo` | - | - | pending |
-| 25 | Workflows-Accelerator/openchamber-config | 62 | `status:needs-human` | `status:todo` | - | - | pending |
-| 26 | Workflows-Accelerator/openchamber-config | 61 | `status:needs-human` | `status:todo` | - | - | pending |
-| 27 | Workflows-Accelerator/openchamber-config | 60 | `status:needs-human` | `status:todo` | - | - | pending |
-| 28 | Workflows-Accelerator/openchamber-config | 58 | `status:needs-human` | `status:todo` | - | - | pending |
-| 29 | Workflows-Accelerator/openchamber-config | 50 | `status:needs-human` | `status:todo` | - | - | pending |
-| 30 | Workflows-Accelerator/openchamber-config | 49 | `status:needs-human` | `status:todo` | - | - | pending |
-| 31 | Workflows-Accelerator/openchamber-config | 48 | `status:needs-human` | `status:todo` | - | - | pending |
-| 32 | Workflows-Accelerator/openchamber-config | 47 | `status:needs-human` | `status:todo` | - | - | pending |
-| 33 | Workflows-Accelerator/openchamber-config | 46 | `status:needs-human` | `status:todo` | - | - | pending |
-| 34 | Workflows-Accelerator/openchamber-config | 42 | `status:needs-human` | `status:todo` | - | - | pending |
-| 35 | Workflows-Accelerator/openchamber-config | 41 | `status:in-review` | `status:todo` | - | - | pending |
-| 36 | Workflows-Accelerator/openchamber-config | 39 | `status:needs-human` | `status:todo` | - | - | pending |
-| 37 | Workflows-Accelerator/openchamber-config | 38 | `status:in-review` | `status:todo` | - | - | pending |
-| 38 | Workflows-Accelerator/openchamber-config | 30 | `status:in-review` | `status:todo` | - | - | pending |
-| 39 | Workflows-Accelerator/openchamber-config | 29 | `status:in-review` | `status:todo` | - | - | pending |
+| 23 | Workflows-Accelerator/openchamber-config | 72 | `status:needs-human` | `status:todo` | 6855985152 | 2026-11-13T14:34:00Z | applied / verified |
+| 24 | Workflows-Accelerator/openchamber-config | 63 | `status:needs-human` | `status:todo` | 6855986752 | 2026-11-13T14:34:04Z | applied / verified |
+| 25 | Workflows-Accelerator/openchamber-config | 62 | `status:needs-human` | `status:todo` | 6855988619 | 2026-11-13T14:34:09Z | applied / verified |
+| 26 | Workflows-Accelerator/openchamber-config | 61 | `status:needs-human` | `status:todo` | 6855990372 | 2026-11-13T14:34:13Z | applied / verified |
+| 27 | Workflows-Accelerator/openchamber-config | 60 | `status:needs-human` | `status:todo` | 6855992275 | 2026-11-13T14:34:17Z | applied / verified |
+| 28 | Workflows-Accelerator/openchamber-config | 58 | `status:needs-human` | `status:todo` | 6855994653 | 2026-11-13T14:34:23Z | applied / verified |
+| 29 | Workflows-Accelerator/openchamber-config | 50 | `status:needs-human` | `status:todo` | 6855997045 | 2026-11-13T14:34:28Z | applied / verified |
+| 30 | Workflows-Accelerator/openchamber-config | 49 | `status:needs-human` | `status:todo` | 6855999019 | 2026-11-13T14:34:32Z | applied / verified |
+| 31 | Workflows-Accelerator/openchamber-config | 48 | `status:needs-human` | `status:todo` | 6856001188 | 2026-11-13T14:34:37Z | applied / verified |
+| 32 | Workflows-Accelerator/openchamber-config | 47 | `status:needs-human` | `status:todo` | 6856002937 | 2026-11-13T14:34:41Z | applied / verified |
+| 33 | Workflows-Accelerator/openchamber-config | 46 | `status:needs-human` | `status:todo` | 6856004965 | 2026-11-13T14:34:45Z | applied / verified |
+| 34 | Workflows-Accelerator/openchamber-config | 42 | `status:needs-human` | `status:todo` | 6856006857 | 2026-11-13T14:34:50Z | applied / verified |
+| 35 | Workflows-Accelerator/openchamber-config | 41 | `status:in-review` | `status:todo` | 6856008593 | 2026-11-13T14:34:54Z | applied / verified |
+| 36 | Workflows-Accelerator/openchamber-config | 39 | `status:needs-human` | `status:todo` | 6856010295 | 2026-11-13T14:34:57Z | applied / verified |
+| 37 | Workflows-Accelerator/openchamber-config | 38 | `status:in-review` | `status:todo` | 6856011847 | 2026-11-13T14:35:01Z | applied / verified |
+| 38 | Workflows-Accelerator/openchamber-config | 30 | `status:in-review` | `status:todo` | 6856013939 | 2026-11-13T14:35:06Z | applied / verified |
+| 39 | Workflows-Accelerator/openchamber-config | 29 | `status:in-review` | `status:todo` | 6856015639 | 2026-11-13T14:35:10Z | applied / verified |
 | 40 | Workflows-Accelerator/devops-cockpit | 24 | `status:needs-human` | `status:todo` | - | - | pending |
 | 41 | Workflows-Accelerator/devops-cockpit | 23 | `status:needs-human` | `status:todo` | - | - | pending |
 | 42 | Workflows-Accelerator/devops-cockpit | 21 | `status:in-review` | `status:todo` | - | - | pending |
@@ -80,7 +80,7 @@ call; reason quoted).
 
 Total rows: 67 (45 `status:needs-human`, 22 `status:in-review`).
 
-Counts: applied 22, already-applied 0, skipped 0, refused 0, pending 45.
+Counts: applied 39, already-applied 0, skipped 0, refused 0, pending 28.
 
 ## Reverse instruction
 
