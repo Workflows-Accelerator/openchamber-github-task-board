@@ -786,6 +786,34 @@
       agent_note_locked: 'This issue is locked on GitHub, so the note was not saved. Your text is kept.',
       question_details: 'Details', question_other: 'Write another answer',
       question_answer: 'Answer this question', question_required: 'Choose an option or write an answer first.',
+      human_review_title: 'Waiting for you',
+      human_review_agent_title: 'Agent reviewing',
+      human_review_open_image: 'Open screenshot',
+      human_review_watch_video: 'Watch the video',
+      human_review_open_link: 'Open the link',
+      human_review_answer: 'Answer',
+      human_review_kind_image: 'Screenshot',
+      human_review_kind_video: 'Video',
+      human_review_kind_link: 'Link',
+      human_review_kind_question: 'Question',
+      human_review_missing: 'Waiting for an artifact',
+      human_review_missing_help: 'This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers.',
+      human_review_settled: 'The question is answered. The agent has to pick this task up again.',
+      human_review_reason_no_section: 'The body has no "### Human Review:" section.',
+      human_review_reason_no_artifact: 'The section has no "- Artifact:" line.',
+      human_review_reason_unknown_artifact: 'The "- Artifact:" value must be image, video, link or question.',
+      human_review_reason_duplicate_field: 'The section repeats one of its fields.',
+      human_review_reason_missing_url: 'The artifact has no "- URL:" line.',
+      human_review_reason_invalid_url: 'The "- URL:" value must start with http:// or https://.',
+      human_review_reason_missing_instruction: 'The artifact has no one-line "- Instruction:" line.',
+      human_review_reason_long_instruction: 'The "- Instruction:" line is too long.',
+      human_review_reason_question_answered: 'The question is already answered.',
+      human_review_image_alt: 'Review artifact for this task',
+      human_review_artifact_label: 'Review artifact',
+      human_review_question_instruction: 'Answer the question below.',
+      human_review_agent_body: 'The agent is reviewing this task. Nothing is asked of you.',
+      human_review_readonly: 'Read-only view: answering is disabled here.',
+      human_review_reason_missing_question: 'The body has no unanswered "### Open Questions:" item.',
       note_add: 'Add note',
       note_delete: 'Delete note',
       note_delete_confirm: 'Delete note?',
@@ -988,6 +1016,34 @@
       agent_note_locked: 'Ce ticket est verrouillé sur GitHub ; la note n’a pas été enregistrée. Votre texte est conservé.',
       question_details: 'Détails', question_other: 'Écrire une autre réponse',
       question_answer: 'Répondez à cette question', question_required: 'Choisissez une option ou écrivez une réponse.',
+      human_review_title: 'En attente de vous',
+      human_review_agent_title: 'Agent en revue',
+      human_review_open_image: 'Ouvrir la capture',
+      human_review_watch_video: 'Regarder la vidéo',
+      human_review_open_link: 'Ouvrir le lien',
+      human_review_answer: 'Répondre',
+      human_review_kind_image: 'Capture',
+      human_review_kind_video: 'Vidéo',
+      human_review_kind_link: 'Lien',
+      human_review_kind_question: 'Question',
+      human_review_missing: 'En attente d’un élément à valider',
+      human_review_missing_help: 'Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées.',
+      human_review_settled: 'La question est répondue. L’agent doit reprendre cette tâche.',
+      human_review_reason_no_section: 'Le corps n’a pas de section « ### Human Review: ».',
+      human_review_reason_no_artifact: 'La section n’a pas de ligne « - Artifact: ».',
+      human_review_reason_unknown_artifact: 'La valeur de « - Artifact: » doit être image, video, link ou question.',
+      human_review_reason_duplicate_field: 'La section répète l’un de ses champs.',
+      human_review_reason_missing_url: 'L’élément n’a pas de ligne « - URL: ».',
+      human_review_reason_invalid_url: 'La valeur de « - URL: » doit commencer par http:// ou https://.',
+      human_review_reason_missing_instruction: 'L’élément n’a pas de ligne « - Instruction: » sur une ligne.',
+      human_review_reason_long_instruction: 'La ligne « - Instruction: » est trop longue.',
+      human_review_reason_question_answered: 'La question est déjà répondue.',
+      human_review_image_alt: 'Élément à valider pour cette tâche',
+      human_review_artifact_label: 'Élément à valider',
+      human_review_question_instruction: 'Répondez à la question ci-dessous.',
+      human_review_agent_body: 'L’agent révise cette tâche. Rien ne vous est demandé.',
+      human_review_readonly: 'Vue en lecture seule : répondre est désactivé ici.',
+      human_review_reason_missing_question: 'Le corps n’a pas de question ouverte à répondre.',
       note_add: 'Ajouter une note',
       note_delete: 'Supprimer la note',
       note_delete_confirm: 'Supprimer la note ?',
@@ -1772,7 +1828,10 @@
   }
   function statusText(label) {
     var key = (label || 'todo').replace(/^status:/i, '');
-    var labels = getLanguage() === 'fr' ? { todo: 'À faire', 'in-progress': 'En cours', 'needs-human': 'Validation', 'in-review': 'En revue', planned: 'Planifié', backlog: 'Backlog', draft: 'Brouillon', done: 'Terminé', cancelled: 'Annulé' } : { todo: 'Todo', 'in-progress': 'In progress', 'needs-human': 'Needs human', 'in-review': 'In review', planned: 'Planned', backlog: 'Backlog', draft: 'Draft', done: 'Done', cancelled: 'Cancelled' };
+    // status:in-review is the agent's own review gate and asks nothing of the
+    // reader; status:needs-human is the only state that asks you to decide, and
+    // it is only kept when the task carries a clickable review artifact.
+    var labels = getLanguage() === 'fr' ? { todo: 'À faire', 'in-progress': 'En cours', 'needs-human': 'En attente de vous', 'in-review': 'Agent en revue', planned: 'Planifié', backlog: 'Backlog', draft: 'Brouillon', done: 'Terminé', cancelled: 'Annulé' } : { todo: 'Todo', 'in-progress': 'In progress', 'needs-human': 'Waiting for you', 'in-review': 'Agent reviewing', planned: 'Planned', backlog: 'Backlog', draft: 'Draft', done: 'Done', cancelled: 'Cancelled' };
     return labels[key] || key.replace(/-/g, ' ');
   }
   function priorityOf(issue) {
@@ -2472,6 +2531,17 @@
     }
     if (countOf(issue, 'humanTasks')) {
       var hn = countOf(issue, 'humanTasks'); metaChildren.push(el('span', { class: 'badge attention', text: getLanguage() === 'fr' ? (hn + (hn === 1 ? ' action' : ' actions')) : (hn + ' human') }));
+    }
+    // The row names the gate in one badge; the precise reason and the single
+    // action stay in the drawer, never duplicated in the compact list.
+    var rowReview = humanReviewView(issue);
+    if (humanReviewStatus(issue) === 'waiting') {
+      var reviewDict = I18N[getLanguage()] || I18N.en;
+      if (rowReview && rowReview.state === 'ready') {
+        metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict['human_review_kind_' + rowReview.kind] || reviewDict.human_review_artifact_label }));
+      } else {
+        metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict.human_review_missing, title: humanReviewReasonText(rowReview, reviewDict) }));
+      }
     }
     var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
     if (blockedCount > 0) {
@@ -3439,6 +3509,19 @@
     if (questionCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: questionCount + ' q' }));
 
     var dict = I18N[getLanguage()] || I18N.en;
+    // The card summarizes the gate; the drawer carries its one primary action.
+    var review = humanReviewView(issue);
+    if (humanReviewStatus(issue) === 'waiting') {
+      if (review && review.state === 'ready') {
+        var reviewText = review.kind === 'question' && review.question ? review.question.text : (review.instruction || '');
+        children.push(el('div', { class: 'canvas-card-review', title: reviewText }, [
+          el('span', { class: 'canvas-card-review-kind', text: dict['human_review_kind_' + review.kind] || '' }),
+          el('span', { class: 'canvas-card-review-text', text: reviewText }),
+        ]));
+      } else {
+        children.push(el('div', { class: 'canvas-card-review canvas-card-review-missing', text: dict.human_review_missing }));
+      }
+    }
     var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
     if (blockedCount > 0) {
       metaChildren.push(el('span', { class: 'canvas-card-badge badge-blocked', text: (dict.dep_blocked_by_n || 'blocked by {n}').replace('{n}', blockedCount) }));
@@ -6527,6 +6610,129 @@
     node.innerHTML = safeRenderMarkdown(text || '');
     return node;
   }
+  // A human review artifact is the only thing that may make a task wait for a
+  // person. This panel is the one place it is rendered with its primary action;
+  // the canvas card and the list row only summarize it, so a task never offers
+  // two competing ways to settle the same gate.
+  function humanReviewView(issue) {
+    var review = issue && issue.humanReview;
+    if (!review || typeof review !== 'object' || Array.isArray(review)) return null;
+    if (review.state !== 'ready' && review.state !== 'settled' && review.state !== 'missing' && review.state !== 'malformed') return null;
+    return review;
+  }
+  // The gated question is rendered once, in the human review panel; the Open
+  // Questions list skips it instead of offering a second answer form.
+  function gatedQuestionIndex(issue) {
+    var review = humanReviewView(issue);
+    if (!review || review.state !== 'ready' || review.kind !== 'question' || !review.question) return -1;
+    var index = review.question.index;
+    return typeof index === 'number' && index >= 0 ? index : -1;
+  }
+  function humanReviewReasonText(review, dict) {
+    if (!review || !review.reason) return '';
+    return dict['human_review_reason_' + review.reason] || '';
+  }
+  function humanReviewPrimaryAction(kind, dict) {
+    if (kind === 'image') return { key: 'human_review_open_image', label: dict.human_review_open_image };
+    if (kind === 'video') return { key: 'human_review_watch_video', label: dict.human_review_watch_video };
+    if (kind === 'link') return { key: 'human_review_open_link', label: dict.human_review_open_link };
+    return null;
+  }
+  function humanReviewStatus(issue) {
+    var label = String((issue && issue.statusLabel) || '').toLowerCase();
+    if (label === 'status:needs-human') return 'waiting';
+    if (label === 'status:in-review') return 'reviewing';
+    return '';
+  }
+  function renderHumanReview(issue) {
+    var panel = $('human-review');
+    var title = $('human-review-title');
+    var body = $('human-review-body');
+    if (!panel || !title || !body) return;
+    var dict = noteDictionary();
+    var review = humanReviewView(issue);
+    var gate = humanReviewStatus(issue);
+    body.textContent = '';
+    title.textContent = '';
+    panel.hidden = !gate;
+    panel.setAttribute('data-review-state', review ? review.state : 'none');
+    if (panel.hidden) return;
+
+    if (gate === 'reviewing') {
+      // status:in-review is the agent's own review gate: it asks nothing of the
+      // reader, so it carries no action and no artifact to click.
+      title.textContent = dict.human_review_agent_title;
+      body.appendChild(el('p', { class: 'muted small', text: dict.human_review_agent_body }));
+      return;
+    }
+
+    if (!review || review.state === 'missing' || review.state === 'malformed') {
+      title.textContent = dict.human_review_missing;
+      body.appendChild(el('p', { class: 'human-review-help', text: dict.human_review_missing_help }));
+      var reason = humanReviewReasonText(review, dict);
+      if (reason) body.appendChild(el('p', { class: 'human-review-reason muted small', text: reason }));
+      return;
+    }
+
+    title.textContent = dict.human_review_title;
+    if (review.state === 'settled') {
+      body.appendChild(el('p', { class: 'human-review-help', text: dict.human_review_settled }));
+      var settledReason = humanReviewReasonText(review, dict);
+      if (settledReason) body.appendChild(el('p', { class: 'human-review-reason muted small', text: settledReason }));
+      return;
+    }
+
+    var kind = review.kind;
+    var kindLabel = dict['human_review_kind_' + kind] || '';
+    body.appendChild(el('p', { class: 'human-review-kind-row' }, [
+      el('span', { class: 'badge human-review-kind', text: kindLabel }),
+    ]));
+
+    if (kind === 'image' && review.url) {
+      body.appendChild(el('figure', { class: 'human-review-figure' }, [
+        el('img', {
+          class: 'human-review-image',
+          src: review.url,
+          alt: dict.human_review_image_alt,
+          loading: 'lazy',
+          referrerpolicy: 'no-referrer',
+        }),
+        el('figcaption', { class: 'human-review-instruction', text: review.instruction || '' }),
+      ]));
+    } else if (kind === 'question' && review.question) {
+      body.appendChild(el('p', { class: 'human-review-instruction', text: review.instruction || dict.human_review_question_instruction }));
+      if (state.clientPresentationMode) {
+        // Presentation mode is read-only by design: it hides every write
+        // affordance, so the gated question is shown with its presets and no form.
+        body.appendChild(markdownQuestion(review.question.text, 'question-text'));
+        var presets = Array.isArray(review.question.options) ? review.question.options : [];
+        if (presets.length) body.appendChild(el('ul', { class: 'human-review-presets' }, presets.map(function (option) {
+          return el('li', { text: option.label });
+        })));
+        body.appendChild(el('p', { class: 'muted small', text: dict.human_review_readonly }));
+      } else {
+        // Same V4-2 renderer as the Open Questions list: presets, details
+        // disclosure and the free-text fallback, never a parallel format.
+        body.appendChild(questionAnswerBlock(review.question, issue, true));
+      }
+      return;
+    } else {
+      body.appendChild(el('p', { class: 'human-review-instruction', text: review.instruction || '' }));
+    }
+
+    var action = humanReviewPrimaryAction(kind, dict);
+    if (action && review.url) {
+      body.appendChild(el('a', {
+        class: 'button primary human-review-action',
+        href: review.url,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        text: action.label,
+        'aria-label': action.label + (review.instruction ? ' — ' + review.instruction : ''),
+      }));
+    }
+  }
+
   // Shared question UI in Decisions and the drawer. Native radios supply
   // arrow-key selection; details buttons never change the selected answer.
   function questionAnswerBlock(question, issue, drawer) {
@@ -6603,12 +6809,16 @@
     var list = $('question-list');
     list.textContent = '';
     var questions = Array.isArray(issue.openQuestions) ? issue.openQuestions : [];
-    var open = questions.filter(function (question) {
+    var gatedIndex = gatedQuestionIndex(issue);
+    var open = questions.filter(function (question, index) {
+      if (index === gatedIndex) return false;
       return question && question.answerIndex !== null && question.answerIndex !== undefined;
     });
-    $('no-questions').hidden = open.length > 0;
+    $('no-questions').hidden = open.length > 0 || gatedIndex >= 0;
 
-    questions.forEach(function (question) {
+    questions.forEach(function (question, index) {
+      // The gated question is answered in the human review panel only.
+      if (index === gatedIndex) return;
       if (!question) return;
       if (question.answerIndex === null || question.answerIndex === undefined) {
         // Answered questions keep the released split: the answer is separated
@@ -7083,6 +7293,7 @@
     }
 
     renderAgentNotes(issue);
+    renderHumanReview(issue);
     renderQuestions(issue);
     renderStatus(issue);
     renderHumanTasks(issue);
@@ -7147,7 +7358,13 @@
     [['ac-section', issue.acceptanceCriteria], ['subtasks-section', issue.subtasks]].forEach(function (entry) {
       if ($(entry[0])) $(entry[0]).hidden = !(entry[1] && entry[1].length);
     });
-    [['question-list', issue.openQuestions], ['human-list', issue.humanTasks]].forEach(function (entry) {
+    // The gated question lives in the human review panel, so it is not counted
+    // as a remaining Open Questions entry.
+    var gatedIndex = gatedQuestionIndex(issue);
+    var remainingQuestions = (Array.isArray(issue.openQuestions) ? issue.openQuestions : []).filter(function (question, index) {
+      return index !== gatedIndex;
+    });
+    [['question-list', remainingQuestions], ['human-list', issue.humanTasks]].forEach(function (entry) {
       var list = $(entry[0]);
       if (list && list.parentElement) list.parentElement.hidden = state.clientPresentationMode || !(entry[1] && entry[1].length);
     });
@@ -8825,6 +9042,7 @@
       setAuthHint: setAuthHint,
       shortName: shortName, filterSort: filterSort, manualCompare: manualCompare,
       renderBoard: renderBoard, renderDetail: renderDetail,
+      renderHumanReview: renderHumanReview, gatedQuestionIndex: gatedQuestionIndex,
       openIssue: openIssue, openIssueView: openIssueView, closeDrawer: closeDrawer,
       showOfflineShell: showOfflineShell,
       reorderDraft: reorderDraft, draftMutation: draftMutation,
@@ -8852,6 +9070,7 @@
       switchView: switchView,
       setBoardMode: setBoardMode,
       renderCanvasIssues: renderCanvasIssues,
+      createIssueCanvasCard: createIssueCanvasCard,
       computeCanvasCardPositions: computeCanvasCardPositions,
       saveCardPosition: saveCardPosition,
       updateCanvasTransform: updateCanvasTransform,

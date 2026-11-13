@@ -3685,3 +3685,23 @@ body.sheet-open { overflow: hidden; }
 .question-submit-status { flex-basis: 100%; }
 .question-actions .button { min-height: 44px; }
 .question-actions { align-items: start; }
+
+/* Human review: the one place a waiting task carries its clickable artifact. */
+.human-review { background: var(--surf); }
+.human-review h2 { margin: 0 0 8px; }
+.human-review[data-review-state="ready"] { border-left: 3px solid var(--warn); }
+.human-review-kind-row { margin: 0 0 8px; }
+.human-review-kind { white-space: nowrap; }
+.human-review-instruction { margin: 0 0 12px; font-weight: 600; overflow-wrap: anywhere; }
+.human-review-figure { margin: 0 0 12px; }
+.human-review-image { display: block; max-width: 100%; max-height: 60vh; height: auto; border: 1px solid var(--border); border-radius: var(--rad); background: var(--surf-muted); object-fit: contain; }
+.human-review-figure .human-review-instruction { margin: 8px 0 0; font-weight: 500; }
+.human-review-action { display: inline-flex; align-items: center; min-height: 44px; }
+.human-review-help { margin: 0 0 8px; }
+.human-review-reason { margin: 0; }
+.human-review-presets { margin: 0 0 8px; padding-left: 20px; }
+.human-review-badge { white-space: nowrap; }
+.canvas-card-review { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 8px; padding: 6px 8px; border-left: 2px solid var(--warn); background: var(--warn-subtle); border-radius: var(--rad-sm); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.canvas-card-review-kind { font-weight: 600; }
+.canvas-card-review-text { color: var(--fg-muted); overflow: hidden; }
+.canvas-card-review-missing { color: var(--fg-muted); border-left-color: var(--err); background: var(--err-subtle); }

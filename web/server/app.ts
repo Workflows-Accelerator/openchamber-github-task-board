@@ -41,10 +41,13 @@ import {
   buildBoardListItem,
   buildIssueDetail,
   buildNoteCommentBody,
+  humanReviewGateMessage,
+  isHumanReviewGateStatus,
   issueFingerprint,
   issueKey,
   labelNames,
   NOTE_MAX_LENGTH,
+  parseHumanReview,
   parseIssueNotes,
   parseWebHumanTasks,
   statusLabelOf,
@@ -110,9 +113,13 @@ class HttpError extends Error {
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_AGGREGATE_ISSUES = 500;
+// The one deliberate concession: a human review artifact is a screenshot
+// hosted by whoever attached it, so images may come from https origins. No
+// other directive moved: scripts, styles, connections and frames stay 'self',
+// so a review image can be displayed but can never execute or fetch anything.
 const SECURITY_HEADERS: Record<string, string> = {
   'content-security-policy':
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'no-referrer',
@@ -814,6 +821,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           throw new HttpError(400, 'invalid_request', 'Labels must be an array of strings');
         }
         labels = body.labels;
+      }
+      // Creation is a status-entry path too: a new issue cannot be born waiting
+      // for a human unless its body already carries a clickable artifact.
+      if (isHumanReviewGateStatus(statusLabelOf(labels))) {
+        const review = parseHumanReview(issueBody ?? '');
+        if (review.state !== 'ready') {
+          throw new HttpError(400, 'human_review_required', humanReviewGateMessage(review));
+        }
       }
       let created: any;
       let labelFallback = false;
@@ -2263,7 +2278,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       let baseQuestionIndex = -1;
       let baseQuestionText = '';
       let targetAnswer = '';
-      let baseStatus: string | null = null;
+      // Known for every operation, not only status writes: a body edit can also
+      // create or break the waiting state, and the guard below must see it.
+      let baseStatus: string | null = statusLabelOf(labelNames(fresh.item));
       let targetStatus = '';
       let baseHumanTaskIndex = -1;
       let targetHumanTaskCompleted: boolean | undefined = undefined;
@@ -2872,6 +2889,30 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
         if (error instanceof SectionError) throw new HttpError(400, 'invalid_edit', error.message);
         throw error;
+      }
+
+      // "Waiting for you" must mean the human can settle it by clicking. This is
+      // checked on every path that can put the issue in that state: a status
+      // write, a create, and a body edit that breaks an existing valid gate.
+      // Answering the gated question is the settlement itself, so it is exempt.
+      const nextLabels = Array.isArray(patch.labels) ? (patch.labels as string[]) : null;
+      const resultingStatus = nextLabels ? statusLabelOf(nextLabels) : baseStatus;
+      const resultingState = typeof patch.state === 'string' ? patch.state : fresh.item.state;
+      const resultingBody = typeof patch.body === 'string' ? patch.body : (fresh.item.body ?? '');
+      if (resultingState !== 'closed' && isHumanReviewGateStatus(resultingStatus)) {
+        const entering = !isHumanReviewGateStatus(baseStatus);
+        const writesBody = typeof patch.body === 'string';
+        const baseReview = writesBody ? parseHumanReview(fresh.item.body ?? '') : null;
+        const review = entering || (writesBody && baseReview?.state === 'ready')
+          ? parseHumanReview(resultingBody)
+          : null;
+        const breaking = op.kind !== 'question' && writesBody && baseReview?.state === 'ready' && review?.state !== 'ready';
+        if (entering && review?.state !== 'ready') {
+          throw new HttpError(400, 'human_review_required', humanReviewGateMessage(review!));
+        }
+        if (breaking) {
+          throw new HttpError(400, 'human_review_required', humanReviewGateMessage(review!));
+        }
       }
 
       try {

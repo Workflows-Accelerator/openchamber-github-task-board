@@ -569,6 +569,7 @@ function listFields(raw: any, repository: BoardRepository | null) {
     description,
     order: parseOrderMarker(body),
     canvas: parseCanvasMarker(body),
+    humanReview: parseHumanReview(body),
     fingerprint: issueFingerprint(raw, repository),
     dependencies,
     textDependencies,
@@ -790,6 +791,237 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
   return questions;
 }
 
+// ==========================================
+// Human review artifact: the only thing allowed to make a task "wait for you".
+//
+// A task may sit in status:needs-human only when the human can settle it by
+// clicking: a screenshot, a short video, a link, or a question with preset
+// answers. Anything that would need the human to write code, run a command or
+// start a server is not a human gate and must stay with the agent.
+//
+// Authoring convention (one convention only, parsed here and nowhere else):
+//
+//   ### Human Review:
+//   - Artifact: image
+//   - URL: https://example.com/screenshots/login-empty.png
+//   - Instruction: Compare the empty state with the approved mockup.
+//
+// - The heading is `Human Review` at any level 1-6, case-insensitive, with an
+//   optional colon. The last such section wins, like the canvas and order markers.
+// - Fields are single-line list items `- Name: value` with the names Artifact,
+//   URL and Instruction. Blank lines and ordinary prose inside the section are
+//   ignored, so the section still reads as prose; a repeated known field is malformed.
+// - Artifact is one of image, video, link or question.
+// - image, video and link need an http(s) URL and a one-line Instruction.
+// - question needs an unanswered `### Open Questions:` item, whose text is the
+//   instruction; URL and Instruction are not used for it. Preset answer lines
+//   (`  - label :: gist :: details`) are read by parseWebOpenQuestions, so the
+//   gate and the drawer render exactly the same options. Once that question is
+//   answered the artifact is "settled": nothing is asked of the human any more.
+// - A malformed section is reported as malformed with its precise reason, never
+//   silently accepted as a gate.
+// ==========================================
+export type HumanReviewKind = 'image' | 'video' | 'link' | 'question';
+export type HumanReviewState = 'ready' | 'settled' | 'missing' | 'malformed';
+export type HumanReviewReason =
+  | 'no_section'
+  | 'no_artifact'
+  | 'unknown_artifact'
+  | 'duplicate_field'
+  | 'missing_url'
+  | 'invalid_url'
+  | 'missing_instruction'
+  | 'long_instruction'
+  | 'missing_question'
+  | 'question_answered';
+
+export interface HumanReviewQuestion {
+  index: number;
+  answerIndex: number | null;
+  text: string;
+  options?: OpenQuestionOption[];
+}
+
+export interface HumanReviewView {
+  state: HumanReviewState;
+  kind: HumanReviewKind | null;
+  url: string | null;
+  instruction: string | null;
+  question: HumanReviewQuestion | null;
+  reason: HumanReviewReason | null;
+  message: string;
+}
+
+export const HUMAN_REVIEW_INSTRUCTION_MAX = 200;
+export const HUMAN_REVIEW_URL_MAX = 2048;
+const HUMAN_REVIEW_KINDS: HumanReviewKind[] = ['image', 'video', 'link', 'question'];
+// `- Artifact: image`. Only the three known names are fields; every other line
+// inside the section is prose and is ignored.
+const humanReviewFieldPattern = /^ {0,3}[-*+][ \t]+(artifact|url|instruction)[ \t]*:[ \t]*(.*)$/i;
+
+function humanReviewView(
+  state: HumanReviewState,
+  reason: HumanReviewReason | null,
+  message: string,
+  fields: { kind?: HumanReviewKind | null; url?: string | null; instruction?: string | null; question?: HumanReviewQuestion | null } = {},
+): HumanReviewView {
+  return {
+    state,
+    kind: fields.kind ?? null,
+    url: fields.url ?? null,
+    instruction: fields.instruction ?? null,
+    question: fields.question ?? null,
+    reason,
+    message,
+  };
+}
+
+export function parseHumanReview(body: string | null | undefined): HumanReviewView {
+  if (!body || typeof body !== 'string') {
+    return humanReviewView('missing', 'no_section', 'The body has no "### Human Review:" section.');
+  }
+  const lines = scanBodyLines(body);
+  let headingIndex = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.fenced || line.indentedCode) continue;
+    if (/^ {0,3}#{1,6}[ \t]+human[ \t]+review[ \t]*:?[ \t]*$/i.test(line.text)) headingIndex = i;
+  }
+  if (headingIndex < 0) {
+    return humanReviewView('missing', 'no_section', 'The body has no "### Human Review:" section.');
+  }
+
+  const values: Record<string, string[]> = { artifact: [], url: [], instruction: [] };
+  for (let i = headingIndex + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.fenced || line.indentedCode) continue;
+    if (/^ {0,3}#{1,6}[ \t]+/.test(line.text)) break;
+    const match = humanReviewFieldPattern.exec(line.text);
+    if (!match) continue;
+    values[match[1].toLowerCase()].push(match[2].trim());
+  }
+
+  for (const name of ['artifact', 'url', 'instruction']) {
+    if (values[name].length > 1) {
+      return humanReviewView(
+        'malformed',
+        'duplicate_field',
+        `The "### Human Review:" section repeats the "${name === 'url' ? 'URL' : name === 'artifact' ? 'Artifact' : 'Instruction'}:" field.`,
+      );
+    }
+  }
+
+  if (values.artifact.length === 0) {
+    return humanReviewView(
+      'malformed',
+      'no_artifact',
+      'The "### Human Review:" section has no "- Artifact: image | video | link | question" line.',
+    );
+  }
+  const rawKind = values.artifact[0].toLowerCase();
+  if (!(HUMAN_REVIEW_KINDS as string[]).includes(rawKind)) {
+    return humanReviewView(
+      'malformed',
+      'unknown_artifact',
+      `The "- Artifact:" value "${values.artifact[0]}" is not image, video, link or question.`,
+    );
+  }
+  const kind = rawKind as HumanReviewKind;
+  const url = values.url.length ? values.url[0] : '';
+  const instruction = values.instruction.length ? values.instruction[0] : '';
+
+  if (kind === 'question') {
+    const questions = parseWebOpenQuestions(body);
+    const pending = questions.find((question) => !question.completed) ?? null;
+    if (!pending) {
+      if (questions.length > 0) {
+        return humanReviewView(
+          'settled',
+          'question_answered',
+          'The open question for this artifact is already answered, so nothing is waiting on you.',
+          { kind, question: null, instruction: instruction || null },
+        );
+      }
+      return humanReviewView(
+        'malformed',
+        'missing_question',
+        'A question artifact needs an unanswered "### Open Questions:" item in the body.',
+        { kind },
+      );
+    }
+    // Same identity the drawer and Decisions already use: `index` is the array
+    // position, `answerIndex` the position among the still-open questions. The
+    // artifact always points at the first open question, so its answerIndex is 0.
+    const question: HumanReviewQuestion = {
+      index: questions.indexOf(pending),
+      answerIndex: 0,
+      text: pending.text,
+    };
+    if (pending.options && pending.options.length) question.options = pending.options;
+    return humanReviewView('ready', null, 'This task waits for one answer you can pick or type.', {
+      kind,
+      question,
+      instruction: instruction || null,
+    });
+  }
+
+  const kindPhrase = kind === 'image' ? 'An image' : `A ${kind}`;
+  if (!url) {
+    return humanReviewView(
+      'malformed',
+      'missing_url',
+      `${kindPhrase} artifact needs a "- URL: https://..." line.`,
+      { kind },
+    );
+  }
+  if (url.length > HUMAN_REVIEW_URL_MAX || !/^https?:\/\/[^\s<>"'`\\]+$/i.test(url)) {
+    return humanReviewView(
+      'malformed',
+      'invalid_url',
+      `The "- URL:" value must be an http:// or https:// link of at most ${HUMAN_REVIEW_URL_MAX} characters.`,
+      { kind, url },
+    );
+  }
+  if (!instruction) {
+    return humanReviewView(
+      'malformed',
+      'missing_instruction',
+      `${kindPhrase} artifact needs a one-line "- Instruction: ..." line saying what to look at.`,
+      { kind, url },
+    );
+  }
+  if (instruction.length > HUMAN_REVIEW_INSTRUCTION_MAX) {
+    return humanReviewView(
+      'malformed',
+      'long_instruction',
+      `The "- Instruction:" line is longer than ${HUMAN_REVIEW_INSTRUCTION_MAX} characters.`,
+      { kind, url },
+    );
+  }
+  return humanReviewView('ready', null, 'This task waits for one click you can settle.', {
+    kind,
+    url,
+    instruction,
+  });
+}
+
+export function isHumanReviewGateStatus(status: string | null | undefined): boolean {
+  return typeof status === 'string' && status.trim().toLowerCase() === 'status:needs-human';
+}
+
+// The message a rejected transition returns. It names the missing or broken
+// artifact, so the caller knows what to add before retrying.
+export function humanReviewGateMessage(view: HumanReviewView): string {
+  const lead = 'A task can wait for you only with a clickable review artifact (a screenshot, a short video, a link, or a question with preset answers).';
+  if (view.state === 'missing') {
+    return `${lead} This body carries no artifact: add a "### Human Review:" section with "- Artifact: image | video | link | question", then its "- URL: https://..." and one-line "- Instruction: ..." (or an unanswered "### Open Questions:" item for a question).`;
+  }
+  if (view.state === 'settled') {
+    return `${lead} ${view.message} Move this task back to the agent instead.`;
+  }
+  return `${lead} The artifact is malformed. ${view.message}`;
+}
+
 export interface WebHumanTask {
   index: number;
   lineIndex: number;
@@ -913,6 +1145,9 @@ export interface BoardListItem {
   description: string;
   order: number | null;
   canvas: CanvasMarkerData | null;
+  // The only artifact allowed to make this task wait for the human. Present on
+  // every row so a card can show the reason when a legacy body carries none.
+  humanReview?: HumanReviewView;
   fingerprint: string;
   id?: number | null;
   dependencies: number[];
@@ -972,6 +1207,7 @@ export interface IssueDetail {
   body: string;
   bodyMarkdown: string;
   canvas: CanvasMarkerData | null;
+  humanReview?: HumanReviewView;
   fingerprint: string;
   labels: string[];
   statusLabel: string | null;

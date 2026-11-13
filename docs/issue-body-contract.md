@@ -1,6 +1,6 @@
-# Issue Body Contract v1 — canonical spec
+# Issue Body Contract v1.3 — canonical spec
 
-Status: ALIGNED 2026-09-26 (decisions D1-D8). This spec is the single source of truth.
+Status: ALIGNED 2026-11-13 (v1.3 adds §2.9 human review artifacts and §2.10 waiting-state presentation; D1-D8 unchanged). This spec is the single source of truth.
 Canonical location: `docs/issue-body-contract.md` (versioned next to the parsers that enforce it). Consumers reference this document; the lifecycle skill and the AI issue prompt mirror it.
 
 ## 1. Purpose & consumers
@@ -76,6 +76,34 @@ Rules:
   - Feature path: desired outcome, research and alternatives, user decisions, then implementation.
   - Both paths retain existing empirical proof and human authority over release and closure; never close an issue or claim human release approval.
 - Questions: Only block work that depends on the unanswered question; independent authorised work continues. Undecided work type is an alignment question to the user, not a default.
+
+### 2.9 `### Human Review:` — the only human gate (NEW in v1.3)
+
+A task may sit in `status:needs-human` only when the human can settle it by clicking: a screenshot, a short video, a link, or a question with preset answers. The board reads exactly one section for this, following the same body-section convention as the canvas marker, notes and questions:
+
+```markdown
+### Human Review:
+- Artifact: image
+- URL: https://example.com/screenshots/login-empty.png
+- Instruction: Compare the empty state with the approved mockup.
+```
+
+Format rules (`parseHumanReview` in `web/server/board.ts` is the only parser):
+
+- The heading is `Human Review` at any level 1-6, case-insensitive, with an optional colon. The last such unfenced section wins.
+- Fields are single-line list items `- Name: value`: `Artifact`, `URL`, `Instruction`. Blank lines and ordinary prose inside the section are ignored. Repeating a known field is malformed.
+- `- Artifact:` is exactly `image`, `video`, `link` or `question`.
+- `image`, `video` and `link` require `- URL: http://...` or `https://...` (at most 2048 characters) and a one-line `- Instruction:` of at most 200 characters saying what to look at.
+- `question` takes no URL. The artifact points at the first unanswered `### Open Questions:` item; that item's text is the instruction. Its `  - label :: gist :: details` preset lines (§2.5) render through the same V4-2 question renderer, with the same details disclosure and free-text answer path. Answering the question settles the artifact: the task must then move back to the agent, and the board says so instead of showing a wait.
+- A fenced or indented-code heading is not a section. A malformed artifact is reported with its precise reason, never silently accepted as a gate.
+- The server rejects putting an issue into `status:needs-human` (at creation, through a status write, or by a body edit that would break an existing valid gate) with a 4xx `human_review_required` message naming the missing or malformed part. Nothing is written to GitHub in that case.
+- Legacy data that already waits without a valid artifact stays visible as "waiting for an artifact" with the precise reason. It is never presented as a silent wait.
+
+**Reconciliation with self-contained prose.** The section is gate metadata, not a second issue format, and it never replaces the human-readable body. For `image`, `video` and `link` the instruction must make sense on its own. For `question`, the `### Open Questions:` item must still read correctly as prose when the option lines are stripped, because raw-body readers (chambervoice, scripts, GitHub itself) never see the board. Presets remain suggestions; the free-text answer path is always valid.
+
+### 2.10 Waiting-state presentation (NEW in v1.3)
+
+`status:in-review` means an agent is reviewing its own work; it asks nothing of the user and reads as "Agent reviewing" / "Agent en revue". `status:needs-human` is the only state that asks the user to decide, and only when §2.9 carries a ready artifact. The board presents the artifact inline (image), the one-line instruction and exactly one primary action per type: "Ouvrir la capture", "Regarder la vidéo", "Ouvrir le lien", "Répondre" (EN: "Open screenshot", "Watch the video", "Open the link", "Answer"). The gate and its panel are keyed on the canonical `status:needs-human` / `status:in-review` labels, which are what the server enforces; a task that only looks waiting through attention or session state keeps its existing badges and is never accused of a missing artifact. No new label was introduced for this distinction: the two existing status labels already carry the meaning, so the separation is presentation-level.
 
 ## 3. Human to-do extraction — `collectHumanTodos(issue, session?)`
 
