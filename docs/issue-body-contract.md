@@ -31,7 +31,7 @@ Checkboxes `- [ ]`. The agent's own work steps (parse: `parseSubtasks`, `panel/c
 ### 2.5 `### Open Questions:`
 Checkboxes `- [ ]`, each phrased as a question needing human alignment. Items must be **self-contained prose** (chambervoice reads raw issue bodies over REST and sees no drawer metadata). Unchecked = unanswered. Answering writes the answer inline and checks the box (`answerOpenQuestionInMarkdown`, `panel/core.ts`). Unanswered questions appear in the Questions view REGARDLESS of the issue's status column.
 
-#### Preset answer options (optional)
+#### Preset answer options (optional, except at a human review gate)
 
 A question may carry recommended answers. Put each recommendation on its own line directly after the question line, indented two spaces, in this exact form:
 
@@ -50,7 +50,7 @@ Format rules (`parseWebOpenQuestions` in `web/server/board.ts` is the only parse
 - A nested checklist item (`  - [ ] step`) is a subtask, not an option.
 - Answering writes the answer inline and checks the box; the option lines stay in the body.
 
-**Reconciliation with self-contained prose.** Option lines are recommendation metadata that the board renders; they are not part of the question's prose. The question must still read correctly as plain prose when the option lines are stripped, because chambervoice and every raw-body reader never see the drawer. The free-text answer path always stays valid: presets are suggestions, never a required choice, and every question must remain answerable in prose.
+**Reconciliation with self-contained prose.** Option lines are recommendation metadata that the board renders; they are not part of the question's prose. The question must still read correctly as plain prose when the option lines are stripped, because chambervoice and every raw-body reader never see the drawer. The free-text answer path always stays valid, and every question must remain answerable in prose. Presets are optional for an ordinary question; a question that gates the task for human review (§2.9) must offer at least one, because a gate is settled by clicking.
 
 ### 2.6 `### Human Tasks:` (NEW in v1 — decision D1)
 Checkboxes `- [ ]`. Each item is ONE concrete action a human must take. Rules:
