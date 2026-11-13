@@ -1,7 +1,12 @@
 # Resume — V4-3 recovery after server restart, 2026-11-13
 
-## Current frontier
-- One active replacement: `ses_b03f8aa4a8ae0d9e7205cc6d`, requested genius, dynamic-agent, auto_accept true; canonical brief `tasks/wave5a2-v4-3-recover-partial.md` passed by pointer only.
+## Current frontier (updated after the third engine restart)
+- The environment killed three workers mid-turn. The wave is split into small bounded tasks so an interruption costs minutes, not an hour.
+- Manager took over the tests (a worker cannot be trusted to survive a full suite): focused V4-3 files 27/27 exit 0; full web suite 699 tests, 698 pass, 1 fail `simple-views.test.mjs:433` F9 isolation, `ENOENT: mkdtemp '/tmp/antigravity/f9-isolation-ywyneF'` — environment, not V4-3.
+- The documentation lock is already in the tree and green: contract §2.9 example parses verbatim, drift makes the lock fail, restore is byte-identical, and core.ts vs shipped panel/main.js prompt text matches. The earlier "still missing docs lock" note was stale.
+- Active: `ses_2002d87c8babea7223fe7c3f` (worker), brief `tasks/wave5d-v4-3-commit-checkpoint.md`: commit source, tests and evidence README, no source edit. Needed because the manager cannot `git add` application paths.
+- Remaining after the commit: browser probes (360x800 / 390x844 / 1280x900, light+dark, EN+FR: image, video, link, preset question, legacy missing artifact, malformed artifact, in-review), framing probe, delivery smoke, hostile review, then independent review.
+- Stopped, do not resume: `ses_b03f8aa4a8ae0d9e7205cc6d` (genius recovery) and `ses_1cc9fd961a119da9967ede2c` (engineer checkpoint) both went idle mid-work and were explicitly stopped.
 - Worktree `.worktrees/team-dev-board-v3`, branch `feat/board-v3`, base `a6f61f3`.
 - Prior worker `ses_3ea186555b74bd41ddaaeb58` confirmed idle, last assistant "Now the i18n keys, in both dictionaries." Actual model 9router/genius verified in session.messages. Explicit delegate stop returned success; cancelled/error wakes received for that old session. Do not confuse them with the replacement.
 - Recovery starts from inherited uncommitted app.js (+53/-1), server/app.ts (+23/-1), board.ts (+233), total +307/-2. No V4-3 tests, evidence or commits yet at dispatch. The partial parser/enforcement/client plumbing must be audited, not rebuilt blindly or accepted as correct.
