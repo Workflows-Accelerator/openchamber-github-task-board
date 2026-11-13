@@ -168,8 +168,8 @@ const EXPECT = {
   malformed: {
     title: { en: 'Waiting for an artifact', fr: 'En attente d’un élément à valider' },
     reason: {
-      en: 'The "- URL:" value must start with http:// or https://.',
-      fr: 'La valeur de « - URL: » doit commencer par http:// ou https://.',
+      en: 'The "- URL:" value must be an http:// or https:// link of at most 2048 characters, with no spaces.',
+      fr: 'La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.',
     },
   },
   'in-review': {
