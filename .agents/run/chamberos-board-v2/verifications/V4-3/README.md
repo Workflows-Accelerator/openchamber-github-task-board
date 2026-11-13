@@ -234,3 +234,62 @@ Sequential, on the fixed tree (`7d8e354` plus the attack scripts):
 
 Real GitHub, production, Safari, Firefox, physical phone, screen reader.
 
+## Delta residuals closed (2026-11-13)
+
+The two Low residuals in `../V4-3-L4-delta/README.md` are closed. Documentation, prompt strings and
+probe expectations only; no application behaviour changed.
+
+### 1. Preset-answer rule scoped to the human review gate (`fa15e35`)
+
+`docs/issue-body-contract.md` §2.5 no longer says presets are "never a required choice". Its heading
+is now "Preset answer options (optional, except at a human review gate)" and its reconciliation
+paragraph reads: presets are optional for an ordinary question; a question that gates the task for
+human review (§2.9) must offer at least one, because a gate is settled by clicking. §2.9 is
+unchanged. `DEFAULT_AI_ISSUE_PROMPT`'s Open Questions bullet in `panel/core.ts` and the shipped
+`panel/main.js` carry the same scope in the same words, so the two sections and the two prompt
+copies agree.
+
+Documentation lock, re-run after the edit:
+
+- `node --test web/tests/issue-body-contract.test.mjs web/tests/v4-3-human-review.test.mjs web/tests/v4-3-client.test.mjs` — 43 tests, 43 pass, 0 fail, exit 0, including `V4-3 prompts document the human gate identically in core.ts and shipped main.js` and `V4-3 contract lock is non-destructive: the document stays byte-identical`.
+- `node --test test/ai-prompt.test.js test/drafting-and-skills-audit.test.js test/issue-30-work-type.test.js` — 21 tests, 21 pass, 0 fail, exit 0.
+- `npx tsc --noEmit` — exit 0.
+
+### 2. Stale URL message expectations refreshed (`20f4553`)
+
+`scripts/browser.mjs` now expects the F4 message the card actually renders, EN and FR:
+`The "- URL:" value must be an http:// or https:// link of at most 2048 characters, with no spaces.`
+and `La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.`
+Nothing else in the probe changed. The assertion is still
+`body.innerText.includes(<the whole sentence>)`, so a message that loses the 2048 limit or the
+no-space rule still fails. Two negative controls on the shipped client confirm it: the probe was
+run from a copy outside this tree (`/tmp/opencode/v4-3-mut/scripts/browser.mjs`, identical except
+for absolute test import paths) while `web/public/app.js` was mutated and then restored
+byte-identically (sha256 `31c04a4f1c47a6d7265fb5984adaa07e5578d233d300dc2ed2bcbe2a17db3a8d` before
+and after).
+
+| Mutation of the EN message | Result |
+|---|---|
+| drop "at most 2048 characters" | 6 failed rows, all `malformed-*-en:reasonShown`, exit 1 (`logs/mutation-en-no-2048.log`, `.exit`) |
+| drop "with no spaces" | 6 failed rows, all `malformed-*-en:reasonShown`, exit 1 (`logs/mutation-en-no-no-spaces.log`, `.exit`) |
+
+Re-run on the committed probe: `pass: true`, 84 rows, 84 screenshots (plus 12 `-answer` shots for
+the question gate), 1248 recorded assertions, 0 failed, 0 page errors, 0 console errors, 0 CSP
+violations, exit 0. Raw log `logs/browser.log`, exit `logs/browser.exit`, report `browser.json`,
+images `screenshots/`. Implementation under test `0da2997` (`web/server/board.ts`), probe head
+`20f4553`, Chromium 156.0.8078.4, synthetic only.
+
+`browser.json` changed only in `generatedAt`, `probeHead`, `commit` (was `854522c`, now `0da2997`)
+and, in the 12 malformed rows, the `reasonShown` expected/actual pair and the measured card
+`text`; no other state's measurement moved. The 12 malformed screenshots now show the F4 sentence;
+13 other PNGs differ in bytes only, with identical measurements. The "Browser evidence" section
+above is the earlier run at `cd97f8e` and still quotes the pre-F4 sentence; this run supersedes it.
+
+### Still open, known
+
+F5 (the Operations view and `panel/labels.ts` still read "Needs human" / "In review", and the panel
+renders no gate); a live preset-less question gate (a typed answer settles it, then the status
+control must move the task); the saved `ai_issue_prompt` override (a stored prompt keeps the old
+wording); the third-party image host (`img-src https:` lets it see the reader's IP); and the URL
+refusal causes the message still does not name — no host, a double quote, a backslash.
+

@@ -1,9 +1,9 @@
 {
   "syntheticOnly": true,
-  "generatedAt": "2026-11-13T11:44:38.172Z",
+  "generatedAt": "2026-11-13T13:39:43.070Z",
   "engine": "chromium 156.0.8078.4",
-  "commit": "854522c35375233784ed328060007e1b586b93ae",
-  "probeHead": "7d8e354f26f815124ced582e76841a661ce4b7a3",
+  "commit": "0da2997a8d4602d63f2dfc59c9cd39ced3f6b9d7",
+  "probeHead": "20f4553ab973a09d3fd2174fd5c653b92c250cb1",
   "fixture": {
     "issues": [
       {
@@ -127,8 +127,8 @@
         "fr": "En attente d’un élément à valider"
       },
       "reason": {
-        "en": "The \"- URL:\" value must start with http:// or https://.",
-        "fr": "La valeur de « - URL: » doit commencer par http:// ou https://."
+        "en": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "fr": "La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
       }
     },
     "in-review": {
@@ -9368,8 +9368,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "The \"- URL:\" value must start with http:// or https://.",
-          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://."
+          "expected": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -9381,7 +9381,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "Waiting for an artifact",
-        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://.",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -9472,8 +9472,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "La valeur de « - URL: » doit commencer par http:// ou https://.",
-          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://."
+          "expected": "La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -9485,7 +9485,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "En attente d’un élément à valider",
-        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://.",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -9576,8 +9576,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "The \"- URL:\" value must start with http:// or https://.",
-          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://."
+          "expected": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -9589,7 +9589,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "Waiting for an artifact",
-        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://.",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -9680,8 +9680,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "La valeur de « - URL: » doit commencer par http:// ou https://.",
-          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://."
+          "expected": "La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -9693,7 +9693,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "En attente d’un élément à valider",
-        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://.",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -9784,8 +9784,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "The \"- URL:\" value must start with http:// or https://.",
-          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://."
+          "expected": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -9797,7 +9797,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "Waiting for an artifact",
-        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://.",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -9888,8 +9888,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "La valeur de « - URL: » doit commencer par http:// ou https://.",
-          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://."
+          "expected": "La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -9901,7 +9901,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "En attente d’un élément à valider",
-        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://.",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -9992,8 +9992,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "The \"- URL:\" value must start with http:// or https://.",
-          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://."
+          "expected": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -10005,7 +10005,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "Waiting for an artifact",
-        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://.",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -10096,8 +10096,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "La valeur de « - URL: » doit commencer par http:// ou https://.",
-          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://."
+          "expected": "La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -10109,7 +10109,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "En attente d’un élément à valider",
-        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://.",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -10200,8 +10200,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "The \"- URL:\" value must start with http:// or https://.",
-          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://."
+          "expected": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -10213,7 +10213,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "Waiting for an artifact",
-        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://.",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -10304,8 +10304,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "La valeur de « - URL: » doit commencer par http:// ou https://.",
-          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://."
+          "expected": "La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -10317,7 +10317,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "En attente d’un élément à valider",
-        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://.",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -10408,8 +10408,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "The \"- URL:\" value must start with http:// or https://.",
-          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://."
+          "expected": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -10421,7 +10421,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "Waiting for an artifact",
-        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must start with http:// or https://.",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
         "actions": [],
         "images": [],
         "videos": 0,
@@ -10512,8 +10512,8 @@
         },
         "reasonShown": {
           "ok": true,
-          "expected": "La valeur de « - URL: » doit commencer par http:// ou https://.",
-          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://."
+          "expected": "La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
         },
         "stateIsNotReady": {
           "ok": true,
@@ -10525,7 +10525,7 @@
         "hidden": false,
         "reviewState": "malformed",
         "title": "En attente d’un élément à valider",
-        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit commencer par http:// ou https://.",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
         "actions": [],
         "images": [],
         "videos": 0,
