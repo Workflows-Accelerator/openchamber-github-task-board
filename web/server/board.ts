@@ -814,10 +814,12 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
 // - Artifact is one of image, video, link or question.
 // - image, video and link need an http(s) URL and a one-line Instruction.
 // - question needs an unanswered `### Open Questions:` item, whose text is the
-//   instruction; URL and Instruction are not used for it. Preset answer lines
-//   (`  - label :: gist :: details`) are read by parseWebOpenQuestions, so the
-//   gate and the drawer render exactly the same options. Once that question is
-//   answered the artifact is "settled": nothing is asked of the human any more.
+//   instruction; URL and Instruction are not used for it. That item must carry
+//   at least one preset answer line (`  - label :: gist :: details`), read by
+//   parseWebOpenQuestions, so the gate and the drawer render exactly the same
+//   options; without a preset the artifact is malformed, because a typed answer
+//   is not a click. Once that question is answered the artifact is "settled":
+//   nothing is asked of the human any more.
 // - A malformed section is reported as malformed with its precise reason, never
 //   silently accepted as a gate.
 // ==========================================
@@ -834,6 +836,7 @@ export type HumanReviewReason =
   | 'missing_instruction'
   | 'long_instruction'
   | 'missing_question'
+  | 'missing_options'
   | 'question_answered';
 
 export interface HumanReviewQuestion {
@@ -950,6 +953,17 @@ export function parseHumanReview(body: string | null | undefined): HumanReviewVi
         { kind },
       );
     }
+    // A question gate must be answerable by clicking. Without a preset line the
+    // only way to answer is to type, which is not a human gate, so it is
+    // malformed rather than a ready artifact.
+    if (!pending.options || pending.options.length === 0) {
+      return humanReviewView(
+        'malformed',
+        'missing_options',
+        'A question artifact needs at least one preset answer line "  - label :: gist :: details" under its open question, so the human can settle it by clicking.',
+        { kind, instruction: instruction || null },
+      );
+    }
     // Same identity the drawer and Decisions already use: `index` is the array
     // position, `answerIndex` the position among the still-open questions. The
     // artifact always points at the first open question, so its answerIndex is 0.
@@ -957,8 +971,8 @@ export function parseHumanReview(body: string | null | undefined): HumanReviewVi
       index: questions.indexOf(pending),
       answerIndex: 0,
       text: pending.text,
+      options: pending.options,
     };
-    if (pending.options && pending.options.length) question.options = pending.options;
     return humanReviewView('ready', null, 'This task waits for one answer you can pick or type.', {
       kind,
       question,

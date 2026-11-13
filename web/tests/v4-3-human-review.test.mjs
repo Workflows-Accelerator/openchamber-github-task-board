@@ -108,6 +108,7 @@ test('V4-3 parser reports precise reasons instead of accepting a gate', () => {
     ['### Human Review:\n- Artifact: image\n- URL: https://example.com/a.png\n', 'malformed', 'missing_instruction'],
     ['### Human Review:\n- Artifact: image\n- URL: https://example.com/a.png\n- Instruction: ' + 'x'.repeat(201) + '\n', 'malformed', 'long_instruction'],
     ['### Human Review:\n- Artifact: question\n', 'malformed', 'missing_question'],
+    ['### Open Questions:\n- [ ] Is the wording right?\n\n### Human Review:\n- Artifact: question\n', 'malformed', 'missing_options'],
   ];
   for (const [body, state, reason] of cases) {
     const parsed = parseHumanReview(body);
@@ -203,6 +204,45 @@ test('V4-3 creation cannot be born waiting for a human without an artifact', asy
     });
     assert.equal(accepted.status, 201);
     assert.equal(accepted.json.issue.humanReview.state, 'ready');
+  });
+});
+
+test('V4-3 a question artifact must offer at least one preset answer', () => {
+  // The human is only ever asked to click. A question gate with no preset is a
+  // typing task, so it is malformed until the body offers one option line.
+  const noPresets = '### Open Questions:\n- [ ] Is the wording right?\n\n### Human Review:\n- Artifact: question\n';
+  const parsed = parseHumanReview(noPresets);
+  assert.equal(parsed.state, 'malformed');
+  assert.equal(parsed.reason, 'missing_options');
+  assert.match(parsed.message, /preset/);
+  assert.match(humanReviewGateMessage(parsed), /preset/);
+
+  const withPreset = noPresets.replace('- [ ] Is the wording right?', '- [ ] Is the wording right?\n  - Yes :: Keep it :: Reads well.\n  - No :: Change it :: Too vague.');
+  const ready = parseHumanReview(withPreset);
+  assert.equal(ready.state, 'ready');
+  assert.equal(ready.question.options.length, 2);
+});
+
+test('V4-3 a question gate without presets is refused server-side and writes nothing', async () => {
+  await fixture(async ({ fake, session }) => {
+    const noPresets = '### Open Questions:\n- [ ] Is the wording right?\n\n### Human Review:\n- Artifact: question\n';
+    const before = fake.issues.length;
+    const rejected = await session.request('/api/issues', {
+      method: 'POST',
+      body: { title: 'Typed answer only', body: noPresets, labels: ['status:needs-human'] },
+    });
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.json.error, 'human_review_required');
+    assert.match(rejected.json.message, /preset/);
+    assert.equal(fake.issues.length, before, 'the refused create wrote nothing');
+
+    const accepted = await session.request('/api/issues', {
+      method: 'POST',
+      body: { title: 'Preset answer', body: QUESTION_BODY, labels: ['status:needs-human'] },
+    });
+    assert.equal(accepted.status, 201);
+    assert.equal(accepted.json.issue.humanReview.state, 'ready');
+    assert.equal(accepted.json.issue.humanReview.question.options.length, 2);
   });
 });
 

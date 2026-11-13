@@ -308,6 +308,21 @@ test('V4-3 client: an insecure image URL is reported precisely in English and Fr
   assert.match(textOf(get('human-review-body')), /https:\/\//);
 });
 
+test('V4-3 client: a question gate without presets names the missing presets in English and French', () => {
+  const { app, get } = browser();
+  const review = {
+    state: 'malformed', kind: 'question', url: null, instruction: null, question: null,
+    reason: 'missing_options', message: 'A question artifact needs at least one preset answer line.',
+  };
+  render(app, detail(25, { humanReview: review }));
+  assert.equal(get('human-review-title').textContent, 'Waiting for an artifact');
+  assert.match(textOf(get('human-review-body')), /preset answer/);
+  assert.equal(links(get('human-review-body')).length, 0);
+  app.setLanguage('fr');
+  render(app, detail(26, { humanReview: review }));
+  assert.match(textOf(get('human-review-body')), /réponse proposée/);
+});
+
 test('V4-3 client: a review image that fails to load says so instead of showing a broken artifact', () => {
   const { app, get } = browser();
   render(app, detail(24));
