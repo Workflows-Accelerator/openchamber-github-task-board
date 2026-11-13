@@ -237,7 +237,11 @@ test('V4-3 answering the gated question is allowed and settles the artifact', as
       body: { answer: 'Comfortable', fingerprint: gated.fingerprint },
     });
     assert.equal(answered.status, 200);
-    assert.equal(answered.json.issue.statusLabel, 'status:needs-human');
+    // Answering the gated question settles the artifact, so the task must leave
+    // the waiting column and return to the agent instead of showing a wait.
+    assert.equal(answered.json.issue.statusLabel, 'status:in-progress');
+    assert.ok(answered.json.issue.labels.includes('status:in-progress'));
+    assert.equal(answered.json.issue.labels.includes('status:needs-human'), false);
     assert.equal(answered.json.issue.humanReview.state, 'settled');
     assert.equal(answered.json.issue.humanReview.reason, 'question_answered');
   });

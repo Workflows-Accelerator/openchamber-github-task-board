@@ -799,6 +799,7 @@
       human_review_missing: 'Waiting for an artifact',
       human_review_missing_help: 'This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers.',
       human_review_settled: 'The question is answered. The agent has to pick this task up again.',
+      human_review_settled_title: 'Answer received',
       human_review_reason_no_section: 'The body has no "### Human Review:" section.',
       human_review_reason_no_artifact: 'The section has no "- Artifact:" line.',
       human_review_reason_unknown_artifact: 'The "- Artifact:" value must be image, video, link or question.',
@@ -1029,6 +1030,7 @@
       human_review_missing: 'En attente d’un élément à valider',
       human_review_missing_help: 'Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées.',
       human_review_settled: 'La question est répondue. L’agent doit reprendre cette tâche.',
+      human_review_settled_title: 'Réponse reçue',
       human_review_reason_no_section: 'Le corps n’a pas de section « ### Human Review: ».',
       human_review_reason_no_artifact: 'La section n’a pas de ligne « - Artifact: ».',
       human_review_reason_unknown_artifact: 'La valeur de « - Artifact: » doit être image, video, link ou question.',
@@ -2539,6 +2541,8 @@
       var reviewDict = I18N[getLanguage()] || I18N.en;
       if (rowReview && rowReview.state === 'ready') {
         metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict['human_review_kind_' + rowReview.kind] || reviewDict.human_review_artifact_label }));
+      } else if (rowReview && rowReview.state === 'settled') {
+        metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict.human_review_settled_title, title: humanReviewReasonText(rowReview, reviewDict) }));
       } else {
         metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict.human_review_missing, title: humanReviewReasonText(rowReview, reviewDict) }));
       }
@@ -3518,6 +3522,8 @@
           el('span', { class: 'canvas-card-review-kind', text: dict['human_review_kind_' + review.kind] || '' }),
           el('span', { class: 'canvas-card-review-text', text: reviewText }),
         ]));
+      } else if (review && review.state === 'settled') {
+        children.push(el('div', { class: 'canvas-card-review canvas-card-review-settled', text: dict.human_review_settled_title }));
       } else {
         children.push(el('div', { class: 'canvas-card-review canvas-card-review-missing', text: dict.human_review_missing }));
       }
@@ -6674,7 +6680,7 @@
       return;
     }
 
-    title.textContent = dict.human_review_title;
+    title.textContent = review.state === 'settled' ? dict.human_review_settled_title : dict.human_review_title;
     if (review.state === 'settled') {
       body.appendChild(el('p', { class: 'human-review-help', text: dict.human_review_settled }));
       var settledReason = humanReviewReasonText(review, dict);

@@ -256,3 +256,39 @@ test('V4-3 client: English and French dictionaries stay key-for-key equal', () =
     assert.ok(en.has(key), 'missing human review key ' + key);
   }
 });
+
+test('V4-3 client: a settled question is not presented as a waiting artifact', () => {
+  const { app, get } = browser();
+  const settled = {
+    state: 'settled', kind: 'question', url: null, instruction: null, question: null,
+    reason: 'question_answered', message: 'The open question for this artifact is already answered.',
+  };
+  const answeredQuestion = { index: 0, answerIndex: null, completed: true, text: 'Which spacing should the list use?' };
+  render(app, detail(18, { humanReview: settled, openQuestions: [answeredQuestion] }));
+  const panel = get('human-review-body');
+  assert.equal(get('human-review-title').textContent, 'Answer received');
+  assert.match(textOf(panel), /The agent has to pick this task up again/);
+  assert.equal(links(panel).length, 0);
+  assert.equal(buttons(panel).length, 0);
+
+  const row = app.simpleTaskRow(detail(19, { humanReview: settled, openQuestions: [answeredQuestion] }));
+  assert.match(textOf(row), /Answer received/);
+  assert.doesNotMatch(textOf(row), /Waiting for an artifact/);
+  assert.equal(byClass(row, 'human-review-badge').length, 1);
+
+  const canvas = app.createIssueCanvasCard(detail(20, { humanReview: settled, openQuestions: [answeredQuestion] }), { x: 40, y: 40 });
+  assert.match(textOf(canvas), /Answer received/);
+  assert.doesNotMatch(textOf(canvas), /Waiting for an artifact/);
+});
+
+test('V4-3 client: a settled question reads honestly in French too', () => {
+  const { app, get } = browser();
+  app.setLanguage('fr');
+  const settled = {
+    state: 'settled', kind: 'question', url: null, instruction: null, question: null,
+    reason: 'question_answered', message: '',
+  };
+  render(app, detail(21, { humanReview: settled, openQuestions: [{ index: 0, answerIndex: null, completed: true, text: 'Quel espacement ?' }] }));
+  assert.equal(get('human-review-title').textContent, 'Réponse reçue');
+  assert.match(textOf(get('human-review-body')), /L’agent doit reprendre cette tâche/);
+});

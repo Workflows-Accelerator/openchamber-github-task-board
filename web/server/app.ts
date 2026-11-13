@@ -2841,6 +2841,17 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           const curQView = curDetail.openQuestions[baseQuestionIndex];
           const answerIdx = curQView?.answerIndex ?? op.index;
           patch = { body: applyQuestionAnswer(fresh.item, answerIdx, op.answer) };
+          // Answering the question the gate points at settles the artifact, so
+          // the task leaves the waiting column and returns to the agent.
+          const gate = curDetail.humanReview;
+          if (
+            gate?.state === 'ready' &&
+            gate.kind === 'question' &&
+            gate.question &&
+            gate.question.index === baseQuestionIndex
+          ) {
+            patch.labels = applyStatusChange(fresh.item, 'status:in-progress');
+          }
         } else if (op.kind === 'status') {
           patch = { labels: applyStatusChange(fresh.item, op.status) };
         } else if (op.kind === 'human-task') {
