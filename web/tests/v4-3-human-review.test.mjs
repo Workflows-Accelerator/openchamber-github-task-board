@@ -423,3 +423,17 @@ test('V4-3 a closed body edit cannot remove the gate and then reopen', async () 
     await fake.close();
   }
 });
+
+test('V4-3 image artifacts require https because the board renders them inline', () => {
+  const httpImage = '### Human Review:\n- Artifact: image\n- URL: http://example.com/a.png\n- Instruction: Look.\n';
+  const parsed = parseHumanReview(httpImage);
+  assert.equal(parsed.state, 'malformed');
+  assert.equal(parsed.reason, 'insecure_url');
+  assert.match(parsed.message, /https:\/\//);
+  const httpsImage = httpImage.replace('http://', 'https://');
+  assert.equal(parseHumanReview(httpsImage).state, 'ready');
+  const httpLink = '### Human Review:\n- Artifact: link\n- URL: http://example.com/x\n- Instruction: Look.\n';
+  assert.equal(parseHumanReview(httpLink).state, 'ready');
+  const httpVideo = '### Human Review:\n- Artifact: video\n- URL: http://example.com/x.mp4\n- Instruction: Look.\n';
+  assert.equal(parseHumanReview(httpVideo).state, 'ready');
+});

@@ -292,3 +292,18 @@ test('V4-3 client: a settled question reads honestly in French too', () => {
   assert.equal(get('human-review-title').textContent, 'Réponse reçue');
   assert.match(textOf(get('human-review-body')), /L’agent doit reprendre cette tâche/);
 });
+
+test('V4-3 client: an insecure image URL is reported precisely in English and French', () => {
+  const { app, get } = browser();
+  const review = {
+    state: 'malformed', kind: 'image', url: 'http://example.com/a.png', instruction: null,
+    question: null, reason: 'insecure_url', message: 'An image artifact needs an https:// URL.',
+  };
+  render(app, detail(22, { humanReview: review }));
+  assert.equal(get('human-review-title').textContent, 'Waiting for an artifact');
+  assert.match(textOf(get('human-review-body')), /https:\/\//);
+  assert.equal(links(get('human-review-body')).length, 0);
+  app.setLanguage('fr');
+  render(app, detail(23, { humanReview: review }));
+  assert.match(textOf(get('human-review-body')), /https:\/\//);
+});

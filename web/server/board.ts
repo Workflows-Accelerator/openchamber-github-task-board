@@ -830,6 +830,7 @@ export type HumanReviewReason =
   | 'duplicate_field'
   | 'missing_url'
   | 'invalid_url'
+  | 'insecure_url'
   | 'missing_instruction'
   | 'long_instruction'
   | 'missing_question'
@@ -979,6 +980,17 @@ export function parseHumanReview(body: string | null | undefined): HumanReviewVi
       'malformed',
       'invalid_url',
       `The "- URL:" value must be an http:// or https:// link of at most ${HUMAN_REVIEW_URL_MAX} characters.`,
+      { kind, url },
+    );
+  }
+  // The board renders an image inline under a CSP that allows https images only.
+  // An http image would be accepted as a gate and then blocked by the browser,
+  // so it is refused here with the reason the reader can act on.
+  if (kind === 'image' && !/^https:\/\//i.test(url)) {
+    return humanReviewView(
+      'malformed',
+      'insecure_url',
+      'An image artifact needs an "https://" URL so the board can display it inline.',
       { kind, url },
     );
   }
