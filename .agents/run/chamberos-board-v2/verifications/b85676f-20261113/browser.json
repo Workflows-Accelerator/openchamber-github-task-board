@@ -1,0 +1,86 @@
+{
+  "origin": "https://board.workflows.ac",
+  "signedOut": true,
+  "viewports": [
+    {
+      "viewport": "390x844",
+      "responseStatus": 200,
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "csp": [],
+      "apiBoardStatus": 401,
+      "requests": [
+        "GET /",
+        "GET /theme.css",
+        "GET /markdown.js",
+        "GET /arrange.js",
+        "GET /app.js",
+        "GET /api/session",
+        "GET /api/board"
+      ],
+      "screenshot": "screenshots/live-signed-out-390x844.png",
+      "login": {
+        "loginViewVisible": true,
+        "boardViewHidden": true,
+        "passwordFields": 1,
+        "passwordType": "password",
+        "submitBox": {
+          "x": 41,
+          "y": 479,
+          "width": 83,
+          "height": 44
+        },
+        "loginBox": {
+          "x": 41,
+          "y": 401,
+          "width": 308,
+          "height": 122
+        },
+        "navListVisible": false,
+        "navCanvasVisible": false
+      }
+    },
+    {
+      "viewport": "1280x900",
+      "responseStatus": 200,
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "csp": [],
+      "apiBoardStatus": 401,
+      "requests": [
+        "GET /",
+        "GET /theme.css",
+        "GET /markdown.js",
+        "GET /arrange.js",
+        "GET /app.js",
+        "GET /api/session",
+        "GET /api/board"
+      ],
+      "screenshot": "screenshots/live-signed-out-1280x900.png",
+      "login": {
+        "loginViewVisible": true,
+        "boardViewHidden": true,
+        "passwordFields": 1,
+        "passwordType": "password",
+        "submitBox": {
+          "x": 455,
+          "y": 507,
+          "width": 83,
+          "height": 44
+        },
+        "loginBox": {
+          "x": 455,
+          "y": 429,
+          "width": 370,
+          "height": 122
+        },
+        "navListVisible": false,
+        "navCanvasVisible": false
+      }
+    }
+  ]
+}

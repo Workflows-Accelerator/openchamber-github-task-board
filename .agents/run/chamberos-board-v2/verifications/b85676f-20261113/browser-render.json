@@ -1,0 +1,127 @@
+{
+  "origin": "https://board.workflows.ac",
+  "clientAssets": "live production origin",
+  "apiData": "synthetic local fixture (no production sign-in, no writes)",
+  "viewports": [
+    {
+      "viewport": "390x844",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "csp": [],
+      "shots": [
+        "screenshots/rendered-synthetic-list-390x844.png",
+        "screenshots/rendered-synthetic-canvas-390x844.png",
+        "screenshots/rendered-synthetic-drawer-390x844.png",
+        "screenshots/rendered-synthetic-drawer-settled-390x844.png",
+        "screenshots/rendered-synthetic-decisions-390x844.png"
+      ],
+      "apiCalls": [
+        "GET /api/session (fixture)",
+        "GET /api/repos",
+        "GET /api/combined/board",
+        "GET /api/repos/owner/repo/issues/1",
+        "GET /api/repos/owner/repo/issues/4"
+      ],
+      "mutationsRefused": 0,
+      "pageStatus": 200,
+      "servedAppHeader": "csp-present",
+      "list": {
+        "viewVisible": true,
+        "canvasHidden": true,
+        "cards": 3,
+        "answerReceivedBadges": 1
+      },
+      "canvas": {
+        "viewVisible": true,
+        "boardBox": null
+      },
+      "drawer": {
+        "title": "Choose durable audit storage",
+        "noteComposer": true,
+        "optionCards": 4,
+        "decisions": 4,
+        "humanReviewPanel": true,
+        "humanReviewVisible": true,
+        "humanReviewState": "ready",
+        "humanReviewTitle": "Waiting for you",
+        "humanReviewPresets": 0,
+        "gateRadios": 1,
+        "gateRadioValues": [
+          "PostgreSQL",
+          "SQLite"
+        ],
+        "gateForm": true
+      },
+      "drawerSettled": {
+        "humanReviewVisible": true,
+        "humanReviewState": "settled",
+        "title": "Answer received"
+      },
+      "decisions": {
+        "viewVisible": true,
+        "count": 1,
+        "text": "Repo\n#1\nChoose durable audit storage\nWaiting for you\nHigh\n24d ago\nChoose storage with history and retention?\n\nPostgreSQL\n\nMature and familiar\n\nDetails\n\nSQLite\n\nZero operations\n\nDetails\nWrite another a"
+      }
+    },
+    {
+      "viewport": "1280x900",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "csp": [],
+      "shots": [
+        "screenshots/rendered-synthetic-list-1280x900.png",
+        "screenshots/rendered-synthetic-canvas-1280x900.png",
+        "screenshots/rendered-synthetic-drawer-1280x900.png",
+        "screenshots/rendered-synthetic-drawer-settled-1280x900.png",
+        "screenshots/rendered-synthetic-decisions-1280x900.png"
+      ],
+      "apiCalls": [
+        "GET /api/session (fixture)",
+        "GET /api/repos",
+        "GET /api/combined/board",
+        "GET /api/repos/owner/repo/issues/1",
+        "GET /api/repos/owner/repo/issues/4"
+      ],
+      "mutationsRefused": 0,
+      "pageStatus": 200,
+      "servedAppHeader": "csp-present",
+      "list": {
+        "viewVisible": true,
+        "canvasHidden": true,
+        "cards": 3,
+        "answerReceivedBadges": 1
+      },
+      "canvas": {
+        "viewVisible": true,
+        "boardBox": null
+      },
+      "drawer": {
+        "title": "Choose durable audit storage",
+        "noteComposer": true,
+        "optionCards": 4,
+        "decisions": 4,
+        "humanReviewPanel": true,
+        "humanReviewVisible": true,
+        "humanReviewState": "ready",
+        "humanReviewTitle": "Waiting for you",
+        "humanReviewPresets": 0,
+        "gateRadios": 1,
+        "gateRadioValues": [
+          "PostgreSQL",
+          "SQLite"
+        ],
+        "gateForm": true
+      },
+      "drawerSettled": {
+        "humanReviewVisible": true,
+        "humanReviewState": "settled",
+        "title": "Answer received"
+      },
+      "decisions": {
+        "viewVisible": true,
+        "count": 1,
+        "text": "Repo\n#1\nChoose durable audit storage\nWaiting for you\nHigh\n24d ago\nChoose storage with history and retention?\n\nPostgreSQL\n\nMature and familiar\n\nDetails\n\nSQLite\n\nZero operations\n\nDetails\nWrite another a"
+      }
+    }
+  ]
+}
