@@ -63,16 +63,16 @@ call; reason quoted).
 | 51 | Workflows-Accelerator/devops-cockpit | 3 | `status:in-review` | `status:todo` | 6856047266 | 2026-11-13T14:36:23Z | applied / verified |
 | 52 | Workflows-Accelerator/devops-cockpit | 2 | `status:in-review` | `status:todo` | 6856048849 | 2026-11-13T14:36:26Z | applied / verified |
 | 53 | Workflows-Accelerator/devops-cockpit | 1 | `status:needs-human` | `status:todo` | 6856050724 | 2026-11-13T14:36:30Z | applied / verified |
-| 54 | Workflows-Accelerator/ironcore-frontline | 31 | `status:needs-human` | `status:todo` | - | - | pending |
-| 55 | Workflows-Accelerator/ironcore-frontline | 30 | `status:needs-human` | `status:todo` | - | - | pending |
-| 56 | Workflows-Accelerator/ironcore-frontline | 28 | `status:needs-human` | `status:todo` | - | - | pending |
-| 57 | Workflows-Accelerator/ironcore-frontline | 25 | `status:needs-human` | `status:todo` | - | - | pending |
-| 58 | Workflows-Accelerator/ironcore-frontline | 23 | `status:needs-human` | `status:todo` | - | - | pending |
-| 59 | Workflows-Accelerator/ironcore-frontline | 22 | `status:needs-human` | `status:todo` | - | - | pending |
-| 60 | Workflows-Accelerator/ironcore-frontline | 14 | `status:needs-human` | `status:todo` | - | - | pending |
-| 61 | Workflows-Accelerator/ironcore-frontline | 9 | `status:needs-human` | `status:todo` | - | - | pending |
-| 62 | Workflows-Accelerator/ironcore-frontline | 8 | `status:needs-human` | `status:todo` | - | - | pending |
-| 63 | Workflows-Accelerator/ironcore-frontline | 1 | `status:needs-human` | `status:todo` | - | - | pending |
+| 54 | Workflows-Accelerator/ironcore-frontline | 31 | `status:needs-human` | `status:todo` | 6856061609 | 2026-11-13T14:36:56Z | applied / verified |
+| 55 | Workflows-Accelerator/ironcore-frontline | 30 | `status:needs-human` | `status:todo` | 6856063562 | 2026-11-13T14:37:00Z | applied / verified |
+| 56 | Workflows-Accelerator/ironcore-frontline | 28 | `status:needs-human` | `status:todo` | 6856065342 | 2026-11-13T14:37:04Z | applied / verified |
+| 57 | Workflows-Accelerator/ironcore-frontline | 25 | `status:needs-human` | `status:todo` | 6856067987 | 2026-11-13T14:37:10Z | applied / verified |
+| 58 | Workflows-Accelerator/ironcore-frontline | 23 | `status:needs-human` | `status:todo` | 6856070074 | 2026-11-13T14:37:15Z | applied / verified |
+| 59 | Workflows-Accelerator/ironcore-frontline | 22 | `status:needs-human` | `status:todo` | 6856071842 | 2026-11-13T14:37:19Z | applied / verified |
+| 60 | Workflows-Accelerator/ironcore-frontline | 14 | `status:needs-human` | `status:todo` | 6856073547 | 2026-11-13T14:37:23Z | applied / verified |
+| 61 | Workflows-Accelerator/ironcore-frontline | 9 | `status:needs-human` | `status:todo` | 6856075222 | 2026-11-13T14:37:27Z | applied / verified |
+| 62 | Workflows-Accelerator/ironcore-frontline | 8 | `status:needs-human` | `status:todo` | 6856076977 | 2026-11-13T14:37:31Z | applied / verified |
+| 63 | Workflows-Accelerator/ironcore-frontline | 1 | `status:needs-human` | `status:todo` | 6856078674 | 2026-11-13T14:37:35Z | applied / verified |
 | 64 | Workflows-Accelerator/chambervoice | 6 | `status:needs-human` | `status:todo` | - | - | pending |
 | 65 | Workflows-Accelerator/chambervoice | 5 | `status:needs-human` | `status:todo` | - | - | pending |
 | 66 | Workflows-Accelerator/case-management-platform | 101 | `status:in-review` | `status:todo` | - | - | pending |
@@ -80,7 +80,7 @@ call; reason quoted).
 
 Total rows: 67 (45 `status:needs-human`, 22 `status:in-review`).
 
-Counts: applied 53, already-applied 0, skipped 0, refused 0, pending 14.
+Counts: applied 63, already-applied 0, skipped 0, refused 0, pending 4.
 
 ## Reverse instruction
 
