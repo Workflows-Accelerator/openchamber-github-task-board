@@ -12,7 +12,7 @@ call; reason quoted).
 |---|---|---|---|---|---|---|---|
 | 1 | Workflows-Accelerator/openchamber-github-task-board | 54 | `status:needs-human` | `status:todo` | 6855909898 | 2026-11-13T14:31:09Z | applied / verified |
 | 2 | Workflows-Accelerator/openchamber-github-task-board | 53 | `status:needs-human` | `status:todo` | 6855911913 | 2026-11-13T14:31:13Z | applied / verified |
-| 3 | Workflows-Accelerator/openchamber-github-task-board | 44 | `status:needs-human` | `status:todo` | 6855913661 | 2026-11-13T14:31:17Z | applied / verified |
+| 3 | Workflows-Accelerator/openchamber-github-task-board | 44 | `status:needs-human` | `status:todo` | 6855913661 | 2026-11-13T14:39:46Z | applied / verified |
 | 4 | Workflows-Accelerator/openchamber-github-task-board | 38 | `status:needs-human` | `status:todo` | 6855915497 | 2026-11-13T14:31:21Z | applied / verified |
 | 5 | Workflows-Accelerator/openchamber-github-task-board | 37 | `status:in-review` | `status:todo` | 6855917333 | 2026-11-13T14:31:25Z | applied / verified |
 | 6 | Workflows-Accelerator/openchamber-github-task-board | 36 | `status:needs-human` | `status:todo` | 6855919273 | 2026-11-13T14:31:29Z | applied / verified |
@@ -23,7 +23,7 @@ call; reason quoted).
 | 11 | Workflows-Accelerator/openchamber-github-task-board | 30 | `status:needs-human` | `status:todo` | 6855928743 | 2026-11-13T14:31:52Z | applied / verified |
 | 12 | Workflows-Accelerator/openchamber-github-task-board | 28 | `status:needs-human` | `status:todo` | 6855963402 | 2026-11-13T14:33:11Z | applied / verified |
 | 13 | Workflows-Accelerator/openchamber-github-task-board | 24 | `status:needs-human` | `status:todo` | 6855937168 | 2026-11-13T14:32:12Z | applied / verified |
-| 14 | Workflows-Accelerator/openchamber-github-task-board | 23 | `status:needs-human` | `status:todo` | 6855940011 | 2026-11-13T14:32:18Z | applied / verified |
+| 14 | Workflows-Accelerator/openchamber-github-task-board | 23 | `status:needs-human` | `status:todo` | 6855940011 | 2026-11-13T14:39:44Z | applied / verified |
 | 15 | Workflows-Accelerator/openchamber-github-task-board | 22 | `status:needs-human` | `status:todo` | 6855941828 | 2026-11-13T14:32:23Z | applied / verified |
 | 16 | Workflows-Accelerator/openchamber-github-task-board | 21 | `status:needs-human` | `status:todo` | 6855943437 | 2026-11-13T14:32:26Z | applied / verified |
 | 17 | Workflows-Accelerator/openchamber-github-task-board | 14 | `status:needs-human` | `status:todo` | 6855945670 | 2026-11-13T14:32:31Z | applied / verified |
@@ -73,14 +73,19 @@ call; reason quoted).
 | 61 | Workflows-Accelerator/ironcore-frontline | 9 | `status:needs-human` | `status:todo` | 6856075222 | 2026-11-13T14:37:27Z | applied / verified |
 | 62 | Workflows-Accelerator/ironcore-frontline | 8 | `status:needs-human` | `status:todo` | 6856076977 | 2026-11-13T14:37:31Z | applied / verified |
 | 63 | Workflows-Accelerator/ironcore-frontline | 1 | `status:needs-human` | `status:todo` | 6856078674 | 2026-11-13T14:37:35Z | applied / verified |
-| 64 | Workflows-Accelerator/chambervoice | 6 | `status:needs-human` | `status:todo` | - | - | pending |
-| 65 | Workflows-Accelerator/chambervoice | 5 | `status:needs-human` | `status:todo` | - | - | pending |
-| 66 | Workflows-Accelerator/case-management-platform | 101 | `status:in-review` | `status:todo` | - | - | pending |
-| 67 | Workflows-Accelerator/case-management-platform | 36 | `status:in-review` | `status:todo` | - | - | pending |
+| 64 | Workflows-Accelerator/chambervoice | 6 | `status:needs-human` | `status:todo` | 6856089733 | 2026-11-13T14:37:59Z | applied / verified |
+| 65 | Workflows-Accelerator/chambervoice | 5 | `status:needs-human` | `status:todo` | 6856091558 | 2026-11-13T14:38:03Z | applied / verified |
+| 66 | Workflows-Accelerator/case-management-platform | 101 | `status:in-review` | `status:todo` | 6856096507 | 2026-11-13T14:38:15Z | applied / verified |
+| 67 | Workflows-Accelerator/case-management-platform | 36 | `status:in-review` | `status:todo` | 6856098538 | 2026-11-13T14:38:19Z | applied / verified |
 
 Total rows: 67 (45 `status:needs-human`, 22 `status:in-review`).
 
-Counts: applied 63, already-applied 0, skipped 0, refused 0, pending 4.
+Counts: applied 67, already-applied 0, skipped 0, refused 0, pending 0.
+
+Two rows carry a re-application timestamp rather than the first apply: issue 44 (row 3) and
+issue 23 (row 14) were applied, then reverted by a concurrent writer, then applied again. Their
+comment ids are from the first, single audit comment, which survived the revert. See
+`reclassification-apply.md` section 3.2.
 
 ## Reverse instruction
 
