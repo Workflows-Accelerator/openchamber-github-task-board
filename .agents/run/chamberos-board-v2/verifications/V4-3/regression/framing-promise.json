@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-11-13T11:14:29.112Z",
+    "generatedAt": "2026-11-13T11:46:21.817Z",
     "chrome": "/workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell",
     "premise": "D37: automatic framing never goes below 0.55; \"Show all (N)\" gives the real full fit. D39: an incomplete full fit keeps a truthful zoom-limit message and never claims a fit that did not happen.",
     "staleExpectation": "scripts/generate-v4-1b-verification.mjs requires neighbourhoodInside && filteredAllInside && cardsUnderHud.length === 0 at 360/390 under automatic framing, i.e. a fit below the readable floor with no limit message. That expectation predates D37/D39 and is preserved unresolved in regression/v4-1b-summary.json and logs/regression.log.",

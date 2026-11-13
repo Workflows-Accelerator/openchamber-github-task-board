@@ -170,11 +170,67 @@ weakened or skipped, and `scripts/generate-delivery-smoke.mjs` was not modified.
 
 Browser diagnostics section: 0 exceptions, 0 console errors, 0 CSP violations.
 
+## Hostile review
+
+Independent attack of the gate as shipped (`cd97f8e` + `3aa50f2`), run on the
+fixed tree. Scripts: `scripts/attack/parser-and-routes.mjs` (parser cases and
+every write route against the fake GitHub) and `scripts/attack/browser.mjs`
+(real Chromium, 7 states, 30 assertions, 0 failures). Raw output:
+`logs/attack-parser-routes.json`, `logs/attack-browser.json`,
+`logs/attack-browser.log`; screenshots: `screenshots/attack/`.
+
+Severity: High = a waiting card with nothing to click or a false wait;
+Medium = a silently broken artifact; Low = evidence weakness, not product.
+
+| # | Severity | Finding | Status |
+|---|---|---|---|
+| F1 | High | Reopening a closed task that still carried `status:needs-human` and no artifact put it back in the waiting column with nothing to click. Reproduced on generic `PATCH {state:'open'}` (200, open, needs-human, `humanReview: missing`) and on the closed-body-edit-then-reopen path (200, 200). The dedicated `/reopen` route was unaffected because it resets the label to `status:backlog`. | Fixed `254a339`; now 400 `human_review_required`, state stays `closed`, zero GitHub writes. |
+| F2 | High | Answering the gated question settled the artifact but left `status:needs-human`, so the task stayed in the waiting column and the drawer/row/canvas read "Waiting for an artifact" while the question was already answered. Reproduced by the original test asserting `status:needs-human` after the answer. | Fixed `947b80e`; the answer moves the task to `status:in-progress`, leaves the waiting column, and settled presentation reads "Answer received" / "Réponse reçue". |
+| F3 | Medium | An `http://` image was accepted as `ready`, then blocked by CSP `img-src 'self' data: https:`; the browser recorded 2 violations and a silently missing artifact. | Fixed `854522c`; the parser refuses it with `insecure_url`, EN/FR text, and §2.9 now states the https requirement. |
+| F4 | Medium | A 404 or non-image URL rendered a broken `<img>` with no explanation, although the action link still worked. | Fixed `7d8e354`; the image is hidden, a precise fallback appears, the action link stays. |
+| F5 | Medium | An external tool can add `status:needs-human` to a body with no `### Human Review:` section; the board then lists it in the waiting column. The board cannot refuse a write it never sees. It does present "Waiting for an artifact" + `no_section` reason + the drawer status control, so the reader is not lied to. | Not fixed: a write-time guard cannot cover an external writer. Reported as a limitation, not changed. |
+| F6 | Low | The existing probe's `instructionVisible` checks only `height > 0`; it never asserts the action or instruction is in the viewport or hit-testable, has no settled state, and no 404/http image case. A concealed second action with a different selector would not be counted. | Not fixed in the probe (must not be edited); the attack script adds 30 assertions that do check in-viewport, hit-test, hidden image/fallback, and settled states. |
+| F7 | Low | The delivery smoke's `matrix-picker-360-*` screenshots swapped between runs (nondeterministic capture timing), though all 14 sections passed both times. | Not fixed; recorded so the evidence images are not over-read. |
+
+### Re-run after the fixes
+
+Sequential, on the fixed tree (`7d8e354` plus the attack scripts):
+
+- Focused V4-3: `node --test --test-timeout=60000 web/tests/v4-3-human-review.test.mjs web/tests/v4-3-client.test.mjs` — 34 tests, 34 pass, exit 0.
+- Full web suite: `node --test --test-timeout=60000 web/tests/*.test.mjs` — 706 tests, 706 pass, exit 0. The checkpoint's single `simple-views.test.mjs:433` environment failure did not reproduce.
+- Panel suite: `npm test` — 618 tests, 618 pass, exit 0.
+- `npx tsc --noEmit` — exit 0. Client and server esbuild bundles — exit 0.
+- Existing browser probe — `pass: true`, 84 rows, 84 screenshots, 0 failed assertions, 0 page errors, 0 console errors, 0 CSP violations, exit 0.
+- Framing probe — 12/12 cases, 0 CSP, 0 console, exit 0.
+- Delivery smoke — 14/14 sections PASS, 191 captures, 0 failed sections, exit 0. `browser.json`, `canvas-measurements.json`, `framing-promise.json` and the regenerated screenshots are the refreshed evidence; only their timestamps/commit fields and PNG bytes changed, no measurement value moved.
+
+### Attacks that found no defect
+
+- Parser: CRLF bodies; body that is only the section; two sections (last wins);
+  valid-then-invalid artifact and repeated URL (both `duplicate_field`);
+  fenced heading excluded; indented heading excluded; heading levels 1 and 6;
+  URL with query and fragment; `javascript:` and `data:` refused
+  (`invalid_url`); instruction at 200 ready / 201 `long_instruction`; URL at
+  2048 ready / 2049 `invalid_url`; `IMAGE` and `Link` accepted; Markdown in the
+  instruction is rendered as text, not markup; `question` with a `javascript:`
+  URL ignores the unused URL; answered question is `settled`; question with no
+  Open Questions is `missing_question`; heading with trailing prose is
+  `no_section`; fields after a subheading are ignored.
+- Blast radius: label removal, closing, and a body edit that preserves the gate
+  are allowed; a body edit that removes a ready gate is refused and records
+  zero GitHub calls; `Human Review` is not an editable section, so the section
+  editor cannot remove it; the qualified `/api/repos/:owner/:name/issues/:n/status`
+  route resolves to the same refusal and writes nothing.
+- Presentation: the legacy card has no invented action, says nothing is
+  clickable, and keeps the drawer status control (`status:in-progress` is one of
+  its options); the in-review card asks nothing; the gated question is
+  answerable in EN and FR at 360.
+
 ## Still missing
 
-- The hostile review of these edits.
 - The independent review.
 
 ## Not verified
 
 Real GitHub, production, Safari, Firefox, physical phone, screen reader.
+
