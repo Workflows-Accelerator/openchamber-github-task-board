@@ -1,0 +1,2605 @@
+{
+  "generatedAt": "2026-11-13T13:29:36.469Z",
+  "rows": [
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "key": "no-presets-360-light-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 360,
+      "theme": "light",
+      "lang": "fr",
+      "key": "no-presets-360-light-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "key": "no-presets-360-dark-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 360,
+      "theme": "dark",
+      "lang": "fr",
+      "key": "no-presets-360-dark-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "key": "no-presets-1280-light-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "key": "no-presets-1280-light-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "key": "no-presets-1280-dark-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The question has no preset answer. Add at least one \" - label :: gist :: details\" line so it can be answered with one click.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "no-presets",
+      "issue": 2,
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "key": "no-presets-1280-dark-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesPresets": {
+          "ok": true,
+          "expected": "names the missing preset",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic."
+        },
+        "questionAnswerableInList": {
+          "ok": true,
+          "expected": "Open Questions list carries an answer form",
+          "actual": {
+            "forms": 1,
+            "items": 1,
+            "textInputs": [
+              "answer-0"
+            ]
+          }
+        },
+        "noRadioToClick": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "statusControlAvailable": {
+          "ok": true,
+          "expected": "status control offers in-progress",
+          "actual": {
+            "present": true,
+            "options": [
+              "",
+              "status:draft",
+              "status:backlog",
+              "status:todo",
+              "status:planned",
+              "status:in-progress",
+              "status:needs-human",
+              "status:in-review",
+              "status:done"
+            ]
+          }
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La question n’a aucune réponse proposée. Ajoutez au moins une ligne « - label :: gist :: details » pour qu’elle se réponde en un clic.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 1,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [
+          "answer-0"
+        ],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "key": "long-url-360-light-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 360,
+      "theme": "light",
+      "lang": "fr",
+      "key": "long-url-360-light-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "key": "long-url-360-dark-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 360,
+      "theme": "dark",
+      "lang": "fr",
+      "key": "long-url-360-dark-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "key": "long-url-1280-light-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "key": "long-url-1280-light-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "key": "long-url-1280-dark-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "long-url",
+      "issue": 3,
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "key": "long-url-1280-dark-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesLength": {
+          "ok": true,
+          "expected": "2048",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "key": "space-url-360-light-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 360,
+      "theme": "light",
+      "lang": "fr",
+      "key": "space-url-360-light-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 360,
+      "theme": "dark",
+      "lang": "en",
+      "key": "space-url-360-dark-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 360,
+      "theme": "dark",
+      "lang": "fr",
+      "key": "space-url-360-dark-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "key": "space-url-1280-light-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "key": "space-url-1280-light-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "light",
+          "actual": "light"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "key": "space-url-1280-dark-en",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "en",
+          "actual": "en"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "Waiting for an artifact"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "Waiting for an artifact",
+        "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "space-url",
+      "issue": 4,
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "key": "space-url-1280-dark-fr",
+      "assertions": {
+        "langApplied": {
+          "ok": true,
+          "expected": "fr",
+          "actual": "fr"
+        },
+        "themeApplied": {
+          "ok": true,
+          "expected": "dark",
+          "actual": "dark"
+        },
+        "panelShownAsMalformed": {
+          "ok": true,
+          "expected": "panel visible, data-review-state=malformed",
+          "actual": {
+            "hidden": false,
+            "reviewState": "malformed"
+          }
+        },
+        "waitingTitle": {
+          "ok": true,
+          "expected": "waiting-for-artifact title",
+          "actual": "En attente d’un élément à valider"
+        },
+        "noFakeAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "reasonNamesNoSpaces": {
+          "ok": true,
+          "expected": "no-space rule",
+          "actual": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces."
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "malformed",
+        "title": "En attente d’un élément à valider",
+        "text": "Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées. La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "dark",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "malformed"
+        },
+        "row1": {
+          "column": "needs-human",
+          "statusLabel": "status:needs-human",
+          "humanReview": "ready"
+        }
+      }
+    },
+    {
+      "state": "settled-after-answer",
+      "issue": 7,
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "key": "settled-en",
+      "assertions": {
+        "settledTitle": {
+          "ok": true,
+          "expected": "Answer received",
+          "actual": "Answer received"
+        },
+        "settledSaysAgentResumes": {
+          "ok": true,
+          "expected": "agent must pick it up again",
+          "actual": "The question is answered. The agent has to pick this task up again. The question is already answered."
+        },
+        "settledNoAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "settled",
+        "title": "Answer received",
+        "text": "The question is answered. The agent has to pick this task up again. The question is already answered.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "settled"
+        },
+        "row1": {
+          "column": "in-progress",
+          "statusLabel": "status:in-progress",
+          "humanReview": "settled"
+        }
+      }
+    },
+    {
+      "state": "settled-after-answer",
+      "issue": 7,
+      "width": 360,
+      "theme": "light",
+      "lang": "fr",
+      "key": "settled-fr",
+      "assertions": {
+        "settledTitle": {
+          "ok": true,
+          "expected": "Réponse reçue",
+          "actual": "Réponse reçue"
+        },
+        "settledSaysAgentResumes": {
+          "ok": true,
+          "expected": "agent must pick it up again",
+          "actual": "La question est répondue. L’agent doit reprendre cette tâche. La question est déjà répondue."
+        },
+        "settledNoAction": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "settled",
+        "title": "Réponse reçue",
+        "text": "La question est répondue. L’agent doit reprendre cette tâche. La question est déjà répondue.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 1,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": false,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "fr",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:needs-human",
+          "humanReview": "settled"
+        },
+        "row1": {
+          "column": "in-progress",
+          "statusLabel": "status:in-progress",
+          "humanReview": "settled"
+        }
+      }
+    },
+    {
+      "state": "typed-answer",
+      "issue": 2,
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "key": "typed-answer",
+      "assertions": {
+        "typedAnswerAccepted": {
+          "ok": true,
+          "expected": "settled",
+          "actual": {
+            "statusLabel": "status:needs-human",
+            "state": "settled",
+            "title": "Answer received",
+            "text": "The question is answered. The agent has to pick this task up again. The question is already answered."
+          }
+        },
+        "taskStaysWaitingForTheReader": {
+          "ok": true,
+          "expected": "status:needs-human until the reader moves it",
+          "actual": "status:needs-human"
+        },
+        "cardSaysAnswerReceived": {
+          "ok": true,
+          "expected": "Answer received",
+          "actual": "Answer received"
+        },
+        "readerCanMoveItOut": {
+          "ok": true,
+          "expected": "status:in-progress",
+          "actual": "status:in-progress"
+        }
+      },
+      "measure": {
+        "statusLabel": "status:needs-human",
+        "state": "settled",
+        "title": "Answer received",
+        "text": "The question is answered. The agent has to pick this task up again. The question is already answered."
+      }
+    },
+    {
+      "state": "done-with-gate",
+      "issue": 5,
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "key": "done-gate",
+      "assertions": {
+        "noWaitingClaim": {
+          "ok": true,
+          "expected": "no human-review panel on a done task",
+          "actual": {
+            "hidden": true,
+            "title": ""
+          }
+        },
+        "gatedQuestionNotDuplicatedInList": {
+          "ok": true,
+          "expected": "the gated question is not offered twice",
+          "actual": {
+            "listForms": 0
+          }
+        }
+      },
+      "measure": {
+        "hidden": true,
+        "reviewState": "ready",
+        "title": "",
+        "text": "",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:done",
+          "humanReview": "ready"
+        },
+        "row1": {
+          "column": "in-progress",
+          "statusLabel": "status:in-progress",
+          "humanReview": "settled"
+        }
+      }
+    },
+    {
+      "state": "in-review-with-gate",
+      "issue": 6,
+      "width": 360,
+      "theme": "light",
+      "lang": "en",
+      "key": "in-review-gate",
+      "assertions": {
+        "panelAsksNothing": {
+          "ok": true,
+          "expected": 0,
+          "actual": 0
+        },
+        "notAWaitingTitle": {
+          "ok": true,
+          "expected": "not the waiting title",
+          "actual": "Agent reviewing"
+        }
+      },
+      "measure": {
+        "hidden": false,
+        "reviewState": "ready",
+        "title": "Agent reviewing",
+        "text": "The agent is reviewing this task. Nothing is asked of you.",
+        "panelActions": 0,
+        "cards": 0,
+        "answerInput": null,
+        "listForms": 0,
+        "listItems": 0,
+        "listRadios": 0,
+        "listTextInputs": [],
+        "questionsHidden": true,
+        "statusControl": {
+          "present": true,
+          "options": [
+            "",
+            "status:draft",
+            "status:backlog",
+            "status:todo",
+            "status:planned",
+            "status:in-progress",
+            "status:needs-human",
+            "status:in-review",
+            "status:done"
+          ]
+        },
+        "lang": "en",
+        "theme": "light",
+        "detail": {
+          "statusLabel": "status:in-review",
+          "humanReview": "ready"
+        },
+        "row1": {
+          "column": "in-progress",
+          "statusLabel": "status:in-progress",
+          "humanReview": "settled"
+        }
+      }
+    }
+  ],
+  "interactions": {
+    "answerWaiting": {
+      "before": {
+        "column": "needs-human",
+        "statusLabel": "status:needs-human"
+      },
+      "after": {
+        "statusLabel": "status:in-progress",
+        "humanReview": "settled",
+        "panelHidden": true,
+        "column": "in-progress",
+        "listTitle": ""
+      }
+    },
+    "typedAnswerOnPresetLessGate": {
+      "before": {
+        "statusLabel": "status:needs-human",
+        "state": "malformed"
+      },
+      "after": {
+        "statusLabel": "status:needs-human",
+        "state": "settled",
+        "title": "Answer received",
+        "text": "The question is answered. The agent has to pick this task up again. The question is already answered."
+      }
+    },
+    "doneTaskGate": {
+      "panelHidden": true,
+      "title": "",
+      "listForms": 0,
+      "listItems": 0,
+      "reviewState": "ready"
+    },
+    "inReviewGate": {
+      "panelHidden": false,
+      "title": "Agent reviewing",
+      "text": "The agent is reviewing this task. Nothing is asked of you.",
+      "panelActions": 0,
+      "listForms": 0,
+      "listItems": 0
+    }
+  },
+  "failures": [],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "csp": [],
+  "pass": true,
+  "counts": {
+    "rows": 29,
+    "assertions": 182,
+    "failedAssertions": 0
+  }
+}

@@ -1,0 +1,1273 @@
+{
+  "parser": [
+    {
+      "name": "CRLF image body",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "image"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "image",
+        "reason": null,
+        "url": "https://example.com/screenshots/login-empty.png",
+        "instructionLength": 49,
+        "options": 0
+      }
+    },
+    {
+      "name": "CR-only body",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "image"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "image",
+        "reason": null,
+        "url": "https://example.com/screenshots/login-empty.png",
+        "instructionLength": 49,
+        "options": 0
+      }
+    },
+    {
+      "name": "body is only the section",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/x",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "two sections, last wins",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/second",
+        "instructionLength": 12,
+        "options": 0
+      }
+    },
+    {
+      "name": "two sections, last is malformed (last wins)",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "unknown_artifact"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": null,
+        "reason": "unknown_artifact",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "two sections, first is malformed, last ready",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/x",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "duplicate artifact",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "duplicate_field"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": null,
+        "reason": "duplicate_field",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "duplicate url",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "duplicate_field"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": null,
+        "reason": "duplicate_field",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "duplicate instruction",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "duplicate_field"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": null,
+        "reason": "duplicate_field",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "fenced heading",
+      "ok": true,
+      "expected": {
+        "state": "missing",
+        "reason": "no_section"
+      },
+      "actual": {
+        "state": "missing",
+        "kind": null,
+        "reason": "no_section",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "indented heading",
+      "ok": true,
+      "expected": {
+        "state": "missing",
+        "reason": "no_section"
+      },
+      "actual": {
+        "state": "missing",
+        "kind": null,
+        "reason": "no_section",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "heading with trailing prose",
+      "ok": true,
+      "expected": {
+        "state": "missing",
+        "reason": "no_section"
+      },
+      "actual": {
+        "state": "missing",
+        "kind": null,
+        "reason": "no_section",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "heading level 1",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/x",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "heading level 6 lowercase no colon",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/x",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "fields after subheading ignored",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "no_artifact"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": null,
+        "reason": "no_artifact",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "fields before heading ignored",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "image"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "image",
+        "reason": null,
+        "url": "https://example.com/a.png",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "javascript URL",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "invalid_url",
+        "url": "javascript:alert(1)",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "data URL",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "image",
+        "reason": "invalid_url",
+        "url": "data:image/png;base64,AAAA",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "relative URL",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "invalid_url",
+        "url": "/preview/login",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "protocol-relative URL",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "invalid_url",
+        "url": "//example.com/x",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "https with no host",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "invalid_url",
+        "url": "https://",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "uppercase HTTPS",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "image"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "image",
+        "reason": null,
+        "url": "HTTPS://example.com/a.png",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "http image refused",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "insecure_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "image",
+        "reason": "insecure_url",
+        "url": "http://example.com/a.png",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "http link allowed",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "http://example.com/x",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "http video allowed",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "video"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "video",
+        "reason": null,
+        "url": "http://example.com/x.mp4",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "URL with quote refused",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "invalid_url",
+        "url": "https://example.com/\"><script>",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "URL with space refused",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "invalid_url",
+        "url": "https://example.com/a b",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "URL with userinfo and port accepted",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://user:pass@example.com:8443/x?y=1#z",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "instruction 200 chars ready",
+      "ok": true,
+      "expected": {
+        "state": "ready"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/x",
+        "instructionLength": 200,
+        "options": 0
+      }
+    },
+    {
+      "name": "instruction 201 chars refused",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "long_instruction"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "long_instruction",
+        "url": "https://example.com/x",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "URL 2048 chars ready",
+      "ok": true,
+      "expected": {
+        "state": "ready"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "URL 2049 chars refused",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "invalid_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "link",
+        "reason": "invalid_url",
+        "url": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "kind uppercase",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "image"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "image",
+        "reason": null,
+        "url": "https://example.com/a.png",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "field name uppercase",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "link"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/x",
+        "instructionLength": 5,
+        "options": 0
+      }
+    },
+    {
+      "name": "markdown instruction is data",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "instruction": "**Bold** <img src=x onerror=alert(1)>"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "link",
+        "reason": null,
+        "url": "https://example.com/x",
+        "instructionLength": 37,
+        "options": 0
+      }
+    },
+    {
+      "name": "question with presets",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "question"
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "question",
+        "reason": null,
+        "url": null,
+        "instructionLength": null,
+        "options": 2
+      }
+    },
+    {
+      "name": "question without presets",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "missing_options",
+        "options": 0
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "question",
+        "reason": "missing_options",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "question already answered",
+      "ok": true,
+      "expected": {
+        "state": "settled",
+        "reason": "question_answered"
+      },
+      "actual": {
+        "state": "settled",
+        "kind": "question",
+        "reason": "question_answered",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "question with no Open Questions",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "missing_question"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "question",
+        "reason": "missing_question",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "question ignores a javascript URL",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "missing_options"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "question",
+        "reason": "missing_options",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "question with one preset is ready",
+      "ok": true,
+      "expected": {
+        "state": "ready",
+        "kind": "question",
+        "options": 1
+      },
+      "actual": {
+        "state": "ready",
+        "kind": "question",
+        "reason": null,
+        "url": null,
+        "instructionLength": null,
+        "options": 1
+      }
+    },
+    {
+      "name": "question with prose only (not a checklist)",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "missing_question"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "question",
+        "reason": "missing_question",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "no artifact line",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "no_artifact"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": null,
+        "reason": "no_artifact",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "unknown artifact",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "unknown_artifact"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": null,
+        "reason": "unknown_artifact",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "missing url",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "missing_url"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "image",
+        "reason": "missing_url",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "missing instruction",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "missing_instruction"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "image",
+        "reason": "missing_instruction",
+        "url": "https://example.com/a.png",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "empty instruction",
+      "ok": true,
+      "expected": {
+        "state": "malformed",
+        "reason": "missing_instruction"
+      },
+      "actual": {
+        "state": "malformed",
+        "kind": "image",
+        "reason": "missing_instruction",
+        "url": "https://example.com/a.png",
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "empty body",
+      "ok": true,
+      "expected": {
+        "state": "missing",
+        "reason": "no_section"
+      },
+      "actual": {
+        "state": "missing",
+        "kind": null,
+        "reason": "no_section",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    },
+    {
+      "name": "null body",
+      "ok": true,
+      "expected": {
+        "state": "missing",
+        "reason": "no_section"
+      },
+      "actual": {
+        "state": "missing",
+        "kind": null,
+        "reason": "no_section",
+        "url": null,
+        "instructionLength": null,
+        "options": 0
+      }
+    }
+  ],
+  "routes": [
+    {
+      "name": "create needs-human with no artifact",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "create needs-human with no body",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "create needs-human with a malformed artifact",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "create needs-human with a ready image artifact",
+      "ok": true,
+      "status": 201,
+      "writes": 1,
+      "expect": {
+        "status": 201
+      }
+    },
+    {
+      "name": "created gated issue is actually waiting with a ready artifact",
+      "ok": true,
+      "statusLabel": "status:needs-human",
+      "humanReview": "ready"
+    },
+    {
+      "name": "create needs-human with a question artifact with no preset answers",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "question gate with no presets is refused and writes nothing",
+      "ok": true,
+      "created": null,
+      "bornTyped": 0
+    },
+    {
+      "name": "create with two status labels and a ready artifact",
+      "ok": true,
+      "status": 400,
+      "error": "conflicting_status_labels",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "conflicting_status_labels",
+        "writes": 0
+      }
+    },
+    {
+      "name": "the conflicting-status create created nothing",
+      "ok": true,
+      "created": 0
+    },
+    {
+      "name": "create with the same status label twice",
+      "ok": true,
+      "status": 201,
+      "writes": 1,
+      "expect": {
+        "status": 201
+      }
+    },
+    {
+      "name": "create with the same status label in two cases",
+      "ok": true,
+      "status": 201,
+      "writes": 1,
+      "expect": {
+        "status": 201
+      }
+    },
+    {
+      "name": "create with two status labels, neither waiting",
+      "ok": true,
+      "status": 400,
+      "error": "conflicting_status_labels",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "conflicting_status_labels",
+        "writes": 0
+      }
+    },
+    {
+      "name": "create with one status and a normal label",
+      "ok": true,
+      "status": 201,
+      "writes": 1,
+      "expect": {
+        "status": 201
+      }
+    },
+    {
+      "name": "POST /status needs-human with no artifact",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "status refusal left the issue in status:todo",
+      "ok": true,
+      "statusLabel": "status:todo"
+    },
+    {
+      "name": "PATCH status needs-human with a malformed artifact",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "PATCH status needs-human with a preset-less question gate",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "the refused preset-less status write left the task in status:todo",
+      "ok": true,
+      "statusLabel": "status:todo"
+    },
+    {
+      "name": "PATCH status needs-human with a settled question",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "qualified multi-repo status route with no artifact",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "PATCH status needs-human with a ready artifact",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200,
+        "writes": 1
+      }
+    },
+    {
+      "name": "generic PATCH state open on a closed waiting task with no artifact",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "refused reopen left the issue closed",
+      "ok": true,
+      "state": "closed"
+    },
+    {
+      "name": "generic PATCH state open + status needs-human on a closed task with no artifact",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "dedicated /reopen on a closed waiting task with no artifact",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "/reopen moved the legacy task to backlog, not back to waiting",
+      "ok": true,
+      "statusLabel": "status:backlog"
+    },
+    {
+      "name": "close a closed waiting task again is refused as unchanged",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "remove a non-status label on a waiting task with a malformed gate",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "remove status:needs-human on a legacy waiting task",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "removing the waiting label leaves the task with no status, not waiting",
+      "ok": true,
+      "statusLabel": null
+    },
+    {
+      "name": "body edit removes a ready gate from an open waiting task",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "the refused body edit left the stored body untouched",
+      "ok": true,
+      "bodyHasGate": true
+    },
+    {
+      "name": "body edit replaces a ready gate with a malformed one",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "body edit replaces a ready gate with a settled question",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "body edit preserves a ready gate",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "section editor cannot target Human Review",
+      "ok": true,
+      "status": 400,
+      "error": "invalid_edit",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "invalid_edit",
+        "writes": 0
+      }
+    },
+    {
+      "name": "section edit that injects an empty Human Review heading on a waiting task",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "the injected empty heading did not break the real gate",
+      "ok": true,
+      "state": "ready"
+    },
+    {
+      "name": "body edit on a closed waiting task may remove the gate",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "reopening after that closed body edit is refused",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "answer the gated question on a waiting task",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "answering the gated question moves the task to in-progress and settles the gate",
+      "ok": true,
+      "statusLabel": "status:in-progress",
+      "humanReview": "settled"
+    },
+    {
+      "name": "the answered waiting task left the waiting column on the board",
+      "ok": true,
+      "column": "in-progress",
+      "statusLabel": "status:in-progress"
+    },
+    {
+      "name": "answer a gated question on a task that is NOT waiting (status:done)",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "answering a gated question on a done task does NOT steal the done status",
+      "ok": true,
+      "statusLabel": "status:done",
+      "note": "a done task with a ready question gate is flipped to in-progress by the F2 fix"
+    },
+    {
+      "name": "answer a gated question on an in-review task",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "answering a gated question on an in-review task does NOT steal the in-review status",
+      "ok": true,
+      "statusLabel": "status:in-review"
+    },
+    {
+      "name": "answer a non-gated question while an image gate waits",
+      "ok": true,
+      "status": 400,
+      "error": "invalid_edit",
+      "writes": 0,
+      "expect": {
+        "status": 400
+      }
+    },
+    {
+      "name": "answer a question on a legacy waiting task with no gate",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    },
+    {
+      "name": "answering on a legacy waiting task leaves it waiting with nothing to click (limitation F5)",
+      "ok": true,
+      "statusLabel": "status:needs-human",
+      "humanReview": "missing"
+    },
+    {
+      "name": "external waiting label is presented honestly, not as a silent wait",
+      "ok": true,
+      "statusLabel": "status:needs-human",
+      "state": "missing",
+      "reason": "no_section",
+      "column": "needs-human"
+    },
+    {
+      "name": "a legacy waiting task can be moved out of waiting by the reader",
+      "ok": true,
+      "status": 200,
+      "statusLabel": "status:in-progress"
+    },
+    {
+      "name": "external body edit that removes the gate is reported as missing, not as ready",
+      "ok": true,
+      "state": "missing",
+      "reason": "no_section",
+      "statusLabel": "status:needs-human"
+    },
+    {
+      "name": "close a waiting task with a ready gate",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200
+      }
+    }
+  ],
+  "failures": []
+}

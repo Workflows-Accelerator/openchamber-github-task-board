@@ -1,0 +1,8 @@
+FAILURES 7
+- parser: question without presets
+- parser: question ignores a javascript URL
+- routes: create needs-human with a question artifact with no preset answers
+- routes: question gate with no presets is accepted as ready (needs typing, not clicking)
+- routes: PATCH status needs-human with a malformed artifact
+- routes: section edit that injects a broken Human Review heading on a waiting task
+- routes: external waiting label is presented honestly, not as a silent wait

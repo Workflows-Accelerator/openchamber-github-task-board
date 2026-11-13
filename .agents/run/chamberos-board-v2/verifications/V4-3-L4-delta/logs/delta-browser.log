@@ -1,0 +1,54 @@
+{
+  "pass": true,
+  "counts": {
+    "rows": 29,
+    "assertions": 182,
+    "failedAssertions": 0
+  },
+  "failures": [],
+  "interactions": {
+    "answerWaiting": {
+      "before": {
+        "column": "needs-human",
+        "statusLabel": "status:needs-human"
+      },
+      "after": {
+        "statusLabel": "status:in-progress",
+        "humanReview": "settled",
+        "panelHidden": true,
+        "column": "in-progress",
+        "listTitle": ""
+      }
+    },
+    "typedAnswerOnPresetLessGate": {
+      "before": {
+        "statusLabel": "status:needs-human",
+        "state": "malformed"
+      },
+      "after": {
+        "statusLabel": "status:needs-human",
+        "state": "settled",
+        "title": "Answer received",
+        "text": "The question is answered. The agent has to pick this task up again. The question is already answered."
+      }
+    },
+    "doneTaskGate": {
+      "panelHidden": true,
+      "title": "",
+      "listForms": 0,
+      "listItems": 0,
+      "reviewState": "ready"
+    },
+    "inReviewGate": {
+      "panelHidden": false,
+      "title": "Agent reviewing",
+      "text": "The agent is reviewing this task. Nothing is asked of you.",
+      "panelActions": 0,
+      "listForms": 0,
+      "listItems": 0
+    }
+  },
+  "csp": [],
+  "pageErrors": [],
+  "consoleErrors": []
+}

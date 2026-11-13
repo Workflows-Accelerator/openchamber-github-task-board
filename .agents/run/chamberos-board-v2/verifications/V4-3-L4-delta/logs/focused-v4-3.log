@@ -1,0 +1,256 @@
+TAP version 13
+# Subtest: V4-3 client: a ready image artifact renders inline with exactly one primary action
+ok 1 - V4-3 client: a ready image artifact renders inline with exactly one primary action
+  ---
+  duration_ms: 22.803879
+  type: 'test'
+  ...
+# Subtest: V4-3 client: video and link gates carry their own single action and instruction
+ok 2 - V4-3 client: video and link gates carry their own single action and instruction
+  ---
+  duration_ms: 8.23527
+  type: 'test'
+  ...
+# Subtest: V4-3 client: legacy waiting without an artifact names the defect and offers nothing to click
+ok 3 - V4-3 client: legacy waiting without an artifact names the defect and offers nothing to click
+  ---
+  duration_ms: 7.588705
+  type: 'test'
+  ...
+# Subtest: V4-3 client: a malformed artifact is reported with its precise reason
+ok 4 - V4-3 client: a malformed artifact is reported with its precise reason
+  ---
+  duration_ms: 7.830097
+  type: 'test'
+  ...
+# Subtest: V4-3 client: in-review reads as agent review and asks nothing
+ok 5 - V4-3 client: in-review reads as agent review and asks nothing
+  ---
+  duration_ms: 8.540948
+  type: 'test'
+  ...
+# Subtest: V4-3 client: the gated question uses the V4-2 renderer once and is skipped by the questions list
+ok 6 - V4-3 client: the gated question uses the V4-2 renderer once and is skipped by the questions list
+  ---
+  duration_ms: 14.924256
+  type: 'test'
+  ...
+# Subtest: V4-3 client: French labels are exact for the gate, its actions and its reasons
+ok 7 - V4-3 client: French labels are exact for the gate, its actions and its reasons
+  ---
+  duration_ms: 11.513317
+  type: 'test'
+  ...
+# Subtest: V4-3 client: the compact list row summarizes the gate without nesting an action in its button
+ok 8 - V4-3 client: the compact list row summarizes the gate without nesting an action in its button
+  ---
+  duration_ms: 12.922115
+  type: 'test'
+  ...
+# Subtest: V4-3 client: the canvas card carries the instruction and the defect, never a second action
+ok 9 - V4-3 client: the canvas card carries the instruction and the defect, never a second action
+  ---
+  duration_ms: 10.411291
+  type: 'test'
+  ...
+# Subtest: V4-3 client: an attention-driven waiting stage without the status label is not shown as an artifact defect
+ok 10 - V4-3 client: an attention-driven waiting stage without the status label is not shown as an artifact defect
+  ---
+  duration_ms: 10.178738
+  type: 'test'
+  ...
+# Subtest: V4-3 client: presentation mode shows the gated question read-only instead of an answer form
+ok 11 - V4-3 client: presentation mode shows the gated question read-only instead of an answer form
+  ---
+  duration_ms: 12.926457
+  type: 'test'
+  ...
+# Subtest: V4-3 client: English and French dictionaries stay key-for-key equal
+ok 12 - V4-3 client: English and French dictionaries stay key-for-key equal
+  ---
+  duration_ms: 6.684501
+  type: 'test'
+  ...
+# Subtest: V4-3 client: a settled question is not presented as a waiting artifact
+ok 13 - V4-3 client: a settled question is not presented as a waiting artifact
+  ---
+  duration_ms: 10.771766
+  type: 'test'
+  ...
+# Subtest: V4-3 client: a settled question reads honestly in French too
+ok 14 - V4-3 client: a settled question reads honestly in French too
+  ---
+  duration_ms: 12.674203
+  type: 'test'
+  ...
+# Subtest: V4-3 client: an insecure image URL is reported precisely in English and French
+ok 15 - V4-3 client: an insecure image URL is reported precisely in English and French
+  ---
+  duration_ms: 13.818
+  type: 'test'
+  ...
+# Subtest: V4-3 client: a question gate without presets names the missing presets in English and French
+ok 16 - V4-3 client: a question gate without presets names the missing presets in English and French
+  ---
+  duration_ms: 14.673362
+  type: 'test'
+  ...
+# Subtest: V4-3 client: an invalid URL reason states the real limit and the no-space rule in English and French
+ok 17 - V4-3 client: an invalid URL reason states the real limit and the no-space rule in English and French
+  ---
+  duration_ms: 11.131636
+  type: 'test'
+  ...
+# Subtest: V4-3 client: a review image that fails to load says so instead of showing a broken artifact
+ok 18 - V4-3 client: a review image that fails to load says so instead of showing a broken artifact
+  ---
+  duration_ms: 11.185988
+  type: 'test'
+  ...
+# Subtest: V4-3 parser accepts image, video, link and preset question artifacts
+ok 19 - V4-3 parser accepts image, video, link and preset question artifacts
+  ---
+  duration_ms: 10.118253
+  type: 'test'
+  ...
+# Subtest: V4-3 parser reports precise reasons instead of accepting a gate
+ok 20 - V4-3 parser reports precise reasons instead of accepting a gate
+  ---
+  duration_ms: 1.59097
+  type: 'test'
+  ...
+# Subtest: V4-3 parser ignores fenced and indented headings, and the last section wins
+ok 21 - V4-3 parser ignores fenced and indented headings, and the last section wins
+  ---
+  duration_ms: 0.76472
+  type: 'test'
+  ...
+# Subtest: V4-3 answered question is settled, never a silent ready gate
+ok 22 - V4-3 answered question is settled, never a silent ready gate
+  ---
+  duration_ms: 0.814197
+  type: 'test'
+  ...
+# Subtest: V4-3 payload exposes the artifact on rows and in the detail view
+ok 23 - V4-3 payload exposes the artifact on rows and in the detail view
+  ---
+  duration_ms: 13.896611
+  type: 'test'
+  ...
+# Subtest: V4-3 status endpoint rejects a human gate with no artifact and writes nothing
+ok 24 - V4-3 status endpoint rejects a human gate with no artifact and writes nothing
+  ---
+  duration_ms: 418.380109
+  type: 'test'
+  ...
+# Subtest: V4-3 PATCH status accepts a valid artifact and rejects a malformed one
+ok 25 - V4-3 PATCH status accepts a valid artifact and rejects a malformed one
+  ---
+  duration_ms: 282.896131
+  type: 'test'
+  ...
+# Subtest: V4-3 creation cannot be born waiting for a human without an artifact
+ok 26 - V4-3 creation cannot be born waiting for a human without an artifact
+  ---
+  duration_ms: 260.114757
+  type: 'test'
+  ...
+# Subtest: V4-3 a question artifact must offer at least one preset answer
+ok 27 - V4-3 a question artifact must offer at least one preset answer
+  ---
+  duration_ms: 1.219962
+  type: 'test'
+  ...
+# Subtest: V4-3 a question gate without presets is refused server-side and writes nothing
+ok 28 - V4-3 a question gate without presets is refused server-side and writes nothing
+  ---
+  duration_ms: 266.941899
+  type: 'test'
+  ...
+# Subtest: V4-3 creation refuses conflicting status labels instead of splitting the card
+ok 29 - V4-3 creation refuses conflicting status labels instead of splitting the card
+  ---
+  duration_ms: 217.194526
+  type: 'test'
+  ...
+# Subtest: V4-3 editing the body of a waiting task cannot silently remove its artifact
+ok 30 - V4-3 editing the body of a waiting task cannot silently remove its artifact
+  ---
+  duration_ms: 265.494829
+  type: 'test'
+  ...
+# Subtest: V4-3 answering the gated question is allowed and settles the artifact
+ok 31 - V4-3 answering the gated question is allowed and settles the artifact
+  ---
+  duration_ms: 259.670037
+  type: 'test'
+  ...
+# Subtest: V4-3 answering a gated question only moves a waiting task to in-progress
+ok 32 - V4-3 answering a gated question only moves a waiting task to in-progress
+  ---
+  duration_ms: 329.64557
+  type: 'test'
+  ...
+# Subtest: V4-3 multi-repo qualified status route enforces the same gate
+ok 33 - V4-3 multi-repo qualified status route enforces the same gate
+  ---
+  duration_ms: 265.246509
+  type: 'test'
+  ...
+# Subtest: V4-3 contract §2.9 example parses verbatim with the real parser
+ok 34 - V4-3 contract §2.9 example parses verbatim with the real parser
+  ---
+  duration_ms: 0.775596
+  type: 'test'
+  ...
+# Subtest: V4-3 contract lock fails when the documented example drifts
+ok 35 - V4-3 contract lock fails when the documented example drifts
+  ---
+  duration_ms: 0.351663
+  type: 'test'
+  ...
+# Subtest: V4-3 contract lock is non-destructive: the document stays byte-identical
+ok 36 - V4-3 contract lock is non-destructive: the document stays byte-identical
+  ---
+  duration_ms: 0.599641
+  type: 'test'
+  ...
+# Subtest: V4-3 prompts document the human gate identically in core.ts and shipped main.js
+ok 37 - V4-3 prompts document the human gate identically in core.ts and shipped main.js
+  ---
+  duration_ms: 5.169356
+  type: 'test'
+  ...
+# Subtest: V4-3 reopening a closed waiting task without an artifact is refused
+ok 38 - V4-3 reopening a closed waiting task without an artifact is refused
+  ---
+  duration_ms: 239.194361
+  type: 'test'
+  ...
+# Subtest: V4-3 a closed body edit cannot remove the gate and then reopen
+ok 39 - V4-3 a closed body edit cannot remove the gate and then reopen
+  ---
+  duration_ms: 254.255818
+  type: 'test'
+  ...
+# Subtest: V4-3 an invalid URL reason names the length limit and the no-space rule
+ok 40 - V4-3 an invalid URL reason names the length limit and the no-space rule
+  ---
+  duration_ms: 0.570872
+  type: 'test'
+  ...
+# Subtest: V4-3 image artifacts require https because the board renders them inline
+ok 41 - V4-3 image artifacts require https because the board renders them inline
+  ---
+  duration_ms: 0.364205
+  type: 'test'
+  ...
+1..41
+# tests 41
+# suites 0
+# pass 41
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3551.956693

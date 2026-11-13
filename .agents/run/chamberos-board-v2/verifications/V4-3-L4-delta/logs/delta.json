@@ -1,0 +1,316 @@
+{
+  "parser": [
+    {
+      "name": "invalid_url message: too long (2049)",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url message: with a space",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url message: relative",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url message: javascript:",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url message: data:",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url message: https with no host",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url message: with a double quote",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url message: with a backslash",
+      "ok": true,
+      "state": "malformed",
+      "reason": "invalid_url",
+      "message": "The \"- URL:\" value must be an http:// or https:// link of at most 2048 characters, with no spaces."
+    },
+    {
+      "name": "invalid_url: 2048 is still ready",
+      "ok": true,
+      "state": "ready",
+      "reason": null
+    },
+    {
+      "name": "preset-less question is malformed/missing_options",
+      "ok": true,
+      "state": "malformed",
+      "reason": "missing_options",
+      "message": "A question artifact needs at least one preset answer line \"  - label :: gist :: details\" under its open question, so the human can settle it by clicking."
+    },
+    {
+      "name": "the missing_options message names the preset line",
+      "ok": true,
+      "message": "A question artifact needs at least one preset answer line \"  - label :: gist :: details\" under its open question, so the human can settle it by clicking."
+    },
+    {
+      "name": "one preset line is enough",
+      "ok": true,
+      "state": "ready",
+      "options": 1
+    },
+    {
+      "name": "a question answered with free text reads settled",
+      "ok": true,
+      "state": "settled",
+      "reason": "question_answered"
+    }
+  ],
+  "routes": [
+    {
+      "name": "answer on status:done keeps the status and settles the gate",
+      "ok": true,
+      "status": 200,
+      "statusLabel": "status:done",
+      "humanReview": "settled",
+      "labelsBefore": [
+        "status:done"
+      ],
+      "labelsAfter": [
+        "status:done"
+      ]
+    },
+    {
+      "name": "answer on status:in-review keeps the status and settles the gate",
+      "ok": true,
+      "status": 200,
+      "statusLabel": "status:in-review",
+      "humanReview": "settled",
+      "labelsBefore": [
+        "status:in-review"
+      ],
+      "labelsAfter": [
+        "status:in-review"
+      ]
+    },
+    {
+      "name": "answer on status:todo keeps the status and settles the gate",
+      "ok": true,
+      "status": 200,
+      "statusLabel": "status:todo",
+      "humanReview": "settled",
+      "labelsBefore": [
+        "status:todo"
+      ],
+      "labelsAfter": [
+        "status:todo"
+      ]
+    },
+    {
+      "name": "answer on status:in-progress keeps the status and settles the gate",
+      "ok": true,
+      "status": 200,
+      "statusLabel": "status:in-progress",
+      "humanReview": "settled",
+      "labelsBefore": [
+        "status:in-progress"
+      ],
+      "labelsAfter": [
+        "status:in-progress"
+      ]
+    },
+    {
+      "name": "answer on a waiting task moves it to in-progress and leaves the waiting column",
+      "ok": true,
+      "statusLabel": "status:in-progress",
+      "humanReview": "settled",
+      "column": "in-progress"
+    },
+    {
+      "name": "status route refuses a preset-less question gate",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "message": "A task can wait for you only with a clickable review artifact (a screenshot, a short video, a link, or a question with preset answers). The artifact is malformed. A question artifact needs at least one preset answer line \"  - label :: gist :: details\" under its open question, so the human can settle it by clicking.",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "the refused status write left the task in status:todo",
+      "ok": true,
+      "statusLabel": "status:todo"
+    },
+    {
+      "name": "body edit replaces a ready gate with a preset-less question gate",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "message": "A task can wait for you only with a clickable review artifact (a screenshot, a short video, a link, or a question with preset answers). The artifact is malformed. A question artifact needs at least one preset answer line \"  - label :: gist :: details\" under its open question, so the human can settle it by clicking.",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "the refused body edit left the stored body untouched",
+      "ok": true,
+      "hasPresets": true
+    },
+    {
+      "name": "body edit that keeps presets is allowed",
+      "ok": true,
+      "status": 200,
+      "writes": 1,
+      "expect": {
+        "status": 200,
+        "writes": 1
+      }
+    },
+    {
+      "name": "a waiting issue whose gate has no presets reads malformed/missing_options",
+      "ok": true,
+      "humanReview": {
+        "state": "malformed",
+        "kind": "question",
+        "url": null,
+        "instruction": null,
+        "question": null,
+        "reason": "missing_options",
+        "message": "A question artifact needs at least one preset answer line \"  - label :: gist :: details\" under its open question, so the human can settle it by clicking."
+      },
+      "statusLabel": "status:needs-human"
+    },
+    {
+      "name": "that card stays in the waiting column and says it is malformed",
+      "ok": true,
+      "column": "needs-human",
+      "humanReview": "malformed"
+    },
+    {
+      "name": "the question is still listed as an open question (answerable surface)",
+      "ok": true,
+      "openQuestions": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Is the wording right?",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "answering that preset-less question is accepted and settles it",
+      "ok": true,
+      "status": 200,
+      "state": "settled",
+      "statusLabel": "status:needs-human",
+      "note": "the task keeps status:needs-human; the reader must move it out"
+    },
+    {
+      "name": "the settled preset-less card is not a dead end: the status control path still works",
+      "ok": true,
+      "statusLabel": "status:needs-human"
+    },
+    {
+      "name": "the reader can move that task out of waiting after answering",
+      "ok": true,
+      "status": 200,
+      "statusLabel": "status:in-progress"
+    },
+    {
+      "name": "reopening a closed task whose gate has no presets is refused",
+      "ok": true,
+      "status": 400,
+      "error": "human_review_required",
+      "message": "A task can wait for you only with a clickable review artifact (a screenshot, a short video, a link, or a question with preset answers). The artifact is malformed. A question artifact needs at least one preset answer line \"  - label :: gist :: details\" under its open question, so the human can settle it by clicking.",
+      "writes": 0,
+      "expect": {
+        "status": 400,
+        "error": "human_review_required",
+        "writes": 0
+      }
+    },
+    {
+      "name": "the refused reopen left the task closed",
+      "ok": true,
+      "state": "closed"
+    },
+    {
+      "name": "an external body edit that removes the presets reads malformed/missing_options",
+      "ok": true,
+      "humanReview": {
+        "state": "malformed",
+        "kind": "question",
+        "url": null,
+        "instruction": null,
+        "question": null,
+        "reason": "missing_options",
+        "message": "A question artifact needs at least one preset answer line \"  - label :: gist :: details\" under its open question, so the human can settle it by clicking."
+      },
+      "statusLabel": "status:needs-human"
+    },
+    {
+      "name": "the externally broken gate stays in the waiting column and is honest about it",
+      "ok": true,
+      "column": "needs-human",
+      "humanReview": "malformed"
+    },
+    {
+      "name": "a free-text answer that is not a preset is accepted",
+      "ok": true,
+      "status": 200,
+      "humanReview": "settled"
+    },
+    {
+      "name": "F2 message names both labels and the one-status rule",
+      "ok": true,
+      "status": 400,
+      "message": "Creation carries 2 status labels (status:todo, status:needs-human); an issue has exactly one status label."
+    },
+    {
+      "name": "F2 refusal created nothing and made no write of any kind",
+      "ok": true,
+      "issuesBefore": 10,
+      "issuesAfter": 10,
+      "patchCallsBefore": 9,
+      "patchCallsAfter": 9,
+      "writesBefore": 12,
+      "writesAfter": 12
+    },
+    {
+      "name": "F2 does not block a legitimate single-status waiting create with an artifact",
+      "ok": true,
+      "status": 201,
+      "statusLabel": "status:needs-human",
+      "humanReview": "ready"
+    }
+  ],
+  "failures": []
+}
