@@ -1,0 +1,37 @@
+{
+  "capturedAt": "2026-11-13T18:53:29.734Z",
+  "loginStatus": 200,
+  "reposStatus": 200,
+  "repos": {
+    "discoveryFailed": false,
+    "stale": false,
+    "visibleCount": 27,
+    "repositories": 27,
+    "fetchedAt": "2026-11-13T18:53:25.599Z",
+    "error": null
+  },
+  "boardStatus": 200,
+  "board": {
+    "discoveryFailed": false,
+    "partial": false,
+    "complete": true,
+    "visibleCount": 27,
+    "issues": 345,
+    "failures": 0,
+    "fetchedAt": "2026-11-13T18:53:26.454Z",
+    "rateLimit": {
+      "limit": 5000,
+      "remaining": 4980,
+      "reset": 1794599255,
+      "resource": "graphql",
+      "updatedAt": "2026-11-13T18:53:29.576Z"
+    }
+  },
+  "healthStatus": 200,
+  "health": {
+    "status": "ok",
+    "version": "1.2.1",
+    "uptime": 2022
+  },
+  "publicSiteStatus": 200
+}
