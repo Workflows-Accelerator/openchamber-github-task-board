@@ -247,6 +247,48 @@ test('V4-3 answering the gated question is allowed and settles the artifact', as
   });
 });
 
+test('V4-3 answering a gated question only moves a waiting task to in-progress', async () => {
+  // Answering is a click the human makes on the task in front of them. It must
+  // settle the gate, and it must not overwrite a status the human (or another
+  // agent) already chose: only a waiting task returns to the agent.
+  const statuses = ['status:done', 'status:in-review', 'status:todo', 'status:in-progress'];
+  const fake = await startFakeGitHub({
+    token: SYNTHETIC_TOKEN,
+    issues: [
+      ...statuses.map((status, offset) => makeIssue({ number: 40 + offset, body: QUESTION_BODY, labels: [status] })),
+      makeIssue({ number: 44, body: QUESTION_BODY, labels: ['status:needs-human'] }),
+    ],
+  });
+  const board = await startBoard(fake, { config: browserConfig(fake, {}) });
+  try {
+    const session = new HttpSession(board.url);
+    await session.login();
+    const answer = async (number) => {
+      const current = await detail(session, number);
+      return session.request(`/api/issues/${number}/questions/0/answer`, {
+        method: 'POST',
+        body: { answer: 'Comfortable', fingerprint: current.fingerprint },
+      });
+    };
+
+    for (let offset = 0; offset < statuses.length; offset += 1) {
+      const number = 40 + offset;
+      const answered = await answer(number);
+      assert.equal(answered.status, 200, `answering on ${statuses[offset]} is accepted`);
+      assert.equal(answered.json.issue.humanReview.state, 'settled', 'the gate really settled');
+      assert.equal(answered.json.issue.statusLabel, statuses[offset], `${statuses[offset]} is kept`);
+    }
+
+    const waiting = await answer(44);
+    assert.equal(waiting.status, 200);
+    assert.equal(waiting.json.issue.statusLabel, 'status:in-progress');
+    assert.equal(waiting.json.issue.labels.includes('status:needs-human'), false);
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
+
 test('V4-3 multi-repo qualified status route enforces the same gate', async () => {
   const fake = await startFakeGitHub({
     token: SYNTHETIC_TOKEN,

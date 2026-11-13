@@ -2841,10 +2841,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           const curQView = curDetail.openQuestions[baseQuestionIndex];
           const answerIdx = curQView?.answerIndex ?? op.index;
           patch = { body: applyQuestionAnswer(fresh.item, answerIdx, op.answer) };
-          // Answering the question the gate points at settles the artifact, so
-          // the task leaves the waiting column and returns to the agent.
+          // Answering the question the gate points at settles the artifact, so a
+          // task that was waiting for the human leaves the waiting column and
+          // returns to the agent. A task the human already settled (done) or
+          // moved on (in-review, todo, in-progress) keeps the status they chose:
+          // an answer is not a status decision.
           const gate = curDetail.humanReview;
           if (
+            isHumanReviewGateStatus(baseStatus) &&
             gate?.state === 'ready' &&
             gate.kind === 'question' &&
             gate.question &&
