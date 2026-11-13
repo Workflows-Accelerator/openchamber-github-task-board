@@ -19,6 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { startFakeGitHub, makeIssue } from '../../../../../../web/tests/fake-github.mjs';
@@ -201,11 +202,16 @@ const browser = await chromium.launch({
   args: ['--no-sandbox'],
 });
 
+const git = (args) => {
+  try { return execFileSync('git', args, { cwd: path.resolve(OUT, '../../../../..'), encoding: 'utf8' }).trim(); } catch { return null; }
+};
 const report = {
   syntheticOnly: true,
   generatedAt: new Date().toISOString(),
   engine: 'chromium ' + browser.version(),
-  commit: null,
+  // commit = last commit touching the implementation under test; probeHead = HEAD when this probe ran.
+  commit: git(['log', '-1', '--format=%H', '--', 'web/server/board.ts']),
+  probeHead: git(['rev-parse', 'HEAD']),
   fixture: {
     issues: STATES.map((state) => ({ state: state.key, number: state.issue, status: state.key === 'in-review' ? 'status:in-review' : 'status:needs-human' })),
     adjustments: [
@@ -285,13 +291,17 @@ const measure = () => page.evaluate(() => {
     reviewState: panel.getAttribute('data-review-state'),
     title: document.getElementById('human-review-title').textContent.trim(),
     text: body.innerText.replace(/\s+/g, ' ').trim(),
-    actions: actions.map((node) => ({
-      tag: node.tagName,
-      label: node.textContent.trim(),
-      href: node.getAttribute('href'),
-      rel: node.getAttribute('rel'),
-      target: node.getAttribute('target'),
-    })),
+    actions: actions.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        tag: node.tagName,
+        label: node.textContent.trim(),
+        href: node.getAttribute('href'),
+        rel: node.getAttribute('rel'),
+        target: node.getAttribute('target'),
+        inViewport: rect.top >= 0 && rect.bottom <= window.innerHeight,
+      };
+    }),
     images: images.map((img) => ({
       src: img.getAttribute('src'),
       alt: img.getAttribute('alt'),
@@ -366,13 +376,19 @@ function assertRow(row, state, lang) {
     record(row, 'noImages', m.images.length === 0, 0, m.images.length);
     if (state === 'legacy' || state === 'malformed') {
       record(row, 'reasonShown', m.text.includes(expect.reason[lang]), expect.reason[lang], m.text);
+      record(row, 'stateIsNotReady', m.reviewState === (state === 'legacy' ? 'missing' : 'malformed'), state === 'legacy' ? 'missing' : 'malformed', m.reviewState);
     }
     if (state === 'legacy') {
-      record(row, 'notPresentedAsArtifact', !m.text.includes(expect.notAnArtifact[lang]), `no "${expect.notAnArtifact[lang]}"`, m.text);
+      // The card must say, in the reader's words, that there is nothing to
+      // click; that sentence is the proof it is not shown as a ready artifact.
+      record(row, 'helpSaysNothingClickable', m.text.includes(expect.notAnArtifact[lang]), expect.notAnArtifact[lang], m.text);
     }
     if (state === 'in-review') {
       record(row, 'agentReviewBody', m.text.includes(expect.body[lang]), expect.body[lang], m.text);
-      record(row, 'notAWaitingPrompt', !m.text.includes(expect.notAnArtifact[lang]) && m.title !== EXPECT.legacy.title[lang], `not "${EXPECT.legacy.title[lang]}"`, { title: m.title, text: m.text });
+      record(row, 'notAWaitingPrompt',
+        m.title !== EXPECT.legacy.title[lang] && m.title !== EXPECT.image.title[lang] && !m.text.includes(EXPECT.legacy.reason[lang]),
+        `neither "${EXPECT.image.title[lang]}" nor "${EXPECT.legacy.title[lang]}", and no missing-section reason`,
+        { title: m.title, text: m.text });
     }
   }
 }
@@ -401,7 +417,20 @@ try {
               return Boolean(img) && img.complete && img.naturalWidth > 0;
             }, null, { timeout: 15000 }).catch(() => {});
           }
-          await page.evaluate(() => document.getElementById('human-review').scrollIntoView({ block: 'center' }));
+          // Frame the gate without hiding it under the sticky drawer identity bar,
+          // and without scrolling when it already sits below that bar.
+          await page.evaluate(() => {
+            const view = document.getElementById('detail-view');
+            const panel = document.getElementById('human-review');
+            const identity = document.querySelector('.drawer-identity');
+            const viewRect = view.getBoundingClientRect();
+            const floor = identity ? identity.getBoundingClientRect().bottom + 8 : viewRect.top + 8;
+            let rect = panel.getBoundingClientRect();
+            if (rect.top < floor) { view.scrollTop += rect.top - floor; rect = panel.getBoundingClientRect(); }
+            if (rect.height <= viewRect.height - 80 && rect.bottom > viewRect.bottom - 8) {
+              view.scrollTop += rect.bottom - (viewRect.bottom - 8);
+            }
+          });
           await sleep(60);
 
           const row = {
@@ -439,6 +468,15 @@ try {
           assertRow(row, state.key, lang);
           row.shot = 'screenshots/' + row.key + '.png';
           await page.screenshot({ path: path.join(OUT, 'screenshots', row.key + '.png') });
+          row.shots = [row.shot];
+          // The question gate is taller than a phone viewport, so its single
+          // Answer action is captured in a second shot instead of being cropped.
+          if (state.key === 'question') {
+            await page.locator('#human-review-body button.primary').first().scrollIntoViewIfNeeded();
+            const extra = 'screenshots/' + row.key + '-answer.png';
+            await page.screenshot({ path: path.join(OUT, extra) });
+            row.shots.push(extra);
+          }
           report.matrix.push(row);
           report.csp.push(...await page.evaluate(() => window.__csp));
         }
@@ -460,6 +498,7 @@ try {
   report.counts = {
     rows: report.matrix.length,
     screenshots: report.matrix.length,
+    extraScreenshots: report.matrix.reduce((total, row) => total + row.shots.length - 1, 0),
     failedAssertions: failures.length,
     pageErrors: report.pageErrors.length,
     consoleErrors: report.consoleErrors.length,
