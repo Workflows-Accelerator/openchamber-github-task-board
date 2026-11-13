@@ -993,7 +993,7 @@ export function parseHumanReview(body: string | null | undefined): HumanReviewVi
     return humanReviewView(
       'malformed',
       'invalid_url',
-      `The "- URL:" value must be an http:// or https:// link of at most ${HUMAN_REVIEW_URL_MAX} characters.`,
+      `The "- URL:" value must be an http:// or https:// link of at most ${HUMAN_REVIEW_URL_MAX} characters, with no spaces.`,
       { kind, url },
     );
   }

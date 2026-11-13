@@ -532,6 +532,17 @@ test('V4-3 a closed body edit cannot remove the gate and then reopen', async () 
   }
 });
 
+test('V4-3 an invalid URL reason names the length limit and the no-space rule', () => {
+  const longUrl = 'https://example.com/' + 'a'.repeat(2049 - 'https://example.com/'.length);
+  const tooLong = parseHumanReview(`### Human Review:\n- Artifact: link\n- URL: ${longUrl}\n- Instruction: Look.\n`);
+  assert.equal(tooLong.state, 'malformed');
+  assert.equal(tooLong.reason, 'invalid_url');
+  assert.match(tooLong.message, /2048/, 'a too-long URL must hear the limit');
+  const spaced = parseHumanReview('### Human Review:\n- Artifact: link\n- URL: https://example.com/a b\n- Instruction: Look.\n');
+  assert.equal(spaced.reason, 'invalid_url');
+  assert.match(spaced.message, /no spaces/, 'a URL with a space must hear the rule it broke');
+});
+
 test('V4-3 image artifacts require https because the board renders them inline', () => {
   const httpImage = '### Human Review:\n- Artifact: image\n- URL: http://example.com/a.png\n- Instruction: Look.\n';
   const parsed = parseHumanReview(httpImage);

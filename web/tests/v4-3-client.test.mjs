@@ -140,7 +140,7 @@ test('V4-3 client: a malformed artifact is reported with its precise reason', ()
   const { app, get } = browser();
   render(app, detail(5, { humanReview: { state: 'malformed', kind: 'link', url: 'javascript:alert(1)', instruction: null, question: null, reason: 'invalid_url', message: 'bad' } }));
   assert.equal(get('human-review-title').textContent, 'Waiting for an artifact');
-  assert.match(textOf(get('human-review-body')), /must start with http:\/\/ or https:\/\//);
+  assert.match(textOf(get('human-review-body')), /must be an http:\/\/ or https:\/\/ link of at most 2048 characters, with no spaces/);
   assert.equal(links(get('human-review-body')).length, 0);
 });
 
@@ -321,6 +321,24 @@ test('V4-3 client: a question gate without presets names the missing presets in 
   app.setLanguage('fr');
   render(app, detail(26, { humanReview: review }));
   assert.match(textOf(get('human-review-body')), /réponse proposée/);
+});
+
+test('V4-3 client: an invalid URL reason states the real limit and the no-space rule in English and French', () => {
+  const { app, get } = browser();
+  const longUrl = 'https://example.com/' + 'a'.repeat(2049 - 'https://example.com/'.length);
+  const review = {
+    state: 'malformed', kind: 'link', url: longUrl, instruction: null, question: null,
+    reason: 'invalid_url', message: 'The "- URL:" value must be a single http:// or https:// link of at most 2048 characters, with no spaces.',
+  };
+  render(app, detail(27, { humanReview: review }));
+  const english = textOf(get('human-review-body'));
+  assert.match(english, /2048/, 'a too-long URL must hear the length limit, not only the scheme');
+  assert.match(english, /no spaces/, 'a URL with a space must hear the no-space rule');
+  app.setLanguage('fr');
+  render(app, detail(28, { humanReview: review }));
+  const french = textOf(get('human-review-body'));
+  assert.match(french, /2048/);
+  assert.match(french, /sans espaces/);
 });
 
 test('V4-3 client: a review image that fails to load says so instead of showing a broken artifact', () => {
