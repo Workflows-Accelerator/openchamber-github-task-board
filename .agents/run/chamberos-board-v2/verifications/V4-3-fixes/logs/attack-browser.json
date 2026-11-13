@@ -1,0 +1,458 @@
+{
+  "generatedAt": "2026-11-13T12:52:47.583Z",
+  "states": {
+    "image-ok": {
+      "hidden": false,
+      "reviewState": "ready",
+      "title": "Waiting for you",
+      "text": "Screenshot Compare the empty state with the approved mockup. Open screenshot",
+      "interactive": [
+        {
+          "tag": "A",
+          "cls": "button primary human-review-action",
+          "text": "Open screenshot",
+          "display": "inline-flex",
+          "visibility": "visible",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)",
+          "rect": {
+            "x": 17,
+            "y": 599,
+            "w": 141,
+            "h": 44
+          },
+          "inViewport": true,
+          "hitTestSelf": true
+        }
+      ],
+      "instruction": {
+        "tag": "FIGCAPTION",
+        "cls": "human-review-instruction",
+        "text": "Compare the empty state with the approved mockup.",
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "color": "rgb(15, 23, 42)",
+        "rect": {
+          "x": 17,
+          "y": 567,
+          "w": 357,
+          "h": 20
+        },
+        "inViewport": true,
+        "hitTestSelf": true
+      },
+      "images": [
+        {
+          "tag": "IMG",
+          "cls": "human-review-image",
+          "text": "",
+          "display": "block",
+          "visibility": "visible",
+          "opacity": "1",
+          "color": "rgb(15, 23, 42)",
+          "rect": {
+            "x": 17,
+            "y": 357,
+            "w": 322,
+            "h": 202
+          },
+          "inViewport": true,
+          "hitTestSelf": true,
+          "hidden": false,
+          "src": "https://example.com/ok.png",
+          "currentSrc": "https://example.com/ok.png",
+          "alt": "Review artifact for this task",
+          "complete": true,
+          "naturalWidth": 320,
+          "naturalHeight": 200
+        }
+      ],
+      "imageErrors": [
+        {
+          "hidden": true,
+          "text": "The image could not be loaded. Open the link or ask the agent for a working screenshot."
+        }
+      ],
+      "csp": []
+    },
+    "image-404": {
+      "hidden": false,
+      "reviewState": "ready",
+      "title": "Waiting for you",
+      "text": "Screenshot The image could not be loaded. Open the link or ask the agent for a working screenshot. Compare the empty state with the approved mockup. Open screenshot",
+      "interactive": [
+        {
+          "tag": "A",
+          "cls": "button primary human-review-action",
+          "text": "Open screenshot",
+          "display": "inline-flex",
+          "visibility": "visible",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)",
+          "rect": {
+            "x": 17,
+            "y": 430,
+            "w": 141,
+            "h": 44
+          },
+          "inViewport": true,
+          "hitTestSelf": true
+        }
+      ],
+      "instruction": {
+        "tag": "FIGCAPTION",
+        "cls": "human-review-instruction",
+        "text": "Compare the empty state with the approved mockup.",
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "color": "rgb(15, 23, 42)",
+        "rect": {
+          "x": 17,
+          "y": 398,
+          "w": 357,
+          "h": 20
+        },
+        "inViewport": true,
+        "hitTestSelf": true
+      },
+      "images": [
+        {
+          "tag": "IMG",
+          "cls": "human-review-image",
+          "text": "",
+          "display": "none",
+          "visibility": "visible",
+          "opacity": "1",
+          "color": "rgb(15, 23, 42)",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 0,
+            "h": 0
+          },
+          "inViewport": true,
+          "hitTestSelf": false,
+          "hidden": true,
+          "src": "https://example.com/missing.png",
+          "currentSrc": "https://example.com/missing.png",
+          "alt": "Review artifact for this task",
+          "complete": true,
+          "naturalWidth": 0,
+          "naturalHeight": 0
+        }
+      ],
+      "imageErrors": [
+        {
+          "hidden": false,
+          "text": "The image could not be loaded. Open the link or ask the agent for a working screenshot."
+        }
+      ],
+      "csp": []
+    },
+    "image-not-image": {
+      "hidden": false,
+      "reviewState": "ready",
+      "title": "Waiting for you",
+      "text": "Screenshot The image could not be loaded. Open the link or ask the agent for a working screenshot. Compare the empty state with the approved mockup. Open screenshot",
+      "interactive": [
+        {
+          "tag": "A",
+          "cls": "button primary human-review-action",
+          "text": "Open screenshot",
+          "display": "inline-flex",
+          "visibility": "visible",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)",
+          "rect": {
+            "x": 17,
+            "y": 430,
+            "w": 141,
+            "h": 44
+          },
+          "inViewport": true,
+          "hitTestSelf": true
+        }
+      ],
+      "instruction": {
+        "tag": "FIGCAPTION",
+        "cls": "human-review-instruction",
+        "text": "Compare the empty state with the approved mockup.",
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "color": "rgb(15, 23, 42)",
+        "rect": {
+          "x": 17,
+          "y": 398,
+          "w": 357,
+          "h": 20
+        },
+        "inViewport": true,
+        "hitTestSelf": true
+      },
+      "images": [
+        {
+          "tag": "IMG",
+          "cls": "human-review-image",
+          "text": "",
+          "display": "none",
+          "visibility": "visible",
+          "opacity": "1",
+          "color": "rgb(15, 23, 42)",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 0,
+            "h": 0
+          },
+          "inViewport": true,
+          "hitTestSelf": false,
+          "hidden": true,
+          "src": "https://example.com/page.html",
+          "currentSrc": "https://example.com/page.html",
+          "alt": "Review artifact for this task",
+          "complete": true,
+          "naturalWidth": 0,
+          "naturalHeight": 0
+        }
+      ],
+      "imageErrors": [
+        {
+          "hidden": false,
+          "text": "The image could not be loaded. Open the link or ask the agent for a working screenshot."
+        }
+      ],
+      "csp": []
+    },
+    "image-http": {
+      "hidden": false,
+      "reviewState": "malformed",
+      "title": "Waiting for an artifact",
+      "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. An image artifact needs an https:// URL so the board can display it inline.",
+      "interactive": [],
+      "instruction": null,
+      "images": [],
+      "imageErrors": [],
+      "csp": []
+    },
+    "question-answer-path": {
+      "hidden": true,
+      "reviewState": "settled",
+      "title": "",
+      "text": "",
+      "interactive": [],
+      "instruction": null,
+      "images": [],
+      "imageErrors": [],
+      "csp": [],
+      "status": {
+        "statusLabel": "status:in-progress",
+        "column": "in-progress",
+        "humanReviewState": "settled"
+      }
+    },
+    "question-settled-external": {
+      "hidden": false,
+      "reviewState": "settled",
+      "title": "Answer received",
+      "text": "The question is answered. The agent has to pick this task up again. The question is already answered.",
+      "interactive": [],
+      "instruction": null,
+      "images": [],
+      "imageErrors": [],
+      "csp": [],
+      "row": {
+        "text": "External settled question Pick a row density. Repo Answer received #6",
+        "badge": {
+          "text": "Answer received",
+          "title": "The question is already answered."
+        },
+        "statusLabel": "status:needs-human",
+        "column": "needs-human",
+        "humanReviewState": "settled"
+      },
+      "canvas": {
+        "text": "Repo #6 Waiting for you External settled question Answer received Note Dependencies",
+        "humanReviewState": "settled"
+      },
+      "board": {
+        "statusLabel": "status:needs-human",
+        "column": "needs-human",
+        "humanReviewState": "settled"
+      }
+    },
+    "legacy-no-gate": {
+      "hidden": false,
+      "reviewState": "missing",
+      "title": "Waiting for an artifact",
+      "text": "This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers. The body has no \"### Human Review:\" section.",
+      "interactive": [],
+      "instruction": null,
+      "images": [],
+      "imageErrors": [],
+      "csp": [],
+      "statusControl": {
+        "present": true,
+        "hidden": false,
+        "options": [
+          "",
+          "status:draft",
+          "status:backlog",
+          "status:todo",
+          "status:planned",
+          "status:in-progress",
+          "status:needs-human",
+          "status:in-review",
+          "status:done"
+        ],
+        "value": "status:needs-human"
+      }
+    }
+  },
+  "routeHits": [
+    "https://example.com/ok.png",
+    "https://example.com/missing.png",
+    "https://example.com/page.html"
+  ],
+  "pageErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "csp": [],
+  "pass": true,
+  "assertions": [
+    {
+      "name": "image-ok: title",
+      "ok": true
+    },
+    {
+      "name": "image-ok: exactly one action link",
+      "ok": true
+    },
+    {
+      "name": "image-ok: action visible and hit-testable",
+      "ok": true
+    },
+    {
+      "name": "image-ok: instruction visible and hit-testable",
+      "ok": true
+    },
+    {
+      "name": "image-ok: image rendered",
+      "ok": true
+    },
+    {
+      "name": "image-404: broken image hidden",
+      "ok": true
+    },
+    {
+      "name": "image-404: fallback visible",
+      "ok": true
+    },
+    {
+      "name": "image-404: fallback text",
+      "ok": true
+    },
+    {
+      "name": "image-404: one way forward remains",
+      "ok": true
+    },
+    {
+      "name": "image-not-image: broken image hidden",
+      "ok": true
+    },
+    {
+      "name": "image-not-image: fallback visible",
+      "ok": true
+    },
+    {
+      "name": "image-not-image: fallback text",
+      "ok": true
+    },
+    {
+      "name": "image-not-image: one way forward remains",
+      "ok": true
+    },
+    {
+      "name": "image-http: refused as malformed",
+      "ok": true
+    },
+    {
+      "name": "image-http: precise reason",
+      "ok": true
+    },
+    {
+      "name": "image-http: no image attempted",
+      "ok": true
+    },
+    {
+      "name": "image-http: no dead action",
+      "ok": true
+    },
+    {
+      "name": "answered: no waiting prompt remains",
+      "ok": true
+    },
+    {
+      "name": "answered: task returns to the agent",
+      "ok": true
+    },
+    {
+      "name": "answered: nothing left to click",
+      "ok": true
+    },
+    {
+      "name": "external settled: title is not a waiting prompt",
+      "ok": true
+    },
+    {
+      "name": "external settled: nothing left to click",
+      "ok": true
+    },
+    {
+      "name": "external settled: row does not claim a wait",
+      "ok": true
+    },
+    {
+      "name": "external settled: canvas does not claim a wait",
+      "ok": true
+    },
+    {
+      "name": "external settled: board item is settled",
+      "ok": true
+    },
+    {
+      "name": "legacy: not shown as a ready artifact",
+      "ok": true
+    },
+    {
+      "name": "legacy: says nothing is clickable",
+      "ok": true
+    },
+    {
+      "name": "legacy: no invented action",
+      "ok": true
+    },
+    {
+      "name": "legacy: drawer offers a real status change",
+      "ok": true
+    },
+    {
+      "name": "no concealed interactive element in any measured state",
+      "ok": true
+    }
+  ],
+  "failures": [],
+  "counts": {
+    "states": 7,
+    "assertions": 30,
+    "failedAssertions": 0,
+    "pageErrors": 0,
+    "consoleErrors": 1,
+    "expectedConsoleErrors": 1,
+    "unexpectedConsoleErrors": 0,
+    "cspViolations": 0
+  }
+}
