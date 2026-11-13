@@ -263,6 +263,12 @@ test('V4-3 creation refuses conflicting status labels instead of splitting the c
     assert.equal(fake.issues.length, before, 'the refused create wrote nothing');
     assert.equal(fake.patchCalls.length, 0);
 
+    const repeated = await session.request('/api/issues', {
+      method: 'POST',
+      body: { title: 'Repeated label', body: IMAGE_BODY, labels: ['status:todo', 'status:todo'] },
+    });
+    assert.equal(repeated.status, 201, 'the same label twice is one status, not a conflict');
+
     const single = await session.request('/api/issues', {
       method: 'POST',
       body: { title: 'One status label', body: IMAGE_BODY, labels: ['status:needs-human'] },

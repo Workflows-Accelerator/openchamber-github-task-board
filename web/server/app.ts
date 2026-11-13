@@ -826,7 +826,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       // One issue, one status label. Two status labels let the card and its
       // column disagree (statusLabelOf reads the first, resolveIssueColumn the
       // waiting one), so the create is refused before anything is written.
-      const conflictingStatuses = statusLabelsOf(labels);
+      // The same label twice is not a conflict: GitHub keeps one.
+      const conflictingStatuses = [...new Set(statusLabelsOf(labels))];
       if (conflictingStatuses.length > 1) {
         throw new HttpError(
           400,
