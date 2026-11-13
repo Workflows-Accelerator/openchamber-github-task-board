@@ -3695,6 +3695,7 @@ body.sheet-open { overflow: hidden; }
 .human-review-instruction { margin: 0 0 12px; font-weight: 600; overflow-wrap: anywhere; }
 .human-review-figure { margin: 0 0 12px; }
 .human-review-image { display: block; max-width: 100%; max-height: 60vh; height: auto; border: 1px solid var(--border); border-radius: var(--rad); background: var(--surf-muted); object-fit: contain; }
+.human-review-image-error { margin: 8px 0 0; }
 .human-review-figure .human-review-instruction { margin: 8px 0 0; font-weight: 500; }
 .human-review-action { display: inline-flex; align-items: center; min-height: 44px; }
 .human-review-help { margin: 0 0 8px; }

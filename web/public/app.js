@@ -811,6 +811,7 @@
       human_review_reason_long_instruction: 'The "- Instruction:" line is too long.',
       human_review_reason_question_answered: 'The question is already answered.',
       human_review_image_alt: 'Review artifact for this task',
+      human_review_image_failed: 'The image could not be loaded. Open the link or ask the agent for a working screenshot.',
       human_review_artifact_label: 'Review artifact',
       human_review_question_instruction: 'Answer the question below.',
       human_review_agent_body: 'The agent is reviewing this task. Nothing is asked of you.',
@@ -1043,6 +1044,7 @@
       human_review_reason_long_instruction: 'La ligne « - Instruction: » est trop longue.',
       human_review_reason_question_answered: 'La question est déjà répondue.',
       human_review_image_alt: 'Élément à valider pour cette tâche',
+      human_review_image_failed: 'L’image n’a pas pu être chargée. Ouvrez le lien ou demandez une capture valide à l’agent.',
       human_review_artifact_label: 'Élément à valider',
       human_review_question_instruction: 'Répondez à la question ci-dessous.',
       human_review_agent_body: 'L’agent révise cette tâche. Rien ne vous est demandé.',
@@ -6697,14 +6699,21 @@
     ]));
 
     if (kind === 'image' && review.url) {
+      var reviewImage = el('img', {
+        class: 'human-review-image',
+        src: review.url,
+        alt: dict.human_review_image_alt,
+        loading: 'lazy',
+        referrerpolicy: 'no-referrer',
+      });
+      var imageError = el('p', { class: 'human-review-image-error muted small', text: dict.human_review_image_failed, hidden: true });
+      reviewImage.addEventListener('error', function () {
+        reviewImage.hidden = true;
+        imageError.hidden = false;
+      });
       body.appendChild(el('figure', { class: 'human-review-figure' }, [
-        el('img', {
-          class: 'human-review-image',
-          src: review.url,
-          alt: dict.human_review_image_alt,
-          loading: 'lazy',
-          referrerpolicy: 'no-referrer',
-        }),
+        reviewImage,
+        imageError,
         el('figcaption', { class: 'human-review-instruction', text: review.instruction || '' }),
       ]));
     } else if (kind === 'question' && review.question) {

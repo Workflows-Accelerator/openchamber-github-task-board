@@ -307,3 +307,20 @@ test('V4-3 client: an insecure image URL is reported precisely in English and Fr
   render(app, detail(23, { humanReview: review }));
   assert.match(textOf(get('human-review-body')), /https:\/\//);
 });
+
+test('V4-3 client: a review image that fails to load says so instead of showing a broken artifact', () => {
+  const { app, get } = browser();
+  render(app, detail(24));
+  const panel = get('human-review-body');
+  const image = all(panel, (child) => child.tagName === 'IMG')[0];
+  assert.ok(image, 'the artifact image is rendered');
+  assert.equal(typeof image.listeners.error, 'function', 'the image must observe a load failure');
+  image.listeners.error();
+  assert.equal(image.hidden, true, 'the broken image is hidden');
+  const fallback = byClass(panel, 'human-review-image-error')[0];
+  assert.ok(fallback, 'a fallback message is rendered');
+  assert.equal(fallback.hidden, false);
+  assert.match(textOf(fallback), /could not be loaded/);
+  const actions = links(panel).filter((link) => String(link.className).includes('human-review-action'));
+  assert.equal(actions.length, 1, 'the link stays available as the way forward');
+});
