@@ -1,0 +1,60 @@
+[
+  {
+    "name": "qualified create needs-human with no artifact",
+    "status": 400,
+    "error": "human_review_required",
+    "writes": 0
+  },
+  {
+    "name": "qualified status needs-human with no artifact",
+    "status": 400,
+    "error": "human_review_required",
+    "writes": 0
+  },
+  {
+    "name": "qualified PATCH state open on a closed waiting task",
+    "status": 400,
+    "error": "human_review_required",
+    "writes": 0
+  },
+  {
+    "name": "qualified PATCH body removing a ready gate",
+    "status": 400,
+    "error": "human_review_required",
+    "writes": 0
+  },
+  {
+    "name": "qualified /reopen on a closed legacy waiting task",
+    "status": 200,
+    "writes": 1
+  },
+  {
+    "name": "final stored state",
+    "issues": [
+      {
+        "number": 1,
+        "state": "open",
+        "labels": [
+          "status:todo"
+        ],
+        "body": "## Overview\n\nNothing to click.\n"
+      },
+      {
+        "number": 2,
+        "state": "open",
+        "labels": [
+          "status:needs-human"
+        ],
+        "body": "### Human Review:\n- Artifact: image\n- UR"
+      },
+      {
+        "number": 3,
+        "state": "open",
+        "labels": [
+          "status:backlog"
+        ],
+        "body": "## Overview\n\nNothing to click.\n"
+      }
+    ]
+  }
+]

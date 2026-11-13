@@ -1,0 +1,6 @@
+FAILURES 5
+- routes: PATCH status needs-human with a malformed artifact
+- routes: section edit that injects a broken Human Review heading on a waiting task
+- routes: answering a gated question on a done task does NOT steal the done status
+- routes: answering a gated question on an in-review task does NOT steal the in-review status
+- routes: external waiting label is presented honestly, not as a silent wait

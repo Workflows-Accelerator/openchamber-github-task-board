@@ -1,0 +1,50 @@
+{
+  "malformedStatusEntry": {
+    "status": 400,
+    "error": "human_review_required",
+    "writes": 0,
+    "storedLabels": [
+      "status:todo"
+    ]
+  },
+  "sectionInject": {
+    "status": 200,
+    "writes": 1,
+    "storedBody": "## Overview\nReview.\n\n### Human Review:\n\n\n### Human Review:\n- Artifact: image\n- URL: https://example.com/screenshots/login-empty.png\n- Instruction: Compare the empty state with the approved mockup.",
+    "statusLabel": "status:needs-human",
+    "humanReviewState": "ready",
+    "humanReviewReason": null,
+    "humanReviewKind": "image",
+    "column": "needs-human"
+  },
+  "answerOnDone": {
+    "status": 200,
+    "statusLabel": "status:in-progress",
+    "labels": [
+      "status:in-progress"
+    ],
+    "humanReview": "settled"
+  },
+  "createTwoStatusLabels": {
+    "status": 201,
+    "storedLabels": [
+      "status:todo",
+      "status:needs-human"
+    ],
+    "statusLabel": "status:todo",
+    "column": "needs-human",
+    "humanReviewState": "missing",
+    "note": "statusLabel drives the client gate panel; column drives the waiting column"
+  },
+  "externalWaiting": {
+    "statusLabel": "status:needs-human",
+    "column": "needs-human",
+    "humanReviewState": "missing",
+    "humanReviewReason": "no_section",
+    "listColumn": "needs-human",
+    "listHumanReviewState": "missing",
+    "escapeStatus": 200,
+    "escapeWrites": 1,
+    "statusAfterEscape": "status:in-progress"
+  }
+}

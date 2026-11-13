@@ -1,0 +1,186 @@
+{
+  "pass": true,
+  "failures": [],
+  "cases": [
+    {
+      "issue": 1,
+      "lang": "en",
+      "ok": true,
+      "title": "Waiting for you",
+      "action": {
+        "label": "Open screenshot",
+        "rect": {
+          "left": 17,
+          "right": 158,
+          "top": 465,
+          "bottom": 509
+        },
+        "hitSelf": true,
+        "insideViewport": true
+      },
+      "instructionRect": {
+        "left": 17,
+        "right": 344,
+        "height": 98
+      },
+      "panelOverflow": {
+        "scrollWidth": 327,
+        "clientWidth": 327
+      },
+      "pageWidth": [
+        360,
+        360
+      ]
+    },
+    {
+      "issue": 2,
+      "lang": "en",
+      "ok": true,
+      "title": "Waiting for you",
+      "action": {
+        "label": "Open the link",
+        "rect": {
+          "left": 17,
+          "right": 135,
+          "top": 469,
+          "bottom": 513
+        },
+        "hitSelf": true,
+        "insideViewport": true
+      },
+      "instructionRect": {
+        "left": 17,
+        "right": 344,
+        "height": 117
+      },
+      "panelOverflow": {
+        "scrollWidth": 327,
+        "clientWidth": 327
+      },
+      "pageWidth": [
+        360,
+        360
+      ]
+    },
+    {
+      "issue": 3,
+      "lang": "en",
+      "ok": true,
+      "title": "Waiting for you",
+      "action": {
+        "label": "Open the link",
+        "rect": {
+          "left": 17,
+          "right": 135,
+          "top": 389,
+          "bottom": 433
+        },
+        "hitSelf": true,
+        "insideViewport": true
+      },
+      "instructionRect": {
+        "left": 17,
+        "right": 344,
+        "height": 20
+      },
+      "panelOverflow": {
+        "scrollWidth": 327,
+        "clientWidth": 327
+      },
+      "pageWidth": [
+        360,
+        360
+      ]
+    },
+    {
+      "issue": 1,
+      "lang": "fr",
+      "ok": true,
+      "title": "En attente de vous",
+      "action": {
+        "label": "Ouvrir la capture",
+        "rect": {
+          "left": 17,
+          "right": 159,
+          "top": 465,
+          "bottom": 509
+        },
+        "hitSelf": true,
+        "insideViewport": true
+      },
+      "instructionRect": {
+        "left": 17,
+        "right": 344,
+        "height": 98
+      },
+      "panelOverflow": {
+        "scrollWidth": 327,
+        "clientWidth": 327
+      },
+      "pageWidth": [
+        360,
+        360
+      ]
+    },
+    {
+      "issue": 2,
+      "lang": "fr",
+      "ok": true,
+      "title": "En attente de vous",
+      "action": {
+        "label": "Ouvrir le lien",
+        "rect": {
+          "left": 17,
+          "right": 131,
+          "top": 469,
+          "bottom": 513
+        },
+        "hitSelf": true,
+        "insideViewport": true
+      },
+      "instructionRect": {
+        "left": 17,
+        "right": 344,
+        "height": 117
+      },
+      "panelOverflow": {
+        "scrollWidth": 327,
+        "clientWidth": 327
+      },
+      "pageWidth": [
+        360,
+        360
+      ]
+    },
+    {
+      "issue": 3,
+      "lang": "fr",
+      "ok": true,
+      "title": "En attente de vous",
+      "action": {
+        "label": "Ouvrir le lien",
+        "rect": {
+          "left": 17,
+          "right": 131,
+          "top": 389,
+          "bottom": 433
+        },
+        "hitSelf": true,
+        "insideViewport": true
+      },
+      "instructionRect": {
+        "left": 17,
+        "right": 344,
+        "height": 20
+      },
+      "panelOverflow": {
+        "scrollWidth": 327,
+        "clientWidth": 327
+      },
+      "pageWidth": [
+        360,
+        360
+      ]
+    }
+  ]
+}

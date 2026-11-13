@@ -1,0 +1,49 @@
+{
+  "pass": true,
+  "counts": {
+    "rows": 72,
+    "assertions": 592,
+    "failedAssertions": 0,
+    "screenshots": 72
+  },
+  "failures": [],
+  "interactions": {
+    "answerQuestion": {
+      "before": {
+        "statusLabel": "status:needs-human",
+        "column": "needs-human"
+      },
+      "after": {
+        "statusLabel": "status:in-progress",
+        "humanReview": "settled",
+        "panelHidden": true
+      }
+    },
+    "legacyEscape": {
+      "before": "status:needs-human",
+      "after": {
+        "statusLabel": "status:in-progress",
+        "panelHidden": true
+      }
+    },
+    "inReviewDrawer": {
+      "reviewPanel": "The agent is reviewing this task. Nothing is asked of you.",
+      "reviewPanelActions": 0,
+      "openQuestionForms": 1,
+      "openQuestionItems": 1,
+      "questionsSectionHidden": false
+    },
+    "legacyRow": {
+      "text": "",
+      "badges": [
+        {
+          "text": "Waiting for an artifact",
+          "title": "The body has no \"### Human Review:\" section."
+        }
+      ]
+    }
+  },
+  "csp": [],
+  "pageErrors": [],
+  "consoleErrors": []
+}
