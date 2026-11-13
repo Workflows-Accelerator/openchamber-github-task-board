@@ -49,20 +49,20 @@ call; reason quoted).
 | 37 | Workflows-Accelerator/openchamber-config | 38 | `status:in-review` | `status:todo` | 6856011847 | 2026-11-13T14:35:01Z | applied / verified |
 | 38 | Workflows-Accelerator/openchamber-config | 30 | `status:in-review` | `status:todo` | 6856013939 | 2026-11-13T14:35:06Z | applied / verified |
 | 39 | Workflows-Accelerator/openchamber-config | 29 | `status:in-review` | `status:todo` | 6856015639 | 2026-11-13T14:35:10Z | applied / verified |
-| 40 | Workflows-Accelerator/devops-cockpit | 24 | `status:needs-human` | `status:todo` | - | - | pending |
-| 41 | Workflows-Accelerator/devops-cockpit | 23 | `status:needs-human` | `status:todo` | - | - | pending |
-| 42 | Workflows-Accelerator/devops-cockpit | 21 | `status:in-review` | `status:todo` | - | - | pending |
-| 43 | Workflows-Accelerator/devops-cockpit | 12 | `status:in-review` | `status:todo` | - | - | pending |
-| 44 | Workflows-Accelerator/devops-cockpit | 11 | `status:in-review` | `status:todo` | - | - | pending |
-| 45 | Workflows-Accelerator/devops-cockpit | 10 | `status:in-review` | `status:todo` | - | - | pending |
-| 46 | Workflows-Accelerator/devops-cockpit | 9 | `status:in-review` | `status:todo` | - | - | pending |
-| 47 | Workflows-Accelerator/devops-cockpit | 8 | `status:in-review` | `status:todo` | - | - | pending |
-| 48 | Workflows-Accelerator/devops-cockpit | 7 | `status:in-review` | `status:todo` | - | - | pending |
-| 49 | Workflows-Accelerator/devops-cockpit | 6 | `status:in-review` | `status:todo` | - | - | pending |
-| 50 | Workflows-Accelerator/devops-cockpit | 4 | `status:needs-human` | `status:todo` | - | - | pending |
-| 51 | Workflows-Accelerator/devops-cockpit | 3 | `status:in-review` | `status:todo` | - | - | pending |
-| 52 | Workflows-Accelerator/devops-cockpit | 2 | `status:in-review` | `status:todo` | - | - | pending |
-| 53 | Workflows-Accelerator/devops-cockpit | 1 | `status:needs-human` | `status:todo` | - | - | pending |
+| 40 | Workflows-Accelerator/devops-cockpit | 24 | `status:needs-human` | `status:todo` | 6856026759 | 2026-11-13T14:35:36Z | applied / verified |
+| 41 | Workflows-Accelerator/devops-cockpit | 23 | `status:needs-human` | `status:todo` | 6856028466 | 2026-11-13T14:35:39Z | applied / verified |
+| 42 | Workflows-Accelerator/devops-cockpit | 21 | `status:in-review` | `status:todo` | 6856030169 | 2026-11-13T14:35:43Z | applied / verified |
+| 43 | Workflows-Accelerator/devops-cockpit | 12 | `status:in-review` | `status:todo` | 6856032250 | 2026-11-13T14:35:48Z | applied / verified |
+| 44 | Workflows-Accelerator/devops-cockpit | 11 | `status:in-review` | `status:todo` | 6856034329 | 2026-11-13T14:35:53Z | applied / verified |
+| 45 | Workflows-Accelerator/devops-cockpit | 10 | `status:in-review` | `status:todo` | 6856036072 | 2026-11-13T14:35:57Z | applied / verified |
+| 46 | Workflows-Accelerator/devops-cockpit | 9 | `status:in-review` | `status:todo` | 6856037916 | 2026-11-13T14:36:01Z | applied / verified |
+| 47 | Workflows-Accelerator/devops-cockpit | 8 | `status:in-review` | `status:todo` | 6856039578 | 2026-11-13T14:36:05Z | applied / verified |
+| 48 | Workflows-Accelerator/devops-cockpit | 7 | `status:in-review` | `status:todo` | 6856041371 | 2026-11-13T14:36:09Z | applied / verified |
+| 49 | Workflows-Accelerator/devops-cockpit | 6 | `status:in-review` | `status:todo` | 6856043452 | 2026-11-13T14:36:15Z | applied / verified |
+| 50 | Workflows-Accelerator/devops-cockpit | 4 | `status:needs-human` | `status:todo` | 6856045439 | 2026-11-13T14:36:18Z | applied / verified |
+| 51 | Workflows-Accelerator/devops-cockpit | 3 | `status:in-review` | `status:todo` | 6856047266 | 2026-11-13T14:36:23Z | applied / verified |
+| 52 | Workflows-Accelerator/devops-cockpit | 2 | `status:in-review` | `status:todo` | 6856048849 | 2026-11-13T14:36:26Z | applied / verified |
+| 53 | Workflows-Accelerator/devops-cockpit | 1 | `status:needs-human` | `status:todo` | 6856050724 | 2026-11-13T14:36:30Z | applied / verified |
 | 54 | Workflows-Accelerator/ironcore-frontline | 31 | `status:needs-human` | `status:todo` | - | - | pending |
 | 55 | Workflows-Accelerator/ironcore-frontline | 30 | `status:needs-human` | `status:todo` | - | - | pending |
 | 56 | Workflows-Accelerator/ironcore-frontline | 28 | `status:needs-human` | `status:todo` | - | - | pending |
@@ -80,7 +80,7 @@ call; reason quoted).
 
 Total rows: 67 (45 `status:needs-human`, 22 `status:in-review`).
 
-Counts: applied 39, already-applied 0, skipped 0, refused 0, pending 28.
+Counts: applied 53, already-applied 0, skipped 0, refused 0, pending 14.
 
 ## Reverse instruction
 
