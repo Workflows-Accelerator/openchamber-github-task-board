@@ -74,14 +74,15 @@ Rule operationalised (stated so it is auditable):
 
 | Bucket | Count |
 |---|---|
-| will change | 62 |
+| will change | 67 |
 | stays (no change proposed) | 160 |
 | agent review in flight | 5 |
-| needs your call | 5 |
+| needs your call | 0 |
 | **total open issues** | **232** |
 
 Change detail: 45 x `status:needs-human -> status:todo`,
-17 x `status:in-review -> status:todo`. Every proposed
+22 x `status:in-review -> status:todo`. The five task-board issues that were
+"needs your call" moved to "will change" after the check in section 8. Every proposed
 change targets `status:todo`, which exists in all five affected repositories. No issue carries two
 status labels; every body parsed (no unparseable body); no issue has a ready artifact anywhere.
 
@@ -395,7 +396,7 @@ proposed for creation; a missing label would make an issue "needs your call" ins
 | Workflows-Accelerator/n8n-cli | 2 | none | status:todo NO, status:needs-human NO, status:in-review NO | 0 |
 | Workflows-Accelerator/n8n-rocket-chat-antigravity | 0 | none | status:todo NO, status:needs-human NO, status:in-review NO | 0 |
 | Workflows-Accelerator/openchamber-config | 35 | status:draft, status:backlog, status:planned, status:todo, status:in-progress, status:in-review, status:needs-human, status:done, status:needs-alignment | status:todo yes, status:needs-human yes, status:in-review yes | 17 |
-| Workflows-Accelerator/openchamber-github-task-board | 48 | status:draft, status:backlog, status:planned, status:todo, status:in-progress, status:in-review, status:needs-human, status:done, status:needs-alignment | status:todo yes, status:needs-human yes, status:in-review yes | 17 |
+| Workflows-Accelerator/openchamber-github-task-board | 48 | status:draft, status:backlog, status:planned, status:todo, status:in-progress, status:in-review, status:needs-human, status:done, status:needs-alignment | status:todo yes, status:needs-human yes, status:in-review yes | 22 |
 | Workflows-Accelerator/openchamber-triggers | 1 | none | status:todo NO, status:needs-human NO, status:in-review NO | 0 |
 | Workflows-Accelerator/prompt-and-furious-podcast | 0 | none | status:todo NO, status:needs-human NO, status:in-review NO | 0 |
 | Workflows-Accelerator/testing | 3 | none | status:todo NO, status:needs-human NO, status:in-review NO | 0 |
@@ -426,9 +427,57 @@ The rule and the shipped parser agree; no parser bug was found and no source cha
 
 ## 7. Limits of this inventory
 
-- Open pull requests that reference an issue cannot be listed with the read-only command set
-  (`gh pr list` and `gh api` were not authorised), so "in flight" rests on issue comments only.
-  That is why five task-board issues sit in "needs your call" rather than being forced either way.
+- Open pull requests that reference an issue were not listable while sections 1–7 were
+  written (`gh pr list` was not authorised then), so "in flight" rested on issue comments
+  alone and five task-board issues sat in "needs your call". Section 8 performs that check
+  under a later authorisation and resolves all five. `gh api` and `gh search` remain
+  unauthorised, so a pull request in a different repository that mentions these issues is
+  still unverified.
 - Repositories where the token is only a collaborator of a third-party owner cannot be enumerated
   by `gh repo list`; `GET /user/repos` (the endpoint the board itself uses) is blocked here. The
   set above is the complete owner + organisation_member set for this token.
+
+## 8. PR and timeline check for the five ambiguous issues
+
+Date: 2026-11-13. **Nothing was written to GitHub.** Calls used: `gh pr list --repo
+Workflows-Accelerator/openchamber-github-task-board --state all --search "<n> in:body"`,
+`gh pr list --state all --limit 100`, `gh issue view <n> --json
+state,labels,updatedAt,closedAt,comments` and `gh issue view <n> --comments`. No `gh api`, no
+comment, no label change.
+
+The repository holds exactly two pull requests: #45 (merged 2026-10-28, head
+`feat/issue-31-mobile-pwa`) and #25 (open since 2026-10-08, head `fix/oversized-issue-pages`).
+Neither touches #56–#60 and every `<n> in:body` search returned no result. The search syntax was
+sanity-checked against a known reference: "40 in:body" is also empty because #45 names its issues
+in the title, not the body, so the empty result is a real absence, not a broken query. No pull
+request exists for head branch `feat/chamberos-board-v2`, the branch the A4 and A5 comments name.
+
+Evidence outside the issue thread, read from the local repository (branch `feat/chamberos-board-v2`,
+worktree `.worktrees/team-dev-chamberos-board-v2`):
+
+- A1, A2 and A3 each carry a committed proof plus an independent audit dated 2026-11-04
+  (`5e38193` A1, `af6f066` A2, `d0d5b72` A3).
+- `A5/independent/audit-findings.md`, final repair audit 2026-11-06: "A5 Spec Verdict: PASS;
+  A5 Quality Verdict: APPROVED; A4 Spec Verdict: PASS; A4 Quality Verdict: APPROVED."
+- `A-delivery/hostile4/report.md`, 2026-11-08: "Spec: PASS … Quality: APPROVED … PROCEED: ready
+  for human validation only."
+- `A-delivery/wave1-release-receipt.md`, 2026-11-11: the A1–A5 foundation deployed live to
+  `https://board.workflows.ac`, and "Zero issues closed; all issues #53–#71 remain in their
+  current open state."
+
+| Issue | PR evidence | Last activity | Verdict | Reasoning |
+|---|---|---|---|---|
+| #56 A1 | none: no PR references it; the only PRs in the repo are #45 (merged) and #25 (open, unrelated); no PR for `feat/chamberos-board-v2` | 2026-11-04T02:14Z (label set; zero comments ever) | change to todo | The A1 audit is committed and the A1–A5 foundation was released live on 2026-11-11, so the review finished and nothing is in flight. |
+| #57 A2 | none: same as #56 | 2026-11-04T09:24Z (label set; zero comments ever) | change to todo | Same terminal evidence: the A2 audit is committed and the foundation shipped live, leaving no in-flight review. |
+| #58 A3 | none: same as #56 | 2026-11-04T17:44Z (label set; zero comments ever) | change to todo | Same terminal evidence: the A3 audit is committed and the foundation shipped live, leaving no in-flight review. |
+| #59 A4 | none: no PR references it; the comment names `feat/chamberos-board-v2`, which has no PR | 2026-11-04T21:38Z (agent comment "An independent hostile review is active") | change to todo | The comment is 9 days old with nothing after it, and the review it announced ended in the recorded A4 PASS/APPROVED verdict, so it is stale, not in flight. |
+| #60 A5 | none: no PR references it; the comment names `feat/chamberos-board-v2`, which has no PR | 2026-11-05T22:04Z (agent comment "An adversarial review is running") | change to todo | The comment is 8 days old with nothing after it, and the review it announced ended in the recorded A5 PASS/APPROVED verdict, so it is stale, not in flight. |
+
+All five move from "needs your call" to "will change". New totals: will change 67, stays 160,
+agent review in flight 5, needs your call 0, total 232; change detail 45 x
+`status:needs-human -> status:todo` and 22 x `status:in-review -> status:todo`. The
+openchamber-github-task-board row in section 5 is updated from 17 to 22 to match.
+
+Not verified: a pull request in a different repository that mentions these issues. `gh api` and
+`gh search` are outside the authorised command set, so only this repository's pull requests and the
+issues' own timelines were checked.
