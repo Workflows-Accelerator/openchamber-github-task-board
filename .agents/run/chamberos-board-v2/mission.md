@@ -1,14 +1,17 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `awaiting_human` — V4-2 LIVE as release `e604b9e-20261112` (app `1d9f237`), current repointed from `26fbc00-20261112`; `origin/master` = `a6f61f3`. Two independent reviews passed (`verifications/V4-2-L4/`, `V4-2-L4-delta/`); receipt #issuecomment-6837970237. V4-3 started on the owner's explicit go-ahead (D40): V4-3a (policy in the product, code only) is running at `ses_3ea186555b74bd41ddaaeb58`; its read-only dry run and the authorized label/comment application follow. The owner's phone click-through of V4 + V4-2 is still pending, then R1 (OpenChamber questions). All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-2-live.md.
+- **State:** `building` — V4-2 remains LIVE as `e604b9e-20261112` (app `1d9f237`), `origin/master` last verified at `a6f61f3`. After the server restart, V4-3a's first worker was confirmed idle and explicitly stopped; its three partial source edits are preserved, with no commits or evidence. Sole replacement `ses_b03f8aa4a8ae0d9e7205cc6d` is recovering them from dirty `a6f61f3`. No real GitHub writes in this step. D40 authorizes the later deterministic label/comment reclassification, after a read-only inventory and review. Owner phone click-through remains pending, not claimed as acceptance. All #53–#71 stay open. Current: tasks.md and resume-2026-11-13-v4-3-recovery.md.
 - **Alignment:** D33–D39 CONFIRMED by user, including D37 readability-first, D38 visible desktop rail toggle and D39 bounded R1/R2 correction. Real-phone drag persistence confirmed by the user on the previous live release. V4 released after independent L4 PASS/APPROVED. Next decision point: the user's live phone review of V4.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
 - **Base Commit:** `28af19b` (V4-1 start)
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
-- **Dispatched Sessions:**
-  - `ses_01498c3c4f8c0d6245047a44` V4-2c smoke + npm-test base comparison + evidence commit + hostile review — RUNNING sole worker from b0718cc, brief tasks/wave4c-v4-2-close-evidence-and-hostile.md. Next: independent L4 of d1eef33..HEAD, then release.
+- **Dispatched Sessions (latest first; older rows are historical):**
+  - `ses_b03f8aa4a8ae0d9e7205cc6d` V4-3a recovery — RUNNING sole worker, genius requested (verify runtime model at finish), dirty a6f61f3; canonical brief tasks/wave5a2-v4-3-recover-partial.md.
+  - `ses_3ea186555b74bd41ddaaeb58` V4-3a first attempt — INTERRUPTED, confirmed idle and explicitly stopped; cancelled/error wakes expected. Model 9router/genius verified. Three uncommitted files, no tests/evidence/commit or GitHub mutation.
+  - `ses_cf91c6171c3c03a792827dd6` V4-2 release — COMPLETED a6f61f3; release e604b9e-20261112 live; master push verified. Independent reviews c3fc27d78f4597b03976644c and 13b9dfca7e7132cc4bf80769 completed before release.
+  - `ses_01498c3c4f8c0d6245047a44` V4-2c — COMPLETED bc26145, 3af3fe0, a7867e8; fixes and evidence subsequently independently reviewed and released.
   - `ses_8265220b99cc6ff4ee784a4c` V4-2b — DONE: 5430f36 source, b0718cc tests, aa9e1e3 evidence; smoke EXIT 0 6m11.8s; framing failures proven stale pre-D37 probe; npm test not green (panel-only, suspected flake, unproven).
   - `ses_9e0d1c9ef4415dc77f472bbf` V4-2 first attempt — ABANDONED (idle, no commit): 7 modified files, 3 new tests, evidence dir; smoke run cut by a 240 s tool timeout; two 360 px framing probes failing. Not resumed (a finished session cannot be prompted); recovered, not duplicated.
   - `ses_f35e847135ddf8c8b3dd21b2` V4 release — COMPLETED, LIVE `26fbc00-20261112`, 11/11 assets byte-identical, health 200, rollbacks intact; manager pushed origin/master `28af19b..d1eef33`.
