@@ -164,7 +164,10 @@ gh issue edit 44 --repo Workflows-Accelerator/openchamber-github-task-board --ad
 
 Both held through the final verification and a 45-second re-check. The revert's author is not
 readable without `gh api`, which is outside the authorised command set, so the actor is
-unknown. No third attempt was made.
+unknown. Circumstantial evidence only: a concurrent session committed `068b301 fix(board):
+restore service after the second supervisor loss` to this same worktree branch between two of
+the per-repository commits below, so another session was demonstrably active in this
+repository during the window. No third attempt was made.
 
 No issue was closed, no issue refused the label edit, and no comment was rejected.
 
