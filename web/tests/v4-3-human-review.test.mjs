@@ -351,3 +351,71 @@ test('V4-3 prompts document the human gate identically in core.ts and shipped ma
     assert.match(fromCore, /status:needs-human/, `${name} must tie the gate to the waiting label`);
   }
 });
+
+test('V4-3 reopening a closed waiting task without an artifact is refused', async () => {
+  const fake = await startFakeGitHub({
+    token: SYNTHETIC_TOKEN,
+    issues: [
+      makeIssue({ number: 20, body: '## Overview\n\nNo artifact.\n', state: 'closed', labels: ['status:needs-human'] }),
+      makeIssue({ number: 21, body: IMAGE_BODY, state: 'closed', labels: ['status:needs-human'] }),
+    ],
+  });
+  const board = await startBoard(fake, { config: browserConfig(fake, {}) });
+  try {
+    const session = new HttpSession(board.url);
+    await session.login();
+
+    const closed = (await session.request('/api/issues/20')).json.issue;
+    const rejected = await session.request('/api/issues/20', {
+      method: 'PATCH',
+      body: { fingerprint: closed.fingerprint, state: 'open' },
+    });
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.json.error, 'human_review_required');
+    assert.match(rejected.json.message, /no artifact/i);
+    assert.equal(fake.findIssue(20).state, 'closed', 'the refused reopen wrote nothing');
+
+    const valid = (await session.request('/api/issues/21')).json.issue;
+    const accepted = await session.request('/api/issues/21', {
+      method: 'PATCH',
+      body: { fingerprint: valid.fingerprint, state: 'open' },
+    });
+    assert.equal(accepted.status, 200);
+    assert.equal(accepted.json.issue.state, 'open');
+    assert.equal(accepted.json.issue.humanReview.state, 'ready');
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
+
+test('V4-3 a closed body edit cannot remove the gate and then reopen', async () => {
+  const fake = await startFakeGitHub({
+    token: SYNTHETIC_TOKEN,
+    issues: [
+      makeIssue({ number: 22, body: IMAGE_BODY, state: 'closed', labels: ['status:needs-human'] }),
+    ],
+  });
+  const board = await startBoard(fake, { config: browserConfig(fake, {}) });
+  try {
+    const session = new HttpSession(board.url);
+    await session.login();
+    const closed = (await session.request('/api/issues/22')).json.issue;
+    const edit = await session.request('/api/issues/22', {
+      method: 'PATCH',
+      body: { fingerprint: closed.fingerprint, body: '## Overview\n\nRemoved while closed.\n' },
+    });
+    assert.equal(edit.status, 200);
+    const afterEdit = (await session.request('/api/issues/22')).json.issue;
+    const reopen = await session.request('/api/issues/22', {
+      method: 'PATCH',
+      body: { fingerprint: afterEdit.fingerprint, state: 'open' },
+    });
+    assert.equal(reopen.status, 400);
+    assert.equal(reopen.json.error, 'human_review_required');
+    assert.equal(fake.findIssue(22).state, 'closed');
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});

@@ -2900,7 +2900,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const resultingState = typeof patch.state === 'string' ? patch.state : fresh.item.state;
       const resultingBody = typeof patch.body === 'string' ? patch.body : (fresh.item.body ?? '');
       if (resultingState !== 'closed' && isHumanReviewGateStatus(resultingStatus)) {
-        const entering = !isHumanReviewGateStatus(baseStatus);
+        // Reopening a closed task puts it back on the board, so it enters the
+        // visible waiting state even though its label did not change.
+        const reopening = fresh.item.state === 'closed' && resultingState === 'open';
+        const entering = !isHumanReviewGateStatus(baseStatus) || reopening;
         const writesBody = typeof patch.body === 'string';
         const baseReview = writesBody ? parseHumanReview(fresh.item.body ?? '') : null;
         const review = entering || (writesBody && baseReview?.state === 'ready')
