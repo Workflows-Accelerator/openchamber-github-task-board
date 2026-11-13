@@ -206,6 +206,32 @@ test('V4-3 creation cannot be born waiting for a human without an artifact', asy
   });
 });
 
+test('V4-3 creation refuses conflicting status labels instead of splitting the card', async () => {
+  // Two status labels made statusLabelOf pick the first and the waiting column
+  // pick the other, so the card read todo while it sat in the waiting column
+  // with no gate panel. One issue, one status label: refuse the create.
+  await fixture(async ({ fake, session }) => {
+    const before = fake.issues.length;
+    const rejected = await session.request('/api/issues', {
+      method: 'POST',
+      body: { title: 'Two status labels', body: IMAGE_BODY, labels: ['status:todo', 'status:needs-human'] },
+    });
+    assert.equal(rejected.status, 400);
+    assert.equal(rejected.json.error, 'conflicting_status_labels');
+    assert.match(rejected.json.message, /status:todo/);
+    assert.match(rejected.json.message, /status:needs-human/);
+    assert.equal(fake.issues.length, before, 'the refused create wrote nothing');
+    assert.equal(fake.patchCalls.length, 0);
+
+    const single = await session.request('/api/issues', {
+      method: 'POST',
+      body: { title: 'One status label', body: IMAGE_BODY, labels: ['status:needs-human'] },
+    });
+    assert.equal(single.status, 201, 'a single status label still creates');
+    assert.equal(single.json.issue.statusLabel, 'status:needs-human');
+  });
+});
+
 test('V4-3 editing the body of a waiting task cannot silently remove its artifact', async () => {
   await fixture(async ({ fake, session }) => {
     const waiting = await detail(session, 1);

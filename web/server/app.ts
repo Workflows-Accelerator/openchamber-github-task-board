@@ -51,6 +51,7 @@ import {
   parseIssueNotes,
   parseWebHumanTasks,
   statusLabelOf,
+  statusLabelsOf,
   toggleHumanTaskInMarkdown,
   type IssueNoteView,
 } from './board.ts';
@@ -821,6 +822,17 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           throw new HttpError(400, 'invalid_request', 'Labels must be an array of strings');
         }
         labels = body.labels;
+      }
+      // One issue, one status label. Two status labels let the card and its
+      // column disagree (statusLabelOf reads the first, resolveIssueColumn the
+      // waiting one), so the create is refused before anything is written.
+      const conflictingStatuses = statusLabelsOf(labels);
+      if (conflictingStatuses.length > 1) {
+        throw new HttpError(
+          400,
+          'conflicting_status_labels',
+          `Creation carries ${conflictingStatuses.length} status labels (${conflictingStatuses.join(', ')}); an issue has exactly one status label.`,
+        );
       }
       // Creation is a status-entry path too: a new issue cannot be born waiting
       // for a human unless its body already carries a clickable artifact.

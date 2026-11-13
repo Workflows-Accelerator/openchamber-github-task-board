@@ -1271,12 +1271,15 @@ export function labelNames(raw: any): string[] {
     .filter((name: string) => name !== '');
 }
 
+export function statusLabelsOf(labels: string[]): string[] {
+  return labels
+    .map((label) => label.trim().toLowerCase())
+    .filter((label) => statusSet.has(label));
+}
+
 export function statusLabelOf(labels: string[]): string | null {
-  for (const label of labels) {
-    const normalized = label.trim().toLowerCase();
-    if (statusSet.has(normalized)) return normalized;
-  }
-  return null;
+  const found = statusLabelsOf(labels);
+  return found.length ? found[0] : null;
 }
 
 export function isExplicitDraft(
