@@ -1,0 +1,306 @@
+[
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 52,
+      "canvasTop": 112
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 100,
+      "canvasTop": 160
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 100,
+      "canvasTop": 160
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "live": "Show 3 tasks",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 100,
+      "canvasTop": 160
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "live": "Afficher 3 tâches",
+    "applied": {
+      "count": 3,
+      "visible": true,
+      "barTop": 100,
+      "canvasTop": 160
+    },
+    "removed": 10,
+    "reset": true,
+    "pass": true
+  }
+]

@@ -100,10 +100,78 @@ Not covered by this evidence: the write-path refusal in the browser (unit
 tests only), real GitHub, production, Safari, Firefox, a physical phone and a
 screen reader.
 
+## Framing and delivery smoke
+
+Both long-running proofs, run on the committed tree (`b57e894`, implementation
+`cd97f8e`) with the Chromium environment from
+`.agents/run/chamberos-board-v2/verifications/V4-2/scripts/browser-env.sh`.
+
+### Framing promise probe
+
+Probe copied unchanged from `../V4-2/scripts/framing-promise.mjs` to
+`scripts/framing-promise.mjs` at the same directory depth, so its relative
+imports resolve. Run from this directory:
+
+```
+source ../V4-2/scripts/browser-env.sh && node scripts/framing-promise.mjs
+```
+
+Result: 12/12 cases pass, 0 CSP violations, 0 console problems, exit 0, 55 s.
+Raw log: `logs/framing-promise.log`; exit: `logs/framing-promise.exit`;
+data: `regression/framing-promise.json`; images: `regression/screenshots/`
+(40: framed, show-all, filtered, filtered-show-all per case).
+
+Each width row is identical across light/dark and EN/FR; the values below are
+the measured ones for all four combinations.
+
+| Width | Automatic scale | Limit legend | Show-all scale | Cards inside after Show all | Cards under HUD after Show all |
+|---|---|---|---|---|---|
+| 360x800 | 0.55 | yes — "Connected tasks are outside this view." + "Show all (4)" | 0.315 | 4/4 | 0 |
+| 390x844 | 0.55 | yes — same sentence + "Show all (4)" | 0.344 | 4/4 | 0 |
+| 1280x900 | 0.785 | no — full fit, Show all hidden | not offered | 4/4 under automatic framing | 0 |
+
+At 360 and 390 the automatic frame stops exactly at the readable floor 0.55 and
+leaves 3 of the 4 neighbourhood cards outside the viewport; the limit sentence
+and the explicit `Show all (4)` control appear, and the pressed control reaches
+0.315 (360) and 0.344 (390) with all 4 cards inside, no card overlapping the
+canvas controls, and all wire labels inside. Filter framing also stops at 0.55
+at both phone widths and its Show-all reaches a complete fit. At 1280 the
+automatic frame is 0.785 with 0 cards outside and Show all hidden, and filter
+framing is 0.915.
+
+One honest detail the pass condition does not hide: under automatic framing at
+360/390, one neighbourhood card (`acme/vanilla-sdk#11`) sits under the canvas
+controls — recorded as `automaticFraming.cardsUnderHud`. That is the expected
+consequence of stopping at the floor instead of fitting; the promise covers the
+explicit full fit, which has 0 cards under the HUD.
+
+No expectation was edited to match a measurement. Every number reproduces the
+V4-2 delta baseline (0.55 floor, 0.315 / 0.344, 0.785, 12/12, 0 CSP,
+0 console).
+
+### Delivery smoke
+
+```
+DELIVERY_DIR=.agents/run/chamberos-board-v2/verifications/V4-3 node scripts/generate-delivery-smoke.mjs
+```
+
+Result: 14/14 sections PASS, 191 captures, 308 s, exit 0. Raw log:
+`logs/delivery-smoke.log`; exit and duration: `logs/delivery-smoke.exit`;
+report: `smoke.json`; measurements: `canvas-measurements.json`,
+`dependency-measurements.json`, `filter-measurements.json`,
+`sheet-measurements.json`, `sidebar-measurements.json`,
+`surface-measurements.json`; images: `screenshots/`.
+
+The V4-3 human-review guard did not interact with this smoke: its only
+`status:needs-human` fixture (issue 1) is born with the label in the fake GitHub
+state and carries no `### Human Review:` section, so no status write is
+attempted and no transition is refused. No section failed, no assertion was
+weakened or skipped, and `scripts/generate-delivery-smoke.mjs` was not modified.
+
+Browser diagnostics section: 0 exceptions, 0 console errors, 0 CSP violations.
+
 ## Still missing
 
-- The framing probe.
-- The delivery smoke.
 - The hostile review of these edits.
 - The independent review.
 

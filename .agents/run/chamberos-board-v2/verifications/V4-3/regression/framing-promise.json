@@ -1,0 +1,694 @@
+{
+  "summary": {
+    "generatedAt": "2026-11-13T11:14:29.112Z",
+    "chrome": "/workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell",
+    "premise": "D37: automatic framing never goes below 0.55; \"Show all (N)\" gives the real full fit. D39: an incomplete full fit keeps a truthful zoom-limit message and never claims a fit that did not happen.",
+    "staleExpectation": "scripts/generate-v4-1b-verification.mjs requires neighbourhoodInside && filteredAllInside && cardsUnderHud.length === 0 at 360/390 under automatic framing, i.e. a fit below the readable floor with no limit message. That expectation predates D37/D39 and is preserved unresolved in regression/v4-1b-summary.json and logs/regression.log.",
+    "cases": 12,
+    "casesPassed": 12,
+    "cspViolations": [],
+    "consoleProblems": []
+  },
+  "cases": [
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskConnected tasks are outside this view.Show all (4)Arrow points to the blocked task.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Show all (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.315,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-360-light-en.png",
+        "showAll": "regression/screenshots/show-all-360-light-en.png",
+        "filtered": "regression/screenshots/filtered-360-light-en.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheDes tâches liées sont hors de cette vue.Tout afficher (4)La flèche pointe vers la tâche bloquée.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Tout afficher (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.315,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-360-light-fr.png",
+        "showAll": "regression/screenshots/show-all-360-light-fr.png",
+        "filtered": "regression/screenshots/filtered-360-light-fr.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskConnected tasks are outside this view.Show all (4)Arrow points to the blocked task.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Show all (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.315,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-360-dark-en.png",
+        "showAll": "regression/screenshots/show-all-360-dark-en.png",
+        "filtered": "regression/screenshots/filtered-360-dark-en.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheDes tâches liées sont hors de cette vue.Tout afficher (4)La flèche pointe vers la tâche bloquée.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Tout afficher (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.315,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-360-dark-fr.png",
+        "showAll": "regression/screenshots/show-all-360-dark-fr.png",
+        "filtered": "regression/screenshots/filtered-360-dark-fr.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 844,
+        "theme": "light",
+        "lang": "en"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskConnected tasks are outside this view.Show all (4)Arrow points to the blocked task.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Show all (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.344,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-390-light-en.png",
+        "showAll": "regression/screenshots/show-all-390-light-en.png",
+        "filtered": "regression/screenshots/filtered-390-light-en.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 844,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheDes tâches liées sont hors de cette vue.Tout afficher (4)La flèche pointe vers la tâche bloquée.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Tout afficher (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.344,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-390-light-fr.png",
+        "showAll": "regression/screenshots/show-all-390-light-fr.png",
+        "filtered": "regression/screenshots/filtered-390-light-fr.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskConnected tasks are outside this view.Show all (4)Arrow points to the blocked task.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Show all (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.344,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-390-dark-en.png",
+        "showAll": "regression/screenshots/show-all-390-dark-en.png",
+        "filtered": "regression/screenshots/filtered-390-dark-en.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "automaticFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "acme/vanilla-sdk#11"
+        ],
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheDes tâches liées sont hors de cette vue.Tout afficher (4)La flèche pointe vers la tâche bloquée.",
+        "limitMessageTruthful": true,
+        "showAll": {
+          "hidden": false,
+          "text": "Tout afficher (4)",
+          "kind": "focus"
+        },
+        "cardsUnderHud": [
+          "acme/vanilla-sdk#11"
+        ]
+      },
+      "explicitShowAll": {
+        "zoom": 0.344,
+        "crossesReadableFloor": true,
+        "allNeighbourhoodInside": true,
+        "cardsUnderHud": [],
+        "labelsInside": true,
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée."
+      },
+      "filteredFraming": {
+        "zoom": 0.55,
+        "scaleIsReadableFloor": true,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": true,
+        "allMatchesInsideAfterShowAll": true,
+        "underHudAfterShowAll": []
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-390-dark-fr.png",
+        "showAll": "regression/screenshots/show-all-390-dark-fr.png",
+        "filtered": "regression/screenshots/filtered-390-dark-fr.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "automaticFraming": {
+        "zoom": 0.785,
+        "scaleIsReadableFloor": false,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [],
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+        "limitMessageTruthful": false,
+        "showAll": {
+          "hidden": true,
+          "text": "Tout afficher (3)",
+          "kind": ""
+        },
+        "cardsUnderHud": []
+      },
+      "explicitShowAll": null,
+      "filteredFraming": {
+        "zoom": 0.915,
+        "scaleIsReadableFloor": false,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": false,
+        "allMatchesInsideAfterShowAll": null,
+        "underHudAfterShowAll": null
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-1280-light-en.png",
+        "showAll": null,
+        "filtered": "regression/screenshots/filtered-1280-light-en.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "automaticFraming": {
+        "zoom": 0.785,
+        "scaleIsReadableFloor": false,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [],
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+        "limitMessageTruthful": false,
+        "showAll": {
+          "hidden": true,
+          "text": "Tout afficher (3)",
+          "kind": ""
+        },
+        "cardsUnderHud": []
+      },
+      "explicitShowAll": null,
+      "filteredFraming": {
+        "zoom": 0.915,
+        "scaleIsReadableFloor": false,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": false,
+        "allMatchesInsideAfterShowAll": null,
+        "underHudAfterShowAll": null
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-1280-light-fr.png",
+        "showAll": null,
+        "filtered": "regression/screenshots/filtered-1280-light-fr.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "automaticFraming": {
+        "zoom": 0.785,
+        "scaleIsReadableFloor": false,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [],
+        "limitMessage": "#2 DependenciesCloseBlocks this taskWaits on this taskArrow points to the blocked task.",
+        "limitMessageTruthful": false,
+        "showAll": {
+          "hidden": true,
+          "text": "Tout afficher (3)",
+          "kind": ""
+        },
+        "cardsUnderHud": []
+      },
+      "explicitShowAll": null,
+      "filteredFraming": {
+        "zoom": 0.915,
+        "scaleIsReadableFloor": false,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": false,
+        "allMatchesInsideAfterShowAll": null,
+        "underHudAfterShowAll": null
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-1280-dark-en.png",
+        "showAll": null,
+        "filtered": "regression/screenshots/filtered-1280-dark-en.png"
+      },
+      "pass": true
+    },
+    {
+      "case": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "automaticFraming": {
+        "zoom": 0.785,
+        "scaleIsReadableFloor": false,
+        "neighbourhood": [
+          "chamberos/platform#1",
+          "chamberos/platform#3",
+          "chamberos/platform#2",
+          "acme/vanilla-sdk#11"
+        ],
+        "outsideViewport": [],
+        "limitMessage": "#2 DépendancesFermerBloque cette tâcheAttend cette tâcheLa flèche pointe vers la tâche bloquée.",
+        "limitMessageTruthful": false,
+        "showAll": {
+          "hidden": true,
+          "text": "Tout afficher (3)",
+          "kind": ""
+        },
+        "cardsUnderHud": []
+      },
+      "explicitShowAll": null,
+      "filteredFraming": {
+        "zoom": 0.915,
+        "scaleIsReadableFloor": false,
+        "matches": [
+          "chamberos/platform#5",
+          "chamberos/platform#3",
+          "chamberos/platform#2"
+        ],
+        "limitMessage": "",
+        "limitMessageTruthful": true,
+        "showAllVisible": false,
+        "allMatchesInsideAfterShowAll": null,
+        "underHudAfterShowAll": null
+      },
+      "screenshots": {
+        "framed": "regression/screenshots/framed-1280-dark-fr.png",
+        "showAll": null,
+        "filtered": "regression/screenshots/filtered-1280-dark-fr.png"
+      },
+      "pass": true
+    }
+  ]
+}

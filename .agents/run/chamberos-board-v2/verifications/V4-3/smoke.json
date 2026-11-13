@@ -1,0 +1,117 @@
+[
+  {
+    "name": "V4-1 shared sheets: seven surfaces, sixteen theme/language/viewport cases",
+    "verdict": "PASS",
+    "cases": 112
+  },
+  {
+    "name": "V4-1 phone sidebar: opens from the compact control and closes from the backdrop",
+    "verdict": "PASS",
+    "cases": 12
+  },
+  {
+    "name": "V4-1 applied filters, live count, removal and reset",
+    "verdict": "PASS",
+    "cases": 16
+  },
+  {
+    "name": "V4-1 dependency focus, directional accents, labels and persistent edge toggle",
+    "verdict": "PASS",
+    "cases": 16
+  },
+  {
+    "name": "V4-1 theme/language reload and product identity",
+    "verdict": "PASS",
+    "settingsPersist": true,
+    "brand": true
+  },
+  {
+    "name": "Hostile list/drawer/picker/client geometry and narrow touch targets, complete 16-case matrix",
+    "verdict": "PASS",
+    "cases": 16,
+    "failures": []
+  },
+  {
+    "name": "health",
+    "verdict": "PASS",
+    "status": 200,
+    "payload": {
+      "status": "ok",
+      "version": "1.2.1",
+      "uptime": 1
+    }
+  },
+  {
+    "name": "sign-in & grouped List view (1280 light EN)",
+    "verdict": "PASS",
+    "rows": 10,
+    "screenshot": ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/01-list-1280-light-en.png"
+  },
+  {
+    "name": "Canvas view with markdown note, dependency wires, and narrow smart-fit",
+    "verdict": "PASS",
+    "cards": 10,
+    "notes": 1,
+    "wires": 4,
+    "initialNarrowScale": 0.55,
+    "explicitFitScale": 0.2,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/02-canvas-notes-wires-1280-light-en.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/03-canvas-notes-wires-1280-dark-en.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/04-canvas-390-dark-en.png"
+    ]
+  },
+  {
+    "name": "Canvas controls non-vacuous containment, <html lang>, and 0px overhang (360/390/768/1280, EN/FR, light/dark, Undo 7-button)",
+    "verdict": "PASS",
+    "casesTested": 32,
+    "violations": [],
+    "artifact": ".agents/run/chamberos-board-v2/verifications/V4-3/canvas-measurements.json"
+  },
+  {
+    "name": "Any-Repo vanilla list, Markdown drawer, project switcher, and empty repo state",
+    "verdict": "PASS",
+    "vanillaGroupCheckPass": true,
+    "vanillaDrawerPass": true,
+    "emptyRepoPass": true,
+    "switcherPass": true,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/06-list-vanilla-390-light-fr.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/07-drawer-vanilla-1280-dark-en.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/08-drawer-vanilla-360-light-fr.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/09-project-switcher-390-dark-en.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/10-empty-repo-360-light-en.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/15-composer-390-dark-fr.png"
+    ]
+  },
+  {
+    "name": "Decisions & Blocked views (768 FR / 360 EN)",
+    "verdict": "PASS",
+    "decisionsCards": 1,
+    "blockedCards": 5,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/11-decisions-768-light-fr.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/12-blocked-360-dark-en.png"
+    ]
+  },
+  {
+    "name": "Operations, Archive, and Client Presentation Mode",
+    "verdict": "PASS",
+    "operationsStageParity": true,
+    "operationsStatCards": 6,
+    "archiveCards": 1,
+    "clientCards": 9,
+    "clientIncludesVanilla": true,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/13-operations-1280-light-fr.png",
+      ".agents/run/chamberos-board-v2/verifications/V4-3/screenshots/14-client-view-1280-dark-en.png"
+    ]
+  },
+  {
+    "name": "browser diagnostics (zero exceptions, zero console errors, zero CSP violations)",
+    "verdict": "PASS",
+    "exceptions": [],
+    "consoleErrors": [],
+    "cspViolations": []
+  }
+]
