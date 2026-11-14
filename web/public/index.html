@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -11,7 +11,10 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/theme.css">
-  <noscript><style>#login-view { display: block !important; } #board-view { display: none !important; } #app-sidebar { display: none !important; }</style></noscript>
+  <!-- Strict CSP forbids inline styles and scripts. This external file removes
+       the no-js class before first paint; without JavaScript the class stays
+       and theme.css reveals the sign-in screen instead of a dead board. -->
+  <script src="/js-enabled.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -56,6 +59,7 @@
         <button id="nav-list" class="sidebar-item active" type="button" data-view="list" title="List">
           <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
           <span class="sidebar-label" data-i18n="nav_list">List</span>
+          <span id="list-nav-badge" class="sidebar-badge" hidden>0</span>
         </button>
 
         <!-- 3. Decisions -->
@@ -381,6 +385,12 @@
             <button id="canvas-arrange" class="canvas-control-btn text-btn" type="button" title="Auto-arrange cards by dependency" aria-label="Auto-arrange cards" data-i18n-title="canvas_arrange"><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_arrange">Arrange</span></button>
             <button id="canvas-dependencies" class="canvas-control-btn" type="button" aria-label="Dependencies" title="Dependencies" aria-pressed="true"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6v6H3zM15 12h6v6h-6zM9 9h4v6h2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
             <button id="canvas-arrange-undo" class="canvas-control-btn text-btn" type="button" title="Undo last arrange" aria-label="Undo last arrange" data-i18n-title="canvas_arrange_undo" hidden><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 10l6 6M3 10h11a6 6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_arrange_undo">Undo</span></button>
+            <span class="canvas-control-sep" aria-hidden="true">|</span>
+            <div id="canvas-direction" class="canvas-direction" role="group" aria-label="Flow direction" data-i18n-aria-label="canvas_direction_label">
+              <button id="canvas-direction-auto" class="canvas-control-btn canvas-direction-btn" type="button" data-direction="auto" aria-pressed="true" title="Automatic direction" data-i18n-title="canvas_direction_auto_title" data-i18n="canvas_direction_auto">Auto</button>
+              <button id="canvas-direction-lr" class="canvas-control-btn canvas-direction-btn" type="button" data-direction="LR" aria-pressed="false" title="Left to right" data-i18n-title="canvas_direction_lr_title" data-i18n="canvas_direction_lr">LR</button>
+              <button id="canvas-direction-td" class="canvas-control-btn canvas-direction-btn" type="button" data-direction="TD" aria-pressed="false" title="Top to bottom" data-i18n-title="canvas_direction_td_title" data-i18n="canvas_direction_td">TD</button>
+            </div>
           </div>
           <div id="dependency-legend" class="dependency-legend" role="status" hidden></div>
           <div id="canvas-filter-empty" class="canvas-filter-empty" hidden></div>
@@ -417,7 +427,7 @@
         <p id="capture-hint" class="muted small" hidden>Capture ideas here. Enter adds a draft, never starts an agent.</p>
         <div id="empty-state" class="empty" hidden>
           <p>No tasks in this repository.</p>
-          <p class="muted" data-i18n="empty_description">Capture your next step or choose another project.</p>
+          <p id="empty-hint" class="muted empty-hint" data-i18n="empty_description">Capture your next step or choose another project.</p>
           <button id="empty-reset" class="button" type="button" hidden>Clear all</button>
           <div class="empty-actions"><button id="empty-create" class="button primary" type="button" data-i18n="create_task">Create a task</button><button id="empty-switch" class="button" type="button" data-i18n="switch_project">Switch project</button></div>
         </div>
@@ -466,6 +476,13 @@
             <button id="drawer-add-note-btn" class="button small drawer-add-note-btn" type="button" data-i18n="drawer_add_note" title="Add note on canvas">Add note</button>
             <button id="mark-done-btn" class="button" type="button" data-i18n="drawer_mark_done">Mark Done</button>
           </div>
+          <div class="row order-row">
+            <label for="order-input" class="sr-only" data-i18n="drawer_order_label">Execution order</label>
+            <input id="order-input" class="order-input" type="number" step="1" inputmode="numeric" min="0" max="1000000" />
+            <button id="order-apply" class="button" type="button" data-i18n="drawer_order_apply">Set order</button>
+            <button id="order-auto" class="button" type="button" data-i18n="drawer_order_auto">Auto</button>
+            <span id="order-status" class="muted small" role="status"></span>
+          </div>
         </section>
 
         <p id="drawer-notice" class="notice" role="status" aria-live="polite" hidden></p>
@@ -480,13 +497,13 @@
         <pre id="recoverable-drafts" class="notice" hidden></pre>
 
         <section class="panel" id="ac-section" aria-labelledby="ac-title">
-          <h2 id="ac-title" data-i18n="drawer_ac_title">Acceptance criteria</h2>
+          <div class="panel-heading-row"><h2 id="ac-title" data-i18n="drawer_ac_title">Acceptance criteria</h2><span id="ac-progress" class="panel-progress" hidden></span></div>
           <p id="no-ac" class="muted" data-i18n="drawer_no_ac" hidden>No acceptance criteria.</p>
           <ul id="ac-list" class="checklist"></ul>
         </section>
 
         <section class="panel" id="subtasks-section" aria-labelledby="subtasks-title">
-          <h2 id="subtasks-title" data-i18n="drawer_subtasks_title">Actionable subtasks</h2>
+          <div class="panel-heading-row"><h2 id="subtasks-title" data-i18n="drawer_subtasks_title">Actionable subtasks</h2><span id="subtasks-progress" class="panel-progress" hidden></span></div>
           <p id="no-subtasks" class="muted" data-i18n="drawer_no_subtasks" hidden>No actionable subtasks.</p>
           <ul id="subtasks-list" class="checklist"></ul>
         </section>
@@ -534,7 +551,7 @@
             </div>
           </div>
 
-          <div class="dependency-block">
+          <div class="dependency-block" id="blocking-block">
             <h3 class="dependency-subheading" data-i18n="drawer_blocking_title">Blocking</h3>
             <p id="no-blocking" class="muted small" data-i18n="drawer_no_blocking">Not blocking any tasks.</p>
             <div id="blocking-list" class="dependency-chips-list"></div>
@@ -611,10 +628,11 @@
     <button id="dock-canvas" type="button" data-i18n="nav_canvas">Canvas</button>
     <button id="dock-list" type="button" data-i18n="nav_list">List</button>
     <button id="dock-decisions" type="button"><span data-i18n="nav_decisions">Decisions</span><span id="dock-decisions-count" class="badge" hidden>0</span></button>
-    <button id="dock-blocked" type="button"><span data-i18n="nav_blocked">Blocked</span><span id="dock-blocked-count" class="badge" hidden>0</span></button>
+    <button id="dock-blocked" type="button"><span data-i18n="nav_blocked_short">Blocked</span><span id="dock-blocked-count" class="badge" hidden>0</span></button>
   </nav>
   <script type="module" src="/markdown.js"></script>
   <script type="module" src="/arrange.js"></script>
+  <script type="module" src="/flow-layout.js"></script>
   <script src="/app.js" defer></script>
 </body>
 </html>

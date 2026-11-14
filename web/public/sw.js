@@ -11,8 +11,10 @@ var SHELL_ASSETS = [
   '/index.html',
   '/theme.css',
   '/app.js',
+  '/js-enabled.js',
   '/markdown.js',
   '/arrange.js',
+  '/flow-layout.js',
   '/manifest.json',
   '/icon.svg',
   '/icon-192.png',
@@ -53,8 +55,10 @@ function isShellRequest(request, url) {
     pathname === '/' ||
     pathname === '/index.html' ||
     pathname === '/app.js' ||
+    pathname === '/js-enabled.js' ||
     pathname === '/markdown.js' ||
     pathname === '/arrange.js' ||
+    pathname === '/flow-layout.js' ||
     pathname === '/theme.css' ||
     pathname === '/manifest.json'
   );

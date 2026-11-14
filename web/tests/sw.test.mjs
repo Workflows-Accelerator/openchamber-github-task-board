@@ -44,12 +44,16 @@ test('sw.js defines versioned cache name 2.1.0, network-first shell (including m
   // Shell assets array & shell request matcher
   assert.ok(SW_SOURCE.includes("'/index.html'"));
   assert.ok(SW_SOURCE.includes("'/app.js'"));
+  assert.ok(SW_SOURCE.includes("'/js-enabled.js'"));
   assert.ok(SW_SOURCE.includes("'/markdown.js'"));
   assert.ok(SW_SOURCE.includes("'/arrange.js'"));
+  assert.ok(SW_SOURCE.includes("'/flow-layout.js'"));
   assert.ok(SW_SOURCE.includes("'/theme.css'"));
   assert.ok(SW_SOURCE.includes("'/manifest.json'"));
   assert.match(SW_SOURCE, /pathname === '\/markdown\.js'/);
   assert.match(SW_SOURCE, /pathname === '\/arrange\.js'/);
+  assert.match(SW_SOURCE, /pathname === '\/flow-layout\.js'/);
+  assert.match(SW_SOURCE, /pathname === '\/js-enabled\.js'/);
 });
 
 class MockResponse {

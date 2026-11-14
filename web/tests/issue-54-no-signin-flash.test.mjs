@@ -5,6 +5,8 @@ import fs from 'node:fs';
 
 const INDEX_HTML_PATH = 'web/public/index.html';
 const APP_JS_PATH = 'web/public/app.js';
+const THEME_CSS_PATH = 'web/public/theme.css';
+const JS_ENABLED_PATH = 'web/public/js-enabled.js';
 
 function createMockBrowser(storage = {}, initialHidden = {}) {
   const nodes = new Map();
@@ -474,15 +476,20 @@ test('1.f When GET /api/session fails with network error and no cached board exi
   assert.equal(browserWithCache.app.state.board.issues.length, 1);
 });
 
-test('2.a Hostile 1: Static HTML noscript fallback reveals #login-view, and #board-toolbar is hidden until auth confirms', async () => {
+test('2.a Hostile 1: Static HTML no-JS fallback reveals #login-view, and #board-toolbar is hidden until auth confirms', async () => {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+  const jsEnabled = fs.readFileSync(JS_ENABLED_PATH, 'utf8');
 
-  // Must include a noscript style ensuring login-view displays and board-view is hidden if JS is disabled
-  assert.match(
-    html,
-    /<noscript>[\s\S]*#login-view[\s\S]*display:\s*block[\s\S]*#board-view[\s\S]*display:\s*none[\s\S]*<\/noscript>/,
-    'static HTML must provide a noscript fallback that reveals login-view when JS is disabled',
-  );
+  // Strict CSP forbids the old inline <noscript><style> block. The html starts
+  // with .no-js, an external script removes it before first paint, and CSS
+  // reveals the sign-in screen only while the class remains (scripting off).
+  assert.match(html, /<html[^>]*\bclass="no-js"/, 'html must start in the no-js state');
+  assert.match(html, /<script src="\/js-enabled\.js"><\/script>/, 'the no-js class must be removed by an external script');
+  assert.match(jsEnabled, /classList\.remove\(['"]no-js['"]\)/, 'js-enabled.js must remove the no-js class');
+  assert.match(css, /html\.no-js #login-view\s*\{[^}]*display:\s*block/, 'CSS must reveal #login-view without JavaScript');
+  assert.match(css, /html\.no-js #board-view\s*\{[^}]*display:\s*none/, 'CSS must hide #board-view without JavaScript');
+  assert.doesNotMatch(html, /<noscript>\s*<style/, 'no inline <style> is allowed under the strict CSP');
 
   // #board-toolbar must have the hidden attribute in static index.html
   assert.match(

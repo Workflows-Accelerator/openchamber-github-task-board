@@ -125,6 +125,7 @@ function repositorySpec(input, index) {
     failing: Boolean(input.failing),
     issues: clonedIssues,
     comments,
+    parents: input.parents ? structuredClone(input.parents) : {},
     maxIssueNumber: clonedIssues.reduce((max, i) => Math.max(max, i.number), 0),
     dependencies: input.dependencies ? structuredClone(input.dependencies) : [],
     openIssuesCount: input.openIssuesCount,
@@ -178,10 +179,13 @@ export async function startFakeGitHub(options = {}) {
     unknownRepoHits: [],
     failAll: false,
     failDiscovery: false,
+    discoveryResetAt: null,
     injectedResponse: null,
     discoveryResponse: null,
     honorIfMatch: options.honorIfMatch ?? false,
     honorIfNoneMatch: options.honorIfNoneMatch ?? false,
+    // Models a GitHub schema that predates the native `parent` sub-issue field.
+    rejectParentField: false,
     failLabels: options.failLabels ?? false,
     issueCreateHook: options.issueCreateHook ?? null,
     beforePatchHook: options.beforePatchHook ?? null,
@@ -244,10 +248,15 @@ export async function startFakeGitHub(options = {}) {
       for (const [name, value] of Object.entries(defaultHeaders)) {
         if (!res.hasHeader(name)) res.setHeader(name, value);
       }
-      for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+      for (const [name, value] of Object.entries(headers)) {
+        // null explicitly suppresses a default header, which is how GitHub's
+        // headerless secondary rate limit is simulated.
+        if (value === null) res.removeHeader(name);
+        else res.setHeader(name, value);
+      }
       res.statusCode = status;
       loggedRequest.responseStatus = status;
-      res.end(payload === undefined ? '' : JSON.stringify(payload));
+      res.end(payload === undefined ? '' : (typeof payload === 'string' ? payload : JSON.stringify(payload)));
     };
 
     if (state.injectedResponse) {
@@ -262,11 +271,38 @@ export async function startFakeGitHub(options = {}) {
       if (req.headers.authorization !== `Bearer ${token}`) {
         return send(401, { message: 'Bad credentials' });
       }
+      // The discovery failure is simulated at the HTTP layer, exactly where
+      // GitHub would answer, so the client's own error classification runs.
+      if (state.failDiscovery === 'network') {
+        req.socket.destroy();
+        return;
+      }
+      if (state.failDiscovery === 'auth') {
+        return send(401, { message: 'Bad credentials' });
+      }
+      if (state.failDiscovery === 'forbidden') {
+        // A fine-grained PAT, classic scope, SAML SSO or IP allowlist refusal.
+        return send(403, { message: 'Resource not accessible by personal access token' });
+      }
+      if (state.failDiscovery === 'rate_limited') {
+        const reset = state.discoveryResetAt ?? Math.floor(Date.now() / 1000) + 900;
+        return send(403, { message: 'API rate limit exceeded for user ID 1.' }, {
+          'x-ratelimit-remaining': '0',
+          'x-ratelimit-reset': String(reset),
+        });
+      }
+      if (state.failDiscovery === 'rate_limited_secondary') {
+        // GitHub's secondary limit can answer 403 without any x-ratelimit-reset.
+        return send(403, { message: 'You have exceeded a secondary rate limit.' }, {
+          'x-ratelimit-remaining': '4999',
+          'x-ratelimit-reset': null,
+        });
+      }
       if (state.failDiscovery) {
         return send(500, { message: 'Injected repository discovery failure' });
       }
       if (state.discoveryResponse) {
-        return send(state.discoveryResponse.status, state.discoveryResponse.payload);
+        return send(state.discoveryResponse.status, state.discoveryResponse.payload, state.discoveryResponse.headers);
       }
       const requestedPerPage = Number(url.searchParams.get('per_page') ?? perPage);
       const size = requestedPerPage > 0 ? requestedPerPage : perPage;
@@ -566,6 +602,24 @@ export async function startFakeGitHub(options = {}) {
         return send(404, { message: 'Not Found' });
       }
 
+      if (parts[3] === 'issues' && parts[5] === 'parent' && req.method === 'GET') {
+        const number = Number(parts[4]);
+        const issue = spec.issues.find((i) => i.number === number);
+        if (!issue) return send(404, { message: 'Not Found' });
+        // A schema or endpoint that predates native sub-issues has no parent
+        // resource at all.
+        if (state.rejectParentField) return send(404, { message: 'Not Found' });
+        const ref = spec.parents?.[number];
+        if (!ref) return send(404, { message: 'Not Found' });
+        const parentSpec = findRepo(ref.repo);
+        const parentIssue = parentSpec?.issues.find((i) => i.number === ref.number);
+        if (!parentIssue) return send(404, { message: 'Not Found' });
+        return send(200, {
+          ...parentIssue,
+          repository_url: `https://api.github.com/repos/${ref.repo}`,
+        });
+      }
+
       const issueMatch = new RegExp(`^/repos/${spec.repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/issues/(\\d+)$`).exec(
         url.pathname,
       );
@@ -576,7 +630,15 @@ export async function startFakeGitHub(options = {}) {
         const issue = spec.issues[index];
 
         if (req.method === 'GET') {
-          return send(200, issue, { etag: etagFor(issue) });
+          const issueEtag = etagFor(issue);
+          const ifNoneMatch = req.headers['if-none-match'];
+          if (state.honorIfNoneMatch && ifNoneMatch) {
+            const cleanMatch = ifNoneMatch.replace(/^W\//, '');
+            if (cleanMatch === issueEtag.replace(/^W\//, '')) {
+              return send(304, undefined, { etag: issueEtag });
+            }
+          }
+          return send(200, issue, { etag: issueEtag });
         }
 
         if (req.method === 'PATCH') {
@@ -674,6 +736,35 @@ export async function startFakeGitHub(options = {}) {
         }
       }
 
+      if (query.includes('IssueDependencies')) {
+        const targetRepo = variables.owner && variables.name
+          ? `${variables.owner}/${variables.name}`
+          : specs[0]?.repo;
+        const targetSpec = specs.find((s) => s.repo.toLowerCase() === String(targetRepo).toLowerCase()) ?? specs[0];
+        if (!targetSpec) {
+          return send(200, { data: { repository: null }, errors: [{ type: 'NOT_FOUND', message: 'Repository not found' }] });
+        }
+        if (state.rejectParentField && query.includes('parent')) {
+          return send(200, {
+            data: { repository: null },
+            errors: [{ type: 'BAD_USER_INPUT', message: "Field 'parent' doesn't exist on type 'Issue'" }],
+          });
+        }
+        const issue = targetSpec.issues.find((i) => i.number === variables.number);
+        let parent = null;
+        const ref = targetSpec.parents?.[variables.number];
+        if (issue && ref) {
+          const parentSpec = findRepo(ref.repo);
+          const parentIssue = parentSpec?.issues.find((i) => i.number === ref.number);
+          parent = {
+            number: ref.number,
+            title: parentIssue?.title ?? null,
+            repository: { nameWithOwner: ref.repo },
+          };
+        }
+        return send(200, { data: { repository: { issue: { parent } } } });
+      }
+
       if (query.includes('transferIssue')) {
         const issueId = variables.issueId ?? variables.input?.issueId;
         const repositoryId = variables.repositoryId ?? variables.input?.repositoryId;
@@ -755,6 +846,13 @@ export async function startFakeGitHub(options = {}) {
         if (!targetSpec) {
           return send(200, { data: { repository: null }, errors: [{ type: 'NOT_FOUND', message: 'Repository not found' }] });
         }
+        const includeParent = query.includes('parent');
+        if (state.rejectParentField && includeParent) {
+          return send(200, {
+            data: { repository: null },
+            errors: [{ type: 'BAD_USER_INPUT', message: "Field 'parent' doesn't exist on type 'Issue'" }],
+          });
+        }
         const nodes = targetSpec.issues.map((issue) => {
           const blockers = (targetSpec.dependencies || [])
             .filter((d) => d.blockedNumber === issue.number)
@@ -775,12 +873,26 @@ export async function startFakeGitHub(options = {}) {
                 },
               };
             });
+          const ref = targetSpec.parents?.[issue.number];
+          const parentSpec = ref ? findRepo(ref.repo) : null;
+          const parentIssue = parentSpec?.issues.find((i) => i.number === ref.number);
           return {
             id: issue.node_id,
             number: issue.number,
             blockedBy: {
               nodes: blockers,
             },
+            ...(includeParent
+              ? {
+                  parent: ref
+                    ? {
+                        number: ref.number,
+                        title: parentIssue?.title ?? null,
+                        repository: { nameWithOwner: ref.repo },
+                      }
+                    : null,
+                }
+              : {}),
           };
         });
         return send(200, {
@@ -834,10 +946,18 @@ export async function startFakeGitHub(options = {}) {
       state.failAll = Boolean(value);
     },
     setDiscoveryFailure(value) {
-      state.failDiscovery = Boolean(value);
+      // true / 'server' -> 500, 'auth' -> 401, 'forbidden' -> 403 permission
+      // refusal, 'rate_limited' -> 403 with a reset header,
+      // 'rate_limited_secondary' -> 403 without any reset header,
+      // 'network' -> the connection is dropped mid-request.
+      state.failDiscovery = value === true ? 'server' : (value || false);
     },
-    setDiscoveryResponse(status, payload = {}) {
-      state.discoveryResponse = status ? { status, payload } : null;
+    setDiscoveryResetAt(seconds) {
+      // null clears the reset so a headerless response can be simulated.
+      state.discoveryResetAt = seconds === null || seconds === undefined ? null : Number(seconds);
+    },
+    setDiscoveryResponse(status, payload = {}, headers = {}) {
+      state.discoveryResponse = status ? { status, payload, headers } : null;
     },
     setRepoAccessible(repository, value) {
       const spec = findRepo(repository);
@@ -881,6 +1001,9 @@ export async function startFakeGitHub(options = {}) {
     },
     setHonorIfNoneMatch(value) {
       state.honorIfNoneMatch = Boolean(value);
+    },
+    setRejectParentField(value) {
+      state.rejectParentField = Boolean(value);
     },
     setFailLabels(value) {
       state.failLabels = value;

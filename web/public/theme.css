@@ -207,6 +207,20 @@
   --note-purple-fg: #2c1a45;
 }
 
+/* Status text on a tinted status chip: the one word that says why a task is
+   listed must clear AA on both themes (8.35:1 dark, 13.15:1 light). */
+:root {
+  --badge-status-fg: #93C5FD;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --badge-status-fg: #1E293B;
+  }
+}
+:root[data-theme="light"] {
+  --badge-status-fg: #1E293B;
+}
+
 svg,
 .icon,
 .icon-sm {
@@ -926,7 +940,7 @@ label {
 
 .badge.status {
   background: var(--prim-subtle);
-  color: var(--prim);
+  color: var(--badge-status-fg);
 }
 
 .badge.attention {
@@ -1297,6 +1311,20 @@ input[type="text"].search-input:focus,
   white-space: nowrap;
   overflow-x: auto;
 }
+/* The scope label must never push the toolbar controls outside the viewport.
+   The full cause sentence lives in #notice and #empty-state. */
+.status-strip-scope {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 34ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-strip > button,
+.status-strip-count,
+.status-strip-freshness {
+  flex: 0 0 auto;
+}
 .status-strip-brand {
   font-weight: 600;
   color: var(--fg);
@@ -1648,6 +1676,15 @@ input[type="text"].search-input:focus,
   display: none !important;
 }
 
+/* A discovery failure empties the board. Canvas must not keep stale cards on
+   screen or interactive, so the viewport yields to the failure state. */
+#board-view.mode-canvas.is-discovery-failed #canvas-viewport {
+  display: none;
+}
+#board-view.mode-canvas.is-discovery-failed #empty-state {
+  display: block !important;
+}
+
 .canvas-viewport {
   position: relative;
   flex: 1;
@@ -1855,7 +1892,7 @@ input[type="text"].search-input:focus,
 .canvas-card-status-chip.status-in-progress,
 .canvas-card-status-chip.status-planned {
   background: var(--prim-subtle);
-  color: var(--prim);
+  color: var(--badge-status-fg);
 }
 
 .canvas-card-status-chip.status-done {
@@ -1867,6 +1904,246 @@ input[type="text"].search-input:focus,
   background: var(--warn-subtle);
   color: var(--warn);
 }
+
+/* ------------------------------------------------------------------
+   Flow graph: repository + parent-issue groups
+   Collapsed by default so a board of hundreds of tasks stays scannable.
+   ------------------------------------------------------------------ */
+.canvas-group-card {
+  position: absolute;
+  width: 280px;
+  min-height: 96px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+  box-shadow: 0 2px 8px rgba(24, 22, 19, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1;
+}
+
+.canvas-group-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 16px rgba(24, 22, 19, 0.1);
+}
+
+.canvas-group-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.canvas-group-repo {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvas-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.canvas-group-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.canvas-group-count strong {
+  color: var(--fg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.canvas-group-count.is-running strong {
+  color: var(--succ);
+}
+
+.canvas-group-count.is-needs-me strong {
+  color: var(--warn);
+}
+
+.canvas-group-toggle {
+  flex: 0 0 auto;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surf-muted);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.canvas-group-toggle:hover {
+  border-color: var(--prim);
+  color: var(--prim);
+}
+
+.canvas-group-toggle:focus-visible {
+  outline: 2px solid var(--prim);
+  outline-offset: 2px;
+}
+
+/* An expanded group keeps a quiet frame and header behind its cards. */
+.canvas-group-frame {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed var(--border);
+  border-radius: var(--rad-lg);
+  background: var(--surf-muted);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.canvas-group-frame-head {
+  height: 36px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.canvas-group-frame-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+}
+
+.canvas-group-frame-repo {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------
+   Agent activity: a live session rotates, an idle in-progress card
+   stays a steady green so the two are never confused.
+   ------------------------------------------------------------------ */
+.canvas-card-agent-active {
+  border-color: var(--succ);
+}
+
+.canvas-card-agent-active::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from 0deg, var(--succ) 0deg, transparent 110deg, transparent 250deg, var(--succ) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: canvas-agent-rotate 2.4s linear infinite;
+  pointer-events: none;
+}
+
+.canvas-card-in-progress-idle {
+  border-color: var(--succ);
+  box-shadow: inset 0 0 0 1px var(--succ-subtle);
+}
+
+.canvas-card-in-progress-idle::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--succ);
+  pointer-events: none;
+}
+
+.canvas-card-agent-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--succ);
+}
+
+.canvas-card-agent-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--succ);
+  animation: canvas-agent-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes canvas-agent-rotate {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes canvas-agent-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* canvas-agent-rotate: the ring stays a steady green border, no rotation. */
+  .canvas-card-agent-active::before { animation: none; }
+  .canvas-card-agent-badge::before { animation: none; }
+}
+
+/* Flow direction segmented control and drawer order row */
+.canvas-direction {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.canvas-direction-btn {
+  min-width: 34px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+
+.canvas-direction-btn[aria-pressed="true"] {
+  background: var(--prim-subtle);
+  color: var(--prim);
+  border-color: var(--prim);
+}
+
+.order-row {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.order-input {
+  width: 96px;
+}
+
 
 .canvas-card-title {
   /* The framing floor (0.55) keeps a 280px card readable on a phone: 16px at
@@ -1908,7 +2185,7 @@ input[type="text"].search-input:focus,
 .canvas-card-badge {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 .canvas-card-prio {
@@ -1984,6 +2261,20 @@ input[type="text"].search-input:focus,
   fill: none;
   stroke-linecap: round;
   transition: transform 160ms ease-out, opacity 160ms ease-out;
+}
+
+/* Edges between repository/parent groups, including collapsed ones. */
+.canvas-flow-wire {
+  fill: none;
+  stroke: var(--wire-open);
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.canvas-flow-wire.is-cross-group {
+  stroke-dasharray: 6 5;
 }
 
 .canvas-wire.wire-open {
@@ -3448,7 +3739,8 @@ body:has(#client-view:not([hidden])) #client-presentation-banner { display: none
   body:has(#login-view:not([hidden])) .compact-header { display: none; }
   body:has(#login-view:not([hidden])) #app-sidebar { display: none; }
   body:has(#login-view:not([hidden])) .sidebar-backdrop { display: none !important; }
-  #compact-nav-dock button { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 48px; min-width: 44px; font-size: 11.5px; font-weight: 500; white-space: nowrap; padding: 4px 2px; border: 0; border-radius: 8px; background: transparent; color: var(--fg-muted); }
+  #compact-nav-dock button { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 48px; min-width: 0; overflow: hidden; font-size: 11.5px; font-weight: 500; white-space: nowrap; padding: 4px 2px; border: 0; border-radius: 8px; background: transparent; color: var(--fg-muted); }
+  #compact-nav-dock button > span:not(.badge) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   #compact-nav-dock .badge { padding: 1px 5px; font-size: 10.5px; line-height: 1.2; flex-shrink: 0; }
   #compact-nav-dock button[aria-current="page"] { color: var(--fg); background: var(--surf); }
   #board-toolbar, #status-strip { display: none; }
@@ -3706,3 +3998,34 @@ body.sheet-open { overflow: hidden; }
 .canvas-card-review-kind { font-weight: 600; }
 .canvas-card-review-text { color: var(--fg-muted); overflow: hidden; }
 .canvas-card-review-missing { color: var(--fg-muted); border-left-color: var(--err); background: var(--err-subtle); }
+
+/* A malformed review item is a different failure from a missing one. */
+.canvas-card-review-malformed { color: var(--fg-muted); border-left-color: var(--err); background: var(--err-subtle); }
+.badge.human-review-badge.is-malformed { background: var(--err-subtle); color: var(--err); }
+.badge.human-review-badge.is-missing { background: var(--warn-subtle); color: var(--warn); }
+
+/* Keep the one primary action reachable: when Details or the free-text field
+   pushes the Answer button past the fold, it stays pinned to the drawer edge. */
+.human-review .question-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 8px 0;
+  background: var(--surf);
+}
+
+/* Progress is a number on the row, card, group and panel, never a wall of boxes. */
+.progress-badge { font-family: var(--font-mono); }
+.progress-badge[data-pending="0"] { color: var(--fg-muted); }
+.panel-heading-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.panel-heading-row h2 { margin: 0 0 8px; }
+.panel-progress { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+.canvas-group-count.is-progress { color: var(--fg-muted); }
+.canvas-card-badge.is-pending { color: var(--warn); }
+.canvas-card-badge[data-pending="0"] { color: var(--fg-muted); }
+
+/* No-JS fallback without inline styles: js-enabled.js removes .no-js before
+   first paint; if scripting is off, the sign-in screen is the only surface. */
+html.no-js #login-view { display: block !important; }
+html.no-js #board-view { display: none !important; }
+html.no-js #app-sidebar { display: none !important; }

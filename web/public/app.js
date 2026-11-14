@@ -44,6 +44,20 @@
     canvasFitFloored: false,
     canvasFitCount: 0,
     canvasFitLimited: false,
+    // Flow graph state. The server owns direction, expanded groups and manual
+    // positions; the client only resolves Auto against the viewport.
+    canvasLayout: null,
+    canvasDirectionMode: 'auto',
+    canvasResolvedDirection: 'LR',
+    canvasExpandedGroups: new Set(),
+    canvasManualPositions: {},
+    // Monotonic revisions keep an older layout PATCH response from overwriting
+    // a newer local position when responses arrive out of order.
+    canvasLayoutRevision: 0,
+    canvasLayoutAppliedRevision: 0,
+    canvasGroups: [],
+    canvasFlowPositions: null,
+    canvasFlowEdges: [],
     // The viewport the user had before the first narrowing filter, so clearing
     // the last filter can put them back instead of re-framing.
     filterView: null,
@@ -55,6 +69,9 @@
     archive: { backburner: [], closed: [], totalClosed: 0, hasMore: false, offset: 0, limit: 50, activeTab: 'backburner' },
     operations: null,
     clientPresentationMode: false,
+    // The active discovery failure, kept so every surface can re-render it in
+    // the current language while the board itself stays empty.
+    discoveryFailure: null,
   };
 
   function identity(issue) {
@@ -422,10 +439,16 @@
       if (payload && payload.error === 'discovery_unavailable') {
         // The server refused before dispatch. That is a definite refusal, not
         // an ambiguous write outcome, so it must never enter the UNKNOWN set.
-        throw new ApiError('discovery_unavailable', response.status, {
+        // The cause and reset travel with the 503, so the sentence is localized
+        // and never tells the user to retry a token or permission refusal.
+        var discoveryDict = I18N[getLanguage()] || I18N.en;
+        var discoveryPayload = {
           error: 'discovery_unavailable',
-          message: 'Discovery failed; nothing was sent. Refresh to try again',
-        });
+          errorKind: payload.errorKind || null,
+          errorResetAt: payload.errorResetAt || null,
+          message: discoveryFailureMessage(payload, discoveryDict),
+        };
+        throw new ApiError('discovery_unavailable', response.status, discoveryPayload);
       }
 
       // A note refusal has its own cause (permission or a locked issue) and its
@@ -479,6 +502,17 @@
       if (response.status === 401) {
         showLogin();
       }
+      if (payload && payload.error === 'discovery_unavailable') {
+        // Reads carry the same cause as writes; localize it once here so every
+        // caller (drawer, board, archive) shows the same honest sentence.
+        var readDict = I18N[getLanguage()] || I18N.en;
+        throw new ApiError('discovery_unavailable', response.status, {
+          error: 'discovery_unavailable',
+          errorKind: payload.errorKind || null,
+          errorResetAt: payload.errorResetAt || null,
+          message: discoveryFailureMessage(payload, readDict),
+        });
+      }
       throw new ApiError((payload && payload.error) || 'request_failed', response.status, payload);
     }
     if (cacheable && jsonParsed && response.headers && response.headers.get) {
@@ -493,6 +527,13 @@
 
   function clearRenderedData() {
     getResponses.clear();
+    // Wiping every surface must also end a discovery failure: otherwise the
+    // class and the state outlive the data they described.
+    state.discoveryFailure = null;
+    var clearedBoardView = document.getElementById('board-view');
+    if (clearedBoardView && clearedBoardView.classList) clearedBoardView.classList.remove('is-discovery-failed');
+    var clearedNewTask = document.getElementById('new-task-btn');
+    if (clearedNewTask) clearedNewTask.disabled = false;
     ['task-list', 'detail-meta', 'question-list', 'human-list', 'ac-list', 'subtasks-list', 'filter-chips', 'repo-options-list', 'agent-note-activity'].forEach(function (id) {
       var node = document.getElementById(id);
       if (node) node.textContent = '';
@@ -535,6 +576,11 @@
     state.conflict = false;
     state.loadedAt = null;
     state.stale = false;
+    // Signing out ends any discovery failure too: its banner and the disabled
+    // capture button must not survive into the next session.
+    state.discoveryFailure = null;
+    if ($('board-view') && $('board-view').classList) $('board-view').classList.remove('is-discovery-failed');
+    if ($('new-task-btn')) $('new-task-btn').disabled = false;
     state.readGeneration++;
     state.boardGeneration++;
     state.pending = null;
@@ -673,7 +719,7 @@
       nav_canvas: 'Canvas',
       nav_list: 'List',
       nav_decisions: 'Decisions',
-      nav_blocked: 'Blocked',
+      nav_blocked: 'Blocked & waiting',
       nav_discussions: 'Discussions',
       nav_operations: 'Operations overview',
       nav_archive: 'Archive',
@@ -768,6 +814,47 @@
       arrange_scope_all: 'All cards (cards you placed by hand will also move)',
       arrange_confirm: 'Arrange',
       arrange_cancel: 'Cancel',
+      canvas_direction_label: 'Flow direction',
+      canvas_direction_auto: 'Auto',
+      canvas_direction_lr: 'LR',
+      canvas_direction_td: 'TD',
+      canvas_direction_auto_title: 'Automatic direction (left to right on wide screens, top to bottom on narrow ones)',
+      canvas_direction_lr_title: 'Left to right',
+      canvas_direction_td_title: 'Top to bottom',
+      canvas_group_standalone: 'Standalone',
+      canvas_group_expand: 'Expand',
+      canvas_group_collapse: 'Collapse',
+      canvas_group_total: 'tasks',
+      canvas_group_running: 'running',
+      canvas_group_needs_me: 'needs me',
+      canvas_group_done: 'done',
+      canvas_group_checklist: 'checklist',
+      canvas_group_questions: 'questions',
+      needs_me: 'Needs me',
+      nav_blocked_short: 'Blocked',
+      phase_draft: 'draft phase',
+      phase_exploration: 'exploration phase',
+      phase_alignment: 'alignment phase',
+      phase_planning: 'planning phase',
+      phase_execution: 'execution phase',
+      phase_verification: 'verification phase',
+      phase_human_verification: 'human verification phase',
+      phase_publication: 'publication phase',
+      phase_done: 'done phase',
+      phase_archive: 'archive phase',
+      attention_decision: 'Needs a decision',
+      attention_permission: 'Needs permission',
+      attention_review: 'Needs review',
+      progress_checklist_title: '{done} of {total} checklist items done',
+      progress_questions_title: '{done} of {total} questions answered',
+      canvas_agent_running: 'Agent running',
+      canvas_agent_idle: 'In progress',
+      drawer_order_label: 'Execution order',
+      drawer_order_apply: 'Set order',
+      drawer_order_auto: 'Auto',
+      canvas_layout_error: 'Canvas not saved. Your view is kept locally; try again.',
+      canvas_layout_signed_out: 'Canvas not saved: your session expired. Sign in again.',
+      canvas_layout_forbidden: 'Canvas not saved: this board refused the change.',
       drawer_add_note: 'Add note',
       agent_note_too_long: 'The board limits notes to 4,000 characters. Shorten your text and retry.',
       agent_note_rate_limited: 'GitHub is limiting requests. Your text is kept. Wait before retrying.',
@@ -798,17 +885,19 @@
       human_review_kind_question: 'Question',
       human_review_missing: 'Waiting for an artifact',
       human_review_missing_help: 'This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers.',
+      human_review_malformed: 'The review item is broken',
+      human_review_malformed_help: 'The agent attached something to review, but the board cannot use it. Ask the agent to fix it; refreshing this page will not help.',
       human_review_settled: 'The question is answered. The agent has to pick this task up again.',
       human_review_settled_title: 'Answer received',
-      human_review_reason_no_section: 'The body has no "### Human Review:" section.',
-      human_review_reason_no_artifact: 'The section has no "- Artifact:" line.',
-      human_review_reason_unknown_artifact: 'The "- Artifact:" value must be image, video, link or question.',
-      human_review_reason_duplicate_field: 'The section repeats one of its fields.',
-      human_review_reason_missing_url: 'The artifact has no "- URL:" line.',
-      human_review_reason_invalid_url: 'The "- URL:" value must be an http:// or https:// link of at most 2048 characters, with no spaces.',
-      human_review_reason_insecure_url: 'An image artifact needs an https:// URL so the board can display it inline.',
-      human_review_reason_missing_instruction: 'The artifact has no one-line "- Instruction:" line.',
-      human_review_reason_long_instruction: 'The "- Instruction:" line is too long.',
+      human_review_reason_no_section: 'The agent did not attach a review item to this task.',
+      human_review_reason_no_artifact: 'The review item does not say what kind it is.',
+      human_review_reason_unknown_artifact: 'The review item is not one the board can show: a screenshot, a video, a link or a question.',
+      human_review_reason_duplicate_field: 'The review item repeats one of its fields.',
+      human_review_reason_missing_url: 'The review item has no URL.',
+      human_review_reason_invalid_url: 'The artifact URL must be an http:// or https:// link of at most 2048 characters, with no spaces.',
+      human_review_reason_insecure_url: 'A screenshot needs an https:// URL so the board can display it inline.',
+      human_review_reason_missing_instruction: 'The review item has no one-line instruction.',
+      human_review_reason_long_instruction: 'The instruction line is too long.',
       human_review_reason_question_answered: 'The question is already answered.',
       human_review_image_alt: 'Review artifact for this task',
       human_review_image_failed: 'The image could not be loaded. Open the link or ask the agent for a working screenshot.',
@@ -816,8 +905,8 @@
       human_review_question_instruction: 'Answer the question below.',
       human_review_agent_body: 'The agent is reviewing this task. Nothing is asked of you.',
       human_review_readonly: 'Read-only view: answering is disabled here.',
-      human_review_reason_missing_question: 'The body has no unanswered "### Open Questions:" item.',
-      human_review_reason_missing_options: 'The question has no preset answer. Add at least one "  - label :: gist :: details" line so it can be answered with one click.',
+      human_review_reason_missing_question: 'The task has no unanswered question to answer.',
+      human_review_reason_missing_options: 'The question has no preset answer. Add at least one preset answer so it can be settled with one click.',
       note_add: 'Add note',
       note_delete: 'Delete note',
       note_delete_confirm: 'Delete note?',
@@ -836,6 +925,15 @@
       err_self_link: 'An issue cannot be blocked by itself.',
       err_github_forbidden: 'You do not have permission to change links on this repository.',
       notice_dependencies_degraded: 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.',
+      discovery_failed_auth: 'The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.',
+      discovery_failed_rate_limited: 'GitHub is limiting the board temporarily. Refresh after {time}.',
+      discovery_failed_rate_limited_no_reset: 'GitHub is limiting the board temporarily. Try again shortly.',
+      discovery_failed_network: 'GitHub is unreachable from the server. Your session is intact; try again shortly.',
+      discovery_failed_other: 'Discovery failed — tasks are not refreshed. Refresh to try again.',
+      discovery_short_auth: 'GitHub token refused',
+      discovery_short_rate_limited: 'GitHub rate limit',
+      discovery_short_network: 'GitHub unreachable',
+      discovery_short_other: 'Discovery failed',
       decisions_title: 'Decisions',
       decisions_desc: 'Every unanswered open question across repositories, grouped by issue, newest activity first.',
       decisions_no_items: 'No open questions requiring decisions.',
@@ -844,7 +942,7 @@
       decisions_btn_answer: 'Answer',
       decisions_answering: 'Saving…',
       decisions_answered_notice: 'Question answered.',
-      blocked_title: 'Blocked',
+      blocked_title: 'Blocked & waiting',
       blocked_desc: 'Issues requiring human action or blocked by open dependencies.',
       blocked_no_items: 'No blocked tasks.',
       blocked_client_mode: 'Human action required (details hidden in presentation mode).',
@@ -852,7 +950,7 @@
       blocked_by_dependencies: 'Blocked by',
       blocked_human_tasks_title: 'Human Tasks',
       blocked_group_human: 'Waiting on Human Action',
-      blocked_group_dependencies: 'Blocked by Dependencies',
+      blocked_group_dependencies: 'Waiting on other tasks',
       operations_title: 'Operations overview',
       operations_desc: 'Real system metrics and distribution across all connected projects.',
       operations_open: 'Open',
@@ -907,7 +1005,7 @@
       nav_canvas: 'Canevas',
       nav_list: 'Liste',
       nav_decisions: 'Décisions',
-      nav_blocked: 'Bloqué',
+      nav_blocked: 'Bloquées et en attente',
       nav_discussions: 'Discussions',
       nav_operations: 'Opérations',
       nav_archive: 'Archives',
@@ -1002,6 +1100,47 @@
       arrange_scope_all: 'Toutes les cartes (les cartes déplacées manuellement bougeront aussi)',
       arrange_confirm: 'Organiser',
       arrange_cancel: 'Annuler',
+      canvas_direction_label: 'Sens du flux',
+      canvas_direction_auto: 'Auto',
+      canvas_direction_lr: 'LR',
+      canvas_direction_td: 'TD',
+      canvas_direction_auto_title: 'Sens automatique (gauche à droite sur grand écran, haut en bas sur écran étroit)',
+      canvas_direction_lr_title: 'De gauche à droite',
+      canvas_direction_td_title: 'De haut en bas',
+      canvas_group_standalone: 'Sans parent',
+      canvas_group_expand: 'Développer',
+      canvas_group_collapse: 'Réduire',
+      canvas_group_total: 'tâches',
+      canvas_group_running: 'en cours',
+      canvas_group_needs_me: 'à traiter',
+      canvas_group_done: 'terminées',
+      canvas_group_checklist: 'liste',
+      canvas_group_questions: 'questions',
+      needs_me: 'À traiter',
+      nav_blocked_short: 'Bloquées',
+      phase_draft: 'Phase : brouillon',
+      phase_exploration: 'Phase : exploration',
+      phase_alignment: 'Phase : alignement',
+      phase_planning: 'Phase : planification',
+      phase_execution: 'Phase : exécution',
+      phase_verification: 'Phase : vérification',
+      phase_human_verification: 'Phase : vérification humaine',
+      phase_publication: 'Phase : publication',
+      phase_done: 'Phase : terminé',
+      phase_archive: 'Phase : archivé',
+      attention_decision: 'Décision attendue',
+      attention_permission: 'Autorisation attendue',
+      attention_review: 'Revue attendue',
+      progress_checklist_title: '{done} éléments cochés sur {total}',
+      progress_questions_title: '{done} questions répondues sur {total}',
+      canvas_agent_running: 'Agent actif',
+      canvas_agent_idle: 'En cours',
+      drawer_order_label: 'Ordre d’exécution',
+      drawer_order_apply: 'Définir l’ordre',
+      drawer_order_auto: 'Auto',
+      canvas_layout_error: 'Canevas non enregistré. Votre vue reste locale ; réessayez.',
+      canvas_layout_signed_out: 'Canevas non enregistré : votre session a expiré. Reconnectez-vous.',
+      canvas_layout_forbidden: 'Canevas non enregistré : ce tableau a refusé la modification.',
       drawer_add_note: 'Ajouter une note',
       agent_note_too_long: 'Le tableau limite les notes à 4 000 caractères. Raccourcissez le texte puis réessayez.',
       agent_note_rate_limited: 'GitHub limite les requêtes. Votre texte est conservé. Patientez avant de réessayer.',
@@ -1032,17 +1171,19 @@
       human_review_kind_question: 'Question',
       human_review_missing: 'En attente d’un élément à valider',
       human_review_missing_help: 'Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées.',
+      human_review_malformed: 'L’élément à valider est illisible',
+      human_review_malformed_help: 'L’agent a joint un élément à valider, mais le tableau ne peut pas l’utiliser. Demandez à l’agent de le corriger ; actualiser cette page n’y changera rien.',
       human_review_settled: 'La question est répondue. L’agent doit reprendre cette tâche.',
       human_review_settled_title: 'Réponse reçue',
-      human_review_reason_no_section: 'Le corps n’a pas de section « ### Human Review: ».',
-      human_review_reason_no_artifact: 'La section n’a pas de ligne « - Artifact: ».',
-      human_review_reason_unknown_artifact: 'La valeur de « - Artifact: » doit être image, video, link ou question.',
-      human_review_reason_duplicate_field: 'La section répète l’un de ses champs.',
-      human_review_reason_missing_url: 'L’élément n’a pas de ligne « - URL: ».',
-      human_review_reason_invalid_url: 'La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.',
-      human_review_reason_insecure_url: 'Un élément image doit avoir une URL https:// pour que le tableau puisse l’afficher.',
-      human_review_reason_missing_instruction: 'L’élément n’a pas de ligne « - Instruction: » sur une ligne.',
-      human_review_reason_long_instruction: 'La ligne « - Instruction: » est trop longue.',
+      human_review_reason_no_section: 'L’agent n’a joint aucun élément à valider à cette tâche.',
+      human_review_reason_no_artifact: 'L’élément à valider ne précise pas son type.',
+      human_review_reason_unknown_artifact: 'L’élément à valider n’est pas un type que le tableau peut afficher : capture, vidéo, lien ou question.',
+      human_review_reason_duplicate_field: 'L’élément à valider répète l’un de ses champs.',
+      human_review_reason_missing_url: 'L’élément à valider n’a pas d’URL.',
+      human_review_reason_invalid_url: 'L’URL de l’élément doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.',
+      human_review_reason_insecure_url: 'Une capture doit avoir une URL https:// pour que le tableau puisse l’afficher.',
+      human_review_reason_missing_instruction: 'L’élément à valider n’a pas d’instruction sur une ligne.',
+      human_review_reason_long_instruction: 'La ligne d’instruction est trop longue.',
       human_review_reason_question_answered: 'La question est déjà répondue.',
       human_review_image_alt: 'Élément à valider pour cette tâche',
       human_review_image_failed: 'L’image n’a pas pu être chargée. Ouvrez le lien ou demandez une capture valide à l’agent.',
@@ -1050,8 +1191,8 @@
       human_review_question_instruction: 'Répondez à la question ci-dessous.',
       human_review_agent_body: 'L’agent révise cette tâche. Rien ne vous est demandé.',
       human_review_readonly: 'Vue en lecture seule : répondre est désactivé ici.',
-      human_review_reason_missing_question: 'Le corps n’a pas de question ouverte à répondre.',
-      human_review_reason_missing_options: 'La question n’a aucune réponse proposée. Ajoutez au moins une ligne «  - label :: gist :: details » pour qu’elle se réponde en un clic.',
+      human_review_reason_missing_question: 'La tâche n’a aucune question ouverte à répondre.',
+      human_review_reason_missing_options: 'La question n’a aucune réponse proposée. Ajoutez au moins une réponse proposée pour qu’elle se règle en un clic.',
       note_add: 'Ajouter une note',
       note_delete: 'Supprimer la note',
       note_delete_confirm: 'Supprimer la note ?',
@@ -1070,6 +1211,15 @@
       err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
       err_github_forbidden: 'Vous n’avez pas la permission de modifier les liens sur ce dépôt.',
       notice_dependencies_degraded: 'Fils de dépendance indisponibles (erreur GraphQL GitHub). Affichage du tableau sans fils.',
+      discovery_failed_auth: 'Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.',
+      discovery_failed_rate_limited: 'GitHub limite temporairement le tableau. Actualisez après {time}.',
+      discovery_failed_rate_limited_no_reset: 'GitHub limite temporairement le tableau. Réessayez dans un instant.',
+      discovery_failed_network: 'GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.',
+      discovery_failed_other: 'Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.',
+      discovery_short_auth: 'Jeton GitHub refusé',
+      discovery_short_rate_limited: 'Limite GitHub atteinte',
+      discovery_short_network: 'GitHub injoignable',
+      discovery_short_other: 'Découverte échouée',
       decisions_title: 'Décisions',
       decisions_desc: 'Toutes les questions ouvertes sans réponse entre les dépôts, groupées par tâche, activité récente en premier.',
       decisions_no_items: 'Aucune question ouverte nécessitant une décision.',
@@ -1078,7 +1228,7 @@
       decisions_btn_answer: 'Répondre',
       decisions_answering: 'Enregistrement…',
       decisions_answered_notice: 'Question répondue.',
-      blocked_title: 'Tâches bloquées',
+      blocked_title: 'Bloquées et en attente',
       blocked_desc: 'Tâches nécessitant une action humaine ou bloquées par des dépendances ouvertes.',
       blocked_no_items: 'Aucune tâche bloquée.',
       blocked_client_mode: 'Action humaine requise (détails masqués en mode présentation client).',
@@ -1086,7 +1236,7 @@
       blocked_by_dependencies: 'Bloqué par',
       blocked_human_tasks_title: 'Tâches humaines',
       blocked_group_human: 'En attente d’action humaine',
-      blocked_group_dependencies: 'Bloqué par des dépendances',
+      blocked_group_dependencies: 'En attente d’autres tâches',
       operations_title: 'Vue opérationnelle',
       operations_desc: 'Métriques réelles du système et répartition sur tous les projets connectés.',
       operations_open: 'Ouvertes',
@@ -1177,6 +1327,13 @@
           }
         });
       }
+      var labelled = document.querySelectorAll ? document.querySelectorAll('[data-i18n-aria-label]') : [];
+      if (labelled && labelled.forEach) {
+        labelled.forEach(function (element) {
+          var key = element.getAttribute('data-i18n-aria-label');
+          if (dict[key]) element.setAttribute('aria-label', dict[key]);
+        });
+      }
       var searchInput = $('board-search');
       if (searchInput && dict.search_placeholder) {
         searchInput.placeholder = dict.search_placeholder;
@@ -1196,6 +1353,8 @@
       localizeChrome(l); applyClientPresentationMode(); if (state.detail && $('detail-view') && !$('detail-view').hidden) renderDetail(false);
       if (state.board) {
         renderBoard();
+      } else if (state.discoveryFailure) {
+        renderDiscoveryFailure();
       }
       if (state.activeSectionView === 'decisions') renderDecisionsView();
       else if (state.activeSectionView === 'blocked') renderBlockedView();
@@ -1698,6 +1857,34 @@
     });
   }
 
+  function checklistProgressLabel(items) {
+    var arr = Array.isArray(items) ? items : [];
+    var total = arr.length;
+    var done = arr.filter(function (item) { return item && item.completed; }).length;
+    return { done: done, total: total, open: Math.max(0, total - done) };
+  }
+
+  function setPanelProgress(id, ratio, dict) {
+    var node = $(id);
+    if (!node) return;
+    if (!ratio || !ratio.total) {
+      node.hidden = true;
+      node.textContent = '';
+      return;
+    }
+    node.hidden = false;
+    node.textContent = ratio.done + '/' + ratio.total;
+    node.title = (dict.progress_checklist_title || '{done} of {total} checklist items done')
+      .replace('{done}', String(ratio.done)).replace('{total}', String(ratio.total));
+  }
+
+  // The drawer states its own progress instead of making the reader count boxes.
+  function updateChecklistProgress(issue) {
+    var dict = I18N[getLanguage()] || I18N.en;
+    setPanelProgress('ac-progress', checklistProgressLabel(issue.acceptanceCriteria), dict);
+    setPanelProgress('subtasks-progress', checklistProgressLabel(issue.subtasks), dict);
+  }
+
   async function toggleChecklistItem(item, isAc, checked) {
     if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) {
       renderDetail(false);
@@ -1872,7 +2059,9 @@
   var SORT_LABELS = { priority: 'Priority', updated: 'Recently updated', created: 'Recently created', manual: 'Manual order' };
   var STAGES = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
   var KIND_LABELS = { 'needs-me': 'Needs me', human: 'Human tasks', questions: 'Questions' };
-  var EXTRA_FILTERS = { blocked: ['Blocked', 'Bloquées'], 'has-dependents': ['Blocks another task', 'Bloque une autre tâche'], artifact: ['Reviewable link', 'Lien à consulter'] };
+  // The filter named "blocked" is dependency-only; the view named "Blocked"
+  // includes human waits. Two names, two scopes, so they can no longer disagree.
+  var EXTRA_FILTERS = { blocked: ['Blocked by dependencies', 'Bloquée par une dépendance'], 'has-dependents': ['Blocks another task', 'Bloque une autre tâche'], artifact: ['Reviewable link', 'Lien à consulter'] };
   var VIEW_STATE_KEY = 'openchamber_web_view_state';
   state.viewState = readViewState();
   function readViewState() {
@@ -1943,9 +2132,75 @@
   }
   function stageOf(issue) { return issue.effectiveStage || (issue.state === 'closed' ? 'done' : (issue.statusLabel || '').replace(/^status:/, '') || issue.column || 'todo'); }
   function countOf(issue, kind, total) { return issue.counts && issue.counts[kind] ? issue.counts[kind][total ? 'total' : 'open'] || 0 : 0; }
-  function needsMe(issue) {
-    return stageOf(issue) !== 'done' && (stageOf(issue) === 'needs-human' ||
-      (issue.attention && issue.attention !== 'none') || countOf(issue, 'humanTasks') || countOf(issue, 'openQuestions'));
+  function hasOpenQuestions(issue) {
+    return countOf(issue, 'openQuestions') > 0 ||
+      (Array.isArray(issue.openQuestions) && issue.openQuestions.some(function (q) { return q && !q.completed; }));
+  }
+  function hasOpenHumanTasks(issue) {
+    return countOf(issue, 'humanTasks') > 0 ||
+      (Array.isArray(issue.humanTasks) && issue.humanTasks.some(function (task) { return task && !task.completed; }));
+  }
+  // The one canonical answer to "does this task need me?". The sidebar count,
+  // the Needs me filter and every summary surface delegate here so they cannot
+  // drift apart again.
+  function needsHumanAttention(issue) {
+    if (!issue || issue.state === 'closed') return false;
+    if (state.clientPresentationMode && isDraftIssue(issue)) return false;
+    if (stageOf(issue) === 'done') return false;
+    return stageOf(issue) === 'needs-human' || hasOpenQuestions(issue) || hasOpenHumanTasks(issue);
+  }
+  function needsMe(issue) { return needsHumanAttention(issue); }
+  function ratioOf(counts, items) {
+    var total = counts && typeof counts.total === 'number'
+      ? counts.total
+      : (Array.isArray(items) ? items.length : 0);
+    // The server may send done, open, or neither. Any of the three is enough
+    // to state a truthful ratio; the array is the last resort.
+    var done;
+    if (counts && typeof counts.done === 'number') done = counts.done;
+    else if (counts && typeof counts.open === 'number') done = total - counts.open;
+    else done = Array.isArray(items) ? items.filter(function (item) { return item && item.completed; }).length : 0;
+    if (done < 0) done = 0;
+    if (done > total) done = total;
+    return { done: done, total: total, open: Math.max(0, total - done) };
+  }
+  // Progress exists as three explicit ratios, never as an implicit "1 comment".
+  function progressOf(issue) {
+    var counts = (issue && issue.counts) || {};
+    return {
+      checklist: ratioOf(counts.subtasks, issue && issue.subtasks),
+      questions: ratioOf(counts.openQuestions, issue && issue.openQuestions),
+      human: ratioOf(counts.humanTasks, issue && issue.humanTasks),
+    };
+  }
+  function humanCountLabel(count) {
+    var n = Number(count) || 0;
+    return getLanguage() === 'fr'
+      ? n + (n === 1 ? ' action humaine' : ' actions humaines')
+      : n + (n === 1 ? ' human action' : ' human actions');
+  }
+  function questionCountLabel(count) {
+    var n = Number(count) || 0;
+    return n + (n === 1 ? ' question' : ' questions');
+  }
+  // Phase and attention are a fixed vocabulary, not free text: both languages
+  // carry one label per value so French never reads an English workflow word.
+  function phaseText(phase) {
+    var key = String(phase || '').trim();
+    if (!key) return '';
+    var dict = I18N[getLanguage()] || I18N.en;
+    var label = dict['phase_' + key.replace(/-/g, '_')];
+    if (label) return label;
+    var value = key.replace(/_/g, ' ');
+    return getLanguage() === 'fr' ? 'Phase : ' + value : value + ' phase';
+  }
+  function attentionText(attention) {
+    var value = String(attention || '').replace(/^needs-/, '').replace(/_/g, ' ').trim();
+    if (!value) return '';
+    var dict = I18N[getLanguage()] || I18N.en;
+    var label = dict['attention_' + value.replace(/ /g, '_')];
+    if (label) return label;
+    return getLanguage() === 'fr' ? 'Attention : ' + value : 'Needs ' + value;
   }
   function manualCompare(a, b) {
     var oa = Number.isFinite(a.order) ? a.order : null, ob = Number.isFinite(b.order) ? b.order : null;
@@ -1993,7 +2248,13 @@
   function matchesExtraFilter(issue, token) {
     if (token === 'blocked') return blockerKeys(issue).length > 0;
     if (token === 'has-dependents') return ((state.board && state.board.issues) || []).some(function (other) { return blockerKeys(other).includes(identity(issue).toLowerCase()); });
-    // Review links must come from human work or questions, never the issue's own GitHub URL.
+    // Reviewable links are real review artifacts (screenshot, video, link) or a
+    // pending human item that carries a URL, never the issue's own GitHub URL.
+    var review = humanReviewView(issue);
+    if (review && review.state === 'ready' && typeof review.url === 'string' &&
+        (review.kind === 'image' || review.kind === 'video' || review.kind === 'link')) {
+      return true;
+    }
     var text = (issue.pendingItems || []).filter(function (item) { return !item.completed; }).map(function (item) { return item.text; }).join('\n');
     return /https?:\/\/[^\s<>]+/i.test(text);
   }
@@ -2192,6 +2453,7 @@
       content.appendChild(el('h3', { text: fr ? 'Données et API' : 'Data and API' }));
       content.appendChild(el('p', { class: 'settings-health', text: apiHealthText() }));
       content.appendChild(el('p', { class: 'muted', text: fr ? 'Les données sont relues à chaque actualisation. Les modifications sont enregistrées sur GitHub.' : 'Refresh revalidates cached data. Changes are saved to GitHub.' }));
+      content.appendChild(el('p', { class: 'muted small', text: fr ? 'Le regroupement par parent lit les 100 premières tâches de chaque projet. Au-delà, une tâche apparaît dans « Sans parent ».' : 'Parent grouping reads the first 100 issues of each project. Beyond that, a task appears under Standalone.' }));
       content.appendChild(el('h3', { text: getLanguage() === 'fr' ? 'Noms des projets' : 'Project names' }));
       content.appendChild(el('p', { class: 'muted', text: getLanguage() === 'fr' ? 'Les noms sont partagés entre appareils. Un champ vide rétablit le nom automatique.' : 'Names are shared across devices. Empty resets the automatic short name.' }));
       (state.repositories ? state.repositories.repositories : []).forEach(function (repo) {
@@ -2534,11 +2796,29 @@
     }
     if (typeof issue.noteCount === 'number' && (issue.noteCount > 0 || issue.noteCountPartial)) metaChildren.push(el('span', { class: 'badge note-count', text: issue.noteCount + (issue.noteCountPartial ? '+' : '') + (getLanguage() === 'fr' ? (issue.noteCount === 1 && !issue.noteCountPartial ? ' note pour l’agent' : ' notes pour l’agent') : (issue.noteCount === 1 && !issue.noteCountPartial ? ' agent note' : ' agent notes')) }));
     else if (issue.commentCount > 0) metaChildren.push(el('span', { class: 'badge comment-count', text: issue.commentCount + (getLanguage() === 'fr' ? (issue.commentCount === 1 ? ' commentaire' : ' commentaires') : (issue.commentCount === 1 ? ' comment' : ' comments')) }));
-    if (countOf(issue, 'openQuestions')) {
-      var qn = countOf(issue, 'openQuestions'); metaChildren.push(el('span', { class: 'badge attention', text: qn + (qn === 1 ? ' question' : ' questions') }));
+    var progress = progressOf(issue);
+    var dict = I18N[getLanguage()] || I18N.en;
+    if (progress.checklist.total > 0) {
+      metaChildren.push(el('span', {
+        class: 'badge progress-badge progress-checklist',
+        text: progress.checklist.done + '/' + progress.checklist.total,
+        title: (dict.progress_checklist_title || '{done} of {total} checklist items done')
+          .replace('{done}', String(progress.checklist.done)).replace('{total}', String(progress.checklist.total)),
+      }));
     }
-    if (countOf(issue, 'humanTasks')) {
-      var hn = countOf(issue, 'humanTasks'); metaChildren.push(el('span', { class: 'badge attention', text: getLanguage() === 'fr' ? (hn + (hn === 1 ? ' action' : ' actions')) : (hn + ' human') }));
+    if (progress.questions.total > 0) {
+      metaChildren.push(el('span', {
+        class: 'badge progress-badge progress-questions' + (progress.questions.open > 0 ? ' attention' : ''),
+        'data-pending': String(progress.questions.open),
+        text: progress.questions.done + '/' + progress.questions.total,
+        title: (dict.progress_questions_title || '{done} of {total} questions answered')
+          .replace('{done}', String(progress.questions.done)).replace('{total}', String(progress.questions.total)),
+      }));
+    }
+    // Only an unfinished human task is an attention signal; a completed one
+    // must not keep the row looking like it still waits for someone.
+    if (progress.human.open > 0) {
+      metaChildren.push(el('span', { class: 'badge attention', text: humanCountLabel(progress.human.open) }));
     }
     // The row names the gate in one badge; the precise reason and the single
     // action stay in the drawer, never duplicated in the compact list.
@@ -2549,8 +2829,10 @@
         metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict['human_review_kind_' + rowReview.kind] || reviewDict.human_review_artifact_label }));
       } else if (rowReview && rowReview.state === 'settled') {
         metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict.human_review_settled_title, title: humanReviewReasonText(rowReview, reviewDict) }));
+      } else if (rowReview && rowReview.state === 'malformed') {
+        metaChildren.push(el('span', { class: 'badge human-review-badge is-malformed', text: reviewDict.human_review_malformed, title: humanReviewReasonText(rowReview, reviewDict) }));
       } else {
-        metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict.human_review_missing, title: humanReviewReasonText(rowReview, reviewDict) }));
+        metaChildren.push(el('span', { class: 'badge human-review-badge is-missing', text: reviewDict.human_review_missing, title: humanReviewReasonText(rowReview, reviewDict) }));
       }
     }
     var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
@@ -2588,8 +2870,8 @@
       badge(statusText('status:' + stageOf(issue)), 'status'), priorityOf(issue) ? badge(priorityText(priorityOf(issue)), 'badge-priority') : null,
       issue.offline ? badge('(offline)', 'badge-offline') : null,
       blockedBadge,
-      countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
-      countOf(issue, 'humanTasks') ? badge(countOf(issue, 'humanTasks') + ' human tasks', 'attention') : null]));
+      countOf(issue, 'openQuestions') ? badge(questionCountLabel(countOf(issue, 'openQuestions')), 'attention') : null,
+      countOf(issue, 'humanTasks') ? badge(humanCountLabel(countOf(issue, 'humanTasks')), 'attention') : null]));
     children.push(el('p', { class: 'muted small', text: (getLanguage() === 'fr' ? 'Mis à jour ' : 'Updated ') + relative(issue.updatedAt) }));
     return el('button', { type: 'button', class: 'task-row', 'data-issue-key': identity(issue), onclick: function () {
       if (issue.offline) { setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
@@ -2799,7 +3081,7 @@
     var viewport = $('canvas-viewport');
     if (!viewport) return;
     cancelCanvasViewAnimation();
-    var nodes = viewport.querySelectorAll('.canvas-card, .canvas-sticky-note, .canvas-project-band-label');
+    var nodes = viewport.querySelectorAll('.canvas-card, .canvas-group-card, .canvas-group-frame, .canvas-sticky-note, .canvas-project-band-label');
     if (!nodes || nodes.length === 0) {
       resetCanvasView();
       return;
@@ -2905,6 +3187,388 @@
     });
 
     return positions;
+  }
+
+  /* ------------------------------------------------------------------
+     Flow graph. Cards are grouped by repository and parent issue, the
+     dependency DAG is layered by flow-layout.js, and groups start collapsed.
+     The server owns direction, expanded groups and manual positions; nothing
+     here writes GitHub.
+     ------------------------------------------------------------------ */
+  function flowGroupKeyOf(issue) {
+    var repo = '';
+    if (issue && issue.repository) {
+      repo = typeof issue.repository === 'string' ? issue.repository : (issue.repository.full || '');
+    }
+    if (!repo && issue && typeof issue.repo === 'string') repo = issue.repo;
+    if (!repo) repo = 'unknown';
+    var parent = issue && issue.parentKey ? String(issue.parentKey) : 'standalone';
+    return repo + '::' + parent;
+  }
+
+  // Auto follows the device: a phone reads a top-down flow, a desktop reads
+  // left-to-right. An explicit choice always wins over the viewport.
+  function resolveFlowDirection(mode, viewportWidth) {
+    if (mode === 'LR' || mode === 'TD') return mode;
+    var width = Number(viewportWidth);
+    if (!isFinite(width) || width <= 0) width = (typeof window !== 'undefined' && window.innerWidth) || 1280;
+    return width >= 768 ? 'LR' : 'TD';
+  }
+
+  function canvasLayoutScope() {
+    if (typeof state.selected === 'string' && state.selected && state.selected !== 'all') return state.selected;
+    var repo = state.board && state.board.repository && state.board.repository.full;
+    return repo || 'all';
+  }
+
+  function applyServerLayout(layout) {
+    var value = (layout && typeof layout === 'object') ? layout : {};
+    state.canvasLayout = value;
+    state.canvasDirectionMode = (value.direction === 'LR' || value.direction === 'TD') ? value.direction : 'auto';
+    var groups = Array.isArray(value.expandedGroups) ? value.expandedGroups.filter(function (key) { return typeof key === 'string' && key; }) : [];
+    state.canvasExpandedGroups = new Set(groups);
+    state.canvasManualPositions = (value.positions && typeof value.positions === 'object' && !Array.isArray(value.positions)) ? value.positions : {};
+  }
+
+  // A search or a filter is a request to see matches now. Matching groups are
+  // expanded for that render only; the saved set is never rewritten by a query.
+  function canvasIsNarrowed() {
+    return Boolean(state.searchQuery) || (Array.isArray(state.viewState.filters) && state.viewState.filters.length > 0);
+  }
+
+  function effectiveExpandedGroups(issues) {
+    var expanded = new Set(state.canvasExpandedGroups || []);
+    if (!canvasIsNarrowed()) return expanded;
+    (Array.isArray(issues) ? issues : []).forEach(function (issue) {
+      if (issue) expanded.add(flowGroupKeyOf(issue));
+    });
+    return expanded;
+  }
+
+  // Flow positions are local layout, not GitHub data. Move a card's sticky
+  // notes by the same delta so their absolute coordinates stay aligned with
+  // the card, without writing anything to GitHub. Notes are only persisted
+  // when the user edits them.
+  function syncIssueNotesToPosition(issue, x, y) {
+    if (!issue) return;
+    if (!issue.canvas || typeof issue.canvas !== 'object') issue.canvas = {};
+    var prevX = typeof issue.canvas.x === 'number' ? issue.canvas.x : x;
+    var prevY = typeof issue.canvas.y === 'number' ? issue.canvas.y : y;
+    var dx = x - prevX;
+    var dy = y - prevY;
+    if (dx !== 0 || dy !== 0) {
+      var notes = Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
+      notes.forEach(function (note) {
+        if (!note || typeof note !== 'object') return;
+        if (typeof note.x === 'number') note.x = Math.round(note.x + dx);
+        if (typeof note.y === 'number') note.y = Math.round(note.y + dy);
+      });
+    }
+    issue.canvas.x = x;
+    issue.canvas.y = y;
+  }
+
+  // Notes belong to a card, not to the plane: a card inside a collapsed group
+  // has no position, so its notes must stay hidden with it instead of floating
+  // at stale coordinates with a connector to nowhere.
+  function canvasIssueIsVisible(issue) {
+    var positions = state.canvasFlowPositions;
+    if (!positions || typeof positions !== 'object') return true;
+    return Object.prototype.hasOwnProperty.call(positions, identity(issue));
+  }
+
+  function flowCardInput(issue) {
+    var notes = issue && issue.canvas && Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
+    var dependencies = [];
+    (Array.isArray(issue.blockedBy) ? issue.blockedBy : []).forEach(function (blocker) {
+      if (blocker && typeof blocker === 'object') {
+        var repo = blocker.repository ? (blocker.repository.full || blocker.repository) : null;
+        dependencies.push(repo ? (repo + '#' + blocker.number) : String(blocker.number));
+      } else if (blocker !== null && blocker !== undefined) {
+        dependencies.push(String(blocker));
+      }
+    });
+    return {
+      id: identity(issue),
+      number: issue.number,
+      repo: issue.repository ? (issue.repository.full || issue.repository) : '',
+      parentKey: issue.parentKey || null,
+      parentTitle: issue.parentTitle || null,
+      stage: stageOf(issue),
+      activeSession: Boolean(issue.activeSession && issue.activeSession.active === true),
+      order: Number.isFinite(issue.order) ? issue.order : undefined,
+      priority: priorityOf(issue),
+      createdAt: issue.createdAt,
+      dependencies: dependencies,
+      w: 280,
+      h: 150,
+      notes: notes.map(function (note) {
+        return { w: note.w, h: note.h, dx: note._dx, dy: note._dy };
+      }),
+    };
+  }
+
+  function computeFlowLayout(issues) {
+    var size = canvasViewportSize() || { width: (typeof window !== 'undefined' && window.innerWidth) || 1280, height: 800 };
+    var direction = resolveFlowDirection(state.canvasDirectionMode, size.width);
+    var expanded = effectiveExpandedGroups(issues);
+    state.canvasResolvedDirection = direction;
+    var layoutFn = (typeof window !== 'undefined' && typeof window.arrangeFlowGraph === 'function') ? window.arrangeFlowGraph : null;
+    var result = layoutFn
+      ? layoutFn((Array.isArray(issues) ? issues : []).map(flowCardInput), {
+        direction: direction,
+        // An array crosses the vm boundary in tests; the layout accepts both.
+        expandedGroups: Array.from(expanded),
+        cardWidth: 280,
+        cardHeight: 150,
+        gapX: 72,
+        gapY: 40,
+      })
+      : { groups: [], positions: {}, edges: [], width: 0, height: 0 };
+
+    // A card the user dragged keeps its own place, even after an auto-layout.
+    Object.keys(state.canvasManualPositions || {}).forEach(function (key) {
+      var manual = state.canvasManualPositions[key];
+      if (!manual || !isFinite(manual.x) || !isFinite(manual.y)) return;
+      if (result.positions && result.positions[key]) {
+        result.positions[key].x = manual.x;
+        result.positions[key].y = manual.y;
+      }
+    });
+
+    result.direction = direction;
+    result.expanded = expanded;
+    return result;
+  }
+
+  function canvasLayoutFailureMessage(err, dict) {
+    var status = (err && typeof err.status === 'number') ? err.status : 0;
+    if (status === 401) return dict.canvas_layout_signed_out || 'Canvas not saved: your session expired. Sign in again.';
+    if (status === 403) return dict.canvas_layout_forbidden || 'Canvas not saved: this board refused the change.';
+    return dict.canvas_layout_error || 'Canvas not saved. Your view is kept locally; try again.';
+  }
+
+  // Two PATCHes can be in flight at once (a drag and a group toggle). The
+  // server answers each with the whole layout; without a revision guard the
+  // older answer can land last and undo the newer move.
+  function applyLayoutPatch(revision, layout) {
+    if (typeof revision === 'number' && revision < state.canvasLayoutAppliedRevision) return false;
+    if (typeof revision === 'number') state.canvasLayoutAppliedRevision = revision;
+    applyServerLayout(layout);
+    return true;
+  }
+
+  function persistCanvasLayout(patch) {
+    var body = Object.assign({ scope: canvasLayoutScope() }, patch);
+    var revision = ++state.canvasLayoutRevision;
+    return api('/api/layout', { method: 'PATCH', body: body }).then(function (layout) {
+      applyLayoutPatch(revision, layout);
+      updateCanvasDirectionButtons();
+      return layout;
+    });
+  }
+
+  function toggleCanvasGroup(groupKey, expanded) {
+    if (!groupKey) return;
+    var next = new Set(state.canvasExpandedGroups || []);
+    if (expanded) next.add(groupKey); else next.delete(groupKey);
+    state.canvasExpandedGroups = next;
+    renderCanvasIssues(state.currentCanvasIssues || []);
+    var dict = I18N[getLanguage()] || I18N.en;
+    persistCanvasLayout({ expandedGroups: Array.from(next) }).catch(function (error) {
+      setNotice(canvasLayoutFailureMessage(error, dict), true);
+    });
+  }
+
+  function groupCount(label, value, tone) {
+    return el('span', { class: 'canvas-group-count' + (tone ? ' ' + tone : '') }, [
+      el('strong', { text: String(value) }),
+      el('span', { text: ' ' + label }),
+    ]);
+  }
+
+  function groupCountsChildren(group, dict) {
+    var children = [groupCount(dict.canvas_group_total || 'tasks', group.total, '')];
+    if (group.running > 0) children.push(groupCount(dict.canvas_group_running || 'running', group.running, 'is-running'));
+    if (group.needsMe > 0) children.push(groupCount(dict.canvas_group_needs_me || 'needs me', group.needsMe, 'is-needs-me'));
+    if (group.done > 0) children.push(groupCount(dict.canvas_group_done || 'done', group.done, ''));
+    var progress = group.progress;
+    if (progress) {
+      if (progress.checklist.total > 0) children.push(groupCount(dict.canvas_group_checklist || 'checklist', progress.checklist.done + '/' + progress.checklist.total, 'is-progress'));
+      if (progress.questions.total > 0) children.push(groupCount(dict.canvas_group_questions || 'questions', progress.questions.done + '/' + progress.questions.total, 'is-progress'));
+    }
+    return children;
+  }
+
+  // A collapsed group must summarize progress, not only statuses: aggregate the
+  // ratios of the cards it hides.
+  function groupProgressOf(groupKey, issues) {
+    var result = { checklist: { done: 0, total: 0 }, questions: { done: 0, total: 0 } };
+    (Array.isArray(issues) ? issues : []).forEach(function (issue) {
+      if (!issue || flowGroupKeyOf(issue) !== groupKey) return;
+      var progress = progressOf(issue);
+      result.checklist.done += progress.checklist.done;
+      result.checklist.total += progress.checklist.total;
+      result.questions.done += progress.questions.done;
+      result.questions.total += progress.questions.total;
+    });
+    return result;
+  }
+
+  // The layout module only knows a card's stage, so its "needs me" count misses
+  // open questions and open human tasks. The group header is a summary surface:
+  // it must answer with the same predicate as the sidebar and the filter.
+  function groupNeedsMeOf(groupKey, issues) {
+    var count = 0;
+    (Array.isArray(issues) ? issues : []).forEach(function (issue) {
+      if (issue && flowGroupKeyOf(issue) === groupKey && needsHumanAttention(issue)) count += 1;
+    });
+    return count;
+  }
+
+  function groupTitleText(group, dict) {
+    return group.parentKey ? (group.title || group.parentKey) : (dict.canvas_group_standalone || 'Standalone');
+  }
+
+  function createCollapsedGroupCard(group) {
+    var dict = I18N[getLanguage()] || I18N.en;
+    var repoLabel = shortName(group.repo);
+    var title = groupTitleText(group, dict);
+    var toggle = el('button', {
+      type: 'button',
+      class: 'canvas-group-toggle',
+      'data-group-key': group.groupKey,
+      'aria-expanded': 'false',
+      title: dict.canvas_group_expand || 'Expand',
+      'aria-label': (dict.canvas_group_expand || 'Expand') + ' ' + repoLabel + ' ' + title,
+      text: dict.canvas_group_expand || 'Expand',
+    });
+    toggle.addEventListener('pointerdown', function (event) { event.stopPropagation(); });
+    toggle.addEventListener('click', function (event) {
+      event.stopPropagation();
+      event.preventDefault();
+      toggleCanvasGroup(group.groupKey, true);
+    });
+    var card = el('div', {
+      class: 'canvas-group-card',
+      'data-group-key': group.groupKey,
+      'data-repo': group.repo,
+      role: 'group',
+      'aria-label': repoLabel + ' ' + title + ', ' + group.total + ' ' + (dict.canvas_group_total || 'tasks'),
+    }, [
+      el('div', { class: 'canvas-group-head' }, [
+        el('div', {}, [
+          el('div', { class: 'canvas-group-repo', text: repoLabel }),
+          el('div', { class: 'canvas-group-title', text: title }),
+        ]),
+        toggle,
+      ]),
+      el('div', { class: 'canvas-group-counts' }, groupCountsChildren(group, dict)),
+    ]);
+    card.style.left = group.x + 'px';
+    card.style.top = group.y + 'px';
+    return card;
+  }
+
+  function createExpandedGroupFrame(group) {
+    var dict = I18N[getLanguage()] || I18N.en;
+    var repoLabel = shortName(group.repo);
+    var title = groupTitleText(group, dict);
+    var toggle = el('button', {
+      type: 'button',
+      class: 'canvas-group-toggle',
+      'data-group-key': group.groupKey,
+      'aria-expanded': 'true',
+      title: dict.canvas_group_collapse || 'Collapse',
+      'aria-label': (dict.canvas_group_collapse || 'Collapse') + ' ' + repoLabel + ' ' + title,
+      text: dict.canvas_group_collapse || 'Collapse',
+    });
+    toggle.addEventListener('pointerdown', function (event) { event.stopPropagation(); });
+    toggle.addEventListener('click', function (event) {
+      event.stopPropagation();
+      event.preventDefault();
+      toggleCanvasGroup(group.groupKey, false);
+    });
+    var frame = el('div', { class: 'canvas-group-frame', 'data-group-key': group.groupKey }, [
+      el('div', { class: 'canvas-group-frame-head' }, [
+        el('span', { class: 'canvas-group-frame-repo', text: repoLabel }),
+        el('span', { class: 'canvas-group-frame-title', text: title }),
+        el('span', { class: 'canvas-group-counts' }, groupCountsChildren(group, dict)),
+        toggle,
+      ]),
+    ]);
+    frame.style.left = group.x + 'px';
+    frame.style.top = group.y + 'px';
+    frame.style.width = group.w + 'px';
+    frame.style.height = group.h + 'px';
+    return frame;
+  }
+
+  // Edges between a collapsed group and anything else come straight from the
+  // flow layout; card-to-card wires inside an expanded group stay the existing
+  // dependency wires.
+  function renderFlowEdges(wiresLayer, allPoints) {
+    var edges = Array.isArray(state.canvasFlowEdges) ? state.canvasFlowEdges : [];
+    if (!edges.length) return;
+    var groupKeys = new Set((state.canvasGroups || []).map(function (group) { return group.groupKey; }));
+    edges.forEach(function (edge) {
+      if (!edge || !Array.isArray(edge.points) || edge.points.length < 2) return;
+      var fromGroup = groupKeys.has(edge.from);
+      var toGroup = groupKeys.has(edge.to);
+      if (!fromGroup && !toGroup) return; // card-to-card: renderCanvasWires owns it
+      var d = 'M ' + edge.points[0].x + ' ' + edge.points[0].y;
+      for (var i = 1; i < edge.points.length; i++) d += ' L ' + edge.points[i].x + ' ' + edge.points[i].y;
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'canvas-flow-wire' + (edge.crossGroup ? ' is-cross-group' : ''));
+      path.setAttribute('d', d);
+      path.setAttribute('marker-end', 'url(#wire-arrow-open)');
+      path.setAttribute('data-from', String(edge.from));
+      path.setAttribute('data-to', String(edge.to));
+      wiresLayer.appendChild(path);
+      edge.points.forEach(function (point) { allPoints.push({ x: point.x, y: point.y }); });
+    });
+  }
+
+  function updateCanvasDirectionButtons() {
+    ['auto', 'LR', 'TD'].forEach(function (value) {
+      var button = $('canvas-direction-' + value.toLowerCase());
+      if (!button) return;
+      var pressed = value === 'auto'
+        ? state.canvasDirectionMode === 'auto'
+        : state.canvasDirectionMode === value;
+      button.setAttribute('aria-pressed', String(pressed));
+    });
+  }
+
+  function setCanvasDirection(mode) {
+    var value = mode === 'LR' || mode === 'TD' ? mode : 'auto';
+    state.canvasDirectionMode = value;
+    updateCanvasDirectionButtons();
+    renderCanvasIssues(state.currentCanvasIssues || []);
+    frameFilteredCanvas();
+    var dict = I18N[getLanguage()] || I18N.en;
+    persistCanvasLayout({ direction: value }).catch(function (error) {
+      setNotice(canvasLayoutFailureMessage(error, dict), true);
+    });
+  }
+
+  function saveIssueOrder(issue, order) {
+    var currentIssue = (state.board && Array.isArray(state.board.issues))
+      ? state.board.issues.find(function (item) { return sameIdentity(item, issue); }) || issue
+      : issue;
+    return api(issuePath(currentIssue), {
+      method: 'PATCH',
+      body: { order: order, fingerprint: currentIssue.fingerprint },
+    }).then(function (response) {
+      if (response && response.issue) {
+        currentIssue.order = response.issue.order;
+        issue.order = response.issue.order;
+      } else {
+        currentIssue.order = order;
+        issue.order = order;
+      }
+      return response;
+    });
   }
 
   function dependenciesVisible() {
@@ -3119,7 +3783,7 @@
     if (canvasCardRectsCache) return canvasCardRectsCache;
     var cardsLayer = $('canvas-cards');
     var rects = [];
-    if (cardsLayer) cardsLayer.querySelectorAll('.canvas-card').forEach(function (card) {
+    if (cardsLayer) cardsLayer.querySelectorAll('.canvas-card, .canvas-group-card, .canvas-group-frame').forEach(function (card) {
       rects.push({
         key: card.getAttribute('data-issue-key'),
         x: card.offsetLeft,
@@ -3288,7 +3952,10 @@
     var kind = '';
     if (state.dependencyFocus) {
       if (state.dependencyFocusFloored) { count = state.dependencyFocusCount; kind = 'focus'; }
-    } else if (state.canvasFitFloored && state.viewState.filters.length) { count = state.canvasFitCount; kind = 'filter'; }
+    } else if (state.canvasFitFloored) {
+      count = state.canvasFitCount;
+      kind = state.viewState.filters.length ? 'filter' : 'flow';
+    }
     var limited = !state.dependencyFocus && state.canvasFitLimited && state.viewState.filters.length > 0 &&
       state.activeViewMode === 'canvas' && !state.activeSectionView;
     var warning = $('canvas-fit-limit');
@@ -3511,14 +4178,36 @@
     var prio = priorityOf(issue);
     var prioEl = prio ? el('span', { class: 'canvas-card-prio prio-' + prio, text: priorityText(prio) }) : null;
 
-    var humanCount = countOf(issue, 'humanTasks', true);
-    var questionCount = countOf(issue, 'openQuestions', true);
+    var dict = I18N[getLanguage()] || I18N.en;
+    var progress = progressOf(issue);
     var metaChildren = [];
     if (prioEl) metaChildren.push(prioEl);
-    if (humanCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: getLanguage() === 'fr' ? (humanCount + (humanCount === 1 ? ' action' : ' actions')) : (humanCount + ' human') }));
-    if (questionCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: questionCount + ' q' }));
-
-    var dict = I18N[getLanguage()] || I18N.en;
+    if (progress.checklist.total > 0) {
+      metaChildren.push(el('span', {
+        class: 'canvas-card-badge canvas-card-progress',
+        text: progress.checklist.done + '/' + progress.checklist.total,
+        title: (dict.progress_checklist_title || '{done} of {total} checklist items done')
+          .replace('{done}', String(progress.checklist.done)).replace('{total}', String(progress.checklist.total)),
+      }));
+    }
+    if (progress.questions.total > 0) {
+      // answered/total, with the pending count exposed for styling and tests:
+      // a fully answered question is never dressed as outstanding work.
+      metaChildren.push(el('span', {
+        class: 'canvas-card-badge canvas-card-questions' + (progress.questions.open > 0 ? ' is-pending' : ''),
+        'data-pending': String(progress.questions.open),
+        text: progress.questions.done + '/' + progress.questions.total,
+        title: (dict.progress_questions_title || '{done} of {total} questions answered')
+          .replace('{done}', String(progress.questions.done)).replace('{total}', String(progress.questions.total)),
+      }));
+    }
+    if (progress.human.open > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: humanCountLabel(progress.human.open) }));
+    // A live agent session and an idle in-progress task must never look alike:
+    // only the live one rotates, and it says so.
+    var agentActive = Boolean(issue.activeSession && issue.activeSession.active === true);
+    if (agentActive) {
+      metaChildren.push(el('span', { class: 'canvas-card-agent-badge', text: dict.canvas_agent_running || 'Agent running' }));
+    }
     // The card summarizes the gate; the drawer carries its one primary action.
     var review = humanReviewView(issue);
     if (humanReviewStatus(issue) === 'waiting') {
@@ -3530,6 +4219,8 @@
         ]));
       } else if (review && review.state === 'settled') {
         children.push(el('div', { class: 'canvas-card-review canvas-card-review-settled', text: dict.human_review_settled_title }));
+      } else if (review && review.state === 'malformed') {
+        children.push(el('div', { class: 'canvas-card-review canvas-card-review-malformed', text: dict.human_review_malformed }));
       } else {
         children.push(el('div', { class: 'canvas-card-review canvas-card-review-missing', text: dict.human_review_missing }));
       }
@@ -3592,6 +4283,14 @@
 
     card.style.left = pos.x + 'px';
     card.style.top = pos.y + 'px';
+
+    if (agentActive) {
+      card.className += ' canvas-card-agent-active';
+      card.setAttribute('data-agent', 'running');
+    } else if (stage === 'in-progress') {
+      card.className += ' canvas-card-in-progress-idle';
+      card.setAttribute('data-agent', 'idle');
+    }
 
     return card;
   }
@@ -3734,15 +4433,6 @@
     return escapeHtml(text || '').replace(/\n/g, '<br>');
   }
 
-  function safeArrangeCards(cards, options) {
-    if (typeof window !== 'undefined' && typeof window.arrangeCards === 'function') {
-      return window.arrangeCards(cards, options);
-    }
-    var map = new Map();
-    map.bands = [];
-    return map;
-  }
-
   function saveIssueCanvas(issue, canvasUpdates, options) {
     var key = identity(issue);
     var previous = cardSaveQueues.get(key) || Promise.resolve();
@@ -3761,30 +4451,57 @@
     return nextSave;
   }
 
+  // Dragging a card is local layout, never a GitHub write: the coordinates go
+  // to /api/layout, keyed by card identity, and survive a reload. Notes follow
+  // the card through their stored offset, so no issue body changes either.
   function saveCardPosition(issue, newX, newY, oldPos, cardEl) {
+    var key = identity(issue);
+    var prevCanvas = issue.canvas;
+    var previousPosition = (state.canvasManualPositions && state.canvasManualPositions[key]) || null;
+    var positionPatch = {};
+    positionPatch[key] = { x: newX, y: newY };
+
+    // Notes keep their offset to the card. Shift them locally by the same
+    // delta; only /api/layout is written.
     var deltaX = (oldPos && typeof oldPos.x === 'number') ? (newX - oldPos.x) : 0;
     var deltaY = (oldPos && typeof oldPos.y === 'number') ? (newY - oldPos.y) : 0;
-
-    var updatedNotes = undefined;
-    if (issue.canvas && Array.isArray(issue.canvas.notes) && issue.canvas.notes.length > 0) {
-      updatedNotes = issue.canvas.notes.map(function (n) {
-        var nx = typeof n.x === 'number' ? n.x + deltaX : (newX + 20);
-        var ny = typeof n.y === 'number' ? n.y + deltaY : (newY + 160);
-        return Object.assign({}, n, { x: Math.round(nx), y: Math.round(ny) });
+    if ((deltaX !== 0 || deltaY !== 0) && issue.canvas && Array.isArray(issue.canvas.notes)) {
+      issue.canvas.notes.forEach(function (note) {
+        if (!note || typeof note !== 'object') return;
+        if (typeof note.x === 'number') note.x = Math.round(note.x + deltaX);
+        if (typeof note.y === 'number') note.y = Math.round(note.y + deltaY);
       });
     }
 
-    var updates = { x: newX, y: newY };
-    if (updatedNotes !== undefined) {
-      updates.notes = updatedNotes;
+    issue.canvas = Object.assign({}, issue.canvas || {}, { x: newX, y: newY });
+    state.canvasManualPositions = Object.assign({}, state.canvasManualPositions || {}, positionPatch);
+    if (state.canvasFlowPositions && state.canvasFlowPositions[key]) {
+      state.canvasFlowPositions[key].x = newX;
+      state.canvasFlowPositions[key].y = newY;
     }
 
-    return saveIssueCanvas(issue, updates, {
-      oldPos: oldPos,
-      cardEl: cardEl,
-      isCardMove: true,
-      deltaX: deltaX,
-      deltaY: deltaY,
+    return persistCanvasLayout({ setPositions: positionPatch }).catch(function (err) {
+      if ((deltaX !== 0 || deltaY !== 0) && prevCanvas && Array.isArray(prevCanvas.notes)) {
+        prevCanvas.notes.forEach(function (note) {
+          if (!note || typeof note !== 'object') return;
+          if (typeof note.x === 'number') note.x = Math.round(note.x - deltaX);
+          if (typeof note.y === 'number') note.y = Math.round(note.y - deltaY);
+        });
+      }
+      issue.canvas = prevCanvas;
+      var restored = Object.assign({}, state.canvasManualPositions || {});
+      if (previousPosition) restored[key] = previousPosition; else delete restored[key];
+      state.canvasManualPositions = restored;
+      if (cardEl && oldPos) {
+        cardEl.style.left = oldPos.x + 'px';
+        cardEl.style.top = oldPos.y + 'px';
+      }
+      renderCanvasWires();
+      renderCanvasNotes();
+      var dict = I18N[getLanguage()] || I18N.en;
+      var cleanMsg = canvasLayoutFailureMessage(err, dict).replace(/\.+$/, '');
+      setNotice(cleanMsg + '.', true);
+      throw err;
     });
   }
 
@@ -3806,6 +4523,9 @@
     }
     if (code === 'network_timeout') {
       return dict.canvas_save_timeout || 'Canvas position not saved: the board did not answer in time. Try again.';
+    }
+    if (code === 'discovery_unavailable') {
+      return discoveryFailureMessage((err && err.payload) || err, dict);
     }
     if (code === 'github_forbidden' || code === 'github_unauthorized' || status === 403) {
       return dict.canvas_save_forbidden || 'Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.';
@@ -4566,18 +5286,6 @@
     }
     notesLayer.hidden = false;
 
-    if (Array.isArray(state.canvasProjectBands) && state.canvasProjectBands.length > 0) {
-      state.canvasProjectBands.forEach(function (band) {
-        var bandLabel = el('div', {
-          class: 'canvas-project-band-label',
-          text: band.label,
-        });
-        bandLabel.style.left = band.labelX + 'px';
-        bandLabel.style.top = band.labelY + 'px';
-        notesLayer.appendChild(bandLabel);
-      });
-    }
-
     var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
     if (!issues || issues.length === 0) return;
 
@@ -4596,6 +5304,7 @@
     notesLayer.appendChild(svg);
 
     issues.forEach(function (issue) {
+      if (!canvasIssueIsVisible(issue)) return;
       var rawNotes = (issue.canvas && Array.isArray(issue.canvas.notes)) ? issue.canvas.notes.slice() : [];
       var issuePrefix = identity(issue) + ':';
       activeNoteDrafts.forEach(function (draftVal, key) {
@@ -4711,132 +5420,22 @@
       return;
     }
 
-    var issuesToArrange = [];
-    if (scope === 'all') {
-      issuesToArrange = allIssues.slice();
-    } else {
-      issuesToArrange = allIssues.filter(function (c) {
-        return !(c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y));
-      });
-    }
-
-    if (issuesToArrange.length === 0) {
+    var manual = state.canvasManualPositions || {};
+    var manualKeys = Object.keys(manual);
+    if (scope === 'unplaced' && manualKeys.length === 0) {
       var summaryEl = $('arrange-summary');
       if (summaryEl) {
         summaryEl.hidden = false;
-        summaryEl.textContent = getLanguage() === 'fr' ? 'Toutes les cartes sont positionnées. Choisissez « Toutes les cartes » pour réorganiser.' : 'All cards already placed. Choose "All cards" to re-arrange.';
+        summaryEl.textContent = getLanguage() === 'fr' ? 'Toutes les cartes suivent déjà la disposition automatique. Choisissez « Toutes les cartes » pour réorganiser.' : 'All cards already follow the automatic layout. Choose "All cards" to re-arrange.';
       }
       return;
     }
 
-    state.lastArrangeUndo = new Map();
-    issuesToArrange.forEach(function (c) {
-      state.lastArrangeUndo.set(identity(c), {
-        hadCoordinates: !!(c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y)),
-        saved: false,
-        x: c.canvas ? c.canvas.x : undefined,
-        y: c.canvas ? c.canvas.y : undefined,
-        notes: (c.canvas && Array.isArray(c.canvas.notes)) ? JSON.parse(JSON.stringify(c.canvas.notes)) : [],
-      });
-    });
+    // Arrange is local layout only: snapshot the manual positions so Undo can
+    // restore them, then clear them through /api/layout. GitHub is untouched.
+    state.lastArrangeUndo = { positions: JSON.parse(JSON.stringify(manual)) };
     var undoBtn = $('canvas-arrange-undo');
     if (undoBtn) undoBtn.hidden = false;
-
-    var options = {
-      startX: 120,
-      startY: 80,
-    };
-    if (scope === 'unplaced') {
-      var placed = allIssues.filter(function (c) {
-        return c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y);
-      });
-      if (placed.length > 0) {
-        var maxExtentX = 0;
-        var minY = Infinity;
-        placed.forEach(function (c) {
-          var cardX = c.canvas.x;
-          var cardY = c.canvas.y;
-          var cardW = 280;
-          var cardRight = cardX + cardW;
-          if (Array.isArray(c.canvas.notes)) {
-            c.canvas.notes.forEach(function (n) {
-              var nx = typeof n.x === 'number' ? n.x : cardX + 20;
-              var nw = typeof n.w === 'number' ? n.w : 220;
-              if (nx + nw > cardRight) cardRight = nx + nw;
-            });
-          }
-          if (cardRight > maxExtentX) maxExtentX = cardRight;
-          if (cardY < minY) minY = cardY;
-        });
-        options.startX = Math.max(120, maxExtentX + 120);
-        options.startY = Math.max(80, minY);
-      }
-    }
-
-    var cardsLayer = $('canvas-cards');
-    var cardsInput = issuesToArrange.map(function (c) {
-      var blockers = [];
-      if (Array.isArray(c.blockedBy)) {
-        c.blockedBy.forEach(function (b) {
-          if (b && typeof b === 'object') {
-            blockers.push(identity(b));
-            if (b.number !== undefined) blockers.push(String(b.number));
-          } else if (b !== null && b !== undefined) {
-            blockers.push(String(b));
-          }
-        });
-      }
-      var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(c) + '"]') : null;
-      var w = cardEl ? (cardEl.offsetWidth || 280) : 280;
-      var h = cardEl ? (cardEl.offsetHeight || 150) : 150;
-      return {
-        id: identity(c),
-        number: c.number,
-        project: (c.repository && c.repository.name) ? c.repository.name : 'Default',
-        blockers: blockers,
-        w: w,
-        h: h,
-        x: c.canvas ? c.canvas.x : undefined,
-        y: c.canvas ? c.canvas.y : undefined,
-        notes: (c.canvas && Array.isArray(c.canvas.notes)) ? c.canvas.notes : [],
-      };
-    });
-
-    var arrangeFn = (typeof window !== 'undefined' && typeof window.arrangeCards === 'function')
-      ? window.arrangeCards
-      : safeArrangeCards;
-    var layoutResult = arrangeFn(cardsInput, options);
-
-    issuesToArrange.forEach(function (issue) {
-      var key = identity(issue);
-      var pos = layoutResult.get(key) || layoutResult[key];
-      if (pos) {
-        var oldX = (issue.canvas && typeof issue.canvas.x === 'number') ? issue.canvas.x : pos.x;
-        var oldY = (issue.canvas && typeof issue.canvas.y === 'number') ? issue.canvas.y : pos.y;
-        var deltaX = pos.x - oldX;
-        var deltaY = pos.y - oldY;
-
-        issue.canvas = Object.assign({}, issue.canvas || {}, {
-          x: pos.x,
-          y: pos.y,
-        });
-
-        if (issue.canvas && Array.isArray(issue.canvas.notes)) {
-          issue.canvas.notes.forEach(function (n) {
-            var nx = typeof n.x === 'number' ? n.x + deltaX : (pos.x + 20);
-            var ny = typeof n.y === 'number' ? n.y + deltaY : (pos.y + 160);
-            n.x = Math.round(nx);
-            n.y = Math.round(ny);
-          });
-        }
-      }
-    });
-
-    if (Array.isArray(layoutResult.bands)) {
-      state.canvasProjectBands = layoutResult.bands;
-    }
-
-    renderCanvasIssues(allIssues);
 
     var progressContainer = $('arrange-progress-container');
     var progressBar = $('arrange-progress-bar');
@@ -4849,44 +5448,20 @@
     if (arrangeSummaryEl) arrangeSummaryEl.hidden = true;
     if (confirmBtn) confirmBtn.disabled = true;
     if (cancelBtn) cancelBtn.disabled = true;
+    if (progressText) progressText.textContent = getLanguage() === 'fr' ? 'Réorganisation…' : 'Arranging…';
+    if (progressBar) progressBar.style.width = '100%';
 
-    var total = issuesToArrange.length;
-    var savedCount = 0;
+    var savedCount = allIssues.length;
     var failedCount = 0;
-
-    for (var i = 0; i < issuesToArrange.length; i++) {
-      var cur = issuesToArrange[i];
-      if (progressText) progressText.textContent = (getLanguage() === 'fr' ? 'Enregistrement ' : 'Saving ') + (i + 1) + ' / ' + total + '…';
-      if (progressBar) progressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
-      try {
-        await saveIssueCanvas(cur, {
-          x: cur.canvas.x,
-          y: cur.canvas.y,
-          notes: cur.canvas.notes,
-        });
-        savedCount++;
-        var snap = state.lastArrangeUndo.get(identity(cur));
-        if (snap) snap.saved = true;
-      } catch (e) {
-        failedCount++;
-        // Keep the screen honest: a card whose save failed returns to its saved place.
-        var failedSnap = state.lastArrangeUndo.get(identity(cur));
-        if (failedSnap && cur.canvas) {
-          if (failedSnap.hadCoordinates) {
-            cur.canvas.x = failedSnap.x;
-            cur.canvas.y = failedSnap.y;
-          } else {
-            delete cur.canvas.x;
-            delete cur.canvas.y;
-          }
-          if (failedSnap.notes.length > 0) cur.canvas.notes = JSON.parse(JSON.stringify(failedSnap.notes));
-        }
-      }
-    }
-
-    if (failedCount > 0) renderCanvasIssues(allIssues);
-    if (savedCount === 0 && undoBtn) {
-      undoBtn.hidden = true;
+    try {
+      await persistCanvasLayout({ resetPositions: true });
+      state.canvasManualPositions = {};
+      renderCanvasIssues(allIssues);
+      frameFilteredCanvas();
+    } catch (error) {
+      failedCount = allIssues.length;
+      savedCount = 0;
+      if (undoBtn) undoBtn.hidden = true;
     }
 
     if (confirmBtn) confirmBtn.disabled = false;
@@ -4907,55 +5482,28 @@
   }
 
   async function undoLastArrange() {
-    if (!state.lastArrangeUndo) return;
+    var snapshot = state.lastArrangeUndo;
+    if (!snapshot) return;
     var undoBtn = $('canvas-arrange-undo');
     if (undoBtn) undoBtn.disabled = true;
 
     var allIssues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
-    for (var i = 0; i < allIssues.length; i++) {
-      var issue = allIssues[i];
-      var snap = state.lastArrangeUndo.get(identity(issue));
-      if (snap && snap.saved) {
-        if (!issue.canvas) issue.canvas = {};
-        if (snap.hadCoordinates) {
-          issue.canvas.x = snap.x;
-          issue.canvas.y = snap.y;
-        } else {
-          delete issue.canvas.x;
-          delete issue.canvas.y;
-        }
-        // Restore only the positions of notes that existed at Arrange time; keep notes
-        // added or edited since then instead of overwriting them with the old snapshot.
-        var snapNotesById = new Map();
-        (snap.notes || []).forEach(function (sn) { snapNotesById.set(sn.id, sn); });
-        var currentNotes = Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
-        var restoredNotes = currentNotes.map(function (n) {
-          var sn = snapNotesById.get(n.id);
-          return sn ? Object.assign({}, n, { x: sn.x, y: sn.y }) : n;
-        });
-        if (currentNotes.length > 0) issue.canvas.notes = restoredNotes;
-
-        try {
-          var undoPayload = {};
-          if (currentNotes.length > 0) undoPayload.notes = restoredNotes;
-          if (snap.hadCoordinates) {
-            undoPayload.x = snap.x;
-            undoPayload.y = snap.y;
-          } else {
-            undoPayload.clearPosition = true;
-          }
-          await saveIssueCanvas(issue, undoPayload);
-        } catch (_) {}
-      }
+    try {
+      // Reset then restore the exact snapshot so a position added after Arrange
+      // cannot survive the undo.
+      await persistCanvasLayout({ resetPositions: true, setPositions: snapshot.positions || {} });
+    } catch (_) {
+      if (undoBtn) undoBtn.disabled = false;
+      return;
     }
 
-    state.canvasProjectBands = null;
     state.lastArrangeUndo = null;
     if (undoBtn) {
       undoBtn.hidden = true;
       undoBtn.disabled = false;
     }
     renderCanvasIssues(allIssues);
+    frameFilteredCanvas();
   }
 
   function chooseWirePorts(source, target, cardList) {
@@ -5177,6 +5725,8 @@
 
     var existingGroups = wiresLayer.querySelectorAll('.canvas-wire-group');
     existingGroups.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
+    var existingFlow = wiresLayer.querySelectorAll('.canvas-flow-wire');
+    existingFlow.forEach(function (path) { if (path.parentNode) path.parentNode.removeChild(path); });
     var labelsLayer = $('canvas-wire-labels');
     if (labelsLayer) labelsLayer.textContent = '';
     canvasCardRectsCache = null;
@@ -5190,12 +5740,20 @@
       toggle.setAttribute('title', fr ? 'Dépendances' : 'Dependencies');
     }
     if (!visible) return;
+
+    // Group-level edges exist even when every group is collapsed, so they are
+    // drawn before the card loop and its early return.
+    var allPoints = [];
+    renderFlowEdges(wiresLayer, allPoints);
+
     var cardElements = cardsLayer.querySelectorAll('.canvas-card');
-    if (cardElements.length === 0) return;
+    if (cardElements.length === 0) {
+      canvasCardRectsCache = null;
+      return;
+    }
 
     var cardMap = new Map();
     var cardByKey = new Map();
-    var allPoints = [];
     var cardRects = [];
 
     cardElements.forEach(function (card) {
@@ -5213,6 +5771,17 @@
       cardRects.push({ key: key, x: pos.x, y: pos.y, w: pos.w, h: pos.h });
       allPoints.push({ x: pos.x, y: pos.y });
       allPoints.push({ x: pos.x + pos.w, y: pos.y + pos.h });
+    });
+    // Collapsed group cards and expanded frames are part of the layout the
+    // viewport frames and the wire labels avoid.
+    cardsLayer.querySelectorAll('.canvas-group-card, .canvas-group-frame').forEach(function (node) {
+      cardRects.push({
+        key: node.getAttribute('data-group-key'),
+        x: node.offsetLeft,
+        y: node.offsetTop,
+        w: node.offsetWidth || 280,
+        h: node.offsetHeight || 96,
+      });
     });
     canvasCardRectsCache = cardRects;
 
@@ -5685,34 +6254,46 @@
     var cardsLayer = $('canvas-cards');
     if (!cardsLayer) return;
     cardsLayer.textContent = '';
+    canvasCardRectsCache = null;
 
-    var positions = computeCanvasCardPositions(issues);
+    // The flow layout owns positions: groups start collapsed, expanded groups
+    // expose their cards, and dependency edges connect whatever is visible.
+    var layout = computeFlowLayout(issues);
+    state.canvasGroups = Array.isArray(layout.groups) ? layout.groups : [];
+    state.canvasFlowPositions = layout.positions || {};
+    state.canvasFlowEdges = Array.isArray(layout.edges) ? layout.edges : [];
+    // The layout only knows stages; the checklist and question ratios come
+    // from the cards the group hides, so a collapsed group still tells the truth.
+    state.canvasGroups.forEach(function (group) {
+      group.progress = groupProgressOf(group.groupKey, issues);
+      group.needsMe = groupNeedsMeOf(group.groupKey, issues);
+    });
+
+    state.canvasGroups.forEach(function (group) {
+      cardsLayer.appendChild(group.collapsed ? createCollapsedGroupCard(group) : createExpandedGroupFrame(group));
+    });
 
     issues.forEach(function (issue) {
       var key = identity(issue);
-      var pos = positions.get(key) || { x: 60, y: 60, saved: false };
-      var cardEl = createIssueCanvasCard(issue, pos);
+      var pos = state.canvasFlowPositions[key];
+      if (!pos) return; // card sits inside a collapsed group
+      syncIssueNotesToPosition(issue, pos.x, pos.y);
+      var cardEl = createIssueCanvasCard(issue, { x: pos.x, y: pos.y, saved: true });
       cardsLayer.appendChild(cardEl);
-      attachCardDrag(cardEl, issue, pos);
+      attachCardDrag(cardEl, issue, { x: pos.x, y: pos.y, saved: true });
       var portEls = cardEl.querySelectorAll('.canvas-card-port');
       portEls.forEach(function (portEl) { attachPortDrag(portEl, cardEl, issue); });
     });
 
     renderCanvasWires();
     renderCanvasNotes();
+    updateCanvasDirectionButtons();
 
     if (!state.canvasHasSavedState && issues.length > 0) {
       state.canvasHasSavedState = true;
-      fitAllCanvasNodes();
-      var viewport = $('canvas-viewport');
-      if (viewport && viewport.clientWidth <= 640 && state.canvasScale < 0.55) {
-        state.canvasScale = 0.55;
-        var positions = computeCanvasCardPositions(issues);
-        var first = Array.from(positions.values()).sort(function (a, b) { return a.x - b.x || a.y - b.y; })[0];
-        state.canvasPanX = 20 - (first ? first.x : 0) * state.canvasScale;
-        state.canvasPanY = 24 - (first ? first.y : 0) * state.canvasScale;
-        updateCanvasTransform();
-      }
+      // Frame at the readable floor, never at an unreadable whole-board zoom.
+      // "Show all" remains the explicit way to cross that floor.
+      frameFilteredCanvas();
     } else {
       updateCanvasTransform();
     }
@@ -5921,6 +6502,13 @@
       arrangeUndoBtn.addEventListener('click', undoLastArrange);
     }
 
+    ['auto', 'LR', 'TD'].forEach(function (mode) {
+      var button = $('canvas-direction-' + mode.toLowerCase());
+      if (!button) return;
+      button.addEventListener('click', function () { setCanvasDirection(mode); });
+    });
+    updateCanvasDirectionButtons();
+
     var arrangeConfirmBtn = $('arrange-confirm-btn');
     if (arrangeConfirmBtn) {
       arrangeConfirmBtn.addEventListener('click', executeArrange);
@@ -6002,7 +6590,7 @@
     $('board-count').textContent = issues.length + ' ' + unit;
     var scopeStatus = $('scope-status');
     if (scopeStatus) {
-      var reasons = (board.failures || []).map(function (failure) { return shortName(failure.repository.full) + ': ' + failure.message; });
+      var reasons = (board.failures || []).map(function (failure) { return shortName(failure.repository.full) + ': ' + failureRowMessage(failure, dict); });
       if (board.truncatedByIssueCap) reasons.push('combined issue cap of ' + board.issueCap + ' reached');
       var statusWarning = board.partial ? 'Partial refresh — results are NOT complete. ' + reasons.join('; ') :
         board.repository && !board.repository.hasIssues ? 'Issues disabled for this project.' : board.repository && board.repository.archived ? 'Archived project — GitHub may refuse edits.' : '';
@@ -6166,8 +6754,9 @@
     if ($('repo-api-footer')) $('repo-api-footer').textContent = apiHealthText();
 
     $('repository-picker').hidden = false;
-    $('discovery-status').textContent = view.discoveryFailed
-      ? (getLanguage() === 'fr' ? 'Échec de découverte — dernière liste conservée ; actualisez plus tard. Les opérations de dépôt sont suspendues.' : 'Discovery failed — last known picker retained; refresh later. Repository operations are paused.')
+    var activeFailure = state.discoveryFailure || (view.discoveryFailed ? view : null);
+    $('discovery-status').textContent = activeFailure
+      ? discoveryFailureMessage(activeFailure, I18N[getLanguage()] || I18N.en)
       : (!view.visibleCount ? (getLanguage() === 'fr' ? 'Aucun dépôt visible pour ce jeton.' : 'No repositories visible to this token.') : (getLanguage() === 'fr' ? 'Seuls les dépôts visibles par le jeton sont listés.' : 'Only repositories visible to the bot token are listed.'));
     $('refresh-policy').textContent = 'Discovery cached for ' + (view.freshnessMs / 1000) +
       's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository and at most 500 issues in total. Hidden private repositories cannot be enumerated.';
@@ -6284,6 +6873,148 @@
     var digest = await window.crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(digest)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
   }
+  // One sentence per discovery failure cause, so a refused token, a rate limit
+  // and an unreachable GitHub never read the same. The server sends the kind;
+  // an older payload without one falls back to the generic sentence.
+  function discoveryResetClock(iso) {
+    if (!iso) return '';
+    var date = new Date(iso);
+    if (isNaN(date.getTime())) return '';
+    // A reset that has already passed is not a useful refresh time; omitting it
+    // falls back to the honest "try again shortly" sentence.
+    if (date.getTime() <= Date.now()) return '';
+    var now = new Date();
+    var locale = getLanguage() === 'fr' ? 'fr-FR' : 'en-GB';
+    var sameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+    try {
+      var clock = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+      if (sameDay) return clock;
+      // Another calendar day needs its date, or "08:00" is ambiguous.
+      return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + clock;
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function discoveryFailureMessage(view, dict) {
+    dict = dict || I18N[getLanguage()] || I18N.en;
+    var kind = view && view.errorKind ? String(view.errorKind) : '';
+    if (kind === 'auth') {
+      return dict.discovery_failed_auth || 'The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.';
+    }
+    if (kind === 'rate_limited') {
+      var clock = discoveryResetClock(view && view.errorResetAt);
+      if (clock) {
+        return (dict.discovery_failed_rate_limited || 'GitHub is limiting the board temporarily. Refresh after {time}.').replace('{time}', clock);
+      }
+      return dict.discovery_failed_rate_limited_no_reset || 'GitHub is limiting the board temporarily. Try again shortly.';
+    }
+    if (kind === 'network') {
+      return dict.discovery_failed_network || 'GitHub is unreachable from the server. Your session is intact; try again shortly.';
+    }
+    return dict.discovery_failed_other || 'Discovery failed — tasks are not refreshed. Refresh to try again.';
+  }
+
+  // Archive and Operations must name a discovery failure like every other
+  // surface, instead of collapsing its 503 into "Server error.".
+  function loadFailureDetail(err, dict) {
+    dict = dict || I18N[getLanguage()] || I18N.en;
+    if (err && err.code === 'discovery_unavailable') {
+      return discoveryFailureMessage((err && err.payload) || err, dict);
+    }
+    if (err && err.status === 401) return dict.error_unauthorized || 'Authentication required.';
+    if (err && err.status >= 500) return dict.error_server || 'Server error.';
+    return (err && err.message) || 'error';
+  }
+
+  // The toolbar carries only a short cause label; the full sentence stays in
+  // #notice, #empty-state and the project popover.
+  function discoveryStatusLabel(view, dict) {
+    dict = dict || I18N[getLanguage()] || I18N.en;
+    var kind = view && view.errorKind ? String(view.errorKind) : '';
+    if (kind === 'auth') return dict.discovery_short_auth || 'GitHub token refused';
+    if (kind === 'rate_limited') return dict.discovery_short_rate_limited || 'GitHub rate limit';
+    if (kind === 'network') return dict.discovery_short_network || 'GitHub unreachable';
+    return dict.discovery_short_other || 'Discovery failed';
+  }
+
+  // Aggregate failure rows reuse the cause sentence; a per-repository failure
+  // without a cause keeps its own message.
+  function failureRowMessage(failure, dict) {
+    if (failure && failure.errorKind) return discoveryFailureMessage(failure, dict);
+    return (failure && failure.message) || '';
+  }
+
+  // Canvas cards are not re-rendered when the board is null, so they must be
+  // removed explicitly. Otherwise a stale card stays visible and clickable
+  // while every surface says discovery failed.
+  function clearCanvasForDiscoveryFailure() {
+    var cards = $('canvas-cards');
+    if (cards) cards.textContent = '';
+    var wires = $('canvas-wires');
+    if (wires) wires.textContent = '';
+    var labels = $('canvas-wire-labels');
+    if (labels) labels.textContent = '';
+    var overlay = $('canvas-overlay');
+    if (overlay) overlay.textContent = '';
+    canvasCardRectsCache = null;
+    state.currentCanvasIssues = [];
+  }
+
+  function clearDiscoveryFailure() {
+    state.discoveryFailure = null;
+    var boardView = $('board-view');
+    if (boardView && boardView.classList) boardView.classList.remove('is-discovery-failed');
+    if ($('empty-hint')) $('empty-hint').hidden = false;
+    if ($('empty-create')) {
+      $('empty-create').hidden = false;
+      $('empty-create').disabled = !availableProjects().length;
+    }
+    // Discovery recovered, so the toolbar capture button is usable again.
+    if ($('new-task-btn')) $('new-task-btn').disabled = false;
+  }
+
+  function renderDiscoveryFailure() {
+    var failure = state.discoveryFailure;
+    if (!failure) return;
+    var dict = I18N[getLanguage()] || I18N.en;
+    var message = discoveryFailureMessage(failure, dict);
+    var empty = $('empty-state');
+    if (empty) {
+      empty.hidden = false;
+      var paragraph = empty.querySelector && empty.querySelector('p');
+      if (paragraph) paragraph.textContent = message;
+    }
+    setNotice(message, true);
+    if ($('scope-status')) $('scope-status').textContent = discoveryStatusLabel(failure, dict);
+    if ($('discovery-status')) $('discovery-status').textContent = message;
+    if ($('empty-hint')) $('empty-hint').hidden = true;
+    if ($('empty-create')) {
+      $('empty-create').hidden = true;
+      $('empty-create').disabled = true;
+    }
+    // The toolbar capture button cannot pick a project it has not discovered,
+    // so it must say so by being unavailable rather than failing on click.
+    if ($('new-task-btn')) $('new-task-btn').disabled = true;
+    var boardView = $('board-view');
+    if (boardView && boardView.classList) boardView.classList.add('is-discovery-failed');
+  }
+
+  function enterDiscoveryFailure(view) {
+    state.discoveryFailure = {
+      errorKind: (view && view.errorKind) || null,
+      errorResetAt: (view && view.errorResetAt) || null,
+      failures: (view && Array.isArray(view.failures)) ? view.failures : [],
+    };
+    state.board = null;
+    clearCanvasForDiscoveryFailure();
+    $('task-list').textContent = '';
+    $('board-count').textContent = '';
+    $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
+    renderDiscoveryFailure();
+    showView('board');
+  }
+
   async function loadBoard(forceRefresh) {
     rememberDraft();
     state.readGeneration++;
@@ -6311,23 +7042,40 @@
       renderPicker();
       state.boardLoad = { generation: generation, scope: state.selected };
       var selected = view.repositories.find(function (repository) { return repository.full === state.selected; });
-      if (view.discoveryFailed || (state.selected !== 'all' && (!selected || !selected.available))) {
-        var message = view.discoveryFailed ? 'Discovery failed — tasks are not refreshed.' : state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
+      if (view.discoveryFailed) {
+        enterDiscoveryFailure(view);
+        return;
+      }
+      if (state.selected !== 'all' && (!selected || !selected.available)) {
+        var unavailableMessage = state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
         state.board = null;
+        // Discovery recovered: an earlier failure must not keep the CTA hidden
+        // or replace this message on the next language switch.
+        clearDiscoveryFailure();
+        clearCanvasForDiscoveryFailure();
         $('task-list').textContent = '';
         $('board-count').textContent = '';
         $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
         $('empty-state').hidden = false;
-        $('empty-state').querySelector('p').textContent = message;
-        $('scope-status').textContent = message;
-        setNotice(message, true);
+        $('empty-state').querySelector('p').textContent = unavailableMessage;
+        $('scope-status').textContent = unavailableMessage;
+        setNotice(unavailableMessage, true);
         showView('board');
         return;
       }
       var path = selected ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/board' : '/api/combined/board';
       var board = await api(path + suffix);
       if (generation !== state.boardGeneration) return;
+      // Discovery can fail between /api/repos and the board read. The combined
+      // payload then carries discoveryFailed; treating it as an empty board
+      // would overwrite the cached tasks with issues: [].
+      if (board && board.discoveryFailed) {
+        enterDiscoveryFailure(board);
+        return;
+      }
+      clearDiscoveryFailure();
       state.board = board;
+      applyServerLayout(board && board.layout);
       saveCachedBoard(board);
       state.uncertain.clear();
       state.loadedAt = Date.now();
@@ -6347,15 +7095,29 @@
       showView(state.activeSectionView || 'board');
     } catch (error) {
       if (error.status === 401 || generation !== state.boardGeneration) return;
+      if (error.code === 'discovery_unavailable') {
+        enterDiscoveryFailure(error.payload);
+        return;
+      }
       if (state.board && previousScope === (state.selected === 'all' ? 'All repositories' : state.selected)) {
         state.stale = true;
         renderFreshness();
         setNotice(getLanguage() === 'fr' ? 'Actualisation impossible (' + (error.message || 'erreur réseau') + '). Affichage du dernier tableau chargé.' : 'Could not refresh (' + (error.message || 'network error') + '). Showing the last board loaded in this browser.', true);
       } else {
         state.board = null;
+        // This failure is not a discovery failure, so the previous discovery
+        // sentence must not stay in state or re-render on a language switch.
+        clearDiscoveryFailure();
+        clearCanvasForDiscoveryFailure();
         $('task-list').textContent = '';
         $('board-count').textContent = '';
         $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
+        // A previous scope warning (unavailable project, partial refresh) must
+        // not survive a failed load of a different scope.
+        if ($('scope-status')) {
+          $('scope-status').textContent = '';
+          $('scope-status').className = 'status-strip-scope';
+        }
         $('empty-state').hidden = false;
         var failureDetails = error.message ? 'The board could not be loaded: ' + error.message : 'The board could not be loaded — unavailable, not empty.';
         $('empty-state').querySelector('p').textContent = failureDetails;
@@ -6446,16 +7208,23 @@
     var closedLabel = getLanguage() === 'fr' ? 'fermé' : 'closed';
     var openLabel = getLanguage() === 'fr' ? 'ouvert' : 'open';
     container.appendChild(badge(issue.state === 'closed' ? closedLabel : openLabel, 'state-' + (issue.state === 'closed' ? 'closed' : 'open')));
-    container.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+    // When the human-review gate is visible its heading already states the
+    // status ("Waiting for you", "Agent reviewing"); repeating it as a badge
+    // puts two names for one state above the instruction.
+    if (!humanReviewStatus(issue)) container.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
     if (priorityOf(issue)) container.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
     if (issue.repository) {
       container.appendChild(projectBadge(issue.repository));
       if (issue.repository.archived) container.appendChild(badge('archived'));
     }
     if (!state.clientPresentationMode) {
-      if (issue.phase && !isVanillaMarkdownIssue(issue)) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
+      if (issue.phase && !isVanillaMarkdownIssue(issue)) container.appendChild(badge(phaseText(issue.phase), 'phase'));
       if (issue.attention && issue.attention !== 'none') {
-        container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
+        // The status badge already says "Waiting for you"; a second label that
+        // names the same state only adds chrome before the actual instruction.
+        var attention = attentionText(issue.attention);
+        var status = statusText('status:' + stageOf(issue));
+        if (attention && attention !== status) container.appendChild(badge(attention, 'attention'));
       }
     }
     if (issue.number !== undefined && issue.number !== null) {
@@ -6679,8 +7448,11 @@
     }
 
     if (!review || review.state === 'missing' || review.state === 'malformed') {
-      title.textContent = dict.human_review_missing;
-      body.appendChild(el('p', { class: 'human-review-help', text: dict.human_review_missing_help }));
+      // Two different failures, two different answers: nothing was attached
+      // versus something was attached but cannot be used.
+      var isMalformed = Boolean(review && review.state === 'malformed');
+      title.textContent = isMalformed ? dict.human_review_malformed : dict.human_review_missing;
+      body.appendChild(el('p', { class: 'human-review-help', text: isMalformed ? dict.human_review_malformed_help : dict.human_review_missing_help }));
       var reason = humanReviewReasonText(review, dict);
       if (reason) body.appendChild(el('p', { class: 'human-review-reason muted small', text: reason }));
       return;
@@ -7076,7 +7848,8 @@
     if (blockedByContainer && noBlockedByEl) {
       blockedByContainer.textContent = '';
       var blockedByList = Array.isArray(issue.blockedBy) ? issue.blockedBy : [];
-      noBlockedByEl.hidden = blockedByList.length > 0;
+      // A negative sentence is not information: an empty list says it already.
+      noBlockedByEl.hidden = true;
 
       blockedByList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
@@ -7132,7 +7905,11 @@
     if (blockingContainer && noBlockingEl) {
       blockingContainer.textContent = '';
       var blockingList = Array.isArray(issue.blocking) ? issue.blocking : [];
-      noBlockingEl.hidden = blockingList.length > 0;
+      noBlockingEl.hidden = true;
+      // Nothing blocks on this task: hide the whole read-only subsection rather
+      // than leaving a heading over an apology.
+      var blockingBlock = $('blocking-block');
+      if (blockingBlock) blockingBlock.hidden = blockingList.length === 0;
 
       blockingList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
@@ -7250,6 +8027,17 @@
       priority.textContent = (getLanguage() === 'fr' ? 'Priorité : ' : 'Priority: ') + (priorityOf(issue) ? priorityText(priorityOf(issue)) : (getLanguage() === 'fr' ? 'Définir sur GitHub' : 'Set on GitHub'));
       priority.title = getLanguage() === 'fr' ? 'Modifier les étiquettes sur GitHub' : 'Edit labels on GitHub';
     }
+    var orderInput = $('order-input');
+    if (orderInput) {
+      orderInput.value = Number.isFinite(issue.order) ? String(issue.order) : '';
+      orderInput.disabled = Boolean(state.busy);
+    }
+    var orderStatus = $('order-status');
+    if (orderStatus) {
+      orderStatus.textContent = Number.isFinite(issue.order)
+        ? (getLanguage() === 'fr' ? 'Ordre manuel' : 'Manual order')
+        : (getLanguage() === 'fr' ? 'Ordre automatique' : 'Automatic order');
+    }
     $('detail-freshness').textContent = (getLanguage() === 'fr' ? 'Mis à jour sur GitHub ' : 'Updated on GitHub ') + relative(issue.updatedAt);
 
     var banner = $('conflict-banner');
@@ -7261,6 +8049,7 @@
 
     renderChecklist('ac-list', 'no-ac', issue.acceptanceCriteria || [], true);
     renderChecklist('subtasks-list', 'no-subtasks', issue.subtasks || [], false);
+    updateChecklistProgress(issue);
 
     var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
     var overview = sections.length > 0 ? sections[0] : null;
@@ -7447,7 +8236,11 @@
       $('signout-btn').hidden = false;
     } catch (error) {
       if (error.status === 401 || generation !== state.readGeneration) return;
-      setNotice(error.message + '.', true);
+      if (error.code === 'discovery_unavailable') {
+        setNotice(error.message, true);
+        return;
+      }
+      setNotice(/[.!?]$/.test(error.message) ? error.message : error.message + '.', true);
     }
   }
 
@@ -7523,7 +8316,7 @@
         }
         $('save-status').textContent = msg.endsWith('.') ? msg : msg + '.';
       } else {
-        $('save-status').textContent = error.message + '.';
+        $('save-status').textContent = /[.!?]$/.test(error.message) ? error.message : error.message + '.';
       }
     } finally {
       state.busy = false;
@@ -7578,7 +8371,7 @@
         }
         setNotice(msg, true);
       } else {
-        setNotice(error.message + '.', true);
+        setNotice(/[.!?]$/.test(error.message) ? error.message : error.message + '.', true);
       }
     } finally { state.busy = false; }
   }
@@ -7625,7 +8418,7 @@
         }
         setNotice(msg, true);
       } else {
-        setNotice(error.message + '.', true);
+        setNotice(/[.!?]$/.test(error.message) ? error.message : error.message + '.', true);
       }
     } finally { state.busy = false; }
   }
@@ -7659,7 +8452,10 @@
   function isIssueDecision(issue) {
     if (!issue || issue.state === 'closed') return false;
     if (state.clientPresentationMode && isDraftIssue(issue)) return false;
-    return Array.isArray(issue.openQuestions) && issue.openQuestions.some(function (q) { return !q.completed; });
+    // The list item carries counts; the detail carries arrays. Either source
+    // answering "there is an open question" is enough, so the badge and the
+    // page it points at always agree.
+    return hasOpenQuestions(issue);
   }
 
   function isIssueBlocked(issue) {
@@ -7675,18 +8471,17 @@
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
     var decisionsCount = 0;
     var blockedCount = 0;
+    var attentionCount = 0;
 
     items.forEach(function (item) {
       if (item.state === 'closed') return;
       if (state.clientPresentationMode && isDraftIssue(item)) return;
-      if (!state.clientPresentationMode && Array.isArray(item.openQuestions)) {
-        item.openQuestions.forEach(function (q) {
-          if (!q.completed) decisionsCount++;
-        });
-      }
-      if (isIssueBlocked(item)) {
-        blockedCount++;
-      }
+      // A badge counts what its view renders: one card per issue, never one
+      // count per question. Presentation mode hides every question, so its
+      // badge must not promise cards the view refuses to show.
+      if (!state.clientPresentationMode && isIssueDecision(item)) decisionsCount++;
+      if (isIssueBlocked(item)) blockedCount++;
+      if (needsHumanAttention(item)) attentionCount++;
     });
 
     var dBadge = $('decisions-nav-badge');
@@ -7698,6 +8493,12 @@
     if (bBadge) {
       bBadge.textContent = String(blockedCount);
       bBadge.hidden = blockedCount === 0;
+    }
+    var aBadge = $('list-nav-badge');
+    if (aBadge) {
+      aBadge.textContent = String(attentionCount);
+      aBadge.hidden = attentionCount === 0;
+      aBadge.title = (I18N[getLanguage()] || I18N.en).needs_me || 'Needs me';
     }
 
     ['decisions', 'blocked'].forEach(function (name) {
@@ -7815,15 +8616,8 @@
       return timeB - timeA;
     });
 
-    var totalQuestions = 0;
-    decisionIssues.forEach(function (it) {
-      it.openQuestions.forEach(function (q) {
-        if (!q.completed) totalQuestions++;
-      });
-    });
-
     var countBadge = $('decisions-count-badge');
-    if (countBadge) countBadge.textContent = String(totalQuestions);
+    if (countBadge) countBadge.textContent = String(decisionIssues.length);
 
     if (decisionIssues.length === 0) {
       list.textContent = '';
@@ -7862,6 +8656,10 @@
       if (issue.updatedAt) {
         meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
       }
+      // The list item may carry only counts, so read the shared ratio rather
+      // than an array the board response might omit.
+      var openQuestionCount = progressOf(issue).questions.open;
+      if (openQuestionCount > 0) meta.appendChild(el('span', { class: 'muted' }, questionCountLabel(openQuestionCount)));
       header.appendChild(meta);
       card.appendChild(header);
 
@@ -7987,7 +8785,7 @@
     var openBlockers = Array.isArray(issue.blockedBy) ? issue.blockedBy.filter(function (dep) {
       return dep.state === 'open' || dep.state === undefined;
     }) : [];
-    if (groupKind === 'dep' && openBlockers.length > 0) {
+    if (openBlockers.length > 0) {
       var depsContainer = el('div', { class: 'blocked-dependencies' });
       var depsLabel = el('div', { class: 'blocked-deps-label' }, dict.blocked_by_dependencies || 'Blocked by');
       depsContainer.appendChild(depsLabel);
@@ -8046,6 +8844,9 @@
     var humanIssues = [];
     var depIssues = [];
 
+    // One task, one card. A task that both waits on you and on another task is
+    // listed once, in the human group; its dependency chips still show inside
+    // that card, so nothing is hidden.
     blockedIssues.forEach(function (it) {
       var isNeedsHuman = it.statusLabel === 'status:needs-human';
       var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
@@ -8053,8 +8854,7 @@
 
       if (isNeedsHuman || hasUncheckedTasks) {
         humanIssues.push(it);
-      }
-      if (hasOpenBlockers) {
+      } else if (hasOpenBlockers) {
         depIssues.push(it);
       }
     });
@@ -8098,7 +8898,7 @@
     if (data.failures && data.failures.length > 0) {
       var failMsgs = data.failures.map(function (f) {
         var repoName = (f.repository && (f.repository.full || f.repository.name)) || '';
-        return (repoName ? repoName + ': ' : '') + f.message;
+        return (repoName ? repoName + ': ' : '') + failureRowMessage(f, dict);
       }).join('; ');
       messages.push((dict.warning_repository_failures || 'Some repositories failed to load') + (failMsgs ? ': ' + failMsgs : ''));
     }
@@ -8188,11 +8988,7 @@
       }
     } catch (err) {
       var dict = I18N[getLanguage()] || I18N.en;
-      var errDetail = (err && err.status === 401)
-        ? (dict.error_unauthorized || 'Authentication required.')
-        : (err && err.status >= 500)
-          ? (dict.error_server || 'Server error.')
-          : ((err && err.message) || 'error');
+      var errDetail = loadFailureDetail(err, dict);
       if (loading) loading.textContent = (dict.operations_load_error || 'Could not load operations data') + ': ' + errDetail;
     }
   }
@@ -8234,11 +9030,7 @@
       renderArchiveTabs();
     } catch (err) {
       var dict = I18N[getLanguage()] || I18N.en;
-      var errDetail = (err && err.status === 401)
-        ? (dict.error_unauthorized || 'Authentication required.')
-        : (err && err.status >= 500)
-          ? (dict.error_server || 'Server error.')
-          : ((err && err.message) || 'error');
+      var errDetail = loadFailureDetail(err, dict);
       if (loading) loading.textContent = (dict.archive_load_error || 'Could not load archive') + ': ' + errDetail;
     }
   }
@@ -8635,7 +9427,10 @@
           renderBoard();
         }
         announce('Draft added. No agent started.'); setNotice('');
-      } catch (error) { setNotice(error.message + ' Your text is retained. Refresh before retrying an unknown outcome.', true); }
+      } catch (error) {
+        if (error.code === 'discovery_unavailable') setNotice(error.message, true);
+        else setNotice(error.message + ' Your text is retained. Refresh before retrying an unknown outcome.', true);
+      }
       finally { input.disabled = false; input.focus(); }
     });
 
@@ -8768,6 +9563,46 @@
     var markDoneBtn = $('mark-done-btn');
     if (markDoneBtn) {
       markDoneBtn.addEventListener('click', toggleMarkDone);
+    }
+
+    var orderApplyBtn = $('order-apply');
+    if (orderApplyBtn) {
+      orderApplyBtn.addEventListener('click', async function () {
+        if (!state.detail || state.busy) return;
+        var input = $('order-input');
+        var value = input ? Number(input.value) : NaN;
+        if (!Number.isFinite(value)) {
+          setNotice(getLanguage() === 'fr' ? 'Saisissez un nombre pour l’ordre d’exécution.' : 'Enter a number for the execution order.', true);
+          return;
+        }
+        state.busy = true;
+        try {
+          await saveIssueOrder(state.detail, value);
+          renderDetail(false);
+          announce(getLanguage() === 'fr' ? 'Ordre enregistré.' : 'Order saved.');
+        } catch (error) {
+          setNotice(error && error.message ? error.message : (getLanguage() === 'fr' ? 'Échec de l’enregistrement de l’ordre.' : 'Could not save the order.'), true);
+        } finally {
+          state.busy = false;
+        }
+      });
+    }
+
+    var orderAutoBtn = $('order-auto');
+    if (orderAutoBtn) {
+      orderAutoBtn.addEventListener('click', async function () {
+        if (!state.detail || state.busy) return;
+        state.busy = true;
+        try {
+          await saveIssueOrder(state.detail, null);
+          renderDetail(false);
+          announce(getLanguage() === 'fr' ? 'Ordre automatique rétabli.' : 'Automatic order restored.');
+        } catch (error) {
+          setNotice(error && error.message ? error.message : (getLanguage() === 'fr' ? 'Échec du rétablissement de l’ordre automatique.' : 'Could not restore automatic order.'), true);
+        } finally {
+          state.busy = false;
+        }
+      });
     }
 
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
@@ -9043,6 +9878,7 @@
       api: api,
       publishMutation: publishMutation,
       state: state,
+      I18N: I18N,
     openSheet: openSheet,
     closeSheet: closeSheet,
     setLanguage: setLanguage,
@@ -9052,6 +9888,30 @@
     setDependenciesVisible: setDependenciesVisible,
     dependenciesVisible: dependenciesVisible,
     filterGroups: filterGroups,
+    resolveFlowDirection: resolveFlowDirection,
+    flowGroupKeyOf: flowGroupKeyOf,
+    effectiveExpandedGroups: effectiveExpandedGroups,
+    computeFlowLayout: computeFlowLayout,
+    applyServerLayout: applyServerLayout,
+    applyLayoutPatch: applyLayoutPatch,
+    persistCanvasLayout: persistCanvasLayout,
+    needsHumanAttention: needsHumanAttention,
+    needsMe: needsMe,
+    hasOpenQuestions: hasOpenQuestions,
+    hasOpenHumanTasks: hasOpenHumanTasks,
+    progressOf: progressOf,
+    ratioOf: ratioOf,
+    humanCountLabel: humanCountLabel,
+    questionCountLabel: questionCountLabel,
+    phaseText: phaseText,
+    attentionText: attentionText,
+    groupProgressOf: groupProgressOf,
+    loadFailureDetail: loadFailureDetail,
+    checklistProgressLabel: checklistProgressLabel,
+    updateChecklistProgress: updateChecklistProgress,
+    detailBadges: detailBadges,
+    matchesExtraFilter: matchesExtraFilter,
+    filterLabel: filterLabel,
       boot: boot,
       showLogin: showLogin,
       signOut: signOut,

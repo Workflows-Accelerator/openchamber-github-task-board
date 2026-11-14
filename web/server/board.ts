@@ -22,6 +22,7 @@ import {
   setStatusLabel,
   SectionError,
 } from './sections.ts';
+import type { ActiveIssueSession } from './session-activity.ts';
 
 // Web-owned shared contracts. No dependency on the panel view-state implementation.
 export function shortName(full: string, overrides: Record<string, string> = {}): string {
@@ -193,8 +194,10 @@ export function setOrderMarker(body: string, order: number): string {
   if (body.endsWith('\r\n\r\n') || body.endsWith('\n\n')) {
     return body + markerText;
   }
+  // A body that already ends in one line break needs no second one: the marker
+  // is its own block, and adding a separator makes every save grow the body.
   if (body.endsWith('\r\n') || body.endsWith('\n')) {
-    return body + eol + markerText;
+    return body + markerText;
   }
   return body + eol + eol + markerText;
 }
@@ -523,6 +526,44 @@ function extractDependencyRepository(item: any, fallbackRepo: BoardRepository | 
   return fallbackRepo?.full;
 }
 
+function parentRepositoryName(parent: any): string | null {
+  if (!parent || typeof parent !== 'object') return null;
+  const repository = parent.repository;
+  if (typeof repository === 'string' && repository.includes('/')) return repository;
+  if (repository && typeof repository === 'object') {
+    if (typeof repository.nameWithOwner === 'string' && repository.nameWithOwner.includes('/')) {
+      return repository.nameWithOwner;
+    }
+    if (typeof repository.full_name === 'string' && repository.full_name.includes('/')) {
+      return repository.full_name;
+    }
+  }
+  if (typeof parent.repositoryFull === 'string' && parent.repositoryFull.includes('/')) {
+    return parent.repositoryFull;
+  }
+  if (typeof parent.html_url === 'string') {
+    const match = /github\.com\/([^/]+\/[^/]+)\/(?:issues|pull)\/\d+/.exec(parent.html_url);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+// A parent is read from GitHub's native sub-issue link, never guessed from a
+// label or body text. Absent or malformed data keeps the row unparented.
+function parentFields(raw: any): { parentKey: string | null; parentTitle: string | null } {
+  const parent = raw?.parent;
+  if (!parent || typeof parent !== 'object') return { parentKey: null, parentTitle: null };
+  const number = parent.number;
+  if (typeof number !== 'number' || !Number.isInteger(number) || number <= 0) {
+    return { parentKey: null, parentTitle: null };
+  }
+  const repository = parentRepositoryName(parent);
+  return {
+    parentKey: repository ? `${repository}#${number}` : null,
+    parentTitle: typeof parent.title === 'string' && parent.title ? parent.title : null,
+  };
+}
+
 function listFields(raw: any, repository: BoardRepository | null) {
   const body = typeof raw.body === 'string' ? raw.body : '';
   const description = trimTrailingBlankLines(stripHiddenMarkers(body));
@@ -580,6 +621,7 @@ function listFields(raw: any, repository: BoardRepository | null) {
       : 0,
     pendingItems: [...(normalizedOf(raw)?.humanTasks ?? []), ...parseWebOpenQuestions(body)]
       .map((item) => ({ text: item.text, completed: item.completed })),
+    ...parentFields(raw),
   };
 }
 
@@ -1171,6 +1213,12 @@ export interface BoardListItem {
   description: string;
   order: number | null;
   canvas: CanvasMarkerData | null;
+  // Native GitHub sub-issue link, never inferred from body text.
+  parentKey: string | null;
+  parentTitle: string | null;
+  // Set by the server from the optional local session sources. Null means no
+  // session is confirmed busy for this issue.
+  activeSession?: ActiveIssueSession | null;
   // The only artifact allowed to make this task wait for the human. Present on
   // every row so a card can show the reason when a legacy body carries none.
   humanReview?: HumanReviewView;
@@ -1233,6 +1281,9 @@ export interface IssueDetail {
   body: string;
   bodyMarkdown: string;
   canvas: CanvasMarkerData | null;
+  order: number | null;
+  parentKey: string | null;
+  parentTitle: string | null;
   humanReview?: HumanReviewView;
   fingerprint: string;
   labels: string[];

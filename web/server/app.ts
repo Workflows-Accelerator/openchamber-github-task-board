@@ -27,6 +27,8 @@ import {
   parseCookieHeader,
 } from './auth.ts';
 import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead, type RateLimitInfo } from './github.ts';
+import { CanvasLayoutStore, LayoutValidationError, type CanvasScopePatch } from './layout.ts';
+import { SessionActivityTracker } from './session-activity.ts';
 import { RepositoryRegistry, RepositoryNotAllowedError, DiscoveryUnavailableError, type RepositoryEntry } from './repositories.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
@@ -73,6 +75,11 @@ export interface BoardServerOptions {
   aggregateTimeoutMs?: number;
   boardCacheTtlMs?: number;
   perRepoTimeoutMs?: number;
+  // Optional injection point for tests and for a host that already owns a
+  // tracker. Without it the server builds one from the configured local URLs.
+  sessionActivityTracker?: SessionActivityTracker;
+  // Bound on cached issue-detail bodies. The oldest entry is dropped first.
+  issueDetailCacheLimit?: number;
 }
 
 export interface BoardServer {
@@ -158,7 +165,7 @@ export function getVersionStamp(
   const pkgVersion = getPackageVersion(packageJsonUrl);
   try {
     const hash = createHash('sha256');
-    const shellAssets = ['index.html', 'app.js', 'theme.css', 'manifest.json'];
+    const shellAssets = ['index.html', 'app.js', 'js-enabled.js', 'theme.css', 'manifest.json', 'flow-layout.js'];
     for (const name of shellAssets) {
       const content = readFileSync(new URL(`../public/${name}`, import.meta.url));
       hash.update(name);
@@ -176,6 +183,13 @@ function computeWeakEtag(payload: unknown, sessionScope: string): string {
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
     const { rateLimit, fetchedAt, ...rest } = payload as Record<string, unknown>;
     content = rest;
+    // The activity timestamp moves on every local read; the activity itself
+    // must still change the validator, so only `fetchedAt` is dropped.
+    const activity = (rest as Record<string, unknown>).sessionActivity;
+    if (activity && typeof activity === 'object' && !Array.isArray(activity)) {
+      const { fetchedAt: _activityFetchedAt, ...activityRest } = activity as Record<string, unknown>;
+      content = { ...rest, sessionActivity: activityRest };
+    }
   }
   // Bound to the session so a validator from one session never revalidates another's body.
   const hash = createHash('sha1').update(sessionScope).update('\0').update(JSON.stringify(content)).digest('hex').slice(0, 16);
@@ -413,12 +427,21 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     return { ...sharedRateLimit.current };
   }
 
+  // One dependency cache and one parent-capability flag for every client this
+  // server builds, so a per-request client never loses the 60s TTL or re-probes
+  // a schema that already refused `parent`.
+  const sharedDependencyCache = { entries: new Map() };
+  const sharedParentCapability = { supported: null as boolean | null };
+
   const github = new GitHubClient({
     apiBase: options.githubApiBase ?? config.githubApiBase,
     token: config.githubToken,
     repo: config.repo,
     fetchImpl: options.fetchImpl,
     rateLimitRef: sharedRateLimit,
+    now,
+    dependencyCacheRef: sharedDependencyCache,
+    parentCapabilityRef: sharedParentCapability,
   });
 
   // --- startup identity enforcement -------------------------------------
@@ -447,13 +470,25 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       fetchImpl: options.fetchImpl,
       timeoutMs: timeoutMs ?? 15_000,
       rateLimitRef: sharedRateLimit,
+      now,
+      dependencyCacheRef: sharedDependencyCache,
+      parentCapabilityRef: sharedParentCapability,
     });
   }
-  async function resolveRepository(owner: string, name: string): Promise<RepositoryEntry> {
-    try { return await repositories.resolve(owner, name); }
+  async function resolveRepository(
+    owner: string,
+    name: string,
+    options: { forceRefresh?: boolean } = {},
+  ): Promise<RepositoryEntry> {
+    try { return await repositories.resolve(owner, name, options); }
     catch (error) {
       if (error instanceof RepositoryNotAllowedError) throw new HttpError(400, 'repository_not_allowed', error.message);
-      if (error instanceof DiscoveryUnavailableError) throw new HttpError(503, 'discovery_unavailable', 'Repository discovery failed; no operation was dispatched');
+      if (error instanceof DiscoveryUnavailableError) {
+        throw new HttpError(503, 'discovery_unavailable', error.message, {
+          errorKind: error.errorKind,
+          errorResetAt: error.errorResetAt,
+        });
+      }
       throw error;
     }
   }
@@ -486,6 +521,16 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   });
   const limiter = new LoginRateLimiter({ now });
 
+  // Canvas layout is local state: dragging a card never writes GitHub. One
+  // store per server, backed by the configured file.
+  const layoutStore = new CanvasLayoutStore({ filePath: config.layoutFilePath });
+  // Local session sources are optional. Unconfigured means "no activity", never
+  // an error, and a failing source degrades the board instead of failing it.
+  const sessionTracker = options.sessionActivityTracker ?? new SessionActivityTracker({
+    openchamberUrl: config.openchamberUrl,
+    triggersUrl: config.triggersUrl,
+  });
+
   const versionStamp = options.versionStamp ?? getVersionStamp(options.packageJsonUrl);
   const rawSw = loadStatic('sw.js');
   let swBody = rawSw;
@@ -505,8 +550,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     '/': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/index.html': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/app.js': { body: loadStatic('app.js'), type: 'text/javascript; charset=utf-8' },
+    '/js-enabled.js': { body: loadStatic('js-enabled.js'), type: 'text/javascript; charset=utf-8' },
     '/markdown.js': { body: loadStatic('markdown.js'), type: 'text/javascript; charset=utf-8' },
     '/arrange.js': { body: loadStatic('arrange.js'), type: 'text/javascript; charset=utf-8' },
+    '/flow-layout.js': { body: loadStatic('flow-layout.js'), type: 'text/javascript; charset=utf-8' },
     '/theme.css': { body: loadStatic('theme.css'), type: 'text/css; charset=utf-8' },
     '/manifest.json': { body: loadStatic('manifest.json'), type: 'application/manifest+json; charset=utf-8' },
     '/sw.js': {
@@ -538,8 +585,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           };
         } else if (error instanceof DiscoveryUnavailableError) {
           response = {
-            status: 502,
-            body: { error: 'discovery_unavailable', message: 'Repository discovery failed; no operation was dispatched' },
+            status: 503,
+            body: {
+              error: 'discovery_unavailable',
+              errorKind: error.errorKind,
+              errorResetAt: error.errorResetAt,
+              message: error.message,
+            },
           };
         } else {
           response = {
@@ -614,6 +666,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
   }
 
+  function layoutError(error: unknown): HttpError {
+    if (error instanceof LayoutValidationError) {
+      return new HttpError(400, 'invalid_layout', error.message);
+    }
+    if (error instanceof HttpError) return error;
+    return new HttpError(500, 'layout_unavailable', 'The canvas layout could not be read or saved');
+  }
+
   async function handle(req: http.IncomingMessage): Promise<HandlerResponse> {
     const url = new URL(req.url ?? '/', 'http://board.local');
     const method = req.method ?? 'GET';
@@ -669,10 +729,38 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     const record = requireSession(req);
+    const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
+
+    if (url.pathname === '/api/layout') {
+      if (method === 'GET') {
+        const scope = url.searchParams.get('scope') ?? 'all';
+        try {
+          return { status: 200, body: await layoutStore.getScope(scope) };
+        } catch (error) {
+          throw layoutError(error);
+        }
+      }
+      if (method !== 'PATCH') return methodNotAllowed('GET, PATCH');
+      requireCsrf(req, record);
+      const body = await readJsonBody(req);
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw new HttpError(400, 'invalid_layout', 'A layout patch must be a JSON object');
+      }
+      const scope = typeof body.scope === 'string' ? body.scope : 'all';
+      const patch: CanvasScopePatch = {};
+      if (body.direction !== undefined) patch.direction = body.direction;
+      if (body.expandedGroups !== undefined) patch.expandedGroups = body.expandedGroups;
+      if (body.setPositions !== undefined) patch.setPositions = body.setPositions;
+      if (body.resetPositions !== undefined) patch.resetPositions = body.resetPositions === true;
+      try {
+        return { status: 200, body: await layoutStore.patchScope(scope, patch) };
+      } catch (error) {
+        throw layoutError(error);
+      }
+    }
 
     if (url.pathname === '/api/repos') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const discovery = await repositories.view({ forceRefresh });
       const payload = { ...discovery, projectNames: projectNames(), rateLimit: currentRateLimit() };
       const etag = computeWeakEtag(payload, record.id);
@@ -715,9 +803,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
     if (url.pathname === '/api/combined/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const board = (await combinedBoard({ forceRefresh })) as Record<string, unknown>;
-      const payload = { ...board, rateLimit: currentRateLimit() };
+      const payload = { ...(await decorateBoard(board, 'all', forceRefresh)), rateLimit: currentRateLimit() };
       const etag = computeWeakEtag(payload, record.id);
       if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
         return {
@@ -751,7 +838,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     let repository: RepositoryEntry | null = null;
     const qualified = /^\/api\/repos\/([^/]+)\/([^/]+)(\/.*)$/.exec(route);
     if (qualified) {
-      repository = await resolveRepository(qualified[1], qualified[2]);
+      repository = await resolveRepository(qualified[1], qualified[2], { forceRefresh });
       route = '/api' + qualified[3];
     } else if (route.startsWith('/api/repos/')) {
       throw new HttpError(400, 'repository_not_allowed', 'An exact discovered owner/name is required');
@@ -763,14 +850,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       route.startsWith('/api/issues/')
     ) {
       if (!config.repo) throw new HttpError(400, 'repository_not_allowed', 'Select a discovered repository');
-      repository = await resolveRepository(config.repo.owner, config.repo.name);
+      repository = await resolveRepository(config.repo.owner, config.repo.name, { forceRefresh });
     }
     const scopedGithub = repository ? clientFor(repository) : null;
     if (route === '/api/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const board = (await repositoryBoard(repository!, undefined, { forceRefresh })) as Record<string, unknown>;
-      const payload = { ...board, rateLimit: currentRateLimit() };
+      const payload = { ...(await decorateBoard(board, repository!.full, forceRefresh)), rateLimit: currentRateLimit() };
       const etag = computeWeakEtag(payload, record.id);
       if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
         return {
@@ -909,21 +995,42 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     if (detailMatch) {
       if (method === 'GET') {
         const number = parseIssueNumberOrThrow(detailMatch[1]);
-        const [read, deps] = await Promise.all([
-          scopedGithub!.getIssue(number).catch(mapGitHubError),
-          scopedGithub!.getIssueDependencies(number).catch(() => ({ blockedBy: [], blocking: [] })),
+        const detailKey = `${repository!.full.toLowerCase()}#${number}`;
+        const cachedDetail = issueDetailCache.get(detailKey);
+        const conditional = !forceRefresh && cachedDetail?.etag ? cachedDetail : undefined;
+        const [read, deps, parent] = await Promise.all([
+          scopedGithub!.getIssue(number, { ifNoneMatch: conditional?.etag ?? null }).catch(mapGitHubError),
+          // The dependency routes read the parent over GraphQL; the drawer
+          // skips that query and reads the parent over REST, so opening a
+          // drawer never looks like a write.
+          scopedGithub!.getIssueDependencies(number, { includeParent: false })
+            .catch(() => ({ blockedBy: [], blocking: [], parent: null })),
+          scopedGithub!.getIssueParent(number).catch(() => null),
         ]);
-        if (read.item.pull_request) {
+        if (read.notModified && !conditional) {
+          throw new HttpError(502, 'github_unavailable', 'GitHub answered a conditional read without a cached copy');
+        }
+        const source = read.notModified ? conditional!.item : read.item;
+        if (!source || typeof source.number !== 'number') {
+          throw new HttpError(502, 'github_unavailable', 'GitHub did not return this issue');
+        }
+        if (source.pull_request) {
           throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
         }
-        read.item.blockedBy = deps.blockedBy;
-        read.item.blocking = deps.blocking;
-        const detail = buildIssueDetail(read.item, repository);
+        if (!read.notModified && read.etag) {
+          cacheIssueDetail(detailKey, { etag: read.etag, item: structuredClone(source) });
+        }
+        // Enrich a copy: the cached item must stay exactly what GitHub returned.
+        const item = structuredClone(source);
+        item.blockedBy = deps.blockedBy;
+        item.blocking = deps.blocking;
+        item.parent = parent;
+        const detail = buildIssueDetail(item, repository);
         // A note read adds one conditional request. A failure degrades the
         // note surface instead of failing the whole drawer read.
         let notesDegraded = false;
         try {
-          const notes = await readIssueNotes(repository!, number, { commentCount: read.item.comments, timeoutMs: 5000 });
+          const notes = await readIssueNotes(repository!, number, { commentCount: item.comments, timeoutMs: 5000 });
           detail.notes = notes.notes;
           detail.noteCount = notes.noteCount;
           detail.noteCountPartial = notes.noteCountPartial;
@@ -952,6 +1059,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           body: body?.body,
           status: body?.status,
           state: body?.state,
+          order: body?.order,
         });
       }
       return methodNotAllowed('GET, PATCH');
@@ -1265,13 +1373,46 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     return { status: 404, body: { error: 'not_found', message: 'Not found' } };
   }
 
+  // Issue-detail revalidation: one conditional GET per drawer open. Only the
+  // item and its validator are stored; notes are re-read on their own
+  // conditional path so their 304 contract is unchanged.
+  interface CachedIssueDetail {
+    etag: string;
+    item: any;
+  }
+  const issueDetailCache = new Map<string, CachedIssueDetail>();
+  // One cached body per issue ever opened would grow for the life of the
+  // process, so the map is capped and the oldest entry is dropped first.
+  const DEFAULT_ISSUE_DETAIL_CACHE_LIMIT = 1000;
+  const issueDetailCacheLimit = (() => {
+    const configured = options.issueDetailCacheLimit;
+    if (typeof configured !== 'number' || !Number.isFinite(configured)) {
+      return DEFAULT_ISSUE_DETAIL_CACHE_LIMIT;
+    }
+    return Math.max(1, Math.floor(configured));
+  })();
+  function cacheIssueDetail(key: string, entry: CachedIssueDetail): void {
+    // Re-insert so the entry moves to the newest position.
+    issueDetailCache.delete(key);
+    issueDetailCache.set(key, entry);
+    while (issueDetailCache.size > issueDetailCacheLimit) {
+      const oldest = issueDetailCache.keys().next();
+      if (oldest.done) break;
+      issueDetailCache.delete(oldest.value);
+    }
+  }
+
   interface CachedRepoBoard {
     issues: ReturnType<typeof buildBoardList>['issues'];
     excluded: number;
     truncated: boolean;
     cachedAt: number;
     dependenciesDegraded?: boolean;
-    etag?: string | null;
+    // Per-page validators plus pristine copies of the items each page held, so
+    // a multi-page repository revalidates every page and no later mutation of a
+    // returned row can pollute the cache.
+    pageEtags?: string[];
+    pageItems?: any[][];
   }
   const repoBoardCache = new Map<string, CachedRepoBoard>();
   interface CachedRepoClosed {
@@ -1285,8 +1426,15 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   function invalidateRepositoryCaches(fulls: Iterable<string | null | undefined>): void {
     for (const full of fulls) {
       if (!full) continue;
+      const prefix = `${full.toLowerCase()}#`;
       repoBoardCache.delete(full);
       repoClosedCache.delete(full);
+      for (const key of [...issueDetailCache.keys()]) {
+        if (key.startsWith(prefix)) issueDetailCache.delete(key);
+      }
+      for (const key of [...sharedDependencyCache.entries.keys()]) {
+        if (key.startsWith(prefix)) sharedDependencyCache.entries.delete(key);
+      }
       repositoryCacheVersions.set(full, (repositoryCacheVersions.get(full) || 0) + 1);
       inFlightBoards.delete(full);
       inFlightClosed.delete(full);
@@ -1394,7 +1542,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
       try {
         const client = clientFor(current.repo);
-        const deps = await client.getIssueDependencies(current.number);
+        const deps = await client.getIssueDependencies(current.number, { includeParent: false });
         for (const blocker of deps.blockedBy) {
           const blockerRepoName = blocker.repository?.nameWithOwner ?? current.repo.full;
           let blockerRepo = current.repo;
@@ -1463,9 +1611,16 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const version = repositoryCacheVersions.get(key) || 0;
       const cached = repoBoardCache.get(key);
       const client = clientFor(repository, timeoutMs);
-      const ifNoneMatch = boardOpts.forceRefresh ? undefined : cached?.etag;
+      // A degraded dependency read or a truncated snapshot must be re-read in
+      // full: reusing page validators there would freeze the broken view.
+      const pageCache = !boardOpts.forceRefresh && cached &&
+        !cached.dependenciesDegraded && !cached.truncated &&
+        Array.isArray(cached.pageEtags) && Array.isArray(cached.pageItems) &&
+        cached.pageEtags.length > 0 && cached.pageItems.length === cached.pageEtags.length
+        ? { etags: cached.pageEtags, pages: cached.pageItems }
+        : undefined;
 
-      const listed = await client.listIssues({ ifNoneMatch }).catch(mapGitHubError);
+      const listed = await client.listIssues({ pageCache }).catch(mapGitHubError);
       if (listed.notModified && cached) {
         cached.cachedAt = now();
         return {
@@ -1483,8 +1638,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         };
       }
 
+      // Snapshot the raw pages before any row is enriched, so the cache stays
+      // pristine across later blockedBy/parent mutation.
+      const pristinePageItems = Array.isArray(listed.pageItems)
+        ? listed.pageItems.map((page) => page.map((item) => structuredClone(item)))
+        : undefined;
+
       let dependenciesDegraded = false;
-      let repoDeps = new Map<number, any[]>();
+      let repoDeps = { blockedBy: new Map<number, any[]>(), parents: new Map<number, any>() };
       const hasOpenIssues = (repository.openIssuesCount !== 0) && listed.items.some((i: any) => i.state === 'open');
       if (hasOpenIssues) {
         try {
@@ -1494,27 +1655,34 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
       }
 
-      if (repoDeps.size > 0) {
+      if (repoDeps.blockedBy.size > 0) {
         for (const item of listed.items) {
-          if (repoDeps.has(item.number)) {
-            item.blockedBy = repoDeps.get(item.number);
+          if (repoDeps.blockedBy.has(item.number)) {
+            item.blockedBy = repoDeps.blockedBy.get(item.number);
           }
         }
       }
 
       const { issues, excluded } = buildBoardList(listed.items, repository);
       for (const row of issues) {
+        const parent = repoDeps.parents.get(row.number);
+        if (parent) {
+          row.parentKey = parent.repository ? `${parent.repository}#${parent.number}` : null;
+          row.parentTitle = parent.title;
+        }
         const notes = issueNotesCache.get(notesCacheKey(repository, row.number));
         if (notes) Object.assign(row, { noteCount: notes.noteCount, noteCountPartial: notes.noteCountPartial });
       }
+      const canRevalidate = !listed.truncated && !dependenciesDegraded &&
+        Array.isArray(listed.pageEtags) && listed.pageEtags.length > 0 &&
+        Array.isArray(pristinePageItems) && pristinePageItems.length === listed.pageEtags.length;
       if ((repositoryCacheVersions.get(key) || 0) === version) repoBoardCache.set(key, {
         issues,
         excluded,
         truncated: listed.truncated,
         cachedAt: now(),
         dependenciesDegraded,
-        // Page-1 ETag only proves page 1; degraded dependencies must be re-read.
-        etag: listed.pages === 1 && !listed.truncated && !dependenciesDegraded ? listed.etag : null,
+        ...(canRevalidate ? { pageEtags: listed.pageEtags, pageItems: pristinePageItems } : {}),
       });
 
       return {
@@ -1541,6 +1709,50 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         inFlightBoards.delete(key);
       }
     }
+  }
+
+  // Per-request enrichment: canvas layout and local session activity are never
+  // stored in the 30s board cache, so a layout edit or an agent starting and
+  // stopping is visible on the next request and changes the response ETag.
+  async function decorateBoard(
+    board: Record<string, unknown>,
+    scope: string,
+    forceRefresh: boolean,
+  ): Promise<Record<string, unknown>> {
+    let layout: unknown = null;
+    try {
+      layout = await layoutStore.getScope(scope);
+    } catch {
+      layout = null;
+    }
+    let activity: {
+      fetchedAt: string | null;
+      available: boolean;
+      degraded: boolean;
+      activeByIssue: Record<string, any>;
+    };
+    try {
+      activity = await sessionTracker.getSnapshot({ forceRefresh });
+    } catch {
+      activity = { fetchedAt: null, available: false, degraded: true, activeByIssue: {} };
+    }
+    const rows = Array.isArray(board.issues) ? (board.issues as any[]) : [];
+    const issues = rows.map((row) => {
+      const key = typeof row?.key === 'string' && row.key
+        ? row.key.toLowerCase()
+        : `${String(row?.repository?.full ?? board.repo ?? '').toLowerCase()}#${row?.number}`;
+      return { ...row, activeSession: activity.activeByIssue[key] ?? null };
+    });
+    return {
+      ...board,
+      issues,
+      layout,
+      sessionActivity: {
+        available: activity.available,
+        degraded: activity.degraded,
+        fetchedAt: activity.fetchedAt,
+      },
+    };
   }
 
   async function repositoryClosedIssues(
@@ -1609,7 +1821,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   async function aggregate(aggregateOpts: { forceRefresh?: boolean } = {}) {
     const discovery = await repositories.view({ forceRefresh: aggregateOpts.forceRefresh });
     const issues: ReturnType<typeof buildBoardList>['issues'] = [];
-    const failures: Array<{ repository: RepositoryEntry; message: string }> = [];
+    const failures: Array<{ repository: RepositoryEntry; message: string; errorKind?: string | null; errorResetAt?: string | null }> = [];
     const repoFetchedTimestamps: number[] = [];
     let cursor = 0;
     let loaded = 0;
@@ -1625,7 +1837,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       while (cursor < discovery.repositories.length) {
         const repository = discovery.repositories[cursor++];
         if (!repository.available || discovery.discoveryFailed) {
-          failures.push({ repository, message: discovery.discoveryFailed ? 'Discovery failed; not refreshed' : 'Unavailable' });
+          failures.push({
+            repository,
+            message: discovery.discoveryFailed ? 'Discovery failed; not refreshed' : 'Unavailable',
+            // The client renders these rows through the same cause helper as the
+            // board notice, so one failure never gets two different sentences.
+            errorKind: discovery.discoveryFailed ? discovery.errorKind : null,
+            errorResetAt: discovery.discoveryFailed ? discovery.errorResetAt : null,
+          });
           continue;
         }
 
@@ -1726,11 +1945,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     } else {
       const discovery = await repositories.view();
       if (discovery.discoveryFailed) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       board = (await combinedBoard()) as any;
       if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) === 0) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       allIssues = board.issues || [];
       for (const repo of discovery.repositories) {
@@ -1815,11 +2034,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     } else {
       const discovery = await repositories.view();
       if (discovery.discoveryFailed) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       board = (await combinedBoard()) as any;
       if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) === 0) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       allIssues = board.issues || [];
       repos = discovery.repositories.map((r) => ({ full: r.full, name: r.name }));
@@ -1979,7 +2198,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     | { kind: 'reopen' }
     | { kind: 'remove-label'; label: string }
     | { kind: 'status'; status: unknown }
-    | { kind: 'patch'; body?: unknown; status?: unknown; state?: unknown };
+    | { kind: 'patch'; body?: unknown; status?: unknown; state?: unknown; order?: unknown };
 
   const MAX_IN_FLIGHT_LOGINS = 10;
   const LOGIN_BODY_TIMEOUT_MS = 2_000;
@@ -2341,11 +2560,17 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
         }
       } else if (op.kind === 'patch') {
-        if (op.body === undefined && op.status === undefined && op.state === undefined) {
-          throw new HttpError(400, 'invalid_edit', 'At least one field (body, status, or state) is required');
+        if (op.body === undefined && op.status === undefined && op.state === undefined && op.order === undefined) {
+          throw new HttpError(400, 'invalid_edit', 'At least one field (body, status, state, or order) is required');
         }
         if (op.body !== undefined && typeof op.body !== 'string') {
           throw new HttpError(400, 'invalid_edit', 'Body must be a string');
+        }
+        // `order: null` is a deliberate clear, not a missing value. Anything
+        // else must be a finite number; a string never reaches GitHub.
+        if (op.order !== undefined && op.order !== null &&
+            (typeof op.order !== 'number' || !Number.isFinite(op.order))) {
+          throw new HttpError(400, 'invalid_edit', 'Order must be a finite number or null');
         }
         if (op.status !== undefined) {
           if (typeof op.status !== 'string' || !op.status) {
@@ -2880,17 +3105,25 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           patch = { labels: labelNames(fresh.item).filter((l) => l.trim().toLowerCase() !== baseRemoveLabel) };
         } else if (op.kind === 'patch') {
           patch = {};
+          const currentBody = fresh.item.body ?? '';
+          const orderRequested = op.order !== undefined;
           if (typeof op.body === 'string') {
-            const order = parseOrderMarker(fresh.item.body ?? '');
-            const canvas = parseCanvasMarker(fresh.item.body ?? '');
+            const order = parseOrderMarker(currentBody);
+            const canvas = parseCanvasMarker(currentBody);
             let b = op.body;
             if (canvas !== null && parseCanvasMarker(b) === null) {
               b = setCanvasMarker(b, canvas);
             }
-            if (order !== null && parseOrderMarker(b) === null) {
+            if (orderRequested) {
+              b = op.order === null ? stripOrderMarker(b) : setOrderMarker(b, op.order as number);
+            } else if (order !== null && parseOrderMarker(b) === null) {
               b = setOrderMarker(b, order);
             }
             patch.body = b;
+          } else if (orderRequested) {
+            patch.body = op.order === null
+              ? stripOrderMarker(currentBody)
+              : setOrderMarker(currentBody, op.order as number);
           }
           if (typeof op.status === 'string') {
             patch.labels = applyStatusChange(fresh.item, op.status);
@@ -2898,9 +3131,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           if (typeof op.state === 'string') {
             patch.state = op.state;
           }
-          const currentBodyNorm = (fresh.item.body ?? '').replace(/\r\n/g, '\n');
-          const targetBodyNorm = typeof op.body === 'string' ? (patch.body as string).replace(/\r\n/g, '\n') : currentBodyNorm;
-          const bodyChanged = typeof op.body === 'string' && currentBodyNorm !== targetBodyNorm;
+          const currentBodyNorm = currentBody.replace(/\r\n/g, '\n');
+          const targetBodyNorm = typeof patch.body === 'string' ? (patch.body as string).replace(/\r\n/g, '\n') : currentBodyNorm;
+          const bodyChanged = typeof patch.body === 'string' && currentBodyNorm !== targetBodyNorm;
           const statusChanged = typeof op.status === 'string' && targetStatus !== baseStatus;
           const stateChanged = typeof op.state === 'string' && op.state !== fresh.item.state;
           if (!bodyChanged && !statusChanged && !stateChanged) {
@@ -3027,7 +3260,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
       } else if (op.kind === 'patch') {
         let matches = true;
-        if (typeof op.body === 'string') {
+        if (typeof patch.body === 'string') {
           const normCur = (currentItem.body ?? '').replace(/\r\n/g, '\n');
           const normTarget = (patch.body as string).replace(/\r\n/g, '\n');
           if (normCur !== normTarget) matches = false;

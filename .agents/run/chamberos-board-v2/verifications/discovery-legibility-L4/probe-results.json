@@ -1,0 +1,121 @@
+{
+  "forbidden403": {
+    "status": 200,
+    "discoveryFailed": true,
+    "errorKind": "server",
+    "errorReason": "GitHub returned an unexpected response",
+    "warmEtag": "W/\"6cb53e19a1eb1d6d\"",
+    "forbiddenEtag": "W/\"1d296acc950053a0\"",
+    "warmEtagStale304Prevented": true
+  },
+  "latchedRoutes": {
+    "singleBoardRefreshWhileLatched": {
+      "status": 503,
+      "body": {
+        "error": "discovery_unavailable",
+        "message": "Repository discovery failed; no operation was dispatched"
+      }
+    },
+    "issueDetailWhileLatched": {
+      "status": 503,
+      "body": {
+        "error": "discovery_unavailable",
+        "message": "Repository discovery failed; no operation was dispatched"
+      }
+    },
+    "combinedOpsWhileLatched": {
+      "status": 502,
+      "body": {
+        "error": "discovery_unavailable",
+        "message": "Repository discovery failed; no operation was dispatched"
+      }
+    },
+    "combinedArchiveWhileLatched": {
+      "status": 502,
+      "body": {
+        "error": "discovery_unavailable",
+        "message": "Repository discovery failed; no operation was dispatched"
+      }
+    }
+  },
+  "etagRecovery": {
+    "recoveredDiscoveryFailed": false,
+    "recoveredErrorKind": null,
+    "staleErrorEtagPrevented": true
+  },
+  "resetEdgeCases": {
+    "epoch1ResetAt": "1970-01-01T00:00:01.000Z",
+    "plus30hResetAt": "2026-11-15T20:46:04.000Z"
+  },
+  "secondaryRateLimitStaleReset": {
+    "errorKind": "rate_limited",
+    "errorResetAt": "2026-11-14T01:05:00.000Z",
+    "leakedPastGraphqlResetIso": "2026-11-14T01:05:00.000Z"
+  },
+  "nonJsonUpstream": {
+    "html401ErrorKind": "server",
+    "text429ErrorKind": "server"
+  },
+  "browser": {
+    "drawerFailureNotice": {
+      "notice": "Repository discovery failed; no operation was dispatched.",
+      "detailOpen": true
+    },
+    "mutationErrorInFr": "Discovery failed; nothing was sent. Refresh to try again Your text is retained. Refresh before retrying an unknown outcome.",
+    "layout1280": {
+      "viewportWidth": 1280,
+      "stripClientWidth": 1050,
+      "stripScrollWidth": 1240,
+      "overflowPx": 190,
+      "notice": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scopeStatus": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "emptyP": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "emptyCreateDisabled": false,
+      "emptyCreateHidden": false,
+      "rects": {
+        "scopeStatus": {
+          "left": 250,
+          "right": 1141,
+          "width": 891,
+          "hidden": false
+        },
+        "listGroupToggle": {
+          "left": 1177,
+          "right": 1246,
+          "width": 69,
+          "hidden": false
+        },
+        "newTaskBtn": {
+          "left": 1258,
+          "right": 1346,
+          "width": 88,
+          "hidden": false
+        },
+        "freshness": {
+          "left": 1358,
+          "right": 1450,
+          "width": 92,
+          "hidden": false
+        }
+      }
+    },
+    "afterLangSwitchToFr": {
+      "docLang": "fr",
+      "emptyCreateBtnText": "Créer une tâche",
+      "noticeText": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scopeStatusText": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "emptyPText": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "discoveryStatusText": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien."
+    },
+    "canvasOnFailure": {
+      "boardStateIsNull": true,
+      "boardViewClass": "view mode-canvas",
+      "emptyHiddenAttr": false,
+      "emptyComputedDisplay": "none",
+      "staleCanvasCardCount": 1,
+      "staleCanvasCardTitles": [
+        "Alpha #1TodoAlpha card still visible on canvas1 qNoteDependencies"
+      ]
+    }
+  }
+}
