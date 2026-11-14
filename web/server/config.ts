@@ -33,10 +33,17 @@ export interface BoardConfig {
   passwordWasGenerated: boolean;
   sessionSecret: string;
   sessionFilePath: string;
+  // Server-side canvas layout file. Fixed filename beside the board data, so a
+  // repository name never becomes a path.
+  layoutFilePath: string;
   port: number;
   host: string;
   baseUrl: string | null;
   githubApiBase: string;
+  // Optional local activity sources. Absent means the board reports no session
+  // activity instead of guessing from labels.
+  openchamberUrl?: string;
+  triggersUrl?: string;
 }
 
 export class ConfigError extends Error {
@@ -244,6 +251,47 @@ export function resolveSessionFilePath(env: Record<string, string | undefined> =
   return path.resolve(process.cwd(), DEFAULT_SESSION_FILE);
 }
 
+function parseOptionalHttpUrl(
+  env: Record<string, string | undefined>,
+  variable: string,
+): string | undefined {
+  const raw = read(env, variable);
+  if (raw === undefined || raw.trim() === '') return undefined;
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    throw new ConfigError(variable, `${variable} must be an absolute http(s) URL`);
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new ConfigError(variable, `${variable} must be an absolute http(s) URL`);
+  }
+  // Credentials and query strings are dropped: the tracker only needs the
+  // origin and path, and a secret must never travel in a request URL.
+  return (url.origin + url.pathname).replace(/\/+$/, '');
+}
+
+/**
+ * Canvas layout file. An explicit BOARD_LAYOUT_FILE wins; otherwise the file
+ * sits beside the session store so one board owns one layout. The name is
+ * fixed, so a repository name never becomes a path segment.
+ */
+export function resolveLayoutFilePath(
+  env: Record<string, string | undefined>,
+  sessionFilePath: string,
+): string {
+  const envFile = read(env, 'BOARD_LAYOUT_FILE');
+  if (envFile !== undefined && envFile.trim() !== '') {
+    const trimmed = envFile.trim();
+    if (path.isAbsolute(trimmed)) return trimmed;
+    if (fs.existsSync('/workspace') && fs.statSync('/workspace').isDirectory()) {
+      return path.resolve('/workspace', trimmed);
+    }
+    return path.resolve(process.cwd(), trimmed);
+  }
+  return path.join(path.dirname(sessionFilePath), 'canvas-layout.json');
+}
+
 export function loadConfig(env: Record<string, string | undefined>): BoardConfig {
   const githubToken = requireValue(
     env,
@@ -301,6 +349,9 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
   const host = parseHost(read(env, 'BOARD_HOST'));
   const baseUrl = parseBaseUrl(read(env, 'BOARD_BASE_URL'));
   const sessionFilePath = resolveSessionFilePath(env);
+  const layoutFilePath = resolveLayoutFilePath(env, sessionFilePath);
+  const openchamberUrl = parseOptionalHttpUrl(env, 'BOARD_OPENCHAMBER_URL');
+  const triggersUrl = parseOptionalHttpUrl(env, 'BOARD_TRIGGERS_URL');
 
   return {
     githubToken: githubToken.trim(),
@@ -310,10 +361,13 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
     passwordWasGenerated,
     sessionSecret,
     sessionFilePath,
+    layoutFilePath,
     port,
     host,
     baseUrl,
     githubApiBase: DEFAULT_GITHUB_API_BASE,
+    openchamberUrl,
+    triggersUrl,
   };
 }
 
@@ -325,6 +379,11 @@ export function describeConfig(config: BoardConfig): Record<string, unknown> {
     port: config.port,
     baseUrl: config.baseUrl,
     sessionFile: config.sessionFilePath,
+    layoutFile: config.layoutFilePath,
+    sessionActivity: {
+      openchamber: config.openchamberUrl !== undefined,
+      triggers: config.triggersUrl !== undefined,
+    },
     passwordSource: config.passwordWasGenerated ? 'BOARD_PASSWORD (hashed at startup)' : 'BOARD_PASSWORD_HASH',
   };
 }

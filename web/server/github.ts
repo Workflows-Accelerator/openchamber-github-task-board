@@ -86,11 +86,57 @@ export interface GitHubClientOptions {
   maxPages?: number;
   perPage?: number;
   rateLimitRef?: { current: RateLimitInfo };
+  now?: () => number;
+  dependencyCacheRef?: DependencyCacheRef;
+  parentCapabilityRef?: ParentCapabilityRef;
 }
 
 export interface IssueRead {
   item: any;
   etag: string | null;
+  // True only when the caller sent If-None-Match and GitHub answered 304. The
+  // caller must then reuse its own cached copy; `item` is null.
+  notModified?: boolean;
+}
+
+export interface IssueParent {
+  number: number;
+  title: string | null;
+  repository: string | null;
+}
+
+export interface IssueDependencies {
+  blockedBy: any[];
+  blocking: any[];
+  parent: IssueParent | null;
+}
+
+export interface DependencyCacheEntry {
+  blockedBy: any[];
+  blocking: any[];
+  // Absent when the read deliberately skipped the parent.
+  parent?: IssueParent | null;
+  fetchedAt: number;
+}
+
+// Shared between clients so the 60s TTL survives the per-request clients the
+// board server constructs. A fresh client gets its own empty cache.
+export interface DependencyCacheRef {
+  entries: Map<string, DependencyCacheEntry>;
+}
+
+// Whether the GitHub schema accepts the native `parent` sub-issue field. Probed
+// once, then remembered, so an older schema or mock is never queried twice for a
+// field it does not have.
+export interface ParentCapabilityRef {
+  supported: boolean | null;
+}
+
+export const DEPENDENCY_CACHE_TTL_MS = 60_000;
+
+export interface PageCache {
+  etags: string[];
+  pages: any[][];
 }
 
 export interface TransferredIssueResult {
@@ -115,6 +161,84 @@ const TRANSFER_ISSUE_MUTATION = `
   }
 `;
 
+// The native sub-issue link. `blockedBy`/`blocking` stay on REST because the
+// dependency routes and their error contract are REST-shaped; this query adds
+// only the parent. It is read on dependency routes, where a batched query is
+// already in flight; the drawer uses the REST parent endpoint instead so a
+// read-only drawer never issues a POST.
+const ISSUE_PARENT_QUERY = `
+  query IssueDependencies($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      issue(number: $number) {
+        parent {
+          number
+          title
+          repository {
+            nameWithOwner
+          }
+        }
+      }
+    }
+  }
+`;
+
+// Same operation without the parent field. Used once a schema has refused
+// `parent`, so an older GitHub schema or mock is never asked twice.
+const ISSUE_PARENT_FALLBACK_QUERY = `
+  query IssueDependencies($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      issue(number: $number) {
+        number
+      }
+    }
+  }
+`;
+
+function rejectsParentField(data: any): boolean {
+  const errors = Array.isArray(data?.errors) ? data.errors : [];
+  return errors.some(
+    (entry: any) => entry && typeof entry === 'object' &&
+      typeof entry.message === 'string' && /parent/i.test(entry.message),
+  );
+}
+
+function parseIssueParent(node: any): IssueParent | null {
+  if (!node || typeof node !== 'object' || Array.isArray(node)) return null;
+  const number = node.number;
+  if (typeof number !== 'number' || !Number.isSafeInteger(number) || number <= 0) return null;
+  const repository = typeof node.repository?.nameWithOwner === 'string' && node.repository.nameWithOwner.includes('/')
+    ? node.repository.nameWithOwner
+    : null;
+  return {
+    number,
+    title: typeof node.title === 'string' && node.title ? node.title : null,
+    repository,
+  };
+}
+
+// The REST issue object names its repository by URL rather than by
+// `nameWithOwner`, so the same parent is derived from `repository_url` (or the
+// issue's html_url) and only falls back to the client's own repository.
+function parseRestIssueParent(data: any, fallbackRepository: string | null): IssueParent | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const number = data.number;
+  if (typeof number !== 'number' || !Number.isSafeInteger(number) || number <= 0) return null;
+  let repository: string | null = null;
+  if (typeof data.repository_url === 'string') {
+    const match = /\/repos\/([^/]+)\/([^/]+)$/.exec(data.repository_url);
+    if (match) repository = `${match[1]}/${match[2]}`;
+  }
+  if (!repository && typeof data.html_url === 'string') {
+    const match = /^https?:\/\/[^/]+\/([^/]+)\/([^/]+)\/issues\/\d+$/.exec(data.html_url);
+    if (match) repository = `${match[1]}/${match[2]}`;
+  }
+  return {
+    number,
+    title: typeof data.title === 'string' && data.title ? data.title : null,
+    repository: repository ?? fallbackRepository,
+  };
+}
+
 export interface IssueList {
   items: any[];
   pages: number;
@@ -122,6 +246,10 @@ export interface IssueList {
   notModified?: boolean;
   etag?: string | null;
   excludedPullRequests?: number;
+  // Per-page validators and the raw items each one covers, so a multi-page
+  // repository revalidates every page instead of trusting page 1 alone.
+  pageEtags?: string[];
+  pageItems?: any[][];
 }
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -192,6 +320,9 @@ export class GitHubClient {
   private readonly maxPages: number;
   private readonly perPage: number;
   private readonly rateLimitRef: { current: RateLimitInfo };
+  private readonly now: () => number;
+  private readonly dependencyCache: DependencyCacheRef;
+  private readonly parentCapability: ParentCapabilityRef;
 
   constructor(options: GitHubClientOptions) {
     this.apiBase = options.apiBase.replace(/\/+$/, '');
@@ -201,6 +332,9 @@ export class GitHubClient {
     this.timeoutMs = options.timeoutMs ?? 15_000;
     this.maxPages = options.maxPages ?? 10;
     this.perPage = options.perPage ?? 100;
+    this.now = options.now ?? Date.now;
+    this.dependencyCache = options.dependencyCacheRef ?? { entries: new Map() };
+    this.parentCapability = options.parentCapabilityRef ?? { supported: null };
     this.rateLimitRef = options.rateLimitRef ?? {
       current: {
         limit: null,
@@ -450,19 +584,28 @@ export class GitHubClient {
       | 'all'
       | 'open'
       | 'closed'
-      | { state?: 'all' | 'open' | 'closed'; maxPages?: number; ifNoneMatch?: string | null },
-    options?: { maxPages?: number; ifNoneMatch?: string | null },
+      | {
+          state?: 'all' | 'open' | 'closed';
+          maxPages?: number;
+          ifNoneMatch?: string | null;
+          pageCache?: PageCache;
+        },
+    options?: { maxPages?: number; ifNoneMatch?: string | null; pageCache?: PageCache },
   ): Promise<IssueList> {
     const opts = typeof stateOrOptions === 'string'
       ? { state: stateOrOptions, ...options }
       : (stateOrOptions ?? {});
     const items: any[] = [];
     const seenNumbers = new Set<number>();
+    const pageEtags: string[] = [];
+    const pageItems: any[][] = [];
     let pages = 0;
     let truncated = false;
+    let allPagesNotModified = true;
     const stateFilter = opts.state ?? 'all';
     const effectiveMaxPages = opts.maxPages ?? this.maxPages;
     const ifNoneMatch = opts.ifNoneMatch;
+    const pageCache = opts.pageCache;
     let nextUrl: string | null =
       `${this.issuesBase()}/issues?state=${encodeURIComponent(stateFilter)}&per_page=${this.perPage}&page=1`;
     const apiOrigin = new URL(this.apiBase).origin;
@@ -471,30 +614,55 @@ export class GitHubClient {
     while (nextUrl) {
       if (pages >= effectiveMaxPages) {
         truncated = true;
+        allPagesNotModified = false;
         break;
       }
-      const { data, headers, status } = await this.request(nextUrl, {
-        ifNoneMatch: pages === 0 ? ifNoneMatch : undefined,
-      });
-      if (pages === 0 && status === 304) {
-        return {
-          items: [],
-          pages: 0,
-          truncated: false,
-          notModified: true,
-          etag: headers.get('etag') || ifNoneMatch || null,
-          excludedPullRequests: 0,
-        };
-      }
-      if (pages === 0) {
-        page1Etag = headers.get('etag') || null;
-      }
-      if (!Array.isArray(data)) {
-        throw new GitHubError('server', 200, 'GitHub issues response was not a list');
+      const cachedEtag = pageCache?.etags[pages] ?? (pages === 0 ? ifNoneMatch : undefined);
+      const { data, headers, status } = await this.request(nextUrl, { ifNoneMatch: cachedEtag });
+
+      let pageData: any[];
+      if (status === 304) {
+        const cachedPage = pageCache?.pages[pages];
+        if (!Array.isArray(cachedPage)) {
+          if (pages === 0 && !pageCache) {
+            // Legacy single-page revalidation: the caller's cached body is
+            // still valid and it owns it.
+            return {
+              items: [],
+              pages: 0,
+              truncated: false,
+              notModified: true,
+              etag: headers.get('etag') || ifNoneMatch || null,
+              excludedPullRequests: 0,
+              pageEtags: [],
+              pageItems: [],
+            };
+          }
+          // A 304 with no cached body proves nothing; refuse to invent a page.
+          truncated = true;
+          allPagesNotModified = false;
+          break;
+        }
+        // Clone: the caller mutates the returned items, and the cached page it
+        // handed in must stay pristine for the next revalidation.
+        pageData = structuredClone(cachedPage);
+        pageEtags.push(cachedEtag ?? headers.get('etag') ?? '');
+        pageItems.push(pageData);
+      } else {
+        allPagesNotModified = false;
+        if (!Array.isArray(data)) {
+          throw new GitHubError('server', 200, 'GitHub issues response was not a list');
+        }
+        pageData = data;
+        pageEtags.push(headers.get('etag') ?? '');
+        pageItems.push(pageData);
+        if (pages === 0) {
+          page1Etag = headers.get('etag') || null;
+        }
       }
 
       let newCount = 0;
-      for (const item of data) {
+      for (const item of pageData) {
         const num = item?.number;
         if (typeof num === 'number') {
           if (!seenNumbers.has(num)) {
@@ -509,10 +677,11 @@ export class GitHubClient {
       }
       pages += 1;
 
-      if (data.length > 0 && newCount === 0) {
+      if (pageData.length > 0 && newCount === 0) {
         // Page added nothing new; stop pagination to avoid duplicate loops, but
         // report truncation because any later issues were not read.
         truncated = true;
+        allPagesNotModified = false;
         break;
       }
 
@@ -540,23 +709,41 @@ export class GitHubClient {
           throw new GitHubError('server', 200, 'GitHub pagination left the configured repository path');
         }
         nextUrl = parsedNext.toString();
-      } else if (data.length >= this.perPage) {
+      } else if (pageData.length >= this.perPage) {
         nextUrl = `${this.issuesBase()}/issues?state=${encodeURIComponent(stateFilter)}&per_page=${this.perPage}&page=${pages + 1}`;
       } else {
         nextUrl = null;
       }
     }
 
-    return { items, pages, truncated, notModified: false, etag: page1Etag };
+    return {
+      items,
+      pages,
+      truncated,
+      notModified: allPagesNotModified && pages > 0 && !truncated,
+      etag: pageEtags[0] || page1Etag,
+      pageEtags,
+      pageItems,
+    };
   }
 
-  async getIssue(number: unknown): Promise<IssueRead> {
+  async getIssue(number: unknown, options: { ifNoneMatch?: string | null } = {}): Promise<IssueRead> {
     const safeNumber = parseIssueNumber(number);
-    const { data, headers } = await this.request(`${this.issuesBase()}/issues/${safeNumber}`);
+    const { status, data, headers } = await this.request(`${this.issuesBase()}/issues/${safeNumber}`, {
+      ifNoneMatch: options.ifNoneMatch ?? null,
+    });
+    if (status === 304) {
+      // The caller owns the cached body; nothing was re-downloaded.
+      return {
+        item: null,
+        etag: options.ifNoneMatch ?? headers.get('etag') ?? null,
+        notModified: true,
+      };
+    }
     if (!data || typeof data.number !== 'number') {
       throw new GitHubError('server', 200, 'GitHub issue response was malformed');
     }
-    return { item: data, etag: headers.get('etag') };
+    return { item: data, etag: headers.get('etag'), notModified: false };
   }
 
   async updateIssue(
@@ -697,9 +884,70 @@ export class GitHubClient {
     return { item: data, etag: headers.get('etag') };
   }
 
-  async getIssueDependencies(number: unknown): Promise<{ blockedBy: any[]; blocking: any[] }> {
+  // The drawer reads the parent over REST. GitHub exposes the same native
+  // sub-issue link at GET /repos/{owner}/{repo}/issues/{n}/parent, and a
+  // read-only drawer must not issue a POST. The GraphQL field stays on the
+  // dependency routes, where a batched query is already in flight.
+  async getIssueParent(number: unknown): Promise<IssueParent | null> {
     const safeNumber = parseIssueNumber(number);
-    const [blockedByRes, blockingRes] = await Promise.all([
+    try {
+      const { data } = await this.request(`${this.issuesBase()}/issues/${safeNumber}/parent`);
+      return parseRestIssueParent(data, this.repo?.full ?? null);
+    } catch (err) {
+      // No parent, or a schema/endpoint that predates sub-issues: the issue is
+      // simply unparented.
+      if (err instanceof GitHubError && (err.status === 404 || err.status === 410)) return null;
+      throw err;
+    }
+  }
+
+  private async readIssueParent(number: number): Promise<IssueParent | null> {
+    if (!this.repo) return null;
+    const variables = { owner: this.repo.owner, name: this.repo.name, number };
+    const query = this.parentCapability.supported === false ? ISSUE_PARENT_FALLBACK_QUERY : ISSUE_PARENT_QUERY;
+    const first = await this.request(this.graphqlUrl(), {
+      method: 'POST',
+      body: { query, variables },
+    });
+    if (query === ISSUE_PARENT_QUERY && rejectsParentField(first.data)) {
+      this.parentCapability.supported = false;
+      const fallback = await this.request(this.graphqlUrl(), {
+        method: 'POST',
+        body: { query: ISSUE_PARENT_FALLBACK_QUERY, variables },
+      });
+      if (!fallback.data || typeof fallback.data !== 'object' || Array.isArray(fallback.data)) {
+        throw new GitHubError('server', 200, 'GitHub GraphQL response was malformed');
+      }
+      return null;
+    }
+    if (!first.data || typeof first.data !== 'object' || Array.isArray(first.data)) {
+      throw new GitHubError('server', 200, 'GitHub GraphQL response was malformed');
+    }
+    if (query === ISSUE_PARENT_QUERY) this.parentCapability.supported = true;
+    return parseIssueParent(first.data.data?.repository?.issue?.parent);
+  }
+
+  // Dependency context is read at most once per 60s per issue. The cache is
+  // shared between clients (a board server builds one client per request), so a
+  // drawer re-open costs nothing while a mutation can still invalidate it.
+  // `includeParent: false` skips the GraphQL parent query (the drawer reads the
+  // parent over REST) and leaves the cached parent untouched.
+  async getIssueDependencies(
+    number: unknown,
+    options: { forceRefresh?: boolean; includeParent?: boolean } = {},
+  ): Promise<IssueDependencies> {
+    const safeNumber = parseIssueNumber(number);
+    const includeParent = options.includeParent !== false;
+    const key = `${this.repo?.full?.toLowerCase() ?? ''}#${safeNumber}`;
+    const cached = this.dependencyCache.entries.get(key);
+    if (!options.forceRefresh && cached && this.now() - cached.fetchedAt < DEPENDENCY_CACHE_TTL_MS) {
+      return {
+        blockedBy: cached.blockedBy,
+        blocking: cached.blocking,
+        parent: cached.parent ?? null,
+      };
+    }
+    const [blockedByRes, blockingRes, parent] = await Promise.all([
       this.request(`${this.issuesBase()}/issues/${safeNumber}/dependencies/blocked_by`).catch((err) => {
         if (err instanceof GitHubError && err.status === 404) return { data: [] };
         throw err;
@@ -708,11 +956,22 @@ export class GitHubClient {
         if (err instanceof GitHubError && err.status === 404) return { data: [] };
         throw err;
       }),
+      // A parent read never fails the dependency read: an older schema or a
+      // transient GraphQL error leaves the issue unparented.
+      includeParent ? this.readIssueParent(safeNumber).catch(() => null) : Promise.resolve(null),
     ]);
-    return {
-      blockedBy: Array.isArray(blockedByRes?.data) ? blockedByRes.data : [],
-      blocking: Array.isArray(blockingRes?.data) ? blockingRes.data : [],
+    const blockedBy = Array.isArray(blockedByRes?.data) ? blockedByRes.data : [];
+    const blocking = Array.isArray(blockingRes?.data) ? blockingRes.data : [];
+    const entry: DependencyCacheEntry = {
+      blockedBy,
+      blocking,
+      fetchedAt: this.now(),
+      // A skipped parent keeps whatever the cache already knew rather than
+      // claiming the issue is unparented.
+      ...(includeParent ? { parent } : (cached?.parent !== undefined ? { parent: cached.parent } : {})),
     };
+    this.dependencyCache.entries.set(key, entry);
+    return { blockedBy, blocking, parent: entry.parent ?? null };
   }
 
   async addIssueDependency(number: unknown, issueId: number): Promise<any> {
@@ -743,10 +1002,15 @@ export class GitHubClient {
     );
   }
 
-  async listRepositoryDependencies(): Promise<Map<number, any[]>> {
-    const result = new Map<number, any[]>();
-    if (!this.repo) return result;
-    const query = `
+  async listRepositoryDependencies(): Promise<{
+    blockedBy: Map<number, any[]>;
+    parents: Map<number, IssueParent>;
+  }> {
+    const blockedBy = new Map<number, any[]>();
+    const parents = new Map<number, IssueParent>();
+    if (!this.repo) return { blockedBy, parents };
+
+    const buildQuery = (includeParent: boolean) => `
       query ListRepoDependencies($owner: String!, $name: String!) {
         repository(owner: $owner, name: $name) {
           issues(first: 100, states: [OPEN, CLOSED]) {
@@ -764,43 +1028,56 @@ export class GitHubClient {
                     nameWithOwner
                   }
                 }
-              }
+              }${includeParent ? `
+              parent {
+                number
+                title
+                repository {
+                  nameWithOwner
+                }
+              }` : ''}
             }
           }
         }
       }
     `;
-    try {
-      const { data } = await this.request(this.graphqlUrl(), {
-        method: 'POST',
-        body: {
-          query,
-          variables: {
-            owner: this.repo.owner,
-            name: this.repo.name,
-          },
-        },
-      });
-      const nodes = data?.data?.repository?.issues?.nodes;
-      if (Array.isArray(nodes)) {
-        for (const item of nodes) {
-          if (typeof item?.number === 'number' && Array.isArray(item.blockedBy?.nodes)) {
-            const mapped = item.blockedBy.nodes.map((n: any) => ({
+    const variables = { owner: this.repo.owner, name: this.repo.name };
+    const run = (includeParent: boolean) => this.request(this.graphqlUrl(), {
+      method: 'POST',
+      body: { query: buildQuery(includeParent), variables },
+    });
+
+    const includeParent = this.parentCapability.supported !== false;
+    let response = await run(includeParent);
+    if (includeParent && rejectsParentField(response.data)) {
+      this.parentCapability.supported = false;
+      response = await run(false);
+    } else if (includeParent && response.data && typeof response.data === 'object') {
+      this.parentCapability.supported = true;
+    }
+
+    const nodes = response.data?.data?.repository?.issues?.nodes;
+    if (Array.isArray(nodes)) {
+      for (const item of nodes) {
+        if (typeof item?.number !== 'number') continue;
+        if (Array.isArray(item.blockedBy?.nodes)) {
+          blockedBy.set(
+            item.number,
+            item.blockedBy.nodes.map((n: any) => ({
               id: typeof n.databaseId === 'number' ? n.databaseId : n.id,
               databaseId: n.databaseId,
               number: n.number,
               title: n.title,
               state: typeof n.state === 'string' ? n.state.toLowerCase() : 'open',
               repository: n.repository?.nameWithOwner,
-            }));
-            result.set(item.number, mapped);
-          }
+            })),
+          );
         }
+        const parent = parseIssueParent(item.parent);
+        if (parent) parents.set(item.number, parent);
       }
-    } catch (err) {
-      throw err;
     }
-    return result;
+    return { blockedBy, parents };
   }
 }
 
