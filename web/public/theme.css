@@ -3739,7 +3739,8 @@ body:has(#client-view:not([hidden])) #client-presentation-banner { display: none
   body:has(#login-view:not([hidden])) .compact-header { display: none; }
   body:has(#login-view:not([hidden])) #app-sidebar { display: none; }
   body:has(#login-view:not([hidden])) .sidebar-backdrop { display: none !important; }
-  #compact-nav-dock button { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 48px; min-width: 44px; font-size: 11.5px; font-weight: 500; white-space: nowrap; padding: 4px 2px; border: 0; border-radius: 8px; background: transparent; color: var(--fg-muted); }
+  #compact-nav-dock button { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 48px; min-width: 0; overflow: hidden; font-size: 11.5px; font-weight: 500; white-space: nowrap; padding: 4px 2px; border: 0; border-radius: 8px; background: transparent; color: var(--fg-muted); }
+  #compact-nav-dock button > span:not(.badge) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   #compact-nav-dock .badge { padding: 1px 5px; font-size: 10.5px; line-height: 1.2; flex-shrink: 0; }
   #compact-nav-dock button[aria-current="page"] { color: var(--fg); background: var(--surf); }
   #board-toolbar, #status-strip { display: none; }
