@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/workflows-accelerator-agent-dev-wave7-overhaul
 Branch: feat/wave7-overhaul
-Base: merge `feat/wave7a-server-wiring-l4` (once L4 passes) onto `feat/wave7-overhaul`
+Base: feat/wave7-overhaul (first run `git merge --ff-only feat/wave7a-server-wiring-l4` so HEAD is at `4fba1fd`)
 Test commands:
 - node --test --test-timeout=60000 web/tests/wave7b-canvas-flow.test.mjs
 - node --test --test-timeout=60000 web/tests/*.test.mjs
@@ -57,8 +57,9 @@ Read first:
 </requirements>
 
 <steps>
-1. Write failing tests first in `web/tests/wave7b-canvas-flow.test.mjs` testing: flow-layout integration, collapsed-by-default group rendering with counts, expand/collapse persisting via `PATCH /api/layout`, LR/TD auto direction by viewport width + explicit override persisted via `/api/layout`, canvas drag saving to `/api/layout` (0 GitHub PATCH calls!), activeSession animated class vs idle `in-progress` steady class, search auto-expanding matching groups, and EN/FR I18N parity + zero forbidden tokens.
-2. Implement changes in `web/public/index.html`, `web/public/app.js`, `web/public/theme.css`.
+0. First run `git merge --ff-only feat/wave7a-server-wiring-l4` in this worktree and confirm `HEAD` is `4fba1fd` and `web/tests/wave7a-server-wiring.test.mjs` (16/16) passes.
+1. Write failing tests first in `web/tests/wave7b-canvas-flow.test.mjs` testing: flow-layout integration, `/flow-layout.js` served with 200, collapsed-by-default group rendering with counts, expand/collapse persisting via `PATCH /api/layout`, LR/TD auto direction by viewport width + explicit override persisted via `/api/layout`, canvas drag saving to `/api/layout` (0 GitHub PATCH calls!), `order: null` reset to auto, activeSession animated class vs idle `in-progress` steady class, search auto-expanding matching groups, and EN/FR I18N parity + zero forbidden tokens.
+2. Implement changes in `web/server/app.ts` (`/flow-layout.js` static route), `web/public/sw.js`, `web/public/index.html`, `web/public/app.js`, `web/public/theme.css` (and `web/tests/sw.test.mjs` if needed).
 3. Run `node --test --test-timeout=60000 web/tests/wave7b-canvas-flow.test.mjs`, `web/tests/*.test.mjs`, `npm test`, `npm run typecheck`, `tsc`, and `esbuild`.
 4. Commit cleanly as `feat(canvas): replace columns with flow-graph layout and active session rings`.
 </steps>
