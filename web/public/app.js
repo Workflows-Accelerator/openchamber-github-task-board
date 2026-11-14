@@ -831,6 +831,20 @@
       canvas_group_checklist: 'checklist',
       canvas_group_questions: 'questions',
       needs_me: 'Needs me',
+      nav_blocked_short: 'Blocked',
+      phase_draft: 'draft phase',
+      phase_exploration: 'exploration phase',
+      phase_alignment: 'alignment phase',
+      phase_planning: 'planning phase',
+      phase_execution: 'execution phase',
+      phase_verification: 'verification phase',
+      phase_human_verification: 'human verification phase',
+      phase_publication: 'publication phase',
+      phase_done: 'done phase',
+      phase_archive: 'archive phase',
+      attention_decision: 'Needs a decision',
+      attention_permission: 'Needs permission',
+      attention_review: 'Needs review',
       progress_checklist_title: '{done} of {total} checklist items done',
       progress_questions_title: '{done} of {total} questions answered',
       canvas_agent_running: 'Agent running',
@@ -1103,6 +1117,20 @@
       canvas_group_checklist: 'liste',
       canvas_group_questions: 'questions',
       needs_me: 'À traiter',
+      nav_blocked_short: 'Bloquées',
+      phase_draft: 'Phase : brouillon',
+      phase_exploration: 'Phase : exploration',
+      phase_alignment: 'Phase : alignement',
+      phase_planning: 'Phase : planification',
+      phase_execution: 'Phase : exécution',
+      phase_verification: 'Phase : vérification',
+      phase_human_verification: 'Phase : vérification humaine',
+      phase_publication: 'Phase : publication',
+      phase_done: 'Phase : terminé',
+      phase_archive: 'Phase : archivé',
+      attention_decision: 'Décision attendue',
+      attention_permission: 'Autorisation attendue',
+      attention_review: 'Revue attendue',
       progress_checklist_title: '{done} éléments cochés sur {total}',
       progress_questions_title: '{done} questions répondues sur {total}',
       canvas_agent_running: 'Agent actif',
@@ -2155,18 +2183,24 @@
     var n = Number(count) || 0;
     return n + (n === 1 ? ' question' : ' questions');
   }
+  // Phase and attention are a fixed vocabulary, not free text: both languages
+  // carry one label per value so French never reads an English workflow word.
   function phaseText(phase) {
-    var value = String(phase || '').replace(/_/g, ' ').trim();
-    if (!value) return '';
+    var key = String(phase || '').trim();
+    if (!key) return '';
+    var dict = I18N[getLanguage()] || I18N.en;
+    var label = dict['phase_' + key.replace(/-/g, '_')];
+    if (label) return label;
+    var value = key.replace(/_/g, ' ');
     return getLanguage() === 'fr' ? 'Phase : ' + value : value + ' phase';
   }
   function attentionText(attention) {
     var value = String(attention || '').replace(/^needs-/, '').replace(/_/g, ' ').trim();
     if (!value) return '';
-    if (getLanguage() === 'fr') {
-      return value === 'decision' ? 'Décision attendue' : 'Attention : ' + value;
-    }
-    return value === 'decision' ? 'Needs a decision' : 'Needs ' + value;
+    var dict = I18N[getLanguage()] || I18N.en;
+    var label = dict['attention_' + value.replace(/ /g, '_')];
+    if (label) return label;
+    return getLanguage() === 'fr' ? 'Attention : ' + value : 'Needs ' + value;
   }
   function manualCompare(a, b) {
     var oa = Number.isFinite(a.order) ? a.order : null, ob = Number.isFinite(b.order) ? b.order : null;
@@ -3379,6 +3413,17 @@
       result.questions.total += progress.questions.total;
     });
     return result;
+  }
+
+  // The layout module only knows a card's stage, so its "needs me" count misses
+  // open questions and open human tasks. The group header is a summary surface:
+  // it must answer with the same predicate as the sidebar and the filter.
+  function groupNeedsMeOf(groupKey, issues) {
+    var count = 0;
+    (Array.isArray(issues) ? issues : []).forEach(function (issue) {
+      if (issue && flowGroupKeyOf(issue) === groupKey && needsHumanAttention(issue)) count += 1;
+    });
+    return count;
   }
 
   function groupTitleText(group, dict) {
@@ -6221,6 +6266,7 @@
     // from the cards the group hides, so a collapsed group still tells the truth.
     state.canvasGroups.forEach(function (group) {
       group.progress = groupProgressOf(group.groupKey, issues);
+      group.needsMe = groupNeedsMeOf(group.groupKey, issues);
     });
 
     state.canvasGroups.forEach(function (group) {

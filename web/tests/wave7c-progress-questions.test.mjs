@@ -222,6 +222,36 @@ test('W7c counts: sidebar badges count cards, not questions, and dedupe blocked'
   assert.equal(el('list-nav-badge').textContent, '3', 'three issues need attention');
 });
 
+test('W7c counts: a canvas group counts "needs me" with the same rule as the sidebar', () => {
+  const app = browser();
+  const issues = [
+    issue(1, { counts: { openQuestions: { total: 1, open: 1 } } }),
+    issue(2, { statusLabel: 'status:needs-human' }),
+    issue(3, { counts: { humanTasks: { total: 1, open: 1 } } }),
+    issue(4, { statusLabel: 'status:done' }),
+  ];
+  app.state.board = { issues };
+  app.state.canvasHasSavedState = true;
+  app.state.canvasExpandedGroups = new Set();
+  app.renderCanvasIssues(issues);
+  app.updateSidebarBadges();
+
+  const expected = issues.filter((it) => app.needsHumanAttention(it)).length;
+  assert.equal(expected, 3, 'an open question, a needs-human stage and an open human task all need you');
+  assert.equal(app.__elements.get('list-nav-badge').textContent, String(expected), 'the sidebar states the canonical count');
+  // The group header is a summary surface: it must use the same predicate, not
+  // the narrower "stage is needs-human" rule the layout module can see.
+  const group = app.__elements.get('canvas-cards').querySelectorAll('.canvas-group-card')[0];
+  const needsMeCount = group.querySelectorAll('.canvas-group-count')
+    .find((el) => String(el.className).split(/\s+/).includes('is-needs-me'));
+  assert.ok(needsMeCount, 'the group header carries a needs-me count');
+  assert.equal(
+    needsMeCount.textContent.replace(/\s+/g, ' ').trim(),
+    `${expected} needs me`,
+    'a collapsed group counts the same tasks as the sidebar',
+  );
+});
+
 test('W7c counts: the Decisions page lists one card per issue and names its question count', () => {
   const app = browser();
   app.state.board = { issues: [
@@ -412,9 +442,59 @@ test('W7c questions: drawer badges localize phase and attention and drop duplica
   app.state.board = { repo: REPO, issues: [app.state.detail] };
   app.renderDetail(false);
   const frMeta = allText(app.__elements.get('detail-meta'));
-  assert.match(frMeta, /Phase : execution/);
+  // Corrected expectation: this line used to assert "Phase : execution", which
+  // locked the English value into the French drawer (audit #10).
+  assert.match(frMeta, /Phase : exécution/);
   assert.match(frMeta, /Décision attendue/);
   assert.doesNotMatch(frMeta, /needs decision/);
+});
+
+test('W7c questions: a French drawer carries no English workflow vocabulary', () => {
+  // Audit #10 lists "phase: execution" among the untranslated strings. Localising
+  // the word "Phase :" while keeping the English value only moves the mix.
+  const app = browser();
+  const phases = {
+    draft: 'Phase : brouillon',
+    exploration: 'Phase : exploration',
+    alignment: 'Phase : alignement',
+    planning: 'Phase : planification',
+    execution: 'Phase : exécution',
+    verification: 'Phase : vérification',
+    human_verification: 'Phase : vérification humaine',
+    publication: 'Phase : publication',
+    done: 'Phase : terminé',
+    archive: 'Phase : archivé',
+  };
+  app.setLanguage('fr');
+  Object.keys(phases).forEach((phase) => {
+    app.state.detail = issue(60, { statusLabel: 'status:in-progress', phase });
+    app.state.board = { repo: REPO, issues: [app.state.detail] };
+    app.renderDetail(false);
+    const meta = allText(app.__elements.get('detail-meta'));
+    assert.ok(meta.includes(phases[phase]), `French must translate the phase "${phase}", saw: ${meta}`);
+  });
+  // The attention vocabulary had the same gap: only "needs decision" was
+  // translated, so "Attention : review" stayed half English.
+  [['needs-decision', 'Décision attendue'], ['needs-review', 'Revue attendue'], ['needs-permission', 'Autorisation attendue']].forEach(([value, label]) => {
+    app.state.detail = issue(61, { statusLabel: 'status:todo', attention: value });
+    app.state.board = { repo: REPO, issues: [app.state.detail] };
+    app.renderDetail(false);
+    const meta = allText(app.__elements.get('detail-meta'));
+    assert.ok(meta.includes(label), `French must translate "${value}", saw: ${meta}`);
+    assert.doesNotMatch(meta, /needs review|needs permission|needs decision/i, `no English attention vocabulary: ${meta}`);
+  });
+});
+
+test('W7c questions: the Answer action stays pinned inside the scrolling drawer', () => {
+  // A source assertion, and deliberately labelled as one: the real proof is the
+  // 390x844 browser measurement (Answer at 760-804 with Details and the free-text
+  // field open). This guards the rule that measurement depends on.
+  const css = readPublic('theme.css');
+  const rule = /\.human-review \.question-actions\s*\{([^}]*)\}/.exec(css);
+  assert.ok(rule, 'the question actions must carry their own rule');
+  assert.match(rule[1], /position:\s*sticky/, 'the primary action is pinned, not pushed below the fold');
+  assert.match(rule[1], /bottom:\s*0/, 'it pins to the bottom edge of the drawer scrollport');
+  assert.match(rule[1], /background:/, 'it carries a backing so it never sits on top of readable text');
 });
 
 test('W7c questions: the human count has one label in both languages', () => {
@@ -482,6 +562,28 @@ test('W7c P2: the no-JS fallback, shell assets and settings note are in place', 
 // ==========================================
 // 5. Invariants
 // ==========================================
+
+test('W7c P2: the compact dock keeps a short label that fits a 390 phone', () => {
+  // Measured in Chromium at 390x844: "Blocked & waiting" plus its badge was
+  // 111 px wide in a 94 px dock cell, so the label spilled into the Decisions
+  // tab ("Décisions0Bloquées et en attent"). The dock gets its own short label,
+  // and the cell refuses to spill even if a future label grows.
+  const app = browser();
+  assert.ok(app.I18N.en.nav_blocked_short.length <= 12, `EN dock label too long: ${app.I18N.en.nav_blocked_short}`);
+  assert.ok(app.I18N.fr.nav_blocked_short.length <= 12, `FR dock label too long: ${app.I18N.fr.nav_blocked_short}`);
+
+  const html = readPublic('index.html');
+  const dock = /<nav id="compact-nav-dock"[\s\S]*?<\/nav>/.exec(html);
+  assert.ok(dock, 'the compact dock exists');
+  assert.match(dock[0], /data-i18n="nav_blocked_short"/, 'the dock binds the short label');
+  assert.doesNotMatch(dock[0], /data-i18n="nav_blocked"/, 'the long view title stays out of the dock');
+
+  const css = readPublic('theme.css');
+  const rule = /#compact-nav-dock button \{([^}]*)\}/.exec(css);
+  assert.ok(rule, 'the dock button carries its own rule');
+  assert.match(rule[1], /overflow:\s*hidden/, 'a long label clips instead of spilling into the next tab');
+  assert.match(rule[1], /min-width:\s*0/, 'a grid cell may shrink its content');
+});
 
 test('W7c invariants: EN and FR dictionaries keep exact key parity', () => {
   const app = browser();
