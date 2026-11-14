@@ -17,11 +17,49 @@ function positive(value, fallback) {
 }
 
 function idOf(card) {
-  return String(card.id !== undefined ? card.id : card.key !== undefined ? card.key : card.number);
+  if (card.id !== undefined && card.id !== null) return String(card.id);
+  if (card.key !== undefined && card.key !== null) return String(card.key);
+  return String(card.number);
 }
 
+// Natural, locale-independent comparison. `localeCompare` with numeric options
+// is both locale-dependent across runtimes and slow enough to dominate layout
+// time, so compare digit runs directly instead.
 function compareIds(a, b) {
-  return String(a).localeCompare(String(b), undefined, { numeric: true });
+  const left = String(a);
+  const right = String(b);
+  if (left === right) return 0;
+
+  let i = 0;
+  let j = 0;
+  while (i < left.length && j < right.length) {
+    const leftCode = left.charCodeAt(i);
+    const rightCode = right.charCodeAt(j);
+    const leftDigit = leftCode >= 48 && leftCode <= 57;
+    const rightDigit = rightCode >= 48 && rightCode <= 57;
+
+    if (leftDigit && rightDigit) {
+      const leftStart = i;
+      const rightStart = j;
+      while (i < left.length && left.charCodeAt(i) >= 48 && left.charCodeAt(i) <= 57) i++;
+      while (j < right.length && right.charCodeAt(j) >= 48 && right.charCodeAt(j) <= 57) j++;
+      const leftNumber = left.slice(leftStart, i).replace(/^0+(?=\d)/, '');
+      const rightNumber = right.slice(rightStart, j).replace(/^0+(?=\d)/, '');
+      if (leftNumber.length !== rightNumber.length) return leftNumber.length - rightNumber.length;
+      if (leftNumber !== rightNumber) return leftNumber < rightNumber ? -1 : 1;
+      // Equal numeric value (`1` vs `01`) still needs a stable order.
+      const leftRun = left.slice(leftStart, i);
+      const rightRun = right.slice(rightStart, j);
+      if (leftRun !== rightRun) return leftRun < rightRun ? -1 : 1;
+      continue;
+    }
+
+    if (leftCode !== rightCode) return leftCode - rightCode;
+    i++;
+    j++;
+  }
+
+  return (left.length - i) - (right.length - j);
 }
 
 function groupKeyOf(card) {
@@ -67,6 +105,7 @@ function cardExtents(card, defaultW, defaultH) {
   const notes = Array.isArray(card.notes) ? card.notes : [];
   let stackY = h + 12;
   notes.forEach((note) => {
+    if (!note || typeof note !== 'object') return;
     const noteW = positive(note.w, 220);
     const noteH = positive(note.h, 130);
     const dx = Number.isFinite(note.dx) ? note.dx : 0;
@@ -117,13 +156,19 @@ function resolveDependency(reference, card, index) {
   }
   if (raw === null || raw === undefined) return null;
 
-  const token = String(raw);
-  const direct = index.byId.get(token) || index.byKey.get(token);
-  if (direct) return idOf(direct);
-  const local = index.byRepoNumber.get(`${card.repo}::${token}`);
-  if (local) return idOf(local);
-  const global = index.byNumber.get(token);
-  return global ? idOf(global) : null;
+  const token = String(raw).trim();
+  if (!token) return null;
+  // Accept `#12` as well as `12`; a cross-repo `owner/repo#12` is matched whole.
+  const candidates = token.startsWith('#') ? [token, token.slice(1)] : [token];
+  for (const candidate of candidates) {
+    const direct = index.byId.get(candidate) || index.byKey.get(candidate);
+    if (direct) return idOf(direct);
+    const local = index.byRepoNumber.get(`${card.repo}::${candidate}`);
+    if (local) return idOf(local);
+    const global = index.byNumber.get(candidate);
+    if (global) return idOf(global);
+  }
+  return null;
 }
 
 function collectEdges(cards, index) {
@@ -181,8 +226,8 @@ function assignLayers(nodes, edges) {
   outgoing.forEach((targets) => targets.sort(compareIds));
 
   const queue = nodes.filter((node) => indegree.get(node) === 0).sort(compareIds);
-  while (queue.length > 0) {
-    const node = queue.shift();
+  for (let head = 0; head < queue.length; head++) {
+    const node = queue[head];
     outgoing.get(node).forEach((target) => {
       layer.set(target, Math.max(layer.get(target), layer.get(node) + 1));
       const remaining = indegree.get(target) - 1;
@@ -237,6 +282,12 @@ function layoutGroup(groupCards, intraEdges, settings) {
         );
       });
       buckets[index].sort((a, b) => {
+        // An explicit board order outranks alignment; only cards sharing an
+        // order (or both unordered) may be moved by the barycenter.
+        const orderA = Number.isFinite(a.order) ? a.order : Infinity;
+        const orderB = Number.isFinite(b.order) ? b.order : Infinity;
+        if (orderA !== orderB) return orderA - orderB;
+
         const valueA = barycenter.get(idOf(a));
         const valueB = barycenter.get(idOf(b));
         if (valueA === null && valueB === null) return compareCards(a, b);
@@ -323,7 +374,18 @@ export function arrangeFlowGraph(cards, options = {}) {
     return { groups: [], positions: {}, edges: [], width: 0, height: 0 };
   }
 
-  const ordered = cards.slice().sort((a, b) => compareIds(idOf(a), idOf(b)));
+  // Duplicate identities cannot be represented as distinct positions; keep the
+  // first (deterministically id-sorted) card so counts and edges stay honest.
+  const seenIds = new Set();
+  const ordered = cards
+    .slice()
+    .sort((a, b) => compareIds(idOf(a), idOf(b)) || compareCards(a, b))
+    .filter((card) => {
+      const id = idOf(card);
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    });
   const index = buildIndex(ordered);
   const allEdges = collectEdges(ordered, index);
   const nodes = ordered.map(idOf);
@@ -430,15 +492,22 @@ export function arrangeFlowGraph(cards, options = {}) {
       });
 
       info.cards.forEach((card) => {
-        positions[card.id] = {
-          x: x + card.x,
-          y: y + card.y,
-          w: card.w,
-          h: card.h,
-          layer: cardLayers.get(card.id) || 0,
-          groupKey: info.groupKey,
-          extents: card.extents,
-        };
+        // defineProperty keeps ids like `__proto__` as own data keys instead of
+        // running the inherited setter and replacing the result's prototype.
+        Object.defineProperty(positions, card.id, {
+          value: {
+            x: x + card.x,
+            y: y + card.y,
+            w: card.w,
+            h: card.h,
+            layer: cardLayers.get(card.id) || 0,
+            groupKey: info.groupKey,
+            extents: card.extents,
+          },
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        });
       });
     });
   });

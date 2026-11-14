@@ -245,6 +245,124 @@ test('arrangeFlowGraph: shuffled input produces identical output', () => {
   }
 });
 
+test('arrangeFlowGraph: explicit order survives the barycenter pass', () => {
+  const cards = [
+    card({ id: 'p1', number: 1 }),
+    card({ id: 'p2', number: 2 }),
+    card({ id: 'a', number: 3, order: 1, dependencies: ['p2'] }),
+    card({ id: 'b', number: 4, order: 2, dependencies: ['p1'] }),
+  ];
+
+  const res = arrangeFlowGraph(cards, { direction: 'LR', expandedGroups: [GROUP] });
+  const byY = ['a', 'b'].sort((x, y) => res.positions[x].y - res.positions[y].y);
+  assert.deepEqual(byY, ['a', 'b'], 'barycenter must not reverse an explicit board order');
+});
+
+test('arrangeFlowGraph: prototype-like ids remain own position keys', () => {
+  const cards = [
+    card({ id: '__proto__', number: 1 }),
+    card({ id: 'constructor', key: `${REPO}#2`, number: 2 }),
+    card({ id: 'toString', key: `${REPO}#3`, number: 3 }),
+  ];
+
+  const res = arrangeFlowGraph(cards, { direction: 'LR', expandedGroups: [GROUP] });
+  assert.equal(Object.getPrototypeOf(res.positions), Object.prototype);
+  assert.equal({}.polluted, undefined);
+  for (const id of ['__proto__', 'constructor', 'toString']) {
+    assert.ok(Object.prototype.hasOwnProperty.call(res.positions, id), `${id} must be an own key`);
+    assert.ok(Number.isFinite(res.positions[id].x), `${id} must have a position`);
+  }
+});
+
+test('arrangeFlowGraph: #number and cross-repo references resolve', () => {
+  const cards = [
+    card({ id: 'a1', key: 'acme/a#1', repo: 'acme/a', number: 1 }),
+    card({ id: 'a2', key: 'acme/a#2', repo: 'acme/a', number: 2, dependencies: ['#1'] }),
+    card({ id: 'b1', key: 'acme/b#1', repo: 'acme/b', number: 1, dependencies: ['acme/a#1'] }),
+  ];
+
+  const res = arrangeFlowGraph(cards, {
+    direction: 'LR',
+    expandedGroups: ['acme/a::standalone', 'acme/b::standalone'],
+  });
+  assert.ok(res.edges.some((edge) => edge.from === 'a1' && edge.to === 'a2'));
+  assert.ok(res.edges.some((edge) => edge.from === 'a1' && edge.to === 'b1'));
+});
+
+test('arrangeFlowGraph: null ids fall back to keys and null notes are ignored', () => {
+  const cards = [
+    card({ id: null, key: `${REPO}#1`, number: 1, notes: [null, { w: 200, h: 120, dy: 160 }] }),
+    card({ id: null, key: `${REPO}#2`, number: 2, notes: [undefined] }),
+  ];
+
+  const res = arrangeFlowGraph(cards, { direction: 'LR', expandedGroups: [GROUP] });
+  assert.deepEqual(res.groups[0].cardIds, [`${REPO}#1`, `${REPO}#2`]);
+  assert.equal(res.groups[0].total, 2);
+  assert.deepEqual(Object.keys(res.positions).sort(), [`${REPO}#1`, `${REPO}#2`]);
+});
+
+test('arrangeFlowGraph: duplicate ids collapse to one card', () => {
+  const cards = [
+    card({ id: 'dup', key: `${REPO}#1`, number: 1 }),
+    card({ id: 'dup', key: `${REPO}#2`, number: 2 }),
+    card({ id: 'other', key: `${REPO}#3`, number: 3 }),
+  ];
+
+  const res = arrangeFlowGraph(cards, { direction: 'LR', expandedGroups: [GROUP] });
+  assert.deepEqual(res.groups[0].cardIds, ['dup', 'other']);
+  assert.equal(res.groups[0].total, 2);
+  assert.deepEqual(Object.keys(res.positions).sort(), ['dup', 'other']);
+});
+
+test('arrangeFlowGraph: 345 cards with cross-group edges stay under 100ms when partly expanded', () => {
+  const random = mulberry32(99);
+  const repos = Array.from({ length: 27 }, (_, index) => `acme/repo-${index}`);
+  const cards = [];
+  for (let index = 0; index < 345; index++) {
+    const repo = repos[index % repos.length];
+    const number = Math.floor(index / repos.length) + 1;
+    const parentKey = index % 5 === 0 ? `epic-${index % 4}` : null;
+    const dependencies = [];
+    if (index > 3) {
+      dependencies.push(cards[Math.floor(random() * index)].id);
+      if (random() < 0.3) {
+        const second = cards[Math.floor(random() * index)].id;
+        if (second !== dependencies[0]) dependencies.push(second);
+      }
+    }
+    cards.push(card({
+      id: `card-${index}`,
+      key: `${repo}#${number}`,
+      repo,
+      number,
+      parentKey,
+      parentTitle: parentKey ? `Epic ${parentKey}` : null,
+      priority: ['urgent', 'high', 'normal', 'low'][index % 4],
+      order: index % 7 === 0 ? index : null,
+      dependencies,
+      notes: index % 9 === 0 ? [{ id: `note-${index}`, w: 200, h: 120, dy: 170 }] : [],
+    }));
+  }
+
+  const groupKeys = [...new Set(cards.map((item) => `${item.repo}::${item.parentKey || 'standalone'}`))];
+  const options = { direction: 'LR', expandedGroups: groupKeys.filter((_, index) => index % 4 === 0) };
+
+  arrangeFlowGraph(cards, options);
+  const started = performance.now();
+  const res = arrangeFlowGraph(cards, options);
+  const elapsed = performance.now() - started;
+
+  assert.ok(elapsed < 100, `layout took ${elapsed.toFixed(1)}ms`);
+  assert.ok(res.edges.some((edge) => edge.crossGroup), 'cross-group edges must be present');
+  assertNoCardOverlaps(res.positions);
+  assertNoGroupOverlaps(res.groups);
+
+  const shuffled = arrangeFlowGraph(shuffle(cards, random), options);
+  assert.deepEqual(shuffled.positions, res.positions);
+  assert.deepEqual(shuffled.groups, res.groups);
+  assert.deepEqual(shuffled.edges, res.edges);
+});
+
 test('arrangeFlowGraph: 345 cards across 27 repos lay out under 100ms', () => {
   const random = mulberry32(42);
   const repos = Array.from({ length: 27 }, (_, index) => `acme/repo-${index}`);
