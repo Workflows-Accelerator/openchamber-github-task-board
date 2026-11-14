@@ -408,6 +408,149 @@ var LeaseStore = class {
   }
 };
 
+// service/git-remote.ts
+import { execFile } from "node:child_process";
+var MAX_DIRECTORY_CHARS = 4096;
+var GIT_TIMEOUT_MS = 3e3;
+var GIT_MAX_BUFFER = 65536;
+function isSafeGitDirectory(value) {
+  if (typeof value !== "string") return false;
+  if (value.length === 0 || value.length > MAX_DIRECTORY_CHARS) return false;
+  if (value.includes("\0")) return false;
+  if (value.startsWith("-")) return false;
+  return /^(?:\/|[A-Za-z]:[\\/]|\\\\[^\\]|\/\/[^/])/.test(value);
+}
+var CREDENTIAL_PATTERN = /gh[pousr]_[A-Za-z0-9_]{8,}|github_pat_[A-Za-z0-9_]+|x-access-token|:\/\/[^/@\s]+:[^/@\s]+@/i;
+function sanitizeRemoteUrl(raw) {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed || /[\0\r\n]/.test(trimmed)) return null;
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(trimmed)) {
+    let parsed;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      return null;
+    }
+    if (!parsed.hostname) return null;
+    parsed.username = "";
+    parsed.password = "";
+    const serialized = parsed.toString().replace(/^([A-Za-z][A-Za-z0-9+.-]*:\/\/)[^/@]*@/, "$1");
+    if (/(?:\/\/)[^/@]*@/.test(serialized)) return null;
+    if (CREDENTIAL_PATTERN.test(serialized)) return null;
+    return serialized;
+  }
+  const scpMatch = trimmed.match(/^(?:([^@\s/]+)@)?([^@\s/:]+):(.+)$/);
+  if (scpMatch) {
+    const [, userinfo, host, path3] = scpMatch;
+    if (userinfo && userinfo.includes(":")) return null;
+    const candidate = `${userinfo ? `${userinfo}@` : ""}${host}:${path3}`;
+    if (CREDENTIAL_PATTERN.test(candidate)) return null;
+    return candidate;
+  }
+  if (trimmed.includes("@")) return null;
+  if (CREDENTIAL_PATTERN.test(trimmed)) return null;
+  return trimmed;
+}
+function parseGitHubRemote(remoteUrl) {
+  if (typeof remoteUrl !== "string" || !remoteUrl) return null;
+  const value = remoteUrl.trim();
+  const scpMatch = value.match(/^(?:[^@\s/]+@)?github\.com:([^\s/]+)\/([^\s/]+?)(?:\.git)?$/i);
+  if (scpMatch) {
+    return cleanOwnerRepo(scpMatch[1], scpMatch[2]);
+  }
+  try {
+    const url = new URL(value);
+    if (url.hostname.toLowerCase() !== "github.com") return null;
+    const parts = url.pathname.replace(/^\/+/, "").replace(/\.git$/, "").split("/");
+    if (parts.length < 2) return null;
+    return cleanOwnerRepo(parts[0], parts[1]);
+  } catch {
+    return null;
+  }
+}
+function cleanOwnerRepo(owner, repo) {
+  const cleanOwner = owner.trim();
+  const cleanRepo = repo.trim().replace(/\.git$/, "");
+  if (!cleanOwner || !cleanRepo) return null;
+  if (cleanOwner === "." || cleanOwner === ".." || cleanRepo === "." || cleanRepo === "..") return null;
+  return { owner: cleanOwner, repo: cleanRepo };
+}
+function runGit(args) {
+  return new Promise((resolve) => {
+    execFile(
+      "git",
+      args,
+      {
+        timeout: GIT_TIMEOUT_MS,
+        maxBuffer: GIT_MAX_BUFFER,
+        windowsHide: true,
+        encoding: "utf8",
+        shell: false
+      },
+      (error, stdout) => {
+        if (!error) {
+          resolve({ code: 0, stdout: String(stdout || ""), timedOut: false, unavailable: false });
+          return;
+        }
+        const err = error;
+        const timedOut = Boolean(err.killed) || err.signal === "SIGTERM";
+        const unavailable = err.code === "ENOENT" || err.code === "EACCES";
+        const numericCode = typeof err.code === "number" ? err.code : null;
+        resolve({
+          code: numericCode,
+          stdout: String(stdout || ""),
+          timedOut,
+          unavailable
+        });
+      }
+    );
+  });
+}
+async function resolveGitRemote(directory) {
+  if (!isSafeGitDirectory(directory)) {
+    return { status: "error", hasGit: false, remote: null, reason: "invalid_path" };
+  }
+  const probe = await runGit(["-C", directory, "rev-parse", "--git-dir"]);
+  if (probe.timedOut) {
+    return { status: "error", hasGit: false, remote: null, reason: "timeout" };
+  }
+  if (probe.unavailable) {
+    return { status: "error", hasGit: false, remote: null, reason: "git_unavailable" };
+  }
+  if (probe.code !== 0) {
+    return { status: "not_git", hasGit: false, remote: null, reason: "not_git" };
+  }
+  const result = await runGit(["-C", directory, "config", "--get", "remote.origin.url"]);
+  if (result.timedOut) {
+    return { status: "error", hasGit: false, remote: null, reason: "timeout" };
+  }
+  if (result.unavailable) {
+    return { status: "error", hasGit: false, remote: null, reason: "git_unavailable" };
+  }
+  if (result.code === 0) {
+    const remoteUrl = sanitizeRemoteUrl(result.stdout);
+    const parsed = remoteUrl ? parseGitHubRemote(remoteUrl) : null;
+    if (remoteUrl && parsed) {
+      return {
+        status: "ok",
+        hasGit: true,
+        remote: { owner: parsed.owner, repo: parsed.repo, remoteUrl }
+      };
+    }
+    return {
+      status: "no_remote",
+      hasGit: true,
+      remote: null,
+      reason: remoteUrl ? "unsupported_remote" : "unreadable_remote"
+    };
+  }
+  if (result.code === 1) {
+    return { status: "no_remote", hasGit: true, remote: null, reason: "no_origin" };
+  }
+  return { status: "error", hasGit: true, remote: null, reason: "git_failed" };
+}
+
 // service/cas.ts
 import crypto from "node:crypto";
 function computeIssueSha(body) {
@@ -872,6 +1015,31 @@ function authenticateRequest(authHeader, expectedToken) {
   const presentedHash = crypto2.createHash("sha256").update(presentedToken, "utf8").digest();
   return crypto2.timingSafeEqual(expectedHash, presentedHash);
 }
+async function handleGitRemoteLookup(rawBody, res) {
+  const writeJson = (status, payload) => {
+    if (res.headersSent) return;
+    res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify(payload));
+  };
+  let directory;
+  try {
+    const parsed = JSON.parse(rawBody || "{}");
+    directory = parsed?.directory;
+  } catch {
+    writeJson(400, { status: "error", hasGit: false, remote: null, reason: "invalid_json" });
+    return;
+  }
+  if (!isSafeGitDirectory(directory)) {
+    writeJson(400, { status: "error", hasGit: false, remote: null, reason: "invalid_path" });
+    return;
+  }
+  try {
+    const lookup = await resolveGitRemote(directory);
+    writeJson(200, lookup);
+  } catch {
+    writeJson(500, { status: "error", hasGit: false, remote: null, reason: "service_error" });
+  }
+}
 function createCoordinatorHostServer(token, getStatus) {
   const MAX_BODY_BYTES = 65536;
   const server = http.createServer((req, res) => {
@@ -905,6 +1073,41 @@ function createCoordinatorHostServer(token, getStatus) {
     });
     const url = new URL(req.url || "/", "http://127.0.0.1");
     const normalizedPath = url.pathname.replace(/\/+$/, "") || "/";
+    if (normalizedPath === "/git-remote") {
+      if (req.method !== "POST") {
+        res.writeHead(405, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ error: "Method Not Allowed" }));
+        return;
+      }
+      const chunks = [];
+      let received = 0;
+      let stopped = false;
+      req.on("data", (chunk) => {
+        if (stopped) return;
+        received += chunk.length;
+        if (received > MAX_BODY_BYTES) {
+          stopped = true;
+          if (!res.headersSent) {
+            res.writeHead(413, { "Content-Type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify({ error: "Payload Too Large" }));
+          }
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on("error", () => {
+        if (!res.headersSent) {
+          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({ status: "error", hasGit: false, remote: null, reason: "invalid_body" }));
+        }
+      });
+      req.on("end", () => {
+        if (stopped) return;
+        void handleGitRemoteLookup(Buffer.concat(chunks).toString("utf8"), res);
+      });
+      return;
+    }
     if (normalizedPath === "/health") {
       if (req.method === "GET") {
         if (getStatus && getStatus() !== "running") {
@@ -1022,11 +1225,15 @@ export {
   createCoordinatorHostServer,
   getDefaultLeasesFilePath,
   inspectSessionLiveness,
+  isSafeGitDirectory,
   isTaskEligibleForPilot,
   loadCoordinatorConfig,
+  parseGitHubRemote,
   reconcileTaskState,
+  resolveGitRemote,
   resolveLeaseStorageDir,
   resolveStorageDir,
+  sanitizeRemoteUrl,
   startHostServiceServer,
   validateServiceHostEnv,
   verifyIssueCas

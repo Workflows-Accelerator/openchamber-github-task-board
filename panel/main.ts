@@ -41,6 +41,10 @@ import {
   parseGitdirContent,
   extractParentRepoRootFromGitdir,
   resolveParentRemoteFromGitdir,
+  normalizeFileSystemPath,
+  joinFileSystemPath,
+  resolveGitdirPath,
+  resolveCommonGitDir,
 } from './git.js';
 
 export {
@@ -66,6 +70,10 @@ export {
   parseGitdirContent,
   extractParentRepoRootFromGitdir,
   resolveParentRemoteFromGitdir,
+  normalizeFileSystemPath,
+  joinFileSystemPath,
+  resolveGitdirPath,
+  resolveCommonGitDir,
   STATUS_DRAFT,
   STATUS_BACKLOG,
   STATUS_TODO,
@@ -655,65 +663,171 @@ async function watchActiveProject(projectId: string): Promise<void> {
 // Deep Multi-Source Repo Discovery
 // ==========================================
 
-async function inspectGitConfigInDir(dir: string): Promise<{ owner: string; repo: string } | null> {
-  const cleanDir = dir.replace(/\/+$/, '');
-  if (dirGitCache.has(cleanDir)) {
-    return dirGitCache.get(cleanDir)!;
+type DirGitInspection =
+  | { kind: 'remote'; remote: { owner: string; repo: string } }
+  | { kind: 'no_remote' }
+  | { kind: 'not_git' }
+  // A refused or transient read: never cached, so a later attempt can recover.
+  | { kind: 'unresolved' };
+
+type FileReadOutcome =
+  | { ok: true; content: string }
+  | { ok: false; failure: 'refused' | 'missing' | 'error' };
+
+function classifyFileReadError(err: unknown): 'refused' | 'missing' | 'error' {
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  const code = (err && typeof err === 'object' && 'code' in err) ? String((err as any).code) : '';
+  if (code === 'BAD_PATH' || /BAD_PATH|leaves the open project|file path must|outside the open project/i.test(message)) {
+    return 'refused';
   }
+  if (code === 'NOT_FOUND' || /NOT_FOUND|ENOENT|no such file|file not found/i.test(message)) {
+    return 'missing';
+  }
+  return 'error';
+}
 
-  let found: { owner: string; repo: string } | null = null;
-
+async function readTextFileForGit(path: string): Promise<FileReadOutcome> {
   try {
-    // 1. Try reading .git/config (standard repository)
-    const res = await host.readFile(`${cleanDir}/.git/config`);
-    if (res && res.content) {
-      found = parseGitRemoteFromConfig(res.content);
+    // The host rejects backslashes outright; Git paths are normalized first.
+    const res = await host.readFile(path.replace(/\\/g, '/'));
+    return { ok: true, content: typeof res?.content === 'string' ? res.content : '' };
+  } catch (err) {
+    return { ok: false, failure: classifyFileReadError(err) };
+  }
+}
+
+/**
+ * Ask the background service for a sanitized remote lookup when the panel's
+ * `files` capability refuses the parent repository. Returns `null` for an
+ * unavailable or failed service so the caller can retry later instead of
+ * caching a refusal.
+ */
+async function lookupGitRemoteViaService(dir: string): Promise<DirGitInspection | null> {
+  try {
+    const res: any = await (host as any).serviceRequest({
+      method: 'POST',
+      path: '/git-remote',
+      body: JSON.stringify({ directory: dir }),
+    });
+    if (!res || res.status !== 200 || typeof res.body !== 'string') return null;
+    const payload = JSON.parse(res.body);
+    if (!payload || typeof payload !== 'object') return null;
+    if (payload.status === 'ok' && payload.remote
+      && typeof payload.remote.owner === 'string' && typeof payload.remote.repo === 'string') {
+      return { kind: 'remote', remote: { owner: payload.remote.owner, repo: payload.remote.repo } };
     }
+    if (payload.status === 'no_remote') return { kind: 'no_remote' };
+    if (payload.status === 'not_git') return { kind: 'not_git' };
+    return null;
   } catch {
-    // .git might be a file (worktree)
+    return null;
   }
+}
 
-  if (!found) {
-    try {
-      // 2. Check if .git is a worktree pointer file
-      const gitFileRes = await host.readFile(`${cleanDir}/.git`);
-      if (gitFileRes && gitFileRes.content) {
-        const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
-        if (match) {
-          const gitdir = match[1].trim();
-          const targetPath = gitdir.startsWith('/') ? gitdir : `${cleanDir}/${gitdir}`;
-          if (targetPath.includes('/.git/worktrees/')) {
-            const parentRepoRoot = targetPath.split('/.git/worktrees/')[0];
-            try {
-              const parentConfig = await host.readFile(`${parentRepoRoot}/.git/config`);
-              if (parentConfig && parentConfig.content) {
-                found = parseGitRemoteFromConfig(parentConfig.content);
-              }
-            } catch {}
-          }
-          if (!found) {
-            try {
-              const wtConfig = await host.readFile(`${targetPath}/config`);
-              if (wtConfig?.content) {
-                found = parseGitRemoteFromConfig(wtConfig.content);
-              }
-            } catch {}
-            if (!found) {
-              try {
-                const parentConfig = await host.readFile(`${targetPath}/../../config`);
-                if (parentConfig?.content) {
-                  found = parseGitRemoteFromConfig(parentConfig.content);
-                }
-              } catch {}
-            }
-          }
-        }
+async function inspectGitConfig(dir: string): Promise<DirGitInspection> {
+  const cleanDir = normalizeFileSystemPath(dir);
+  if (!cleanDir) return { kind: 'unresolved' };
+
+  let refusedRead = false;
+  let transientError = false;
+  let sawGitPointer = false;
+
+  // 1. Standard repository: the config lives next to `.git`.
+  const configRead = await readTextFileForGit(joinFileSystemPath(cleanDir, '.git/config'));
+  if (configRead.ok) {
+    const remote = parseGitRemoteFromConfig(configRead.content);
+    return remote ? { kind: 'remote', remote } : { kind: 'no_remote' };
+  }
+  if (configRead.failure === 'refused') refusedRead = true;
+  else if (configRead.failure === 'error') transientError = true;
+
+  // 2. Linked worktree: `.git` is a file pointing at the parent's git dir.
+  const gitPointerRead = await readTextFileForGit(joinFileSystemPath(cleanDir, '.git'));
+  if (gitPointerRead.ok) {
+    const gitdirPath = resolveGitdirPath(gitPointerRead.content, cleanDir);
+    if (gitdirPath) {
+      sawGitPointer = true;
+
+      // `commondir` is authoritative when the layout is not `<repo>/.git`.
+      let commonDir = resolveCommonGitDir(gitdirPath);
+      const commonDirRead = await readTextFileForGit(joinFileSystemPath(gitdirPath, 'commondir'));
+      if (commonDirRead.ok) {
+        commonDir = resolveCommonGitDir(gitdirPath, commonDirRead.content);
+      } else if (commonDirRead.failure === 'refused') {
+        refusedRead = true;
       }
-    } catch {}
+
+      const commonConfig = await readTextFileForGit(joinFileSystemPath(commonDir, 'config'));
+      if (commonConfig.ok) {
+        const remote = parseGitRemoteFromConfig(commonConfig.content);
+        return remote ? { kind: 'remote', remote } : { kind: 'no_remote' };
+      }
+      if (commonConfig.failure === 'refused') refusedRead = true;
+      else if (commonConfig.failure === 'error') transientError = true;
+
+      // A separate git dir keeps `config` directly in the git dir.
+      if (normalizeFileSystemPath(commonDir) !== normalizeFileSystemPath(gitdirPath)) {
+        const gitdirConfig = await readTextFileForGit(joinFileSystemPath(gitdirPath, 'config'));
+        if (gitdirConfig.ok) {
+          const remote = parseGitRemoteFromConfig(gitdirConfig.content);
+          return remote ? { kind: 'remote', remote } : { kind: 'no_remote' };
+        }
+        if (gitdirConfig.failure === 'refused') refusedRead = true;
+        else if (gitdirConfig.failure === 'error') transientError = true;
+      }
+    }
+  } else if (gitPointerRead.failure === 'refused') {
+    refusedRead = true;
+  } else if (gitPointerRead.failure === 'error') {
+    transientError = true;
   }
 
-  dirGitCache.set(cleanDir, found);
-  return found;
+  // 3. The host refused a parent path (worktree outside the open project):
+  //    let the service run `git -C <dir>` instead.
+  if (refusedRead) {
+    const serviceInspection = await lookupGitRemoteViaService(cleanDir);
+    if (serviceInspection) return serviceInspection;
+    return { kind: 'unresolved' };
+  }
+
+  if (sawGitPointer) return { kind: 'no_remote' };
+  if (transientError) return { kind: 'unresolved' };
+  return { kind: 'not_git' };
+}
+
+/**
+ * Resolve the parent repository root of a linked worktree without assuming a
+ * POSIX separator. Used to match a worktree session to its project.
+ */
+async function resolveWorktreeParentRepoRoot(dir: string): Promise<string | null> {
+  const cleanDir = normalizeFileSystemPath(dir);
+  if (!cleanDir) return null;
+  const gitPointer = await readTextFileForGit(joinFileSystemPath(cleanDir, '.git'));
+  if (!gitPointer.ok) return null;
+  const gitdirPath = resolveGitdirPath(gitPointer.content, cleanDir);
+  return extractParentRepoRootFromGitdir(gitdirPath);
+}
+
+async function inspectGitConfigInDir(dir: string): Promise<{ owner: string; repo: string } | null> {
+  if (!dir || typeof dir !== 'string') return null;
+  const cleanDir = normalizeFileSystemPath(dir);
+  if (!cleanDir) return null;
+
+  const cached = dirGitCache.get(cleanDir);
+  if (cached !== undefined) return cached;
+
+  const inspection = await inspectGitConfig(cleanDir);
+  if (inspection.kind === 'remote') {
+    dirGitCache.set(cleanDir, inspection.remote);
+    return inspection.remote;
+  }
+  if (inspection.kind === 'no_remote' || inspection.kind === 'not_git') {
+    // Definitive answers only. A refused or failed read stays uncached so the
+    // next call (or a now-reachable service) can succeed.
+    dirGitCache.set(cleanDir, null);
+    return null;
+  }
+  return null;
 }
 
 async function discoverWorkspaceRepositories(): Promise<void> {
@@ -785,11 +899,11 @@ function getSessionLinkedRepo(activeSession?: any): string | null {
     if (pRepo) return pRepo;
   }
   if (currentDirectory) {
-    const cleanDir = currentDirectory.replace(/\/+$/, '');
+    const cleanDir = normalizeFileSystemPath(currentDirectory);
     const matched = allProjects.find((p) => {
       if (!p.directory) return false;
-      const cleanP = p.directory.replace(/\/+$/, '');
-      return cleanP === cleanDir || cleanDir.startsWith(cleanP + '/');
+      const cleanP = normalizeFileSystemPath(p.directory);
+      return Boolean(cleanP && cleanDir && (cleanP === cleanDir || cleanDir.startsWith(cleanP + '/')));
     });
     if (matched) {
       const pRepo = matched.linkedRepo || (matched.gitRepo ? `${matched.gitRepo.owner}/${matched.gitRepo.repo}` : null);
@@ -813,35 +927,33 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
   const contextIsCurrent = () => !isManualRepoOverride && currentRepo === contextRepo &&
     currentDirectory === contextDirectory && currentActiveSession?.id === contextSessionId;
 
-  // If currentDirectory is inside /workspace/.local/share/opencode/worktree/,
-  // extract parent repository root from .git file and match that project in allProjects first,
-  // so worktree sessions inherit their true repository context!
+  // A linked worktree may live outside the open project (including Windows
+  // drive and UNC paths). When no project directory contains the current
+  // directory, resolve the worktree's parent repository from its `.git`
+  // pointer and match that project first so the session inherits its repo.
   let worktreeMatchedProject: ProjectItem | null = null;
-  if (currentDirectory && currentDirectory.includes('/workspace/.local/share/opencode/worktree/')) {
-    try {
-      const cleanCurDir = currentDirectory.replace(/\/+$/, '');
-      const gitFileRes = await host.readFile(`${cleanCurDir}/.git`);
-      if (!contextIsCurrent()) return;
-      if (gitFileRes && gitFileRes.content) {
-        const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
-        if (match) {
-          const gitdir = match[1].trim();
-          const targetPath = gitdir.startsWith('/') ? gitdir : `${cleanCurDir}/${gitdir}`;
-          if (targetPath.includes('/.git/worktrees/')) {
-            const parentRepoRoot = targetPath.split('/.git/worktrees/')[0].replace(/\/+$/, '');
-            worktreeMatchedProject = allProjects.find((p) => {
-              if (!p.directory) return false;
-              const cleanP = p.directory.replace(/\/+$/, '');
-              return cleanP === parentRepoRoot || parentRepoRoot.startsWith(cleanP + '/');
-            }) || null;
-            if (worktreeMatchedProject) {
-              addLog(`Worktree matched to parent project: "${worktreeMatchedProject.name}" (${worktreeMatchedProject.directory})`, 'succ');
-            }
-          }
-        }
+  const currentCleanDir = normalizeFileSystemPath(currentDirectory);
+  let directoryInsideKnownProject = false;
+  if (currentCleanDir) {
+    directoryInsideKnownProject = allProjects.some((p) => {
+      if (!p.directory) return false;
+      const cleanP = normalizeFileSystemPath(p.directory);
+      return Boolean(cleanP && (cleanP === currentCleanDir || currentCleanDir.startsWith(cleanP + '/')));
+    });
+  }
+
+  if (currentDirectory && !directoryInsideKnownProject) {
+    const parentRepoRoot = await resolveWorktreeParentRepoRoot(currentDirectory);
+    if (!contextIsCurrent()) return;
+    if (parentRepoRoot) {
+      worktreeMatchedProject = allProjects.find((p) => {
+        if (!p.directory) return false;
+        const cleanP = normalizeFileSystemPath(p.directory);
+        return cleanP === parentRepoRoot || Boolean(cleanP && parentRepoRoot.startsWith(cleanP + '/'));
+      }) || null;
+      if (worktreeMatchedProject) {
+        addLog(`Worktree matched to parent project: "${worktreeMatchedProject.name}" (${worktreeMatchedProject.directory})`, 'succ');
       }
-    } catch (err: any) {
-      addLog(`Failed to resolve parent project from worktree .git: ${err?.message || err}`, 'warn');
     }
   }
 
@@ -850,9 +962,9 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
 
   let targetProject = worktreeMatchedProject || sorted.find((p) => {
     if (!p.directory) return false;
-    const cleanP = p.directory.replace(/\/+$/, '');
-    const cleanT = currentDirectory.replace(/\/+$/, '');
-    return cleanP === cleanT || cleanT.startsWith(cleanP + '/');
+    const cleanP = normalizeFileSystemPath(p.directory);
+    const cleanT = normalizeFileSystemPath(currentDirectory);
+    return Boolean(cleanP && cleanT && (cleanP === cleanT || cleanT.startsWith(cleanP + '/')));
   }) || (allProjects.length > 0 ? allProjects[0] : null);
 
   currentProject = targetProject || null;
