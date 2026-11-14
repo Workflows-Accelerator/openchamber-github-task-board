@@ -55,6 +55,9 @@
     archive: { backburner: [], closed: [], totalClosed: 0, hasMore: false, offset: 0, limit: 50, activeTab: 'backburner' },
     operations: null,
     clientPresentationMode: false,
+    // The active discovery failure, kept so every surface can re-render it in
+    // the current language while the board itself stays empty.
+    discoveryFailure: null,
   };
 
   function identity(issue) {
@@ -422,10 +425,16 @@
       if (payload && payload.error === 'discovery_unavailable') {
         // The server refused before dispatch. That is a definite refusal, not
         // an ambiguous write outcome, so it must never enter the UNKNOWN set.
-        throw new ApiError('discovery_unavailable', response.status, {
+        // The cause and reset travel with the 503, so the sentence is localized
+        // and never tells the user to retry a token or permission refusal.
+        var discoveryDict = I18N[getLanguage()] || I18N.en;
+        var discoveryPayload = {
           error: 'discovery_unavailable',
-          message: 'Discovery failed; nothing was sent. Refresh to try again',
-        });
+          errorKind: payload.errorKind || null,
+          errorResetAt: payload.errorResetAt || null,
+          message: discoveryFailureMessage(payload, discoveryDict),
+        };
+        throw new ApiError('discovery_unavailable', response.status, discoveryPayload);
       }
 
       // A note refusal has its own cause (permission or a locked issue) and its
@@ -478,6 +487,17 @@
     if (!response.ok) {
       if (response.status === 401) {
         showLogin();
+      }
+      if (payload && payload.error === 'discovery_unavailable') {
+        // Reads carry the same cause as writes; localize it once here so every
+        // caller (drawer, board, archive) shows the same honest sentence.
+        var readDict = I18N[getLanguage()] || I18N.en;
+        throw new ApiError('discovery_unavailable', response.status, {
+          error: 'discovery_unavailable',
+          errorKind: payload.errorKind || null,
+          errorResetAt: payload.errorResetAt || null,
+          message: discoveryFailureMessage(payload, readDict),
+        });
       }
       throw new ApiError((payload && payload.error) || 'request_failed', response.status, payload);
     }
@@ -837,10 +857,14 @@
       err_github_forbidden: 'You do not have permission to change links on this repository.',
       notice_dependencies_degraded: 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.',
       discovery_failed_auth: 'The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.',
-      discovery_failed_rate_limited: 'GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after {time}.',
-      discovery_failed_rate_limited_no_reset: 'GitHub is limiting the board temporarily. Nothing is required of you; try again shortly.',
+      discovery_failed_rate_limited: 'GitHub is limiting the board temporarily. Refresh after {time}.',
+      discovery_failed_rate_limited_no_reset: 'GitHub is limiting the board temporarily. Try again shortly.',
       discovery_failed_network: 'GitHub is unreachable from the server. Your session is intact; try again shortly.',
       discovery_failed_other: 'Discovery failed — tasks are not refreshed. Refresh to try again.',
+      discovery_short_auth: 'GitHub token refused',
+      discovery_short_rate_limited: 'GitHub rate limit',
+      discovery_short_network: 'GitHub unreachable',
+      discovery_short_other: 'Discovery failed',
       decisions_title: 'Decisions',
       decisions_desc: 'Every unanswered open question across repositories, grouped by issue, newest activity first.',
       decisions_no_items: 'No open questions requiring decisions.',
@@ -1076,10 +1100,14 @@
       err_github_forbidden: 'Vous n’avez pas la permission de modifier les liens sur ce dépôt.',
       notice_dependencies_degraded: 'Fils de dépendance indisponibles (erreur GraphQL GitHub). Affichage du tableau sans fils.',
       discovery_failed_auth: 'Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.',
-      discovery_failed_rate_limited: 'GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après {time}.',
-      discovery_failed_rate_limited_no_reset: 'GitHub limite temporairement le tableau. Rien ne vous est demandé ; réessayez dans un instant.',
+      discovery_failed_rate_limited: 'GitHub limite temporairement le tableau. Actualisez après {time}.',
+      discovery_failed_rate_limited_no_reset: 'GitHub limite temporairement le tableau. Réessayez dans un instant.',
       discovery_failed_network: 'GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.',
       discovery_failed_other: 'Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.',
+      discovery_short_auth: 'Jeton GitHub refusé',
+      discovery_short_rate_limited: 'Limite GitHub atteinte',
+      discovery_short_network: 'GitHub injoignable',
+      discovery_short_other: 'Découverte échouée',
       decisions_title: 'Décisions',
       decisions_desc: 'Toutes les questions ouvertes sans réponse entre les dépôts, groupées par tâche, activité récente en premier.',
       decisions_no_items: 'Aucune question ouverte nécessitant une décision.',
@@ -1206,6 +1234,8 @@
       localizeChrome(l); applyClientPresentationMode(); if (state.detail && $('detail-view') && !$('detail-view').hidden) renderDetail(false);
       if (state.board) {
         renderBoard();
+      } else if (state.discoveryFailure) {
+        renderDiscoveryFailure();
       }
       if (state.activeSectionView === 'decisions') renderDecisionsView();
       else if (state.activeSectionView === 'blocked') renderBlockedView();
@@ -3817,6 +3847,9 @@
     if (code === 'network_timeout') {
       return dict.canvas_save_timeout || 'Canvas position not saved: the board did not answer in time. Try again.';
     }
+    if (code === 'discovery_unavailable') {
+      return discoveryFailureMessage((err && err.payload) || err, dict);
+    }
     if (code === 'github_forbidden' || code === 'github_unauthorized' || status === 403) {
       return dict.canvas_save_forbidden || 'Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.';
     }
@@ -6176,8 +6209,9 @@
     if ($('repo-api-footer')) $('repo-api-footer').textContent = apiHealthText();
 
     $('repository-picker').hidden = false;
-    $('discovery-status').textContent = view.discoveryFailed
-      ? discoveryFailureMessage(view, I18N[getLanguage()] || I18N.en)
+    var activeFailure = state.discoveryFailure || (view.discoveryFailed ? view : null);
+    $('discovery-status').textContent = activeFailure
+      ? discoveryFailureMessage(activeFailure, I18N[getLanguage()] || I18N.en)
       : (!view.visibleCount ? (getLanguage() === 'fr' ? 'Aucun dépôt visible pour ce jeton.' : 'No repositories visible to this token.') : (getLanguage() === 'fr' ? 'Seuls les dépôts visibles par le jeton sont listés.' : 'Only repositories visible to the bot token are listed.'));
     $('refresh-policy').textContent = 'Discovery cached for ' + (view.freshnessMs / 1000) +
       's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository and at most 500 issues in total. Hidden private repositories cannot be enumerated.';
@@ -6301,8 +6335,17 @@
     if (!iso) return '';
     var date = new Date(iso);
     if (isNaN(date.getTime())) return '';
+    // A reset that has already passed is not a useful refresh time; omitting it
+    // falls back to the honest "try again shortly" sentence.
+    if (date.getTime() <= Date.now()) return '';
+    var now = new Date();
+    var locale = getLanguage() === 'fr' ? 'fr-FR' : 'en-GB';
+    var sameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
     try {
-      return date.toLocaleTimeString(getLanguage() === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
+      var clock = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+      if (sameDay) return clock;
+      // Another calendar day needs its date, or "08:00" is ambiguous.
+      return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + clock;
     } catch (error) {
       return '';
     }
@@ -6317,9 +6360,9 @@
     if (kind === 'rate_limited') {
       var clock = discoveryResetClock(view && view.errorResetAt);
       if (clock) {
-        return (dict.discovery_failed_rate_limited || 'GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after {time}.').replace('{time}', clock);
+        return (dict.discovery_failed_rate_limited || 'GitHub is limiting the board temporarily. Refresh after {time}.').replace('{time}', clock);
       }
-      return dict.discovery_failed_rate_limited_no_reset || 'GitHub is limiting the board temporarily. Nothing is required of you; try again shortly.';
+      return dict.discovery_failed_rate_limited_no_reset || 'GitHub is limiting the board temporarily. Try again shortly.';
     }
     if (kind === 'network') {
       return dict.discovery_failed_network || 'GitHub is unreachable from the server. Your session is intact; try again shortly.';
@@ -6327,11 +6370,87 @@
     return dict.discovery_failed_other || 'Discovery failed — tasks are not refreshed. Refresh to try again.';
   }
 
+  // The toolbar carries only a short cause label; the full sentence stays in
+  // #notice, #empty-state and the project popover.
+  function discoveryStatusLabel(view, dict) {
+    dict = dict || I18N[getLanguage()] || I18N.en;
+    var kind = view && view.errorKind ? String(view.errorKind) : '';
+    if (kind === 'auth') return dict.discovery_short_auth || 'GitHub token refused';
+    if (kind === 'rate_limited') return dict.discovery_short_rate_limited || 'GitHub rate limit';
+    if (kind === 'network') return dict.discovery_short_network || 'GitHub unreachable';
+    return dict.discovery_short_other || 'Discovery failed';
+  }
+
   // Aggregate failure rows reuse the cause sentence; a per-repository failure
   // without a cause keeps its own message.
   function failureRowMessage(failure, dict) {
     if (failure && failure.errorKind) return discoveryFailureMessage(failure, dict);
     return (failure && failure.message) || '';
+  }
+
+  // Canvas cards are not re-rendered when the board is null, so they must be
+  // removed explicitly. Otherwise a stale card stays visible and clickable
+  // while every surface says discovery failed.
+  function clearCanvasForDiscoveryFailure() {
+    var cards = $('canvas-cards');
+    if (cards) cards.textContent = '';
+    var wires = $('canvas-wires');
+    if (wires) wires.textContent = '';
+    var labels = $('canvas-wire-labels');
+    if (labels) labels.textContent = '';
+    var overlay = $('canvas-overlay');
+    if (overlay) overlay.textContent = '';
+    canvasCardRectsCache = null;
+    state.currentCanvasIssues = [];
+  }
+
+  function clearDiscoveryFailure() {
+    state.discoveryFailure = null;
+    var boardView = $('board-view');
+    if (boardView && boardView.classList) boardView.classList.remove('is-discovery-failed');
+    if ($('empty-hint')) $('empty-hint').hidden = false;
+    if ($('empty-create')) {
+      $('empty-create').hidden = false;
+      $('empty-create').disabled = !availableProjects().length;
+    }
+  }
+
+  function renderDiscoveryFailure() {
+    var failure = state.discoveryFailure;
+    if (!failure) return;
+    var dict = I18N[getLanguage()] || I18N.en;
+    var message = discoveryFailureMessage(failure, dict);
+    var empty = $('empty-state');
+    if (empty) {
+      empty.hidden = false;
+      var paragraph = empty.querySelector && empty.querySelector('p');
+      if (paragraph) paragraph.textContent = message;
+    }
+    setNotice(message, true);
+    if ($('scope-status')) $('scope-status').textContent = discoveryStatusLabel(failure, dict);
+    if ($('discovery-status')) $('discovery-status').textContent = message;
+    if ($('empty-hint')) $('empty-hint').hidden = true;
+    if ($('empty-create')) {
+      $('empty-create').hidden = true;
+      $('empty-create').disabled = true;
+    }
+    var boardView = $('board-view');
+    if (boardView && boardView.classList) boardView.classList.add('is-discovery-failed');
+  }
+
+  function enterDiscoveryFailure(view) {
+    state.discoveryFailure = {
+      errorKind: (view && view.errorKind) || null,
+      errorResetAt: (view && view.errorResetAt) || null,
+      failures: (view && Array.isArray(view.failures)) ? view.failures : [],
+    };
+    state.board = null;
+    clearCanvasForDiscoveryFailure();
+    $('task-list').textContent = '';
+    $('board-count').textContent = '';
+    $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
+    renderDiscoveryFailure();
+    showView('board');
   }
 
   async function loadBoard(forceRefresh) {
@@ -6361,22 +6480,38 @@
       renderPicker();
       state.boardLoad = { generation: generation, scope: state.selected };
       var selected = view.repositories.find(function (repository) { return repository.full === state.selected; });
-      if (view.discoveryFailed || (state.selected !== 'all' && (!selected || !selected.available))) {
-        var message = view.discoveryFailed ? discoveryFailureMessage(view, I18N[getLanguage()] || I18N.en) : state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
+      if (view.discoveryFailed) {
+        enterDiscoveryFailure(view);
+        return;
+      }
+      if (state.selected !== 'all' && (!selected || !selected.available)) {
+        var unavailableMessage = state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
         state.board = null;
+        // Discovery recovered: an earlier failure must not keep the CTA hidden
+        // or replace this message on the next language switch.
+        clearDiscoveryFailure();
+        clearCanvasForDiscoveryFailure();
         $('task-list').textContent = '';
         $('board-count').textContent = '';
         $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
         $('empty-state').hidden = false;
-        $('empty-state').querySelector('p').textContent = message;
-        $('scope-status').textContent = message;
-        setNotice(message, true);
+        $('empty-state').querySelector('p').textContent = unavailableMessage;
+        $('scope-status').textContent = unavailableMessage;
+        setNotice(unavailableMessage, true);
         showView('board');
         return;
       }
       var path = selected ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/board' : '/api/combined/board';
       var board = await api(path + suffix);
       if (generation !== state.boardGeneration) return;
+      // Discovery can fail between /api/repos and the board read. The combined
+      // payload then carries discoveryFailed; treating it as an empty board
+      // would overwrite the cached tasks with issues: [].
+      if (board && board.discoveryFailed) {
+        enterDiscoveryFailure(board);
+        return;
+      }
+      clearDiscoveryFailure();
       state.board = board;
       saveCachedBoard(board);
       state.uncertain.clear();
@@ -6397,12 +6532,20 @@
       showView(state.activeSectionView || 'board');
     } catch (error) {
       if (error.status === 401 || generation !== state.boardGeneration) return;
+      if (error.code === 'discovery_unavailable') {
+        enterDiscoveryFailure(error.payload);
+        return;
+      }
       if (state.board && previousScope === (state.selected === 'all' ? 'All repositories' : state.selected)) {
         state.stale = true;
         renderFreshness();
         setNotice(getLanguage() === 'fr' ? 'Actualisation impossible (' + (error.message || 'erreur réseau') + '). Affichage du dernier tableau chargé.' : 'Could not refresh (' + (error.message || 'network error') + '). Showing the last board loaded in this browser.', true);
       } else {
         state.board = null;
+        // This failure is not a discovery failure, so the previous discovery
+        // sentence must not stay in state or re-render on a language switch.
+        clearDiscoveryFailure();
+        clearCanvasForDiscoveryFailure();
         $('task-list').textContent = '';
         $('board-count').textContent = '';
         $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
@@ -7497,7 +7640,11 @@
       $('signout-btn').hidden = false;
     } catch (error) {
       if (error.status === 401 || generation !== state.readGeneration) return;
-      setNotice(error.message + '.', true);
+      if (error.code === 'discovery_unavailable') {
+        setNotice(error.message, true);
+        return;
+      }
+      setNotice(/[.!?]$/.test(error.message) ? error.message : error.message + '.', true);
     }
   }
 
@@ -7573,7 +7720,7 @@
         }
         $('save-status').textContent = msg.endsWith('.') ? msg : msg + '.';
       } else {
-        $('save-status').textContent = error.message + '.';
+        $('save-status').textContent = /[.!?]$/.test(error.message) ? error.message : error.message + '.';
       }
     } finally {
       state.busy = false;
@@ -7628,7 +7775,7 @@
         }
         setNotice(msg, true);
       } else {
-        setNotice(error.message + '.', true);
+        setNotice(/[.!?]$/.test(error.message) ? error.message : error.message + '.', true);
       }
     } finally { state.busy = false; }
   }
@@ -7675,7 +7822,7 @@
         }
         setNotice(msg, true);
       } else {
-        setNotice(error.message + '.', true);
+        setNotice(/[.!?]$/.test(error.message) ? error.message : error.message + '.', true);
       }
     } finally { state.busy = false; }
   }
@@ -8685,7 +8832,10 @@
           renderBoard();
         }
         announce('Draft added. No agent started.'); setNotice('');
-      } catch (error) { setNotice(error.message + ' Your text is retained. Refresh before retrying an unknown outcome.', true); }
+      } catch (error) {
+        if (error.code === 'discovery_unavailable') setNotice(error.message, true);
+        else setNotice(error.message + ' Your text is retained. Refresh before retrying an unknown outcome.', true);
+      }
       finally { input.disabled = false; input.focus(); }
     });
 

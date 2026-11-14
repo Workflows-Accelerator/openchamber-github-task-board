@@ -1297,6 +1297,20 @@ input[type="text"].search-input:focus,
   white-space: nowrap;
   overflow-x: auto;
 }
+/* The scope label must never push the toolbar controls outside the viewport.
+   The full cause sentence lives in #notice and #empty-state. */
+.status-strip-scope {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 34ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-strip > button,
+.status-strip-count,
+.status-strip-freshness {
+  flex: 0 0 auto;
+}
 .status-strip-brand {
   font-weight: 600;
   color: var(--fg);
@@ -1646,6 +1660,15 @@ input[type="text"].search-input:focus,
 #board-view.mode-canvas #view-hint,
 #board-view.mode-canvas #capture-hint {
   display: none !important;
+}
+
+/* A discovery failure empties the board. Canvas must not keep stale cards on
+   screen or interactive, so the viewport yields to the failure state. */
+#board-view.mode-canvas.is-discovery-failed #canvas-viewport {
+  display: none;
+}
+#board-view.mode-canvas.is-discovery-failed #empty-state {
+  display: block !important;
 }
 
 .canvas-viewport {

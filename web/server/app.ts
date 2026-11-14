@@ -449,11 +449,20 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       rateLimitRef: sharedRateLimit,
     });
   }
-  async function resolveRepository(owner: string, name: string): Promise<RepositoryEntry> {
-    try { return await repositories.resolve(owner, name); }
+  async function resolveRepository(
+    owner: string,
+    name: string,
+    options: { forceRefresh?: boolean } = {},
+  ): Promise<RepositoryEntry> {
+    try { return await repositories.resolve(owner, name, options); }
     catch (error) {
       if (error instanceof RepositoryNotAllowedError) throw new HttpError(400, 'repository_not_allowed', error.message);
-      if (error instanceof DiscoveryUnavailableError) throw new HttpError(503, 'discovery_unavailable', 'Repository discovery failed; no operation was dispatched');
+      if (error instanceof DiscoveryUnavailableError) {
+        throw new HttpError(503, 'discovery_unavailable', error.message, {
+          errorKind: error.errorKind,
+          errorResetAt: error.errorResetAt,
+        });
+      }
       throw error;
     }
   }
@@ -538,8 +547,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           };
         } else if (error instanceof DiscoveryUnavailableError) {
           response = {
-            status: 502,
-            body: { error: 'discovery_unavailable', message: 'Repository discovery failed; no operation was dispatched' },
+            status: 503,
+            body: {
+              error: 'discovery_unavailable',
+              errorKind: error.errorKind,
+              errorResetAt: error.errorResetAt,
+              message: error.message,
+            },
           };
         } else {
           response = {
@@ -669,10 +683,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     const record = requireSession(req);
+    const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
 
     if (url.pathname === '/api/repos') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const discovery = await repositories.view({ forceRefresh });
       const payload = { ...discovery, projectNames: projectNames(), rateLimit: currentRateLimit() };
       const etag = computeWeakEtag(payload, record.id);
@@ -715,7 +729,6 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
     if (url.pathname === '/api/combined/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const board = (await combinedBoard({ forceRefresh })) as Record<string, unknown>;
       const payload = { ...board, rateLimit: currentRateLimit() };
       const etag = computeWeakEtag(payload, record.id);
@@ -751,7 +764,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     let repository: RepositoryEntry | null = null;
     const qualified = /^\/api\/repos\/([^/]+)\/([^/]+)(\/.*)$/.exec(route);
     if (qualified) {
-      repository = await resolveRepository(qualified[1], qualified[2]);
+      repository = await resolveRepository(qualified[1], qualified[2], { forceRefresh });
       route = '/api' + qualified[3];
     } else if (route.startsWith('/api/repos/')) {
       throw new HttpError(400, 'repository_not_allowed', 'An exact discovered owner/name is required');
@@ -763,12 +776,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       route.startsWith('/api/issues/')
     ) {
       if (!config.repo) throw new HttpError(400, 'repository_not_allowed', 'Select a discovered repository');
-      repository = await resolveRepository(config.repo.owner, config.repo.name);
+      repository = await resolveRepository(config.repo.owner, config.repo.name, { forceRefresh });
     }
     const scopedGithub = repository ? clientFor(repository) : null;
     if (route === '/api/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const board = (await repositoryBoard(repository!, undefined, { forceRefresh })) as Record<string, unknown>;
       const payload = { ...board, rateLimit: currentRateLimit() };
       const etag = computeWeakEtag(payload, record.id);
@@ -1733,11 +1745,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     } else {
       const discovery = await repositories.view();
       if (discovery.discoveryFailed) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       board = (await combinedBoard()) as any;
       if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) === 0) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       allIssues = board.issues || [];
       for (const repo of discovery.repositories) {
@@ -1822,11 +1834,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     } else {
       const discovery = await repositories.view();
       if (discovery.discoveryFailed) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       board = (await combinedBoard()) as any;
       if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) === 0) {
-        throw new DiscoveryUnavailableError();
+        throw new DiscoveryUnavailableError(discovery);
       }
       allIssues = board.issues || [];
       repos = discovery.repositories.map((r) => ({ full: r.full, name: r.name }));

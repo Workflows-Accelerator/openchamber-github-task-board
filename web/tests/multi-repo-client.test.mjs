@@ -186,7 +186,8 @@ test('F3: a pre-dispatch discovery refusal is definite and never marked UNKNOWN'
     assert.equal(app.state.uncertain.size, 0, `${kind}: no uncertain marker`);
     assert.equal(app.state.uncertain.has('owner/alpha#1'), false);
     const message = get(kind === 'section' ? 'save-status' : 'notice').textContent;
-    assert.match(message, /nothing was sent/i);
+    assert.match(message, /discovery failed/i);
+    assert.doesNotMatch(message, /\.\./);
     assert.doesNotMatch(message, /outcome unknown/i);
   }
 });

@@ -245,10 +245,15 @@ export async function startFakeGitHub(options = {}) {
       for (const [name, value] of Object.entries(defaultHeaders)) {
         if (!res.hasHeader(name)) res.setHeader(name, value);
       }
-      for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+      for (const [name, value] of Object.entries(headers)) {
+        // null explicitly suppresses a default header, which is how GitHub's
+        // headerless secondary rate limit is simulated.
+        if (value === null) res.removeHeader(name);
+        else res.setHeader(name, value);
+      }
       res.statusCode = status;
       loggedRequest.responseStatus = status;
-      res.end(payload === undefined ? '' : JSON.stringify(payload));
+      res.end(payload === undefined ? '' : (typeof payload === 'string' ? payload : JSON.stringify(payload)));
     };
 
     if (state.injectedResponse) {
@@ -272,6 +277,10 @@ export async function startFakeGitHub(options = {}) {
       if (state.failDiscovery === 'auth') {
         return send(401, { message: 'Bad credentials' });
       }
+      if (state.failDiscovery === 'forbidden') {
+        // A fine-grained PAT, classic scope, SAML SSO or IP allowlist refusal.
+        return send(403, { message: 'Resource not accessible by personal access token' });
+      }
       if (state.failDiscovery === 'rate_limited') {
         const reset = state.discoveryResetAt ?? Math.floor(Date.now() / 1000) + 900;
         return send(403, { message: 'API rate limit exceeded for user ID 1.' }, {
@@ -279,11 +288,18 @@ export async function startFakeGitHub(options = {}) {
           'x-ratelimit-reset': String(reset),
         });
       }
+      if (state.failDiscovery === 'rate_limited_secondary') {
+        // GitHub's secondary limit can answer 403 without any x-ratelimit-reset.
+        return send(403, { message: 'You have exceeded a secondary rate limit.' }, {
+          'x-ratelimit-remaining': '4999',
+          'x-ratelimit-reset': null,
+        });
+      }
       if (state.failDiscovery) {
         return send(500, { message: 'Injected repository discovery failure' });
       }
       if (state.discoveryResponse) {
-        return send(state.discoveryResponse.status, state.discoveryResponse.payload);
+        return send(state.discoveryResponse.status, state.discoveryResponse.payload, state.discoveryResponse.headers);
       }
       const requestedPerPage = Number(url.searchParams.get('per_page') ?? perPage);
       const size = requestedPerPage > 0 ? requestedPerPage : perPage;
@@ -851,15 +867,18 @@ export async function startFakeGitHub(options = {}) {
       state.failAll = Boolean(value);
     },
     setDiscoveryFailure(value) {
-      // true / 'server' -> 500, 'auth' -> 401, 'rate_limited' -> 403 with a
-      // reset header, 'network' -> the connection is dropped mid-request.
+      // true / 'server' -> 500, 'auth' -> 401, 'forbidden' -> 403 permission
+      // refusal, 'rate_limited' -> 403 with a reset header,
+      // 'rate_limited_secondary' -> 403 without any reset header,
+      // 'network' -> the connection is dropped mid-request.
       state.failDiscovery = value === true ? 'server' : (value || false);
     },
     setDiscoveryResetAt(seconds) {
-      state.discoveryResetAt = Number(seconds);
+      // null clears the reset so a headerless response can be simulated.
+      state.discoveryResetAt = seconds === null || seconds === undefined ? null : Number(seconds);
     },
-    setDiscoveryResponse(status, payload = {}) {
-      state.discoveryResponse = status ? { status, payload } : null;
+    setDiscoveryResponse(status, payload = {}, headers = {}) {
+      state.discoveryResponse = status ? { status, payload, headers } : null;
     },
     setRepoAccessible(repository, value) {
       const spec = findRepo(repository);

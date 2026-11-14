@@ -415,14 +415,14 @@ test('multi-repo All Projects Operations aggregates multiple repositories and ha
     // owner/other-repo#11 (blocked by other-repo#10) -> blocked
     assert.equal(data.blocked, 4);
 
-    // Upstream discovery failure maps to HTTP 502 discovery_unavailable on operations and archive
+    // Upstream discovery failure maps to HTTP 503 discovery_unavailable on operations and archive
     fake.setInjectedResponse(500, { message: 'Upstream discovery failure' });
     const failOps = await session.request('/api/combined/operations');
-    assert.equal(failOps.status, 502);
+    assert.equal(failOps.status, 503);
     assert.equal(failOps.json.error, 'discovery_unavailable');
 
     const failArchive = await session.request('/api/combined/archive');
-    assert.equal(failArchive.status, 502);
+    assert.equal(failArchive.status, 503);
     assert.equal(failArchive.json.error, 'discovery_unavailable');
   } finally {
     await board.app.close();
@@ -524,7 +524,7 @@ test('multi-repo Operations and Archive failure modes: total outage, partial per
     }
   }
 
-  // 3. All repos failing with no cache -> 502 discovery_unavailable error
+  // 3. All repos failing with no cache -> 503 discovery_unavailable error
   {
     const fake = await startFakeGitHub({
       repositories: [
@@ -551,11 +551,11 @@ test('multi-repo Operations and Archive failure modes: total outage, partial per
       fake.setRepoFailing('owner/repo-b', true);
 
       const failOps = await session.request('/api/combined/operations');
-      assert.equal(failOps.status, 502);
+      assert.equal(failOps.status, 503);
       assert.equal(failOps.json.error, 'discovery_unavailable');
 
       const failArchive = await session.request('/api/combined/archive');
-      assert.equal(failArchive.status, 502);
+      assert.equal(failArchive.status, 503);
       assert.equal(failArchive.json.error, 'discovery_unavailable');
     } finally {
       await board.app.close();

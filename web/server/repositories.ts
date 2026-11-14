@@ -14,7 +14,7 @@ export type DiscoveryFailureKind = 'auth' | 'rate_limited' | 'network' | 'server
 
 // Short, fixed reasons only: never the token, never a raw upstream body.
 const DISCOVERY_FAILURE_REASONS: Record<DiscoveryFailureKind, string> = {
-  auth: 'GitHub refused the board token',
+  auth: 'GitHub refused the board token or its permissions',
   rate_limited: 'GitHub rate limit reached',
   network: 'GitHub was unreachable from the server',
   server: 'GitHub returned an unexpected response',
@@ -22,7 +22,10 @@ const DISCOVERY_FAILURE_REASONS: Record<DiscoveryFailureKind, string> = {
 
 export function discoveryFailureKind(error: unknown): DiscoveryFailureKind {
   if (error instanceof GitHubError) {
-    if (error.kind === 'unauthorized') return 'auth';
+    // A 403 scope, fine-grained PAT, SAML SSO or IP allowlist refusal is a
+    // credential/permission problem: refreshing can never fix it, so it must
+    // not hide inside the generic server sentence.
+    if (error.kind === 'unauthorized' || error.kind === 'forbidden') return 'auth';
     if (error.kind === 'rate_limited') return 'rate_limited';
     if (error.kind === 'network') return 'network';
   }
@@ -47,7 +50,17 @@ export class RepositoryNotAllowedError extends Error {
     super('That repository is not available to this board token');
   }
 }
-export class DiscoveryUnavailableError extends Error {}
+export class DiscoveryUnavailableError extends Error {
+  errorKind: DiscoveryFailureKind | null;
+  errorResetAt: string | null;
+
+  constructor(view?: { errorKind?: DiscoveryFailureKind | null; errorResetAt?: string | null } | null) {
+    super('Repository discovery failed; no operation was dispatched');
+    this.name = 'DiscoveryUnavailableError';
+    this.errorKind = view?.errorKind ?? null;
+    this.errorResetAt = view?.errorResetAt ?? null;
+  }
+}
 
 export class RepositoryRegistry {
   private readonly client: GitHubClient;
@@ -80,14 +93,15 @@ export class RepositoryRegistry {
     return this.inFlight;
   }
 
-  async resolve(owner: string, name: string): Promise<RepositoryEntry> {
+  async resolve(owner: string, name: string, options: { forceRefresh?: boolean } = {}): Promise<RepositoryEntry> {
     const full = `${owner}/${name}`;
     // A warmed registry rejects fabricated names without even a discovery call.
-    if (!this.known.has(full)) throw new RepositoryNotAllowedError();
-    const view = await this.view();
+    // A forced refresh must run first: the name may have been created since.
+    if (!options.forceRefresh && !this.known.has(full)) throw new RepositoryNotAllowedError();
+    const view = await this.view(options);
     const found = view.repositories.find(repository => repository.full === full && repository.available);
     if (!found) throw new RepositoryNotAllowedError();
-    if (view.discoveryFailed) throw new DiscoveryUnavailableError();
+    if (view.discoveryFailed) throw new DiscoveryUnavailableError(view);
     return found;
   }
 
@@ -124,7 +138,7 @@ export class RepositoryRegistry {
       this.failed = true;
       this.failureKind = discoveryFailureKind(error);
       this.failureReason = DISCOVERY_FAILURE_REASONS[this.failureKind];
-      this.failureResetAt = this.failureKind === 'rate_limited' ? this.rateLimitResetAt() : null;
+      this.failureResetAt = this.failureKind === 'rate_limited' ? this.rateLimitResetAt(error) : null;
     }
     return this.snapshot();
   }
@@ -135,9 +149,13 @@ export class RepositoryRegistry {
     this.failureResetAt = null;
   }
 
-  private rateLimitResetAt(): string | null {
-    const reset = this.client.getRateLimitInfo().reset;
+  private rateLimitResetAt(error: unknown): string | null {
+    // Only the failing response's own header. A remembered reset from an
+    // earlier successful call would be stale, and a headerless secondary rate
+    // limit would then promise a refresh time it never received.
+    const reset = error instanceof GitHubError ? error.rateLimitReset : null;
     if (typeof reset !== 'number' || !Number.isFinite(reset) || reset <= 0) return null;
+    if (reset * 1000 <= this.now()) return null;
     return new Date(reset * 1000).toISOString();
   }
 

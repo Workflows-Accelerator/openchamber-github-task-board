@@ -20,12 +20,16 @@ export class GitHubError extends Error {
   kind: GitHubErrorKind;
   jsonParsed: boolean;
   data: any;
+  // Only the reset carried by the failing response itself. Never a value the
+  // client remembered from an earlier response, which would make a headerless
+  // secondary rate limit claim a stale refresh time.
+  rateLimitReset: number | null;
 
   constructor(
     kind: GitHubErrorKind,
     status: number,
     message: string,
-    options: { jsonParsed?: boolean; data?: any } = {},
+    options: { jsonParsed?: boolean; data?: any; rateLimitReset?: number | null } = {},
   ) {
     super(message);
     this.name = 'GitHubError';
@@ -33,6 +37,7 @@ export class GitHubError extends Error {
     this.status = status;
     this.jsonParsed = options.jsonParsed ?? false;
     this.data = options.data ?? null;
+    this.rateLimitReset = options.rateLimitReset ?? null;
   }
 }
 
@@ -128,17 +133,21 @@ function kindForStatus(
   jsonParsed = false,
   method = 'GET',
 ): GitHubErrorKind {
+  // Status decides first. A gateway's HTML 401 or plain-text 429 still means
+  // what its status says; bailing out on a non-JSON body turned every such
+  // refusal into an unexplained server error.
+  const remaining = headers?.get('x-ratelimit-remaining');
+  const message = jsonParsed && data && typeof data === 'object' && typeof data.message === 'string'
+    ? data.message.toLowerCase()
+    : '';
+  if (status === 401) return 'unauthorized';
+  if (status === 429) return 'rate_limited';
+  if (status === 403) {
+    if (remaining === '0' || message.includes('rate limit')) return 'rate_limited';
+    return 'forbidden';
+  }
   if (!jsonParsed || !data || typeof data !== 'object') {
     return 'server';
-  }
-  if (status === 401) return 'unauthorized';
-  if (status === 403) {
-    const remaining = headers?.get('x-ratelimit-remaining');
-    const msg = typeof data?.message === 'string' ? data.message.toLowerCase() : '';
-    if (remaining === '0' || msg.includes('rate limit')) {
-      return 'rate_limited';
-    }
-    return 'forbidden';
   }
   if (status === 404) return 'not_found';
   // 410 Gone is a definite refusal: the issue or the repository's issues are no
@@ -171,7 +180,6 @@ function kindForStatus(
     }
     return 'server';
   }
-  if (status === 429) return 'rate_limited';
   return 'server';
 }
 
@@ -313,6 +321,8 @@ export class GitHubClient {
 
     if (!response.ok) {
       const kind = kindForStatus(response.status, response.headers, data, jsonParsed, options.method);
+      const rawReset = response.headers.get('x-ratelimit-reset');
+      const failingReset = rawReset !== null && rawReset.trim() !== '' ? Number(rawReset) : NaN;
       const message =
         kind === 'unauthorized'
           ? 'GitHub rejected the stored token'
@@ -325,7 +335,11 @@ export class GitHubClient {
                 : kind === 'invalid'
                   ? (typeof data?.message === 'string' ? data.message : 'GitHub rejected the request as invalid')
                   : `GitHub responded with status ${response.status}`;
-      throw new GitHubError(kind, response.status, message, { jsonParsed, data });
+      throw new GitHubError(kind, response.status, message, {
+        jsonParsed,
+        data,
+        rateLimitReset: Number.isFinite(failingReset) && failingReset > 0 ? failingReset : null,
+      });
     }
 
     if (Buffer.byteLength(text, 'utf8') > MAX_BODY_BYTES) {
