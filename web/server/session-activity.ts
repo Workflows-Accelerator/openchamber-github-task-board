@@ -42,11 +42,15 @@ export const DEFAULT_SESSION_ACTIVITY_TIMEOUT_MS = 1_200;
 // States a source may use for "an agent is working". Anything else — including
 // a missing field — is not evidence of activity.
 const ACTIVE_STATES = new Set(['busy', 'active', 'running', 'working', 'in_progress']);
-const IDLE_STATES = new Set(['idle', 'inactive', 'done', 'stopped', 'completed', 'finished']);
 
 const REPO_SEGMENT = '[A-Za-z0-9_.-]+';
 const REPO_PATTERN = new RegExp(`^(${REPO_SEGMENT})\/(${REPO_SEGMENT})$`);
-const ISSUE_REF_PATTERN = /(?:([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+))?#([1-9][0-9]{0,9})(?!\d)/g;
+// A ref must start at a word boundary and must not run into a longer token, so
+// hex colours (`#123abc`), markdown anchors (`#1-heading`), URL fragments
+// (`https://host/path#12`) and words like `C#12` are not read as issues. The
+// lookbehind keeps the scan linear on a long unbroken token.
+const ISSUE_REF_PATTERN =
+  /(?<![A-Za-z0-9_./#-])(?:([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+))?#([1-9][0-9]{0,9})(?![0-9A-Za-z_-])/g;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -65,17 +69,6 @@ function isActiveStatus(value: unknown): boolean {
   for (const key of ['type', 'status', 'state', 'sessionStatus']) {
     const state = value[key];
     if (typeof state === 'string' && ACTIVE_STATES.has(state.toLowerCase())) return true;
-  }
-  return false;
-}
-
-function isIdleStatus(value: unknown): boolean {
-  if (typeof value === 'string') return IDLE_STATES.has(value.toLowerCase());
-  if (!isRecord(value)) return false;
-  if (value.active === false || value.busy === false || value.running === false) return true;
-  for (const key of ['type', 'status', 'state', 'sessionStatus']) {
-    const state = value[key];
-    if (typeof state === 'string' && IDLE_STATES.has(state.toLowerCase())) return true;
   }
   return false;
 }
@@ -149,6 +142,44 @@ function normalizeDirectoryRepos(
 
 function emptySnapshot(): SessionActivitySnapshot {
   return { fetchedAt: null, available: false, degraded: false, activeByIssue: {} };
+}
+
+// A local source has no reason to send a large status payload. The cap is
+// enforced while reading, so a stream that never ends cannot buffer without
+// bound; it is treated as a failed source instead.
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+
+async function readCappedText(response: Response): Promise<string | null> {
+  const declared = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > MAX_RESPONSE_BYTES) return null;
+  const body = response.body;
+  if (!body || typeof body.getReader !== 'function') {
+    const text = await response.text();
+    return Buffer.byteLength(text, 'utf8') > MAX_RESPONSE_BYTES ? null : text;
+  }
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > MAX_RESPONSE_BYTES) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // The stream was already aborted by the request timeout.
+    }
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 interface SessionEntry {
@@ -301,6 +332,7 @@ function buildActiveByIssue(
   triggers: unknown,
   repoForDirectory: (directory: string | null) => string | null,
   updatedAt: string,
+  openchamberConfigured: boolean,
 ): Record<string, ActiveIssueSession> {
   const active: Record<string, ActiveIssueSession> = {};
   const mark = (refs: string[], sessionId: string | null, source: SessionActivitySource) => {
@@ -335,13 +367,6 @@ function buildActiveByIssue(
     if (!existing || isActiveStatus(entry.status)) bySession.set(entry.sessionId, entry);
   }
 
-  const busySessions = new Set<string>();
-  const idleSessions = new Set<string>();
-  for (const [sessionId, entry] of bySession) {
-    if (isActiveStatus(entry.status)) busySessions.add(sessionId);
-    else if (isIdleStatus(entry.status)) idleSessions.add(sessionId);
-  }
-
   for (const entry of bySession.values()) {
     if (!isActiveStatus(entry.status)) continue;
     const defaultRepo = repoForDirectory(directoryOf(entry.record)) ?? undefined;
@@ -357,14 +382,16 @@ function buildActiveByIssue(
     mark(entry.record ? refsFromRecord(entry.record, defaultRepo) : [], null, 'openchamber');
   }
 
-  for (const trigger of triggerEntries) {
-    if (!trigger.explicitActive) continue;
-    // OpenChamber already answered for this session, and an idle answer means
-    // the trigger's flag is stale.
-    if (trigger.sessionId && (busySessions.has(trigger.sessionId) || idleSessions.has(trigger.sessionId))) {
-      continue;
+  // A trigger's own `active`/`running` flag can outlive its run. When
+  // OpenChamber is configured it is the only source that can confirm a session
+  // is busy, so an idle, missing or unreachable reading all mean "not
+  // confirmed" and the stale flag must not animate a card. With no OpenChamber
+  // source at all, the trigger flag is the only signal there is.
+  if (!openchamberConfigured) {
+    for (const trigger of triggerEntries) {
+      if (!trigger.explicitActive) continue;
+      mark(trigger.refs, trigger.sessionId, 'triggers');
     }
-    mark(trigger.refs, trigger.sessionId, 'triggers');
   }
 
   return active;
@@ -457,6 +484,7 @@ export class SessionActivityTracker {
       triggers?.ok ? triggers.data : null,
       (directory) => this.repoForDirectory(directory),
       updatedAt,
+      this.openchamberStatusUrls.length > 0,
     );
     return this.snapshot();
   }
@@ -494,14 +522,14 @@ export class SessionActivityTracker {
         timeout,
       ]);
       if (!response.ok) {
-        try {
-          await Promise.race([response.text(), timeout]);
-        } catch {
-          // A body that never arrives does not change the failed status.
-        }
+        controller.abort();
         return { ok: false, status: response.status };
       }
-      const text = await Promise.race([response.text(), timeout]);
+      const text = await Promise.race([readCappedText(response), timeout]);
+      if (text === null) {
+        controller.abort();
+        return { ok: false, status: response.status };
+      }
       try {
         const data: unknown = JSON.parse(text);
         if (data === null || data === undefined) return { ok: false, status: response.status };

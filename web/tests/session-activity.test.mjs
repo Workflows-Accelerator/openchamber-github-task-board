@@ -50,6 +50,19 @@ test('extractIssueRefs ignores invalid numbers and bare refs without a repo', ()
   assert.deepEqual(extractIssueRefs('a/b#1', 'not-a-repo'), ['a/b#1']);
 });
 
+test('extractIssueRefs ignores hex colors, anchors, url fragments and word-prefixed numbers', () => {
+  assert.deepEqual(extractIssueRefs('background #123abc and #1-heading', 'o/r'), []);
+  assert.deepEqual(extractIssueRefs('see https://example.test/path#12', 'o/r'), []);
+  assert.deepEqual(extractIssueRefs('C#12 and x#42 and #42s', 'o/r'), []);
+});
+
+test('extractIssueRefs keeps real refs beside punctuation', () => {
+  assert.deepEqual(
+    extractIssueRefs('(#12) [a/b#7] owner/repo#9.', 'o/r'),
+    ['o/r#12', 'a/b#7', 'owner/repo#9'],
+  );
+});
+
 test('an unconfigured tracker reports unavailable without fetching', async () => {
   let fetched = 0;
   const tracker = new SessionActivityTracker({
@@ -305,5 +318,121 @@ test('one failing source still reports the healthy one as available but degraded
   const snapshot = await tracker.getSnapshot();
   assert.equal(snapshot.available, true);
   assert.equal(snapshot.degraded, true);
-  assert.equal(snapshot.activeByIssue['owner/repo#4']?.source, 'triggers');
+  // Triggers still answered, but its self-report cannot be confirmed while the
+  // authoritative source is missing.
+  assert.deepEqual(snapshot.activeByIssue, {});
+});
+
+test('a stale trigger flag cannot animate a card when openchamber is unreachable', async () => {
+  const tracker = new SessionActivityTracker({
+    openchamberUrl: 'http://127.0.0.1:9',
+    triggersUrl: 'http://127.0.0.1:10',
+    repoByDirectory: { '/workspace/code/acme': 'acme/widgets' },
+    fetchFn: async (url) => {
+      if (String(url).endsWith('/state')) {
+        return json({
+          triggers: [
+            { id: 'run', sessionId: 'ses_gone', running: true, name: 'acme/widgets#5', action: { directory: '/workspace/code/acme' } },
+          ],
+        });
+      }
+      throw new Error('connection refused');
+    },
+  });
+  const snapshot = await tracker.getSnapshot();
+  assert.equal(snapshot.degraded, true);
+  assert.deepEqual(snapshot.activeByIssue, {});
+});
+
+test('a trigger cannot animate a session openchamber no longer reports', async () => {
+  const tracker = new SessionActivityTracker({
+    openchamberUrl: 'http://127.0.0.1:9',
+    triggersUrl: 'http://127.0.0.1:10',
+    repoByDirectory: { '/workspace/code/acme': 'acme/widgets' },
+    fetchFn: async (url) => {
+      if (String(url).endsWith('/state')) {
+        return json({
+          triggers: [
+            { id: 'run', sessionId: 'ses_gone', running: true, name: 'acme/widgets#5', action: { directory: '/workspace/code/acme' } },
+          ],
+        });
+      }
+      return json({ ses_other: { type: 'idle' } });
+    },
+  });
+  const snapshot = await tracker.getSnapshot();
+  assert.equal(snapshot.degraded, false);
+  assert.deepEqual(snapshot.activeByIssue, {});
+});
+
+test('an oversized response body is rejected instead of parsed', async () => {
+  const pad = 'a'.repeat(3 * 1024 * 1024);
+  const tracker = new SessionActivityTracker({
+    openchamberUrl: 'http://127.0.0.1:9',
+    timeoutMs: 5000,
+    fetchFn: async () =>
+      new Response(JSON.stringify({ ses_1: { type: 'busy', title: 'owner/repo#1' }, pad }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+  });
+  const started = Date.now();
+  const snapshot = await tracker.getSnapshot();
+  assert.equal(snapshot.available, false);
+  assert.equal(snapshot.degraded, true);
+  assert.deepEqual(snapshot.activeByIssue, {});
+  assert.ok(Date.now() - started < 2000, 'the cap must reject without waiting for the timeout');
+});
+
+test('the response cap stops reading a stream instead of draining it', async () => {
+  let pulled = 0;
+  const chunk = new Uint8Array(64 * 1024).fill(97);
+  const body = new ReadableStream({
+    pull(controller) {
+      pulled += 1;
+      if (pulled > 200) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(chunk);
+    },
+  });
+  const tracker = new SessionActivityTracker({
+    openchamberUrl: 'http://127.0.0.1:9',
+    timeoutMs: 5000,
+    fetchFn: async () => new Response(body, { status: 200 }),
+  });
+  const snapshot = await tracker.getSnapshot();
+  assert.equal(snapshot.degraded, true);
+  assert.ok(pulled < 100, `the cap must stop the read early, pulled ${pulled} chunks`);
+});
+
+test('credentials in a configured URL never reach the request', async () => {
+  const calls = [];
+  const tracker = new SessionActivityTracker({
+    openchamberUrl: 'http://user:secret@127.0.0.1:9',
+    fetchFn: async (url) => {
+      calls.push(String(url));
+      return json({});
+    },
+  });
+  const snapshot = await tracker.getSnapshot();
+  assert.equal(snapshot.available, true);
+  assert.ok(calls.length > 0);
+  for (const call of calls) {
+    assert.equal(call.includes('secret'), false);
+    assert.equal(call.includes('user'), false);
+  }
+});
+
+test('prototype-shaped session keys do not pollute the snapshot', async () => {
+  const raw = '{"__proto__":{"type":"busy","title":"a/b#1"},"constructor":{"type":"busy","title":"a/b#2"}}';
+  const tracker = new SessionActivityTracker({
+    openchamberUrl: 'http://127.0.0.1:9',
+    fetchFn: async () => new Response(raw, { status: 200 }),
+  });
+  const snapshot = await tracker.getSnapshot();
+  assert.deepEqual(Object.keys(snapshot.activeByIssue).sort(), ['a/b#1', 'a/b#2']);
+  assert.equal(Object.getPrototypeOf(snapshot.activeByIssue), Object.prototype);
+  assert.equal({}.polluted, undefined);
 });
