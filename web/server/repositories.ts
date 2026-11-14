@@ -1,10 +1,32 @@
 // Token-visible registry: complete discoveries only, 60s freshness, retained
 // unavailable identities, coalesced refresh and failed-refresh backoff.
-import { GitHubClient, type GitHubRepositorySummary } from './github.ts';
+import { GitHubClient, GitHubError, type GitHubRepositorySummary } from './github.ts';
 
 export interface RepositoryEntry extends GitHubRepositorySummary {
   available: boolean;
   lastSeenAt: string;
+}
+
+// What a failed discovery actually was, in the vocabulary the client switches
+// on. 'server' is the honest bucket for everything that is not a refused
+// credential, a rate limit or an unreachable GitHub.
+export type DiscoveryFailureKind = 'auth' | 'rate_limited' | 'network' | 'server';
+
+// Short, fixed reasons only: never the token, never a raw upstream body.
+const DISCOVERY_FAILURE_REASONS: Record<DiscoveryFailureKind, string> = {
+  auth: 'GitHub refused the board token',
+  rate_limited: 'GitHub rate limit reached',
+  network: 'GitHub was unreachable from the server',
+  server: 'GitHub returned an unexpected response',
+};
+
+export function discoveryFailureKind(error: unknown): DiscoveryFailureKind {
+  if (error instanceof GitHubError) {
+    if (error.kind === 'unauthorized') return 'auth';
+    if (error.kind === 'rate_limited') return 'rate_limited';
+    if (error.kind === 'network') return 'network';
+  }
+  return 'server';
 }
 
 export interface RepositoryView {
@@ -13,6 +35,9 @@ export interface RepositoryView {
   stale: boolean;
   discoveryFailed: boolean;
   error: string | null;
+  errorKind: DiscoveryFailureKind | null;
+  errorReason: string | null;
+  errorResetAt: string | null;
   visibleCount: number;
   repositories: RepositoryEntry[];
 }
@@ -32,6 +57,9 @@ export class RepositoryRegistry {
   private fetchedAt: number | null = null;
   private attemptedAt: number | null = null;
   private failed = false;
+  private failureKind: DiscoveryFailureKind | null = null;
+  private failureReason: string | null = null;
+  private failureResetAt: string | null = null;
   private inFlight: Promise<RepositoryView> | null = null;
   private cachedEtag: string | null = null;
 
@@ -72,6 +100,7 @@ export class RepositoryRegistry {
       if (listed.notModified) {
         this.fetchedAt = at;
         this.failed = false;
+        this.clearFailure();
         return this.snapshot();
       }
       // A page-1 ETag only proves page 1 is unchanged; trust it for single-page lists only.
@@ -88,10 +117,28 @@ export class RepositoryRegistry {
       this.known = next;
       this.fetchedAt = at;
       this.failed = false;
-    } catch {
+      this.clearFailure();
+    } catch (error) {
+      // Keep what actually happened instead of discarding it. The reason is a
+      // fixed sentence per kind, so no token or upstream body can leak.
       this.failed = true;
+      this.failureKind = discoveryFailureKind(error);
+      this.failureReason = DISCOVERY_FAILURE_REASONS[this.failureKind];
+      this.failureResetAt = this.failureKind === 'rate_limited' ? this.rateLimitResetAt() : null;
     }
     return this.snapshot();
+  }
+
+  private clearFailure(): void {
+    this.failureKind = null;
+    this.failureReason = null;
+    this.failureResetAt = null;
+  }
+
+  private rateLimitResetAt(): string | null {
+    const reset = this.client.getRateLimitInfo().reset;
+    if (typeof reset !== 'number' || !Number.isFinite(reset) || reset <= 0) return null;
+    return new Date(reset * 1000).toISOString();
   }
 
   private snapshot(): RepositoryView {
@@ -102,6 +149,9 @@ export class RepositoryRegistry {
       stale: this.failed,
       discoveryFailed: this.failed,
       error: this.failed ? 'Repository discovery failure; refresh later. Last known identities retained.' : null,
+      errorKind: this.failed ? this.failureKind : null,
+      errorReason: this.failed ? this.failureReason : null,
+      errorResetAt: this.failed ? this.failureResetAt : null,
       visibleCount: repositories.filter(repository => repository.available).length,
       repositories,
     };

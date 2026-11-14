@@ -1609,7 +1609,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   async function aggregate(aggregateOpts: { forceRefresh?: boolean } = {}) {
     const discovery = await repositories.view({ forceRefresh: aggregateOpts.forceRefresh });
     const issues: ReturnType<typeof buildBoardList>['issues'] = [];
-    const failures: Array<{ repository: RepositoryEntry; message: string }> = [];
+    const failures: Array<{ repository: RepositoryEntry; message: string; errorKind?: string | null; errorResetAt?: string | null }> = [];
     const repoFetchedTimestamps: number[] = [];
     let cursor = 0;
     let loaded = 0;
@@ -1625,7 +1625,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       while (cursor < discovery.repositories.length) {
         const repository = discovery.repositories[cursor++];
         if (!repository.available || discovery.discoveryFailed) {
-          failures.push({ repository, message: discovery.discoveryFailed ? 'Discovery failed; not refreshed' : 'Unavailable' });
+          failures.push({
+            repository,
+            message: discovery.discoveryFailed ? 'Discovery failed; not refreshed' : 'Unavailable',
+            // The client renders these rows through the same cause helper as the
+            // board notice, so one failure never gets two different sentences.
+            errorKind: discovery.discoveryFailed ? discovery.errorKind : null,
+            errorResetAt: discovery.discoveryFailed ? discovery.errorResetAt : null,
+          });
           continue;
         }
 

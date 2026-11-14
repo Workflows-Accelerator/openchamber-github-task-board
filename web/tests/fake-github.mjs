@@ -178,6 +178,7 @@ export async function startFakeGitHub(options = {}) {
     unknownRepoHits: [],
     failAll: false,
     failDiscovery: false,
+    discoveryResetAt: null,
     injectedResponse: null,
     discoveryResponse: null,
     honorIfMatch: options.honorIfMatch ?? false,
@@ -261,6 +262,22 @@ export async function startFakeGitHub(options = {}) {
     if (url.pathname === '/user/repos' && req.method === 'GET') {
       if (req.headers.authorization !== `Bearer ${token}`) {
         return send(401, { message: 'Bad credentials' });
+      }
+      // The discovery failure is simulated at the HTTP layer, exactly where
+      // GitHub would answer, so the client's own error classification runs.
+      if (state.failDiscovery === 'network') {
+        req.socket.destroy();
+        return;
+      }
+      if (state.failDiscovery === 'auth') {
+        return send(401, { message: 'Bad credentials' });
+      }
+      if (state.failDiscovery === 'rate_limited') {
+        const reset = state.discoveryResetAt ?? Math.floor(Date.now() / 1000) + 900;
+        return send(403, { message: 'API rate limit exceeded for user ID 1.' }, {
+          'x-ratelimit-remaining': '0',
+          'x-ratelimit-reset': String(reset),
+        });
       }
       if (state.failDiscovery) {
         return send(500, { message: 'Injected repository discovery failure' });
@@ -834,7 +851,12 @@ export async function startFakeGitHub(options = {}) {
       state.failAll = Boolean(value);
     },
     setDiscoveryFailure(value) {
-      state.failDiscovery = Boolean(value);
+      // true / 'server' -> 500, 'auth' -> 401, 'rate_limited' -> 403 with a
+      // reset header, 'network' -> the connection is dropped mid-request.
+      state.failDiscovery = value === true ? 'server' : (value || false);
+    },
+    setDiscoveryResetAt(seconds) {
+      state.discoveryResetAt = Number(seconds);
     },
     setDiscoveryResponse(status, payload = {}) {
       state.discoveryResponse = status ? { status, payload } : null;

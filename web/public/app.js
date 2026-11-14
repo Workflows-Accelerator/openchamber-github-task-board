@@ -836,6 +836,11 @@
       err_self_link: 'An issue cannot be blocked by itself.',
       err_github_forbidden: 'You do not have permission to change links on this repository.',
       notice_dependencies_degraded: 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.',
+      discovery_failed_auth: 'The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.',
+      discovery_failed_rate_limited: 'GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after {time}.',
+      discovery_failed_rate_limited_no_reset: 'GitHub is limiting the board temporarily. Nothing is required of you; try again shortly.',
+      discovery_failed_network: 'GitHub is unreachable from the server. Your session is intact; try again shortly.',
+      discovery_failed_other: 'Discovery failed — tasks are not refreshed. Refresh to try again.',
       decisions_title: 'Decisions',
       decisions_desc: 'Every unanswered open question across repositories, grouped by issue, newest activity first.',
       decisions_no_items: 'No open questions requiring decisions.',
@@ -1070,6 +1075,11 @@
       err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
       err_github_forbidden: 'Vous n’avez pas la permission de modifier les liens sur ce dépôt.',
       notice_dependencies_degraded: 'Fils de dépendance indisponibles (erreur GraphQL GitHub). Affichage du tableau sans fils.',
+      discovery_failed_auth: 'Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.',
+      discovery_failed_rate_limited: 'GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après {time}.',
+      discovery_failed_rate_limited_no_reset: 'GitHub limite temporairement le tableau. Rien ne vous est demandé ; réessayez dans un instant.',
+      discovery_failed_network: 'GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.',
+      discovery_failed_other: 'Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.',
       decisions_title: 'Décisions',
       decisions_desc: 'Toutes les questions ouvertes sans réponse entre les dépôts, groupées par tâche, activité récente en premier.',
       decisions_no_items: 'Aucune question ouverte nécessitant une décision.',
@@ -6002,7 +6012,7 @@
     $('board-count').textContent = issues.length + ' ' + unit;
     var scopeStatus = $('scope-status');
     if (scopeStatus) {
-      var reasons = (board.failures || []).map(function (failure) { return shortName(failure.repository.full) + ': ' + failure.message; });
+      var reasons = (board.failures || []).map(function (failure) { return shortName(failure.repository.full) + ': ' + failureRowMessage(failure, dict); });
       if (board.truncatedByIssueCap) reasons.push('combined issue cap of ' + board.issueCap + ' reached');
       var statusWarning = board.partial ? 'Partial refresh — results are NOT complete. ' + reasons.join('; ') :
         board.repository && !board.repository.hasIssues ? 'Issues disabled for this project.' : board.repository && board.repository.archived ? 'Archived project — GitHub may refuse edits.' : '';
@@ -6167,7 +6177,7 @@
 
     $('repository-picker').hidden = false;
     $('discovery-status').textContent = view.discoveryFailed
-      ? (getLanguage() === 'fr' ? 'Échec de découverte — dernière liste conservée ; actualisez plus tard. Les opérations de dépôt sont suspendues.' : 'Discovery failed — last known picker retained; refresh later. Repository operations are paused.')
+      ? discoveryFailureMessage(view, I18N[getLanguage()] || I18N.en)
       : (!view.visibleCount ? (getLanguage() === 'fr' ? 'Aucun dépôt visible pour ce jeton.' : 'No repositories visible to this token.') : (getLanguage() === 'fr' ? 'Seuls les dépôts visibles par le jeton sont listés.' : 'Only repositories visible to the bot token are listed.'));
     $('refresh-policy').textContent = 'Discovery cached for ' + (view.freshnessMs / 1000) +
       's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository and at most 500 issues in total. Hidden private repositories cannot be enumerated.';
@@ -6284,6 +6294,46 @@
     var digest = await window.crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(digest)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
   }
+  // One sentence per discovery failure cause, so a refused token, a rate limit
+  // and an unreachable GitHub never read the same. The server sends the kind;
+  // an older payload without one falls back to the generic sentence.
+  function discoveryResetClock(iso) {
+    if (!iso) return '';
+    var date = new Date(iso);
+    if (isNaN(date.getTime())) return '';
+    try {
+      return date.toLocaleTimeString(getLanguage() === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function discoveryFailureMessage(view, dict) {
+    dict = dict || I18N[getLanguage()] || I18N.en;
+    var kind = view && view.errorKind ? String(view.errorKind) : '';
+    if (kind === 'auth') {
+      return dict.discovery_failed_auth || 'The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.';
+    }
+    if (kind === 'rate_limited') {
+      var clock = discoveryResetClock(view && view.errorResetAt);
+      if (clock) {
+        return (dict.discovery_failed_rate_limited || 'GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after {time}.').replace('{time}', clock);
+      }
+      return dict.discovery_failed_rate_limited_no_reset || 'GitHub is limiting the board temporarily. Nothing is required of you; try again shortly.';
+    }
+    if (kind === 'network') {
+      return dict.discovery_failed_network || 'GitHub is unreachable from the server. Your session is intact; try again shortly.';
+    }
+    return dict.discovery_failed_other || 'Discovery failed — tasks are not refreshed. Refresh to try again.';
+  }
+
+  // Aggregate failure rows reuse the cause sentence; a per-repository failure
+  // without a cause keeps its own message.
+  function failureRowMessage(failure, dict) {
+    if (failure && failure.errorKind) return discoveryFailureMessage(failure, dict);
+    return (failure && failure.message) || '';
+  }
+
   async function loadBoard(forceRefresh) {
     rememberDraft();
     state.readGeneration++;
@@ -6312,7 +6362,7 @@
       state.boardLoad = { generation: generation, scope: state.selected };
       var selected = view.repositories.find(function (repository) { return repository.full === state.selected; });
       if (view.discoveryFailed || (state.selected !== 'all' && (!selected || !selected.available))) {
-        var message = view.discoveryFailed ? 'Discovery failed — tasks are not refreshed.' : state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
+        var message = view.discoveryFailed ? discoveryFailureMessage(view, I18N[getLanguage()] || I18N.en) : state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
         state.board = null;
         $('task-list').textContent = '';
         $('board-count').textContent = '';
@@ -8098,7 +8148,7 @@
     if (data.failures && data.failures.length > 0) {
       var failMsgs = data.failures.map(function (f) {
         var repoName = (f.repository && (f.repository.full || f.repository.name)) || '';
-        return (repoName ? repoName + ': ' : '') + f.message;
+        return (repoName ? repoName + ': ' : '') + failureRowMessage(f, dict);
       }).join('; ');
       messages.push((dict.warning_repository_failures || 'Some repositories failed to load') + (failMsgs ? ': ' + failMsgs : ''));
     }
