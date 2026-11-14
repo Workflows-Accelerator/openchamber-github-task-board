@@ -1,0 +1,313 @@
+{
+  "syntheticOnly": true,
+  "startedAt": "2026-11-14T14:29:29.648Z",
+  "rows": [
+    {
+      "kind": "auth",
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "screenshot": "screenshots/discovery-auth-390-light-en.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-390-light-en.png"
+    },
+    {
+      "kind": "network",
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "screenshot": "screenshots/discovery-network-390-light-en.png"
+    },
+    {
+      "kind": "server",
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "screenshot": "screenshots/discovery-server-390-light-en.png"
+    },
+    {
+      "kind": "auth",
+      "width": 390,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "screenshot": "screenshots/discovery-auth-390-light-fr.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 390,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-390-light-fr.png"
+    },
+    {
+      "kind": "network",
+      "width": 390,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "screenshot": "screenshots/discovery-network-390-light-fr.png"
+    },
+    {
+      "kind": "server",
+      "width": 390,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "screenshot": "screenshots/discovery-server-390-light-fr.png"
+    },
+    {
+      "kind": "auth",
+      "width": 390,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "screenshot": "screenshots/discovery-auth-390-dark-en.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 390,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-390-dark-en.png"
+    },
+    {
+      "kind": "network",
+      "width": 390,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "screenshot": "screenshots/discovery-network-390-dark-en.png"
+    },
+    {
+      "kind": "server",
+      "width": 390,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "screenshot": "screenshots/discovery-server-390-dark-en.png"
+    },
+    {
+      "kind": "auth",
+      "width": 390,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "screenshot": "screenshots/discovery-auth-390-dark-fr.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 390,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-390-dark-fr.png"
+    },
+    {
+      "kind": "network",
+      "width": 390,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "screenshot": "screenshots/discovery-network-390-dark-fr.png"
+    },
+    {
+      "kind": "server",
+      "width": 390,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "screenshot": "screenshots/discovery-server-390-dark-fr.png"
+    },
+    {
+      "kind": "auth",
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "screenshot": "screenshots/discovery-auth-1280-light-en.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-1280-light-en.png"
+    },
+    {
+      "kind": "network",
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "screenshot": "screenshots/discovery-network-1280-light-en.png"
+    },
+    {
+      "kind": "server",
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "screenshot": "screenshots/discovery-server-1280-light-en.png"
+    },
+    {
+      "kind": "auth",
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "screenshot": "screenshots/discovery-auth-1280-light-fr.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-1280-light-fr.png"
+    },
+    {
+      "kind": "network",
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "screenshot": "screenshots/discovery-network-1280-light-fr.png"
+    },
+    {
+      "kind": "server",
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "screenshot": "screenshots/discovery-server-1280-light-fr.png"
+    },
+    {
+      "kind": "auth",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "screenshot": "screenshots/discovery-auth-1280-dark-en.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-1280-dark-en.png"
+    },
+    {
+      "kind": "network",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "screenshot": "screenshots/discovery-network-1280-dark-en.png"
+    },
+    {
+      "kind": "server",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "screenshot": "screenshots/discovery-server-1280-dark-en.png"
+    },
+    {
+      "kind": "auth",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "screenshot": "screenshots/discovery-auth-1280-dark-fr.png"
+    },
+    {
+      "kind": "rate_limited",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "screenshot": "screenshots/discovery-rate_limited-1280-dark-fr.png"
+    },
+    {
+      "kind": "network",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "screenshot": "screenshots/discovery-network-1280-dark-fr.png"
+    },
+    {
+      "kind": "server",
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "screenshot": "screenshots/discovery-server-1280-dark-fr.png"
+    }
+  ],
+  "sentencesByLang": {
+    "en": {
+      "auth": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "rate_limited": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "network": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "server": "Discovery failed — tasks are not refreshed. Refresh to try again."
+    },
+    "fr": {
+      "auth": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "rate_limited": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "network": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "server": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer."
+    }
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "cspViolations": [],
+  "captures": [
+    "discovery-auth-390-light-en.png",
+    "discovery-rate_limited-390-light-en.png",
+    "discovery-network-390-light-en.png",
+    "discovery-server-390-light-en.png",
+    "discovery-auth-390-light-fr.png",
+    "discovery-rate_limited-390-light-fr.png",
+    "discovery-network-390-light-fr.png",
+    "discovery-server-390-light-fr.png",
+    "discovery-auth-390-dark-en.png",
+    "discovery-rate_limited-390-dark-en.png",
+    "discovery-network-390-dark-en.png",
+    "discovery-server-390-dark-en.png",
+    "discovery-auth-390-dark-fr.png",
+    "discovery-rate_limited-390-dark-fr.png",
+    "discovery-network-390-dark-fr.png",
+    "discovery-server-390-dark-fr.png",
+    "discovery-auth-1280-light-en.png",
+    "discovery-rate_limited-1280-light-en.png",
+    "discovery-network-1280-light-en.png",
+    "discovery-server-1280-light-en.png",
+    "discovery-auth-1280-light-fr.png",
+    "discovery-rate_limited-1280-light-fr.png",
+    "discovery-network-1280-light-fr.png",
+    "discovery-server-1280-light-fr.png",
+    "discovery-auth-1280-dark-en.png",
+    "discovery-rate_limited-1280-dark-en.png",
+    "discovery-network-1280-dark-en.png",
+    "discovery-server-1280-dark-en.png",
+    "discovery-auth-1280-dark-fr.png",
+    "discovery-rate_limited-1280-dark-fr.png",
+    "discovery-network-1280-dark-fr.png",
+    "discovery-server-1280-dark-fr.png"
+  ]
+}
