@@ -3087,6 +3087,15 @@
     issue.canvas.y = y;
   }
 
+  // Notes belong to a card, not to the plane: a card inside a collapsed group
+  // has no position, so its notes must stay hidden with it instead of floating
+  // at stale coordinates with a connector to nowhere.
+  function canvasIssueIsVisible(issue) {
+    var positions = state.canvasFlowPositions;
+    if (!positions || typeof positions !== 'object') return true;
+    return Object.prototype.hasOwnProperty.call(positions, identity(issue));
+  }
+
   function flowCardInput(issue) {
     var notes = issue && issue.canvas && Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
     var dependencies = [];
@@ -5066,6 +5075,7 @@
     notesLayer.appendChild(svg);
 
     issues.forEach(function (issue) {
+      if (!canvasIssueIsVisible(issue)) return;
       var rawNotes = (issue.canvas && Array.isArray(issue.canvas.notes)) ? issue.canvas.notes.slice() : [];
       var issuePrefix = identity(issue) + ':';
       activeNoteDrafts.forEach(function (draftVal, key) {

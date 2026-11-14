@@ -101,6 +101,29 @@ test('W7b flow graph: expanding one group exposes its cards, keeps others collap
   assert.ok(Array.isArray(layout.edges[0].points) && layout.edges[0].points.length >= 2);
 });
 
+test('W7b flow graph: a dependency into a collapsed group ends on the group box, not a hidden card', () => {
+  const epicA = `${REPO}#100`;
+  const groupB = `${OTHER_REPO}::${OTHER_REPO}#7`;
+  const cards = [
+    card(1, { parentKey: epicA, parentTitle: 'Epic A' }),
+    card(2, { repo: OTHER_REPO, parentKey: `${OTHER_REPO}#7`, parentTitle: 'Epic B' }),
+    card(3, { repo: OTHER_REPO, parentKey: `${OTHER_REPO}#7`, parentTitle: 'Epic B', dependencies: [1] }),
+  ];
+  const layout = arrangeFlowGraph(cards, {
+    direction: 'LR',
+    expandedGroups: [`${REPO}::${epicA}`],
+  });
+
+  const wire = layout.edges.find((edge) => edge.from === `${REPO}#1` && edge.to === groupB);
+  assert.ok(wire, 'the visible card is wired to the collapsed group');
+  assert.equal(wire.crossGroup, true);
+  const target = layout.groups.find((group) => group.groupKey === groupB);
+  assert.ok(target, 'collapsed group box exists');
+  const end = wire.points[wire.points.length - 1];
+  assert.deepEqual({ x: end.x, y: end.y }, { x: target.x, y: target.y + target.h / 2 }, 'wire terminates on the group box');
+  assert.equal(layout.positions[`${OTHER_REPO}#3`], undefined, 'the hidden card has no position');
+});
+
 test('W7b flow graph: LR and TD change the primary axis and stay deterministic across input order', () => {
   const epic = `${REPO}#100`;
   const cards = [
@@ -247,6 +270,7 @@ test('W7b layout: the client drag path persists through /api/layout, not the Git
 
 test('W7b order: numeric order sets board-order, order: null resets the task to automatic order', async (t) => {
   const { fake, session } = await layoutFixture(t);
+  const originalBody = fake.findIssue(2).body;
 
   async function fingerprintOf(number) {
     const board = await session.request('/api/board?refresh=1');
@@ -268,7 +292,12 @@ test('W7b order: numeric order sets board-order, order: null resets the task to 
     body: { order: null, fingerprint: await fingerprintOf(2) },
   });
   assert.equal(reset.status, 200, reset.text);
-  assert.equal(parseOrderMarker(fake.findIssue(2).body), null, 'board-order marker removed');
+  const resetBody = fake.findIssue(2).body;
+  assert.equal(parseOrderMarker(resetBody), null, 'board-order marker removed');
+  assert.match(resetBody, /## Overview/, 'heading survives the reset');
+  assert.match(resetBody, /Child\./, 'body text survives the reset');
+  assert.doesNotMatch(resetBody, /board-order/i, 'no order marker remains');
+  assert.equal(resetBody.trim(), originalBody.trim(), 'reset changes no body content, only a trailing separator');
   assert.equal(reset.json.issue.order, null);
 
   const reread = await session.request('/api/board?refresh=1');
@@ -313,27 +342,54 @@ test('W7b status: active session gets the rotating ring, idle in-progress a stea
 // 6. Client flow helpers (vm harness)
 // ==========================================
 
+function selectorMatches(node, selector) {
+  if (selector.startsWith('.')) return String(node.className).split(/\s+/).includes(selector.slice(1));
+  if (selector.startsWith('#')) return node.id === selector.slice(1);
+  const attribute = /^\[([^=]+)="([^"]*)"\]$/.exec(selector);
+  if (attribute) return node.getAttribute(attribute[1]) === attribute[2];
+  return false;
+}
+
 function clientHarness(viewportWidth = 1280) {
   const elements = new Map();
   function node() {
     let text = '';
     const attributes = {};
     const classes = new Set();
-    return {
-      children: [], value: '', hidden: false, disabled: false, className: '', id: '',
+    const created = {
+      children: [], value: '', hidden: false, disabled: false, className: '', id: '', parentNode: null,
       clientWidth: 0, clientHeight: 0, offsetWidth: 280, offsetHeight: 150, offsetLeft: 0, offsetTop: 0,
+      style: {},
       get textContent() { return text; },
       set textContent(value) { text = value; this.children = []; },
       setAttribute(key, value) { attributes[key] = value; if (key === 'id') { this.id = value; elements.set(value, this); } },
       getAttribute(key) { return Object.prototype.hasOwnProperty.call(attributes, key) ? attributes[key] : null; },
       removeAttribute(key) { delete attributes[key]; },
-      appendChild(child) { this.children.push(child); return child; },
+      appendChild(child) { child.parentNode = this; this.children.push(child); return child; },
       append() {}, addEventListener() {}, removeEventListener() {}, focus() {}, remove() {},
       classList: { add(name) { classes.add(name); }, remove(name) { classes.delete(name); }, contains(name) { return classes.has(name); }, toggle() {} },
-      querySelector() { return null; },
-      querySelectorAll() { return []; },
+      querySelector(selector) {
+        for (const child of this.children) {
+          if (selectorMatches(child, selector)) return child;
+          const nested = child.querySelector(selector);
+          if (nested) return nested;
+        }
+        return null;
+      },
+      querySelectorAll(selector) {
+        const found = [];
+        const walk = (current) => {
+          for (const child of current.children) {
+            if (selectorMatches(child, selector)) found.push(child);
+            walk(child);
+          }
+        };
+        walk(this);
+        return found;
+      },
       closest() { return null; },
     };
+    return created;
   }
   const get = (id) => { if (!elements.has(id)) { const created = node(); created.id = id; elements.set(id, created); } return elements.get(id); };
   const context = vm.createContext({
@@ -362,10 +418,12 @@ function clientHarness(viewportWidth = 1280) {
   });
   const source = readPublic('app.js').replace(
     '  boot();',
-    '  window.__app = { state, I18N, resolveFlowDirection, flowGroupKeyOf, effectiveExpandedGroups, computeFlowLayout, applyServerLayout, getLanguage };',
+    '  window.__app = { state, I18N, resolveFlowDirection, flowGroupKeyOf, effectiveExpandedGroups, computeFlowLayout, applyServerLayout, getLanguage, renderCanvasIssues };',
   );
   vm.runInContext(source, context);
-  return context.window.__app;
+  const app = context.window.__app;
+  app.__elements = elements;
+  return app;
 }
 
 test('W7b client: Auto direction resolves by viewport width, explicit direction always wins', () => {
@@ -414,9 +472,74 @@ test('W7b client: computeFlowLayout follows the resolved direction and applies d
   assert.equal(app.computeFlowLayout(issues).direction, 'LR', 'explicit LR wins on a phone');
 });
 
+test('W7b client: a collapsed group does not leave its sticky notes floating without their card', () => {
+  const app = clientHarness(1280);
+  app.state.canvasHasSavedState = true;
+  const issues = [
+    {
+      number: 1, repository: { full: REPO }, parentKey: `${REPO}#100`, parentTitle: 'Epic',
+      state: 'open', statusLabel: 'status:todo', createdAt: '2026-10-01T09:00:00Z',
+      canvas: { x: 40, y: 40, notes: [{ id: 'n1', x: 60, y: 200, w: 220, h: 130, text: 'first' }] },
+    },
+    {
+      number: 2, repository: { full: REPO }, parentKey: `${REPO}#100`, parentTitle: 'Epic',
+      state: 'open', statusLabel: 'status:todo', createdAt: '2026-10-02T09:00:00Z',
+      canvas: { x: 400, y: 40, notes: [{ id: 'n2', x: 420, y: 200, w: 220, h: 130, text: 'second' }] },
+    },
+  ];
+  app.state.canvasExpandedGroups = new Set();
+  app.renderCanvasIssues(issues);
+  const notesLayer = app.__elements.get('canvas-notes');
+  assert.equal(
+    notesLayer.querySelectorAll('.canvas-sticky-note').length,
+    0,
+    'no sticky note is drawn for a card hidden inside a collapsed group',
+  );
+
+  app.state.canvasExpandedGroups = new Set([`${REPO}::${REPO}#100`]);
+  app.renderCanvasIssues(issues);
+  assert.equal(
+    notesLayer.querySelectorAll('.canvas-sticky-note').length,
+    2,
+    'expanding the group brings both notes back with their cards',
+  );
+});
+
 // ==========================================
 // 7. Invariants: I18N parity, forbidden tokens, CSP
 // ==========================================
+
+test('W7b client: 345 issues across 27 repositories render group cards only while collapsed', () => {
+  const app = clientHarness(1280);
+  app.state.canvasHasSavedState = true;
+  app.state.canvasExpandedGroups = new Set();
+  const issues = [];
+  for (let repoIndex = 0; repoIndex < 27; repoIndex += 1) {
+    const repo = `Workflows-Accelerator/repo-${String(repoIndex + 1).padStart(2, '0')}`;
+    const perRepo = repoIndex < 21 ? 13 : 12;
+    for (let index = 0; index < perRepo; index += 1) {
+      const number = issues.length + 1;
+      issues.push({
+        number,
+        repository: { full: repo },
+        parentKey: index < 4 ? `${repo}#${100 + repoIndex}` : null,
+        parentTitle: index < 4 ? `Epic ${repoIndex + 1}` : null,
+        state: 'open',
+        statusLabel: index % 7 === 0 ? 'status:needs-human' : 'status:todo',
+        priority: 'normal',
+        createdAt: `2026-10-${String((index % 28) + 1).padStart(2, '0')}T09:00:00Z`,
+        blockedBy: [],
+      });
+    }
+  }
+  assert.equal(issues.length, 345);
+
+  app.renderCanvasIssues(issues);
+  const cardsLayer = app.__elements.get('canvas-cards');
+  assert.equal(cardsLayer.querySelectorAll('.canvas-card').length, 0, 'no card element is built for a collapsed group');
+  assert.equal(cardsLayer.querySelectorAll('.canvas-group-frame').length, 0, 'collapsed groups are not frames');
+  assert.equal(cardsLayer.querySelectorAll('.canvas-group-card').length, 54, 'one group card per repository/parent pair');
+});
 
 test('W7b invariants: new UI strings exist in both languages and forbidden tokens stay absent', () => {
   const js = readPublic('app.js');
