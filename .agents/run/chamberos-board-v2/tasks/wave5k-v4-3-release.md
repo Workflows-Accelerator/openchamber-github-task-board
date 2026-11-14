@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3
 Branch: feat/board-v3
-Base commit: 68c5053, plus the delta review evidence commit that follows it (check `git log --oneline -n 3` once; the newest commit must be the V4-3-L4-delta evidence). Tracked tree clean; untracked .agents/run/chamberos-board-v2/verifications/V4-1-L4/ must stay untouched.
+Base commit: b85676f (tracked tree clean; untracked .agents/run/chamberos-board-v2/verifications/V4-1-L4/ must stay untouched). Verify once with `git log --oneline -n 3` and `git status --short` before acting.
 Root checkout: /workspace/code/openchamber-github-task-board on branch ops/task-board-activation (DO NOT modify or switch branches there).
 Live release dir: /workspace/releases/board/ — preserve every existing release intact. Current live: /workspace/releases/board/current -> e604b9e-20261112. Record the full list of existing release directories before you touch anything.
 Supervisor scripts: /workspace/code/openchamber-config/tools/board/start.sh and supervisor.sh (READ/EXECUTE ONLY; never edit /workspace/code/openchamber-config)
@@ -15,7 +15,7 @@ Publish the independently reviewed V4-3 board to production with a verified roll
 </goal>
 
 <context>
-Reviewed range: a6f61f3..68c5053. Independent verdicts: verifications/V4-3-L4/ (SPEC PASS, F1 blocking) and verifications/V4-3-L4-delta/ (the F1–F4 corrections). Read the delta README first; if its PUBLISH verdict is not YES, stop and report instead of deploying.
+Reviewed range: a6f61f3..b85676f. Independent verdicts: verifications/V4-3-L4/ (SPEC PASS, F1 blocking), verifications/V4-3-L4-delta/ (DELTA PASS, PUBLISH YES), and the residuals closed at fa15e35 / 20f4553 / b85676f. Read the delta README first; if its PUBLISH verdict is not YES, stop and report instead of deploying.
 Previous release procedure to follow exactly: verifications/e604b9e-20261112/release-receipt.md.
 </context>
 
@@ -39,6 +39,7 @@ Previous release procedure to follow exactly: verifications/e604b9e-20261112/rel
 3. All previous releases remain intact with passing checksums; the rollback command is documented and correct.
 4. Zero secret printed, zero edits under /workspace/code/openchamber-config, zero GitHub writes, zero issue changes, nothing pushed.
 5. Receipt committed; local master moved to the receipt commit.
+6. If any live proof fails after cutover, roll back to `e604b9e-20261112` immediately using the documented procedure, then report ROLLED_BACK with the failing evidence verbatim. Do not leave the site on a release you cannot prove.
 </criteria>
 
 <output>
