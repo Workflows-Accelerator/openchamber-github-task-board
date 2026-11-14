@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/workflows-accelerator-agent-dev-wave7-overhaul
 Branch: feat/wave7-overhaul
-Base: after `wave7b-canvas-flow` lands on `feat/wave7-overhaul`
+Base: `feat/wave7-overhaul` at `f66ce54`; first run `git merge --no-ff feat/wave7b-canvas-l4` so HEAD includes the L4 hardening `f8e427a`
 Test commands:
 - node --test --test-timeout=60000 web/tests/wave7c-progress-questions.test.mjs
 - node --test --test-timeout=60000 web/tests/*.test.mjs
@@ -24,8 +24,20 @@ Close **all** remaining findings from the 2026-11-13 usability audit (`verificat
 Read first:
 - `verifications/usability-audit-2026-11-13/README.md` (Ranked findings #2–#16)
 - `.agents/run/chamberos-board-v2/verifications/discovery-legibility-L4b/README.md` (P2-1..P2-7 notes)
+- `.agents/run/chamberos-board-v2/verifications/wave7b-canvas-L4/README.md` (Wave 7b hostile review: 7 open P2 notes)
 - `web/public/app.js`, `web/public/theme.css`, `web/public/index.html`, `web/server/board.ts`
 </context>
+
+<carried_p2_notes>
+From `wave7b-canvas-L4` (`f8e427a`) — close these in this wave:
+1. Layout `PATCH /api/layout` response race can drop a newer local position (guard with a monotonic client revision; ignore stale responses).
+2. `order: null` reset leaves one trailing blank line in the issue body.
+3. `web/tests/sw.test.mjs` does not assert `'/flow-layout.js'` in `SHELL_ASSETS` / network-first list — add it.
+4. Weak source-regex assertions (`renderCanvasNotes()`, `if (!board) return;`, `worldStep = baseStep * 4`) and a self-referential manual-position `deepEqual` — replace with behavioural assertions.
+5. Dead `canvasProjectBands` code left behind by the column removal — delete it.
+6. Pre-existing `<noscript><style>` in `index.html` is blocked by strict CSP `style-src 'self'` — fix without weakening CSP (e.g. class toggle), and assert it.
+7. `parentKey` is capped at 100 issues/repo by `listRepositoryDependencies` (`issues(first: 100)`): paginate or document the bound in the UI/report. Prefer documenting honestly over a half-pagination.
+</carried_p2_notes>
 
 <requirements>
 1. **Single unified "Needs me" count everywhere (Audit #2, #11, #12)**:
