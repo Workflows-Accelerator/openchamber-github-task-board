@@ -418,11 +418,12 @@ function clientHarness(viewportWidth = 1280) {
   });
   const source = readPublic('app.js').replace(
     '  boot();',
-    '  window.__app = { state, I18N, resolveFlowDirection, flowGroupKeyOf, effectiveExpandedGroups, computeFlowLayout, applyServerLayout, getLanguage, renderCanvasIssues };',
+    '  window.__app = { state, I18N, resolveFlowDirection, flowGroupKeyOf, effectiveExpandedGroups, computeFlowLayout, applyServerLayout, getLanguage, renderCanvasIssues, updateCanvasTransform, renderBoard };',
   );
   vm.runInContext(source, context);
   const app = context.window.__app;
   app.__elements = elements;
+  app.__get = get;
   return app;
 }
 
@@ -464,7 +465,12 @@ test('W7b client: computeFlowLayout follows the resolved direction and applies d
 
   const layout = app.computeFlowLayout(issues);
   assert.equal(layout.direction, 'TD', 'narrow viewport resolves to TD');
-  assert.deepEqual(layout.positions[`${REPO}#2`], { ...layout.positions[`${REPO}#2`], x: 640, y: 320 }, 'manual position wins');
+  const manual = layout.positions[`${REPO}#2`];
+  assert.equal(manual.x, 640, 'the dragged x wins');
+  assert.equal(manual.y, 320, 'the dragged y wins');
+  assert.equal(manual.w, 280, 'the card keeps its real width');
+  assert.equal(manual.h, 150, 'the card keeps its real height');
+  assert.equal(manual.groupKey, `${REPO}::${REPO}#100`, 'the card keeps its real group');
   assert.equal(layout.groups.length, 1);
   assert.equal(layout.groups[0].collapsed, false);
 
@@ -568,10 +574,37 @@ test('W7b invariants: dot grid, note layer and flow controls stay in place', () 
   assert.match(html, /id="canvas-show-all"/);
   assert.match(html, /id="canvas-arrange"/);
 
-  const js = readPublic('app.js');
-  assert.match(js, /worldStep\s*=\s*baseStep\s*\*\s*4;/, 'two-stop dot grid kept');
-  assert.match(js, /renderCanvasNotes\(\)/, 'sticky notes still render');
-  assert.match(js, /if \(!board\) return;/, 'empty board failure state kept');
+  // Behaviour, not source text: the dot grid actually changes step with zoom.
+  const app = clientHarness(1280);
+  const sizeAt = (scale) => {
+    app.state.canvasScale = scale;
+    app.updateCanvasTransform();
+    // The node is created on first lookup by the code under test.
+    return app.__elements.get('canvas-viewport').style.backgroundSize;
+  };
+  assert.equal(sizeAt(0.2), '19.20px 19.20px', 'far zoom uses the 4x grid (24 * 4 * 0.2)');
+  assert.equal(sizeAt(0.5), '24.00px 24.00px', 'mid zoom uses the 2x grid (24 * 2 * 0.5)');
+  assert.equal(sizeAt(1), '24.00px 24.00px', 'normal zoom uses the base grid (24 * 1)');
+
+  // A null board is a failure state, not an empty render: the list is untouched.
+  app.state.board = null;
+  const list = app.__get('task-list');
+  list.textContent = 'kept';
+  app.renderBoard();
+  assert.equal(list.textContent, 'kept', 'renderBoard leaves the list untouched when there is no board');
+
+  // The notes layer still receives a card's sticky note.
+  app.state.canvasHasSavedState = true;
+  app.state.canvasExpandedGroups = new Set([`${REPO}::standalone`]);
+  app.renderCanvasIssues([{
+    number: 1, repository: { full: REPO }, state: 'open', statusLabel: 'status:todo',
+    canvas: { notes: [{ id: 'n1', x: 60, y: 200, w: 220, h: 130, text: 'note' }] },
+  }]);
+  assert.equal(
+    app.__elements.get('canvas-notes').querySelectorAll('.canvas-sticky-note').length,
+    1,
+    'a note is drawn in the notes layer',
+  );
 
   const css = readPublic('theme.css');
   assert.match(css, /\.canvas-group-card/);

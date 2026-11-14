@@ -51,6 +51,10 @@
     canvasResolvedDirection: 'LR',
     canvasExpandedGroups: new Set(),
     canvasManualPositions: {},
+    // Monotonic revisions keep an older layout PATCH response from overwriting
+    // a newer local position when responses arrive out of order.
+    canvasLayoutRevision: 0,
+    canvasLayoutAppliedRevision: 0,
     canvasGroups: [],
     canvasFlowPositions: null,
     canvasFlowEdges: [],
@@ -523,6 +527,13 @@
 
   function clearRenderedData() {
     getResponses.clear();
+    // Wiping every surface must also end a discovery failure: otherwise the
+    // class and the state outlive the data they described.
+    state.discoveryFailure = null;
+    var clearedBoardView = document.getElementById('board-view');
+    if (clearedBoardView && clearedBoardView.classList) clearedBoardView.classList.remove('is-discovery-failed');
+    var clearedNewTask = document.getElementById('new-task-btn');
+    if (clearedNewTask) clearedNewTask.disabled = false;
     ['task-list', 'detail-meta', 'question-list', 'human-list', 'ac-list', 'subtasks-list', 'filter-chips', 'repo-options-list', 'agent-note-activity'].forEach(function (id) {
       var node = document.getElementById(id);
       if (node) node.textContent = '';
@@ -565,6 +576,11 @@
     state.conflict = false;
     state.loadedAt = null;
     state.stale = false;
+    // Signing out ends any discovery failure too: its banner and the disabled
+    // capture button must not survive into the next session.
+    state.discoveryFailure = null;
+    if ($('board-view') && $('board-view').classList) $('board-view').classList.remove('is-discovery-failed');
+    if ($('new-task-btn')) $('new-task-btn').disabled = false;
     state.readGeneration++;
     state.boardGeneration++;
     state.pending = null;
@@ -703,7 +719,7 @@
       nav_canvas: 'Canvas',
       nav_list: 'List',
       nav_decisions: 'Decisions',
-      nav_blocked: 'Blocked',
+      nav_blocked: 'Blocked & waiting',
       nav_discussions: 'Discussions',
       nav_operations: 'Operations overview',
       nav_archive: 'Archive',
@@ -812,6 +828,11 @@
       canvas_group_running: 'running',
       canvas_group_needs_me: 'needs me',
       canvas_group_done: 'done',
+      canvas_group_checklist: 'checklist',
+      canvas_group_questions: 'questions',
+      needs_me: 'Needs me',
+      progress_checklist_title: '{done} of {total} checklist items done',
+      progress_questions_title: '{done} of {total} questions answered',
       canvas_agent_running: 'Agent running',
       canvas_agent_idle: 'In progress',
       drawer_order_label: 'Execution order',
@@ -850,17 +871,19 @@
       human_review_kind_question: 'Question',
       human_review_missing: 'Waiting for an artifact',
       human_review_missing_help: 'This task waits for you but carries nothing you can click. The agent must attach a screenshot, a short video, a link or a question with preset answers.',
+      human_review_malformed: 'The review item is broken',
+      human_review_malformed_help: 'The agent attached something to review, but the board cannot use it. Ask the agent to fix it; refreshing this page will not help.',
       human_review_settled: 'The question is answered. The agent has to pick this task up again.',
       human_review_settled_title: 'Answer received',
-      human_review_reason_no_section: 'The body has no "### Human Review:" section.',
-      human_review_reason_no_artifact: 'The section has no "- Artifact:" line.',
-      human_review_reason_unknown_artifact: 'The "- Artifact:" value must be image, video, link or question.',
-      human_review_reason_duplicate_field: 'The section repeats one of its fields.',
-      human_review_reason_missing_url: 'The artifact has no "- URL:" line.',
-      human_review_reason_invalid_url: 'The "- URL:" value must be an http:// or https:// link of at most 2048 characters, with no spaces.',
-      human_review_reason_insecure_url: 'An image artifact needs an https:// URL so the board can display it inline.',
-      human_review_reason_missing_instruction: 'The artifact has no one-line "- Instruction:" line.',
-      human_review_reason_long_instruction: 'The "- Instruction:" line is too long.',
+      human_review_reason_no_section: 'The agent did not attach a review item to this task.',
+      human_review_reason_no_artifact: 'The review item does not say what kind it is.',
+      human_review_reason_unknown_artifact: 'The review item is not one the board can show: a screenshot, a video, a link or a question.',
+      human_review_reason_duplicate_field: 'The review item repeats one of its fields.',
+      human_review_reason_missing_url: 'The review item has no URL.',
+      human_review_reason_invalid_url: 'The artifact URL must be an http:// or https:// link of at most 2048 characters, with no spaces.',
+      human_review_reason_insecure_url: 'A screenshot needs an https:// URL so the board can display it inline.',
+      human_review_reason_missing_instruction: 'The review item has no one-line instruction.',
+      human_review_reason_long_instruction: 'The instruction line is too long.',
       human_review_reason_question_answered: 'The question is already answered.',
       human_review_image_alt: 'Review artifact for this task',
       human_review_image_failed: 'The image could not be loaded. Open the link or ask the agent for a working screenshot.',
@@ -868,8 +891,8 @@
       human_review_question_instruction: 'Answer the question below.',
       human_review_agent_body: 'The agent is reviewing this task. Nothing is asked of you.',
       human_review_readonly: 'Read-only view: answering is disabled here.',
-      human_review_reason_missing_question: 'The body has no unanswered "### Open Questions:" item.',
-      human_review_reason_missing_options: 'The question has no preset answer. Add at least one "  - label :: gist :: details" line so it can be answered with one click.',
+      human_review_reason_missing_question: 'The task has no unanswered question to answer.',
+      human_review_reason_missing_options: 'The question has no preset answer. Add at least one preset answer so it can be settled with one click.',
       note_add: 'Add note',
       note_delete: 'Delete note',
       note_delete_confirm: 'Delete note?',
@@ -905,7 +928,7 @@
       decisions_btn_answer: 'Answer',
       decisions_answering: 'Saving…',
       decisions_answered_notice: 'Question answered.',
-      blocked_title: 'Blocked',
+      blocked_title: 'Blocked & waiting',
       blocked_desc: 'Issues requiring human action or blocked by open dependencies.',
       blocked_no_items: 'No blocked tasks.',
       blocked_client_mode: 'Human action required (details hidden in presentation mode).',
@@ -913,7 +936,7 @@
       blocked_by_dependencies: 'Blocked by',
       blocked_human_tasks_title: 'Human Tasks',
       blocked_group_human: 'Waiting on Human Action',
-      blocked_group_dependencies: 'Blocked by Dependencies',
+      blocked_group_dependencies: 'Waiting on other tasks',
       operations_title: 'Operations overview',
       operations_desc: 'Real system metrics and distribution across all connected projects.',
       operations_open: 'Open',
@@ -968,7 +991,7 @@
       nav_canvas: 'Canevas',
       nav_list: 'Liste',
       nav_decisions: 'Décisions',
-      nav_blocked: 'Bloqué',
+      nav_blocked: 'Bloquées et en attente',
       nav_discussions: 'Discussions',
       nav_operations: 'Opérations',
       nav_archive: 'Archives',
@@ -1077,6 +1100,11 @@
       canvas_group_running: 'en cours',
       canvas_group_needs_me: 'à traiter',
       canvas_group_done: 'terminées',
+      canvas_group_checklist: 'liste',
+      canvas_group_questions: 'questions',
+      needs_me: 'À traiter',
+      progress_checklist_title: '{done} éléments cochés sur {total}',
+      progress_questions_title: '{done} questions répondues sur {total}',
       canvas_agent_running: 'Agent actif',
       canvas_agent_idle: 'En cours',
       drawer_order_label: 'Ordre d’exécution',
@@ -1115,17 +1143,19 @@
       human_review_kind_question: 'Question',
       human_review_missing: 'En attente d’un élément à valider',
       human_review_missing_help: 'Cette tâche vous attend mais ne contient rien à cliquer. L’agent doit joindre une capture, une courte vidéo, un lien ou une question avec des réponses proposées.',
+      human_review_malformed: 'L’élément à valider est illisible',
+      human_review_malformed_help: 'L’agent a joint un élément à valider, mais le tableau ne peut pas l’utiliser. Demandez à l’agent de le corriger ; actualiser cette page n’y changera rien.',
       human_review_settled: 'La question est répondue. L’agent doit reprendre cette tâche.',
       human_review_settled_title: 'Réponse reçue',
-      human_review_reason_no_section: 'Le corps n’a pas de section « ### Human Review: ».',
-      human_review_reason_no_artifact: 'La section n’a pas de ligne « - Artifact: ».',
-      human_review_reason_unknown_artifact: 'La valeur de « - Artifact: » doit être image, video, link ou question.',
-      human_review_reason_duplicate_field: 'La section répète l’un de ses champs.',
-      human_review_reason_missing_url: 'L’élément n’a pas de ligne « - URL: ».',
-      human_review_reason_invalid_url: 'La valeur de « - URL: » doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.',
-      human_review_reason_insecure_url: 'Un élément image doit avoir une URL https:// pour que le tableau puisse l’afficher.',
-      human_review_reason_missing_instruction: 'L’élément n’a pas de ligne « - Instruction: » sur une ligne.',
-      human_review_reason_long_instruction: 'La ligne « - Instruction: » est trop longue.',
+      human_review_reason_no_section: 'L’agent n’a joint aucun élément à valider à cette tâche.',
+      human_review_reason_no_artifact: 'L’élément à valider ne précise pas son type.',
+      human_review_reason_unknown_artifact: 'L’élément à valider n’est pas un type que le tableau peut afficher : capture, vidéo, lien ou question.',
+      human_review_reason_duplicate_field: 'L’élément à valider répète l’un de ses champs.',
+      human_review_reason_missing_url: 'L’élément à valider n’a pas d’URL.',
+      human_review_reason_invalid_url: 'L’URL de l’élément doit être un lien http:// ou https:// de 2048 caractères au maximum, sans espaces.',
+      human_review_reason_insecure_url: 'Une capture doit avoir une URL https:// pour que le tableau puisse l’afficher.',
+      human_review_reason_missing_instruction: 'L’élément à valider n’a pas d’instruction sur une ligne.',
+      human_review_reason_long_instruction: 'La ligne d’instruction est trop longue.',
       human_review_reason_question_answered: 'La question est déjà répondue.',
       human_review_image_alt: 'Élément à valider pour cette tâche',
       human_review_image_failed: 'L’image n’a pas pu être chargée. Ouvrez le lien ou demandez une capture valide à l’agent.',
@@ -1133,8 +1163,8 @@
       human_review_question_instruction: 'Répondez à la question ci-dessous.',
       human_review_agent_body: 'L’agent révise cette tâche. Rien ne vous est demandé.',
       human_review_readonly: 'Vue en lecture seule : répondre est désactivé ici.',
-      human_review_reason_missing_question: 'Le corps n’a pas de question ouverte à répondre.',
-      human_review_reason_missing_options: 'La question n’a aucune réponse proposée. Ajoutez au moins une ligne «  - label :: gist :: details » pour qu’elle se réponde en un clic.',
+      human_review_reason_missing_question: 'La tâche n’a aucune question ouverte à répondre.',
+      human_review_reason_missing_options: 'La question n’a aucune réponse proposée. Ajoutez au moins une réponse proposée pour qu’elle se règle en un clic.',
       note_add: 'Ajouter une note',
       note_delete: 'Supprimer la note',
       note_delete_confirm: 'Supprimer la note ?',
@@ -1170,7 +1200,7 @@
       decisions_btn_answer: 'Répondre',
       decisions_answering: 'Enregistrement…',
       decisions_answered_notice: 'Question répondue.',
-      blocked_title: 'Tâches bloquées',
+      blocked_title: 'Bloquées et en attente',
       blocked_desc: 'Tâches nécessitant une action humaine ou bloquées par des dépendances ouvertes.',
       blocked_no_items: 'Aucune tâche bloquée.',
       blocked_client_mode: 'Action humaine requise (détails masqués en mode présentation client).',
@@ -1178,7 +1208,7 @@
       blocked_by_dependencies: 'Bloqué par',
       blocked_human_tasks_title: 'Tâches humaines',
       blocked_group_human: 'En attente d’action humaine',
-      blocked_group_dependencies: 'Bloqué par des dépendances',
+      blocked_group_dependencies: 'En attente d’autres tâches',
       operations_title: 'Vue opérationnelle',
       operations_desc: 'Métriques réelles du système et répartition sur tous les projets connectés.',
       operations_open: 'Ouvertes',
@@ -1799,6 +1829,34 @@
     });
   }
 
+  function checklistProgressLabel(items) {
+    var arr = Array.isArray(items) ? items : [];
+    var total = arr.length;
+    var done = arr.filter(function (item) { return item && item.completed; }).length;
+    return { done: done, total: total, open: Math.max(0, total - done) };
+  }
+
+  function setPanelProgress(id, ratio, dict) {
+    var node = $(id);
+    if (!node) return;
+    if (!ratio || !ratio.total) {
+      node.hidden = true;
+      node.textContent = '';
+      return;
+    }
+    node.hidden = false;
+    node.textContent = ratio.done + '/' + ratio.total;
+    node.title = (dict.progress_checklist_title || '{done} of {total} checklist items done')
+      .replace('{done}', String(ratio.done)).replace('{total}', String(ratio.total));
+  }
+
+  // The drawer states its own progress instead of making the reader count boxes.
+  function updateChecklistProgress(issue) {
+    var dict = I18N[getLanguage()] || I18N.en;
+    setPanelProgress('ac-progress', checklistProgressLabel(issue.acceptanceCriteria), dict);
+    setPanelProgress('subtasks-progress', checklistProgressLabel(issue.subtasks), dict);
+  }
+
   async function toggleChecklistItem(item, isAc, checked) {
     if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) {
       renderDetail(false);
@@ -1973,7 +2031,9 @@
   var SORT_LABELS = { priority: 'Priority', updated: 'Recently updated', created: 'Recently created', manual: 'Manual order' };
   var STAGES = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
   var KIND_LABELS = { 'needs-me': 'Needs me', human: 'Human tasks', questions: 'Questions' };
-  var EXTRA_FILTERS = { blocked: ['Blocked', 'Bloquées'], 'has-dependents': ['Blocks another task', 'Bloque une autre tâche'], artifact: ['Reviewable link', 'Lien à consulter'] };
+  // The filter named "blocked" is dependency-only; the view named "Blocked"
+  // includes human waits. Two names, two scopes, so they can no longer disagree.
+  var EXTRA_FILTERS = { blocked: ['Blocked by dependencies', 'Bloquée par une dépendance'], 'has-dependents': ['Blocks another task', 'Bloque une autre tâche'], artifact: ['Reviewable link', 'Lien à consulter'] };
   var VIEW_STATE_KEY = 'openchamber_web_view_state';
   state.viewState = readViewState();
   function readViewState() {
@@ -2044,9 +2104,69 @@
   }
   function stageOf(issue) { return issue.effectiveStage || (issue.state === 'closed' ? 'done' : (issue.statusLabel || '').replace(/^status:/, '') || issue.column || 'todo'); }
   function countOf(issue, kind, total) { return issue.counts && issue.counts[kind] ? issue.counts[kind][total ? 'total' : 'open'] || 0 : 0; }
-  function needsMe(issue) {
-    return stageOf(issue) !== 'done' && (stageOf(issue) === 'needs-human' ||
-      (issue.attention && issue.attention !== 'none') || countOf(issue, 'humanTasks') || countOf(issue, 'openQuestions'));
+  function hasOpenQuestions(issue) {
+    return countOf(issue, 'openQuestions') > 0 ||
+      (Array.isArray(issue.openQuestions) && issue.openQuestions.some(function (q) { return q && !q.completed; }));
+  }
+  function hasOpenHumanTasks(issue) {
+    return countOf(issue, 'humanTasks') > 0 ||
+      (Array.isArray(issue.humanTasks) && issue.humanTasks.some(function (task) { return task && !task.completed; }));
+  }
+  // The one canonical answer to "does this task need me?". The sidebar count,
+  // the Needs me filter and every summary surface delegate here so they cannot
+  // drift apart again.
+  function needsHumanAttention(issue) {
+    if (!issue || issue.state === 'closed') return false;
+    if (state.clientPresentationMode && isDraftIssue(issue)) return false;
+    if (stageOf(issue) === 'done') return false;
+    return stageOf(issue) === 'needs-human' || hasOpenQuestions(issue) || hasOpenHumanTasks(issue);
+  }
+  function needsMe(issue) { return needsHumanAttention(issue); }
+  function ratioOf(counts, items) {
+    var total = counts && typeof counts.total === 'number'
+      ? counts.total
+      : (Array.isArray(items) ? items.length : 0);
+    // The server may send done, open, or neither. Any of the three is enough
+    // to state a truthful ratio; the array is the last resort.
+    var done;
+    if (counts && typeof counts.done === 'number') done = counts.done;
+    else if (counts && typeof counts.open === 'number') done = total - counts.open;
+    else done = Array.isArray(items) ? items.filter(function (item) { return item && item.completed; }).length : 0;
+    if (done < 0) done = 0;
+    if (done > total) done = total;
+    return { done: done, total: total, open: Math.max(0, total - done) };
+  }
+  // Progress exists as three explicit ratios, never as an implicit "1 comment".
+  function progressOf(issue) {
+    var counts = (issue && issue.counts) || {};
+    return {
+      checklist: ratioOf(counts.subtasks, issue && issue.subtasks),
+      questions: ratioOf(counts.openQuestions, issue && issue.openQuestions),
+      human: ratioOf(counts.humanTasks, issue && issue.humanTasks),
+    };
+  }
+  function humanCountLabel(count) {
+    var n = Number(count) || 0;
+    return getLanguage() === 'fr'
+      ? n + (n === 1 ? ' action humaine' : ' actions humaines')
+      : n + (n === 1 ? ' human action' : ' human actions');
+  }
+  function questionCountLabel(count) {
+    var n = Number(count) || 0;
+    return n + (n === 1 ? ' question' : ' questions');
+  }
+  function phaseText(phase) {
+    var value = String(phase || '').replace(/_/g, ' ').trim();
+    if (!value) return '';
+    return getLanguage() === 'fr' ? 'Phase : ' + value : value + ' phase';
+  }
+  function attentionText(attention) {
+    var value = String(attention || '').replace(/^needs-/, '').replace(/_/g, ' ').trim();
+    if (!value) return '';
+    if (getLanguage() === 'fr') {
+      return value === 'decision' ? 'Décision attendue' : 'Attention : ' + value;
+    }
+    return value === 'decision' ? 'Needs a decision' : 'Needs ' + value;
   }
   function manualCompare(a, b) {
     var oa = Number.isFinite(a.order) ? a.order : null, ob = Number.isFinite(b.order) ? b.order : null;
@@ -2094,7 +2214,13 @@
   function matchesExtraFilter(issue, token) {
     if (token === 'blocked') return blockerKeys(issue).length > 0;
     if (token === 'has-dependents') return ((state.board && state.board.issues) || []).some(function (other) { return blockerKeys(other).includes(identity(issue).toLowerCase()); });
-    // Review links must come from human work or questions, never the issue's own GitHub URL.
+    // Reviewable links are real review artifacts (screenshot, video, link) or a
+    // pending human item that carries a URL, never the issue's own GitHub URL.
+    var review = humanReviewView(issue);
+    if (review && review.state === 'ready' && typeof review.url === 'string' &&
+        (review.kind === 'image' || review.kind === 'video' || review.kind === 'link')) {
+      return true;
+    }
     var text = (issue.pendingItems || []).filter(function (item) { return !item.completed; }).map(function (item) { return item.text; }).join('\n');
     return /https?:\/\/[^\s<>]+/i.test(text);
   }
@@ -2293,6 +2419,7 @@
       content.appendChild(el('h3', { text: fr ? 'Données et API' : 'Data and API' }));
       content.appendChild(el('p', { class: 'settings-health', text: apiHealthText() }));
       content.appendChild(el('p', { class: 'muted', text: fr ? 'Les données sont relues à chaque actualisation. Les modifications sont enregistrées sur GitHub.' : 'Refresh revalidates cached data. Changes are saved to GitHub.' }));
+      content.appendChild(el('p', { class: 'muted small', text: fr ? 'Le regroupement par parent lit les 100 premières tâches de chaque projet. Au-delà, une tâche apparaît dans « Sans parent ».' : 'Parent grouping reads the first 100 issues of each project. Beyond that, a task appears under Standalone.' }));
       content.appendChild(el('h3', { text: getLanguage() === 'fr' ? 'Noms des projets' : 'Project names' }));
       content.appendChild(el('p', { class: 'muted', text: getLanguage() === 'fr' ? 'Les noms sont partagés entre appareils. Un champ vide rétablit le nom automatique.' : 'Names are shared across devices. Empty resets the automatic short name.' }));
       (state.repositories ? state.repositories.repositories : []).forEach(function (repo) {
@@ -2635,11 +2762,29 @@
     }
     if (typeof issue.noteCount === 'number' && (issue.noteCount > 0 || issue.noteCountPartial)) metaChildren.push(el('span', { class: 'badge note-count', text: issue.noteCount + (issue.noteCountPartial ? '+' : '') + (getLanguage() === 'fr' ? (issue.noteCount === 1 && !issue.noteCountPartial ? ' note pour l’agent' : ' notes pour l’agent') : (issue.noteCount === 1 && !issue.noteCountPartial ? ' agent note' : ' agent notes')) }));
     else if (issue.commentCount > 0) metaChildren.push(el('span', { class: 'badge comment-count', text: issue.commentCount + (getLanguage() === 'fr' ? (issue.commentCount === 1 ? ' commentaire' : ' commentaires') : (issue.commentCount === 1 ? ' comment' : ' comments')) }));
-    if (countOf(issue, 'openQuestions')) {
-      var qn = countOf(issue, 'openQuestions'); metaChildren.push(el('span', { class: 'badge attention', text: qn + (qn === 1 ? ' question' : ' questions') }));
+    var progress = progressOf(issue);
+    var dict = I18N[getLanguage()] || I18N.en;
+    if (progress.checklist.total > 0) {
+      metaChildren.push(el('span', {
+        class: 'badge progress-badge progress-checklist',
+        text: progress.checklist.done + '/' + progress.checklist.total,
+        title: (dict.progress_checklist_title || '{done} of {total} checklist items done')
+          .replace('{done}', String(progress.checklist.done)).replace('{total}', String(progress.checklist.total)),
+      }));
     }
-    if (countOf(issue, 'humanTasks')) {
-      var hn = countOf(issue, 'humanTasks'); metaChildren.push(el('span', { class: 'badge attention', text: getLanguage() === 'fr' ? (hn + (hn === 1 ? ' action' : ' actions')) : (hn + ' human') }));
+    if (progress.questions.total > 0) {
+      metaChildren.push(el('span', {
+        class: 'badge progress-badge progress-questions' + (progress.questions.open > 0 ? ' attention' : ''),
+        'data-pending': String(progress.questions.open),
+        text: progress.questions.done + '/' + progress.questions.total,
+        title: (dict.progress_questions_title || '{done} of {total} questions answered')
+          .replace('{done}', String(progress.questions.done)).replace('{total}', String(progress.questions.total)),
+      }));
+    }
+    // Only an unfinished human task is an attention signal; a completed one
+    // must not keep the row looking like it still waits for someone.
+    if (progress.human.open > 0) {
+      metaChildren.push(el('span', { class: 'badge attention', text: humanCountLabel(progress.human.open) }));
     }
     // The row names the gate in one badge; the precise reason and the single
     // action stay in the drawer, never duplicated in the compact list.
@@ -2650,8 +2795,10 @@
         metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict['human_review_kind_' + rowReview.kind] || reviewDict.human_review_artifact_label }));
       } else if (rowReview && rowReview.state === 'settled') {
         metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict.human_review_settled_title, title: humanReviewReasonText(rowReview, reviewDict) }));
+      } else if (rowReview && rowReview.state === 'malformed') {
+        metaChildren.push(el('span', { class: 'badge human-review-badge is-malformed', text: reviewDict.human_review_malformed, title: humanReviewReasonText(rowReview, reviewDict) }));
       } else {
-        metaChildren.push(el('span', { class: 'badge human-review-badge', text: reviewDict.human_review_missing, title: humanReviewReasonText(rowReview, reviewDict) }));
+        metaChildren.push(el('span', { class: 'badge human-review-badge is-missing', text: reviewDict.human_review_missing, title: humanReviewReasonText(rowReview, reviewDict) }));
       }
     }
     var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
@@ -2689,8 +2836,8 @@
       badge(statusText('status:' + stageOf(issue)), 'status'), priorityOf(issue) ? badge(priorityText(priorityOf(issue)), 'badge-priority') : null,
       issue.offline ? badge('(offline)', 'badge-offline') : null,
       blockedBadge,
-      countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
-      countOf(issue, 'humanTasks') ? badge(countOf(issue, 'humanTasks') + ' human tasks', 'attention') : null]));
+      countOf(issue, 'openQuestions') ? badge(questionCountLabel(countOf(issue, 'openQuestions')), 'attention') : null,
+      countOf(issue, 'humanTasks') ? badge(humanCountLabel(countOf(issue, 'humanTasks')), 'attention') : null]));
     children.push(el('p', { class: 'muted small', text: (getLanguage() === 'fr' ? 'Mis à jour ' : 'Updated ') + relative(issue.updatedAt) }));
     return el('button', { type: 'button', class: 'task-row', 'data-issue-key': identity(issue), onclick: function () {
       if (issue.offline) { setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
@@ -3167,10 +3314,21 @@
     return dict.canvas_layout_error || 'Canvas not saved. Your view is kept locally; try again.';
   }
 
+  // Two PATCHes can be in flight at once (a drag and a group toggle). The
+  // server answers each with the whole layout; without a revision guard the
+  // older answer can land last and undo the newer move.
+  function applyLayoutPatch(revision, layout) {
+    if (typeof revision === 'number' && revision < state.canvasLayoutAppliedRevision) return false;
+    if (typeof revision === 'number') state.canvasLayoutAppliedRevision = revision;
+    applyServerLayout(layout);
+    return true;
+  }
+
   function persistCanvasLayout(patch) {
     var body = Object.assign({ scope: canvasLayoutScope() }, patch);
+    var revision = ++state.canvasLayoutRevision;
     return api('/api/layout', { method: 'PATCH', body: body }).then(function (layout) {
-      applyServerLayout(layout);
+      applyLayoutPatch(revision, layout);
       updateCanvasDirectionButtons();
       return layout;
     });
@@ -3200,7 +3358,27 @@
     if (group.running > 0) children.push(groupCount(dict.canvas_group_running || 'running', group.running, 'is-running'));
     if (group.needsMe > 0) children.push(groupCount(dict.canvas_group_needs_me || 'needs me', group.needsMe, 'is-needs-me'));
     if (group.done > 0) children.push(groupCount(dict.canvas_group_done || 'done', group.done, ''));
+    var progress = group.progress;
+    if (progress) {
+      if (progress.checklist.total > 0) children.push(groupCount(dict.canvas_group_checklist || 'checklist', progress.checklist.done + '/' + progress.checklist.total, 'is-progress'));
+      if (progress.questions.total > 0) children.push(groupCount(dict.canvas_group_questions || 'questions', progress.questions.done + '/' + progress.questions.total, 'is-progress'));
+    }
     return children;
+  }
+
+  // A collapsed group must summarize progress, not only statuses: aggregate the
+  // ratios of the cards it hides.
+  function groupProgressOf(groupKey, issues) {
+    var result = { checklist: { done: 0, total: 0 }, questions: { done: 0, total: 0 } };
+    (Array.isArray(issues) ? issues : []).forEach(function (issue) {
+      if (!issue || flowGroupKeyOf(issue) !== groupKey) return;
+      var progress = progressOf(issue);
+      result.checklist.done += progress.checklist.done;
+      result.checklist.total += progress.checklist.total;
+      result.questions.done += progress.questions.done;
+      result.questions.total += progress.questions.total;
+    });
+    return result;
   }
 
   function groupTitleText(group, dict) {
@@ -3955,14 +4133,30 @@
     var prio = priorityOf(issue);
     var prioEl = prio ? el('span', { class: 'canvas-card-prio prio-' + prio, text: priorityText(prio) }) : null;
 
-    var humanCount = countOf(issue, 'humanTasks', true);
-    var questionCount = countOf(issue, 'openQuestions', true);
+    var dict = I18N[getLanguage()] || I18N.en;
+    var progress = progressOf(issue);
     var metaChildren = [];
     if (prioEl) metaChildren.push(prioEl);
-    if (humanCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: getLanguage() === 'fr' ? (humanCount + (humanCount === 1 ? ' action' : ' actions')) : (humanCount + ' human') }));
-    if (questionCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: questionCount + ' q' }));
-
-    var dict = I18N[getLanguage()] || I18N.en;
+    if (progress.checklist.total > 0) {
+      metaChildren.push(el('span', {
+        class: 'canvas-card-badge canvas-card-progress',
+        text: progress.checklist.done + '/' + progress.checklist.total,
+        title: (dict.progress_checklist_title || '{done} of {total} checklist items done')
+          .replace('{done}', String(progress.checklist.done)).replace('{total}', String(progress.checklist.total)),
+      }));
+    }
+    if (progress.questions.total > 0) {
+      // answered/total, with the pending count exposed for styling and tests:
+      // a fully answered question is never dressed as outstanding work.
+      metaChildren.push(el('span', {
+        class: 'canvas-card-badge canvas-card-questions' + (progress.questions.open > 0 ? ' is-pending' : ''),
+        'data-pending': String(progress.questions.open),
+        text: progress.questions.done + '/' + progress.questions.total,
+        title: (dict.progress_questions_title || '{done} of {total} questions answered')
+          .replace('{done}', String(progress.questions.done)).replace('{total}', String(progress.questions.total)),
+      }));
+    }
+    if (progress.human.open > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: humanCountLabel(progress.human.open) }));
     // A live agent session and an idle in-progress task must never look alike:
     // only the live one rotates, and it says so.
     var agentActive = Boolean(issue.activeSession && issue.activeSession.active === true);
@@ -3980,6 +4174,8 @@
         ]));
       } else if (review && review.state === 'settled') {
         children.push(el('div', { class: 'canvas-card-review canvas-card-review-settled', text: dict.human_review_settled_title }));
+      } else if (review && review.state === 'malformed') {
+        children.push(el('div', { class: 'canvas-card-review canvas-card-review-malformed', text: dict.human_review_malformed }));
       } else {
         children.push(el('div', { class: 'canvas-card-review canvas-card-review-missing', text: dict.human_review_missing }));
       }
@@ -5045,18 +5241,6 @@
     }
     notesLayer.hidden = false;
 
-    if (Array.isArray(state.canvasProjectBands) && state.canvasProjectBands.length > 0) {
-      state.canvasProjectBands.forEach(function (band) {
-        var bandLabel = el('div', {
-          class: 'canvas-project-band-label',
-          text: band.label,
-        });
-        bandLabel.style.left = band.labelX + 'px';
-        bandLabel.style.top = band.labelY + 'px';
-        notesLayer.appendChild(bandLabel);
-      });
-    }
-
     var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
     if (!issues || issues.length === 0) return;
 
@@ -6033,6 +6217,11 @@
     state.canvasGroups = Array.isArray(layout.groups) ? layout.groups : [];
     state.canvasFlowPositions = layout.positions || {};
     state.canvasFlowEdges = Array.isArray(layout.edges) ? layout.edges : [];
+    // The layout only knows stages; the checklist and question ratios come
+    // from the cards the group hides, so a collapsed group still tells the truth.
+    state.canvasGroups.forEach(function (group) {
+      group.progress = groupProgressOf(group.groupKey, issues);
+    });
 
     state.canvasGroups.forEach(function (group) {
       cardsLayer.appendChild(group.collapsed ? createCollapsedGroupCard(group) : createExpandedGroupFrame(group));
@@ -6680,6 +6869,18 @@
     return dict.discovery_failed_other || 'Discovery failed — tasks are not refreshed. Refresh to try again.';
   }
 
+  // Archive and Operations must name a discovery failure like every other
+  // surface, instead of collapsing its 503 into "Server error.".
+  function loadFailureDetail(err, dict) {
+    dict = dict || I18N[getLanguage()] || I18N.en;
+    if (err && err.code === 'discovery_unavailable') {
+      return discoveryFailureMessage((err && err.payload) || err, dict);
+    }
+    if (err && err.status === 401) return dict.error_unauthorized || 'Authentication required.';
+    if (err && err.status >= 500) return dict.error_server || 'Server error.';
+    return (err && err.message) || 'error';
+  }
+
   // The toolbar carries only a short cause label; the full sentence stays in
   // #notice, #empty-state and the project popover.
   function discoveryStatusLabel(view, dict) {
@@ -6723,6 +6924,8 @@
       $('empty-create').hidden = false;
       $('empty-create').disabled = !availableProjects().length;
     }
+    // Discovery recovered, so the toolbar capture button is usable again.
+    if ($('new-task-btn')) $('new-task-btn').disabled = false;
   }
 
   function renderDiscoveryFailure() {
@@ -6744,6 +6947,9 @@
       $('empty-create').hidden = true;
       $('empty-create').disabled = true;
     }
+    // The toolbar capture button cannot pick a project it has not discovered,
+    // so it must say so by being unavailable rather than failing on click.
+    if ($('new-task-btn')) $('new-task-btn').disabled = true;
     var boardView = $('board-view');
     if (boardView && boardView.classList) boardView.classList.add('is-discovery-failed');
   }
@@ -6860,6 +7066,12 @@
         $('task-list').textContent = '';
         $('board-count').textContent = '';
         $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
+        // A previous scope warning (unavailable project, partial refresh) must
+        // not survive a failed load of a different scope.
+        if ($('scope-status')) {
+          $('scope-status').textContent = '';
+          $('scope-status').className = 'status-strip-scope';
+        }
         $('empty-state').hidden = false;
         var failureDetails = error.message ? 'The board could not be loaded: ' + error.message : 'The board could not be loaded — unavailable, not empty.';
         $('empty-state').querySelector('p').textContent = failureDetails;
@@ -6950,16 +7162,23 @@
     var closedLabel = getLanguage() === 'fr' ? 'fermé' : 'closed';
     var openLabel = getLanguage() === 'fr' ? 'ouvert' : 'open';
     container.appendChild(badge(issue.state === 'closed' ? closedLabel : openLabel, 'state-' + (issue.state === 'closed' ? 'closed' : 'open')));
-    container.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+    // When the human-review gate is visible its heading already states the
+    // status ("Waiting for you", "Agent reviewing"); repeating it as a badge
+    // puts two names for one state above the instruction.
+    if (!humanReviewStatus(issue)) container.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
     if (priorityOf(issue)) container.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
     if (issue.repository) {
       container.appendChild(projectBadge(issue.repository));
       if (issue.repository.archived) container.appendChild(badge('archived'));
     }
     if (!state.clientPresentationMode) {
-      if (issue.phase && !isVanillaMarkdownIssue(issue)) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
+      if (issue.phase && !isVanillaMarkdownIssue(issue)) container.appendChild(badge(phaseText(issue.phase), 'phase'));
       if (issue.attention && issue.attention !== 'none') {
-        container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
+        // The status badge already says "Waiting for you"; a second label that
+        // names the same state only adds chrome before the actual instruction.
+        var attention = attentionText(issue.attention);
+        var status = statusText('status:' + stageOf(issue));
+        if (attention && attention !== status) container.appendChild(badge(attention, 'attention'));
       }
     }
     if (issue.number !== undefined && issue.number !== null) {
@@ -7183,8 +7402,11 @@
     }
 
     if (!review || review.state === 'missing' || review.state === 'malformed') {
-      title.textContent = dict.human_review_missing;
-      body.appendChild(el('p', { class: 'human-review-help', text: dict.human_review_missing_help }));
+      // Two different failures, two different answers: nothing was attached
+      // versus something was attached but cannot be used.
+      var isMalformed = Boolean(review && review.state === 'malformed');
+      title.textContent = isMalformed ? dict.human_review_malformed : dict.human_review_missing;
+      body.appendChild(el('p', { class: 'human-review-help', text: isMalformed ? dict.human_review_malformed_help : dict.human_review_missing_help }));
       var reason = humanReviewReasonText(review, dict);
       if (reason) body.appendChild(el('p', { class: 'human-review-reason muted small', text: reason }));
       return;
@@ -7580,7 +7802,8 @@
     if (blockedByContainer && noBlockedByEl) {
       blockedByContainer.textContent = '';
       var blockedByList = Array.isArray(issue.blockedBy) ? issue.blockedBy : [];
-      noBlockedByEl.hidden = blockedByList.length > 0;
+      // A negative sentence is not information: an empty list says it already.
+      noBlockedByEl.hidden = true;
 
       blockedByList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
@@ -7636,7 +7859,11 @@
     if (blockingContainer && noBlockingEl) {
       blockingContainer.textContent = '';
       var blockingList = Array.isArray(issue.blocking) ? issue.blocking : [];
-      noBlockingEl.hidden = blockingList.length > 0;
+      noBlockingEl.hidden = true;
+      // Nothing blocks on this task: hide the whole read-only subsection rather
+      // than leaving a heading over an apology.
+      var blockingBlock = $('blocking-block');
+      if (blockingBlock) blockingBlock.hidden = blockingList.length === 0;
 
       blockingList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
@@ -7776,6 +8003,7 @@
 
     renderChecklist('ac-list', 'no-ac', issue.acceptanceCriteria || [], true);
     renderChecklist('subtasks-list', 'no-subtasks', issue.subtasks || [], false);
+    updateChecklistProgress(issue);
 
     var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
     var overview = sections.length > 0 ? sections[0] : null;
@@ -8178,7 +8406,10 @@
   function isIssueDecision(issue) {
     if (!issue || issue.state === 'closed') return false;
     if (state.clientPresentationMode && isDraftIssue(issue)) return false;
-    return Array.isArray(issue.openQuestions) && issue.openQuestions.some(function (q) { return !q.completed; });
+    // The list item carries counts; the detail carries arrays. Either source
+    // answering "there is an open question" is enough, so the badge and the
+    // page it points at always agree.
+    return hasOpenQuestions(issue);
   }
 
   function isIssueBlocked(issue) {
@@ -8194,18 +8425,17 @@
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
     var decisionsCount = 0;
     var blockedCount = 0;
+    var attentionCount = 0;
 
     items.forEach(function (item) {
       if (item.state === 'closed') return;
       if (state.clientPresentationMode && isDraftIssue(item)) return;
-      if (!state.clientPresentationMode && Array.isArray(item.openQuestions)) {
-        item.openQuestions.forEach(function (q) {
-          if (!q.completed) decisionsCount++;
-        });
-      }
-      if (isIssueBlocked(item)) {
-        blockedCount++;
-      }
+      // A badge counts what its view renders: one card per issue, never one
+      // count per question. Presentation mode hides every question, so its
+      // badge must not promise cards the view refuses to show.
+      if (!state.clientPresentationMode && isIssueDecision(item)) decisionsCount++;
+      if (isIssueBlocked(item)) blockedCount++;
+      if (needsHumanAttention(item)) attentionCount++;
     });
 
     var dBadge = $('decisions-nav-badge');
@@ -8217,6 +8447,12 @@
     if (bBadge) {
       bBadge.textContent = String(blockedCount);
       bBadge.hidden = blockedCount === 0;
+    }
+    var aBadge = $('list-nav-badge');
+    if (aBadge) {
+      aBadge.textContent = String(attentionCount);
+      aBadge.hidden = attentionCount === 0;
+      aBadge.title = (I18N[getLanguage()] || I18N.en).needs_me || 'Needs me';
     }
 
     ['decisions', 'blocked'].forEach(function (name) {
@@ -8334,15 +8570,8 @@
       return timeB - timeA;
     });
 
-    var totalQuestions = 0;
-    decisionIssues.forEach(function (it) {
-      it.openQuestions.forEach(function (q) {
-        if (!q.completed) totalQuestions++;
-      });
-    });
-
     var countBadge = $('decisions-count-badge');
-    if (countBadge) countBadge.textContent = String(totalQuestions);
+    if (countBadge) countBadge.textContent = String(decisionIssues.length);
 
     if (decisionIssues.length === 0) {
       list.textContent = '';
@@ -8381,6 +8610,10 @@
       if (issue.updatedAt) {
         meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
       }
+      // The list item may carry only counts, so read the shared ratio rather
+      // than an array the board response might omit.
+      var openQuestionCount = progressOf(issue).questions.open;
+      if (openQuestionCount > 0) meta.appendChild(el('span', { class: 'muted' }, questionCountLabel(openQuestionCount)));
       header.appendChild(meta);
       card.appendChild(header);
 
@@ -8506,7 +8739,7 @@
     var openBlockers = Array.isArray(issue.blockedBy) ? issue.blockedBy.filter(function (dep) {
       return dep.state === 'open' || dep.state === undefined;
     }) : [];
-    if (groupKind === 'dep' && openBlockers.length > 0) {
+    if (openBlockers.length > 0) {
       var depsContainer = el('div', { class: 'blocked-dependencies' });
       var depsLabel = el('div', { class: 'blocked-deps-label' }, dict.blocked_by_dependencies || 'Blocked by');
       depsContainer.appendChild(depsLabel);
@@ -8565,6 +8798,9 @@
     var humanIssues = [];
     var depIssues = [];
 
+    // One task, one card. A task that both waits on you and on another task is
+    // listed once, in the human group; its dependency chips still show inside
+    // that card, so nothing is hidden.
     blockedIssues.forEach(function (it) {
       var isNeedsHuman = it.statusLabel === 'status:needs-human';
       var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
@@ -8572,8 +8808,7 @@
 
       if (isNeedsHuman || hasUncheckedTasks) {
         humanIssues.push(it);
-      }
-      if (hasOpenBlockers) {
+      } else if (hasOpenBlockers) {
         depIssues.push(it);
       }
     });
@@ -8707,11 +8942,7 @@
       }
     } catch (err) {
       var dict = I18N[getLanguage()] || I18N.en;
-      var errDetail = (err && err.status === 401)
-        ? (dict.error_unauthorized || 'Authentication required.')
-        : (err && err.status >= 500)
-          ? (dict.error_server || 'Server error.')
-          : ((err && err.message) || 'error');
+      var errDetail = loadFailureDetail(err, dict);
       if (loading) loading.textContent = (dict.operations_load_error || 'Could not load operations data') + ': ' + errDetail;
     }
   }
@@ -8753,11 +8984,7 @@
       renderArchiveTabs();
     } catch (err) {
       var dict = I18N[getLanguage()] || I18N.en;
-      var errDetail = (err && err.status === 401)
-        ? (dict.error_unauthorized || 'Authentication required.')
-        : (err && err.status >= 500)
-          ? (dict.error_server || 'Server error.')
-          : ((err && err.message) || 'error');
+      var errDetail = loadFailureDetail(err, dict);
       if (loading) loading.textContent = (dict.archive_load_error || 'Could not load archive') + ': ' + errDetail;
     }
   }
@@ -9605,6 +9832,7 @@
       api: api,
       publishMutation: publishMutation,
       state: state,
+      I18N: I18N,
     openSheet: openSheet,
     closeSheet: closeSheet,
     setLanguage: setLanguage,
@@ -9619,6 +9847,25 @@
     effectiveExpandedGroups: effectiveExpandedGroups,
     computeFlowLayout: computeFlowLayout,
     applyServerLayout: applyServerLayout,
+    applyLayoutPatch: applyLayoutPatch,
+    persistCanvasLayout: persistCanvasLayout,
+    needsHumanAttention: needsHumanAttention,
+    needsMe: needsMe,
+    hasOpenQuestions: hasOpenQuestions,
+    hasOpenHumanTasks: hasOpenHumanTasks,
+    progressOf: progressOf,
+    ratioOf: ratioOf,
+    humanCountLabel: humanCountLabel,
+    questionCountLabel: questionCountLabel,
+    phaseText: phaseText,
+    attentionText: attentionText,
+    groupProgressOf: groupProgressOf,
+    loadFailureDetail: loadFailureDetail,
+    checklistProgressLabel: checklistProgressLabel,
+    updateChecklistProgress: updateChecklistProgress,
+    detailBadges: detailBadges,
+    matchesExtraFilter: matchesExtraFilter,
+    filterLabel: filterLabel,
       boot: boot,
       showLogin: showLogin,
       signOut: signOut,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -11,7 +11,10 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/theme.css">
-  <noscript><style>#login-view { display: block !important; } #board-view { display: none !important; } #app-sidebar { display: none !important; }</style></noscript>
+  <!-- Strict CSP forbids inline styles and scripts. This external file removes
+       the no-js class before first paint; without JavaScript the class stays
+       and theme.css reveals the sign-in screen instead of a dead board. -->
+  <script src="/js-enabled.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -56,6 +59,7 @@
         <button id="nav-list" class="sidebar-item active" type="button" data-view="list" title="List">
           <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
           <span class="sidebar-label" data-i18n="nav_list">List</span>
+          <span id="list-nav-badge" class="sidebar-badge" hidden>0</span>
         </button>
 
         <!-- 3. Decisions -->
@@ -493,13 +497,13 @@
         <pre id="recoverable-drafts" class="notice" hidden></pre>
 
         <section class="panel" id="ac-section" aria-labelledby="ac-title">
-          <h2 id="ac-title" data-i18n="drawer_ac_title">Acceptance criteria</h2>
+          <div class="panel-heading-row"><h2 id="ac-title" data-i18n="drawer_ac_title">Acceptance criteria</h2><span id="ac-progress" class="panel-progress" hidden></span></div>
           <p id="no-ac" class="muted" data-i18n="drawer_no_ac" hidden>No acceptance criteria.</p>
           <ul id="ac-list" class="checklist"></ul>
         </section>
 
         <section class="panel" id="subtasks-section" aria-labelledby="subtasks-title">
-          <h2 id="subtasks-title" data-i18n="drawer_subtasks_title">Actionable subtasks</h2>
+          <div class="panel-heading-row"><h2 id="subtasks-title" data-i18n="drawer_subtasks_title">Actionable subtasks</h2><span id="subtasks-progress" class="panel-progress" hidden></span></div>
           <p id="no-subtasks" class="muted" data-i18n="drawer_no_subtasks" hidden>No actionable subtasks.</p>
           <ul id="subtasks-list" class="checklist"></ul>
         </section>
@@ -547,7 +551,7 @@
             </div>
           </div>
 
-          <div class="dependency-block">
+          <div class="dependency-block" id="blocking-block">
             <h3 class="dependency-subheading" data-i18n="drawer_blocking_title">Blocking</h3>
             <p id="no-blocking" class="muted small" data-i18n="drawer_no_blocking">Not blocking any tasks.</p>
             <div id="blocking-list" class="dependency-chips-list"></div>

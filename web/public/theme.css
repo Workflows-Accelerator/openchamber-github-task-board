@@ -207,6 +207,20 @@
   --note-purple-fg: #2c1a45;
 }
 
+/* Status text on a tinted status chip: the one word that says why a task is
+   listed must clear AA on both themes (8.35:1 dark, 13.15:1 light). */
+:root {
+  --badge-status-fg: #93C5FD;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --badge-status-fg: #1E293B;
+  }
+}
+:root[data-theme="light"] {
+  --badge-status-fg: #1E293B;
+}
+
 svg,
 .icon,
 .icon-sm {
@@ -926,7 +940,7 @@ label {
 
 .badge.status {
   background: var(--prim-subtle);
-  color: var(--prim);
+  color: var(--badge-status-fg);
 }
 
 .badge.attention {
@@ -1878,7 +1892,7 @@ input[type="text"].search-input:focus,
 .canvas-card-status-chip.status-in-progress,
 .canvas-card-status-chip.status-planned {
   background: var(--prim-subtle);
-  color: var(--prim);
+  color: var(--badge-status-fg);
 }
 
 .canvas-card-status-chip.status-done {
@@ -2171,7 +2185,7 @@ input[type="text"].search-input:focus,
 .canvas-card-badge {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--fg-faint);
+  color: var(--fg-muted);
 }
 
 .canvas-card-prio {
@@ -3983,3 +3997,34 @@ body.sheet-open { overflow: hidden; }
 .canvas-card-review-kind { font-weight: 600; }
 .canvas-card-review-text { color: var(--fg-muted); overflow: hidden; }
 .canvas-card-review-missing { color: var(--fg-muted); border-left-color: var(--err); background: var(--err-subtle); }
+
+/* A malformed review item is a different failure from a missing one. */
+.canvas-card-review-malformed { color: var(--fg-muted); border-left-color: var(--err); background: var(--err-subtle); }
+.badge.human-review-badge.is-malformed { background: var(--err-subtle); color: var(--err); }
+.badge.human-review-badge.is-missing { background: var(--warn-subtle); color: var(--warn); }
+
+/* Keep the one primary action reachable: when Details or the free-text field
+   pushes the Answer button past the fold, it stays pinned to the drawer edge. */
+.human-review .question-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 8px 0;
+  background: var(--surf);
+}
+
+/* Progress is a number on the row, card, group and panel, never a wall of boxes. */
+.progress-badge { font-family: var(--font-mono); }
+.progress-badge[data-pending="0"] { color: var(--fg-muted); }
+.panel-heading-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.panel-heading-row h2 { margin: 0 0 8px; }
+.panel-progress { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+.canvas-group-count.is-progress { color: var(--fg-muted); }
+.canvas-card-badge.is-pending { color: var(--warn); }
+.canvas-card-badge[data-pending="0"] { color: var(--fg-muted); }
+
+/* No-JS fallback without inline styles: js-enabled.js removes .no-js before
+   first paint; if scripting is off, the sign-in screen is the only surface. */
+html.no-js #login-view { display: block !important; }
+html.no-js #board-view { display: none !important; }
+html.no-js #app-sidebar { display: none !important; }

@@ -194,8 +194,10 @@ export function setOrderMarker(body: string, order: number): string {
   if (body.endsWith('\r\n\r\n') || body.endsWith('\n\n')) {
     return body + markerText;
   }
+  // A body that already ends in one line break needs no second one: the marker
+  // is its own block, and adding a separator makes every save grow the body.
   if (body.endsWith('\r\n') || body.endsWith('\n')) {
-    return body + eol + markerText;
+    return body + markerText;
   }
   return body + eol + eol + markerText;
 }

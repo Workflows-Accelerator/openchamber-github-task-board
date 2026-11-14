@@ -131,7 +131,7 @@ test('V4-3 client: legacy waiting without an artifact names the defect and offer
   const panel = get('human-review-body');
   assert.equal(get('human-review-title').textContent, 'Waiting for an artifact');
   assert.match(textOf(panel), /carries nothing you can click/);
-  assert.match(textOf(panel), /no "### Human Review:" section/, 'the precise reason is shown, not a generic wait');
+  assert.match(textOf(panel), /did not attach a review item/, 'the precise reason is shown, not a generic wait');
   assert.equal(links(panel).length, 0);
   assert.equal(buttons(panel).length, 0);
 });
@@ -139,7 +139,7 @@ test('V4-3 client: legacy waiting without an artifact names the defect and offer
 test('V4-3 client: a malformed artifact is reported with its precise reason', () => {
   const { app, get } = browser();
   render(app, detail(5, { humanReview: { state: 'malformed', kind: 'link', url: 'javascript:alert(1)', instruction: null, question: null, reason: 'invalid_url', message: 'bad' } }));
-  assert.equal(get('human-review-title').textContent, 'Waiting for an artifact');
+  assert.equal(get('human-review-title').textContent, 'The review item is broken');
   assert.match(textOf(get('human-review-body')), /must be an http:\/\/ or https:\/\/ link of at most 2048 characters, with no spaces/);
   assert.equal(links(get('human-review-body')).length, 0);
 });
@@ -187,7 +187,7 @@ test('V4-3 client: French labels are exact for the gate, its actions and its rea
 
   render(app, detail(9, { humanReview: { state: 'missing', kind: null, url: null, instruction: null, question: null, reason: 'missing_url', message: '' } }));
   assert.equal(get('human-review-title').textContent, 'En attente d’un élément à valider');
-  assert.match(textOf(get('human-review-body')), /pas de ligne « - URL: »/);
+  assert.match(textOf(get('human-review-body')), /n’a pas d’URL/);
 });
 
 test('V4-3 client: the compact list row summarizes the gate without nesting an action in its button', () => {
@@ -199,7 +199,7 @@ test('V4-3 client: the compact list row summarizes the gate without nesting an a
   assert.match(textOf(legacy), /Waiting for an artifact/);
   const badges = byClass(legacy, 'human-review-badge');
   assert.equal(badges.length, 1);
-  assert.match(String(badges[0].attrs.title || ''), /no "### Human Review:" section/);
+  assert.match(String(badges[0].attrs.title || ''), /did not attach a review item/);
 });
 
 test('V4-3 client: the canvas card carries the instruction and the defect, never a second action', () => {
@@ -300,7 +300,7 @@ test('V4-3 client: an insecure image URL is reported precisely in English and Fr
     question: null, reason: 'insecure_url', message: 'An image artifact needs an https:// URL.',
   };
   render(app, detail(22, { humanReview: review }));
-  assert.equal(get('human-review-title').textContent, 'Waiting for an artifact');
+  assert.equal(get('human-review-title').textContent, 'The review item is broken');
   assert.match(textOf(get('human-review-body')), /https:\/\//);
   assert.equal(links(get('human-review-body')).length, 0);
   app.setLanguage('fr');
@@ -315,7 +315,7 @@ test('V4-3 client: a question gate without presets names the missing presets in 
     reason: 'missing_options', message: 'A question artifact needs at least one preset answer line.',
   };
   render(app, detail(25, { humanReview: review }));
-  assert.equal(get('human-review-title').textContent, 'Waiting for an artifact');
+  assert.equal(get('human-review-title').textContent, 'The review item is broken');
   assert.match(textOf(get('human-review-body')), /preset answer/);
   assert.equal(links(get('human-review-body')).length, 0);
   app.setLanguage('fr');
