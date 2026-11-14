@@ -1,6 +1,6 @@
 {
   "syntheticOnly": true,
-  "startedAt": "2026-11-14T14:29:29.648Z",
+  "startedAt": "2026-11-14T15:07:11.913Z",
   "rows": [
     {
       "kind": "auth",
@@ -8,6 +8,7 @@
       "theme": "light",
       "lang": "en",
       "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scopeLabel": "GitHub token refused",
       "screenshot": "screenshots/discovery-auth-390-light-en.png"
     },
     {
@@ -15,7 +16,8 @@
       "width": 390,
       "theme": "light",
       "lang": "en",
-      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "sentence": "GitHub is limiting the board temporarily. Refresh after Tue 15 Jan 10:30.",
+      "scopeLabel": "GitHub rate limit",
       "screenshot": "screenshots/discovery-rate_limited-390-light-en.png"
     },
     {
@@ -24,6 +26,7 @@
       "theme": "light",
       "lang": "en",
       "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "scopeLabel": "GitHub unreachable",
       "screenshot": "screenshots/discovery-network-390-light-en.png"
     },
     {
@@ -32,6 +35,7 @@
       "theme": "light",
       "lang": "en",
       "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "scopeLabel": "Discovery failed",
       "screenshot": "screenshots/discovery-server-390-light-en.png"
     },
     {
@@ -40,6 +44,7 @@
       "theme": "light",
       "lang": "fr",
       "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scopeLabel": "Jeton GitHub refusé",
       "screenshot": "screenshots/discovery-auth-390-light-fr.png"
     },
     {
@@ -47,7 +52,8 @@
       "width": 390,
       "theme": "light",
       "lang": "fr",
-      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "sentence": "GitHub limite temporairement le tableau. Actualisez après mar. 15 janv. 10:30.",
+      "scopeLabel": "Limite GitHub atteinte",
       "screenshot": "screenshots/discovery-rate_limited-390-light-fr.png"
     },
     {
@@ -56,6 +62,7 @@
       "theme": "light",
       "lang": "fr",
       "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "scopeLabel": "GitHub injoignable",
       "screenshot": "screenshots/discovery-network-390-light-fr.png"
     },
     {
@@ -64,6 +71,7 @@
       "theme": "light",
       "lang": "fr",
       "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "scopeLabel": "Découverte échouée",
       "screenshot": "screenshots/discovery-server-390-light-fr.png"
     },
     {
@@ -72,6 +80,7 @@
       "theme": "dark",
       "lang": "en",
       "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scopeLabel": "GitHub token refused",
       "screenshot": "screenshots/discovery-auth-390-dark-en.png"
     },
     {
@@ -79,7 +88,8 @@
       "width": 390,
       "theme": "dark",
       "lang": "en",
-      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "sentence": "GitHub is limiting the board temporarily. Refresh after Tue 15 Jan 10:30.",
+      "scopeLabel": "GitHub rate limit",
       "screenshot": "screenshots/discovery-rate_limited-390-dark-en.png"
     },
     {
@@ -88,6 +98,7 @@
       "theme": "dark",
       "lang": "en",
       "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "scopeLabel": "GitHub unreachable",
       "screenshot": "screenshots/discovery-network-390-dark-en.png"
     },
     {
@@ -96,6 +107,7 @@
       "theme": "dark",
       "lang": "en",
       "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "scopeLabel": "Discovery failed",
       "screenshot": "screenshots/discovery-server-390-dark-en.png"
     },
     {
@@ -104,6 +116,7 @@
       "theme": "dark",
       "lang": "fr",
       "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scopeLabel": "Jeton GitHub refusé",
       "screenshot": "screenshots/discovery-auth-390-dark-fr.png"
     },
     {
@@ -111,7 +124,8 @@
       "width": 390,
       "theme": "dark",
       "lang": "fr",
-      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "sentence": "GitHub limite temporairement le tableau. Actualisez après mar. 15 janv. 10:30.",
+      "scopeLabel": "Limite GitHub atteinte",
       "screenshot": "screenshots/discovery-rate_limited-390-dark-fr.png"
     },
     {
@@ -120,6 +134,7 @@
       "theme": "dark",
       "lang": "fr",
       "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "scopeLabel": "GitHub injoignable",
       "screenshot": "screenshots/discovery-network-390-dark-fr.png"
     },
     {
@@ -128,6 +143,7 @@
       "theme": "dark",
       "lang": "fr",
       "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "scopeLabel": "Découverte échouée",
       "screenshot": "screenshots/discovery-server-390-dark-fr.png"
     },
     {
@@ -136,6 +152,7 @@
       "theme": "light",
       "lang": "en",
       "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scopeLabel": "GitHub token refused",
       "screenshot": "screenshots/discovery-auth-1280-light-en.png"
     },
     {
@@ -143,7 +160,8 @@
       "width": 1280,
       "theme": "light",
       "lang": "en",
-      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "sentence": "GitHub is limiting the board temporarily. Refresh after Tue 15 Jan 10:30.",
+      "scopeLabel": "GitHub rate limit",
       "screenshot": "screenshots/discovery-rate_limited-1280-light-en.png"
     },
     {
@@ -152,6 +170,7 @@
       "theme": "light",
       "lang": "en",
       "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "scopeLabel": "GitHub unreachable",
       "screenshot": "screenshots/discovery-network-1280-light-en.png"
     },
     {
@@ -160,6 +179,7 @@
       "theme": "light",
       "lang": "en",
       "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "scopeLabel": "Discovery failed",
       "screenshot": "screenshots/discovery-server-1280-light-en.png"
     },
     {
@@ -168,6 +188,7 @@
       "theme": "light",
       "lang": "fr",
       "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scopeLabel": "Jeton GitHub refusé",
       "screenshot": "screenshots/discovery-auth-1280-light-fr.png"
     },
     {
@@ -175,7 +196,8 @@
       "width": 1280,
       "theme": "light",
       "lang": "fr",
-      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "sentence": "GitHub limite temporairement le tableau. Actualisez après mar. 15 janv. 10:30.",
+      "scopeLabel": "Limite GitHub atteinte",
       "screenshot": "screenshots/discovery-rate_limited-1280-light-fr.png"
     },
     {
@@ -184,6 +206,7 @@
       "theme": "light",
       "lang": "fr",
       "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "scopeLabel": "GitHub injoignable",
       "screenshot": "screenshots/discovery-network-1280-light-fr.png"
     },
     {
@@ -192,6 +215,7 @@
       "theme": "light",
       "lang": "fr",
       "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "scopeLabel": "Découverte échouée",
       "screenshot": "screenshots/discovery-server-1280-light-fr.png"
     },
     {
@@ -200,6 +224,7 @@
       "theme": "dark",
       "lang": "en",
       "sentence": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scopeLabel": "GitHub token refused",
       "screenshot": "screenshots/discovery-auth-1280-dark-en.png"
     },
     {
@@ -207,7 +232,8 @@
       "width": 1280,
       "theme": "dark",
       "lang": "en",
-      "sentence": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "sentence": "GitHub is limiting the board temporarily. Refresh after Tue 15 Jan 10:30.",
+      "scopeLabel": "GitHub rate limit",
       "screenshot": "screenshots/discovery-rate_limited-1280-dark-en.png"
     },
     {
@@ -216,6 +242,7 @@
       "theme": "dark",
       "lang": "en",
       "sentence": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
+      "scopeLabel": "GitHub unreachable",
       "screenshot": "screenshots/discovery-network-1280-dark-en.png"
     },
     {
@@ -224,6 +251,7 @@
       "theme": "dark",
       "lang": "en",
       "sentence": "Discovery failed — tasks are not refreshed. Refresh to try again.",
+      "scopeLabel": "Discovery failed",
       "screenshot": "screenshots/discovery-server-1280-dark-en.png"
     },
     {
@@ -232,6 +260,7 @@
       "theme": "dark",
       "lang": "fr",
       "sentence": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scopeLabel": "Jeton GitHub refusé",
       "screenshot": "screenshots/discovery-auth-1280-dark-fr.png"
     },
     {
@@ -239,7 +268,8 @@
       "width": 1280,
       "theme": "dark",
       "lang": "fr",
-      "sentence": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "sentence": "GitHub limite temporairement le tableau. Actualisez après mar. 15 janv. 10:30.",
+      "scopeLabel": "Limite GitHub atteinte",
       "screenshot": "screenshots/discovery-rate_limited-1280-dark-fr.png"
     },
     {
@@ -248,6 +278,7 @@
       "theme": "dark",
       "lang": "fr",
       "sentence": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
+      "scopeLabel": "GitHub injoignable",
       "screenshot": "screenshots/discovery-network-1280-dark-fr.png"
     },
     {
@@ -256,19 +287,633 @@
       "theme": "dark",
       "lang": "fr",
       "sentence": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer.",
+      "scopeLabel": "Découverte échouée",
       "screenshot": "screenshots/discovery-server-1280-dark-fr.png"
     }
   ],
+  "layoutRows": [
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "kind": "auth",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 419,
+          "right": 488,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 500,
+          "right": 588,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 600,
+          "right": 692,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "kind": "rate_limited",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 389,
+          "right": 458,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 470,
+          "right": 558,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 570,
+          "right": 662,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "kind": "network",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 409,
+          "right": 478,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 490,
+          "right": 578,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 590,
+          "right": 682,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "en",
+      "kind": "server",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 386,
+          "right": 455,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 467,
+          "right": 555,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 567,
+          "right": 659,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "kind": "auth",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 408,
+          "right": 500,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 512,
+          "right": 639,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 651,
+          "right": 752,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "kind": "rate_limited",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 423,
+          "right": 515,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 527,
+          "right": 654,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 666,
+          "right": 767,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "kind": "network",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 403,
+          "right": 495,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 507,
+          "right": 634,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 646,
+          "right": 747,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "lang": "fr",
+      "kind": "server",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 412,
+          "right": 504,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 516,
+          "right": 643,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 655,
+          "right": 756,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "kind": "auth",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 419,
+          "right": 488,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 500,
+          "right": 588,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 600,
+          "right": 692,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "kind": "rate_limited",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 389,
+          "right": 458,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 470,
+          "right": 558,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 570,
+          "right": 662,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "kind": "network",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 409,
+          "right": 478,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 490,
+          "right": 578,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 590,
+          "right": 682,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "en",
+      "kind": "server",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 386,
+          "right": 455,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 467,
+          "right": 555,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 567,
+          "right": 659,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "kind": "auth",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 408,
+          "right": 500,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 512,
+          "right": 639,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 651,
+          "right": 752,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "kind": "rate_limited",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 423,
+          "right": 515,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 527,
+          "right": 654,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 666,
+          "right": 767,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "kind": "network",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 403,
+          "right": 495,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 507,
+          "right": 634,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 646,
+          "right": 747,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "lang": "fr",
+      "kind": "server",
+      "clientWidth": 1050,
+      "scrollWidth": 1050,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "boxes": {
+        "list-group-toggle": {
+          "left": 412,
+          "right": 504,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "new-task-btn": {
+          "left": 516,
+          "right": 643,
+          "top": 123.5,
+          "bottom": 155.5
+        },
+        "freshness": {
+          "left": 655,
+          "right": 756,
+          "top": 131.25,
+          "bottom": 147.75
+        }
+      }
+    }
+  ],
+  "languageSwitch": [
+    {
+      "width": 390,
+      "theme": "light",
+      "from": "en",
+      "to": "fr",
+      "empty": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "notice": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scope": "Jeton GitHub refusé",
+      "discoveryStatus": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "lang": "fr"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "from": "fr",
+      "to": "en",
+      "empty": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "notice": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scope": "GitHub token refused",
+      "discoveryStatus": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "lang": "en"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "from": "en",
+      "to": "fr",
+      "empty": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "notice": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scope": "Jeton GitHub refusé",
+      "discoveryStatus": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "lang": "fr"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "from": "fr",
+      "to": "en",
+      "empty": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "notice": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scope": "GitHub token refused",
+      "discoveryStatus": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "lang": "en"
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "from": "en",
+      "to": "fr",
+      "empty": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "notice": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scope": "Jeton GitHub refusé",
+      "discoveryStatus": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "lang": "fr"
+    },
+    {
+      "width": 1280,
+      "theme": "light",
+      "from": "fr",
+      "to": "en",
+      "empty": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "notice": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scope": "GitHub token refused",
+      "discoveryStatus": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "lang": "en"
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "from": "en",
+      "to": "fr",
+      "empty": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "notice": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "scope": "Jeton GitHub refusé",
+      "discoveryStatus": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
+      "lang": "fr"
+    },
+    {
+      "width": 1280,
+      "theme": "dark",
+      "from": "fr",
+      "to": "en",
+      "empty": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "notice": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "scope": "GitHub token refused",
+      "discoveryStatus": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
+      "lang": "en"
+    }
+  ],
+  "canvasFailure": {
+    "cardCount": 0,
+    "wireCount": 0,
+    "emptyHidden": false,
+    "emptyDisplay": "block",
+    "viewportDisplay": "none",
+    "ctaHidden": true,
+    "ctaDisabled": true
+  },
   "sentencesByLang": {
     "en": {
       "auth": "The board cannot read GitHub because the token was refused. Someone who holds the token must renew it; refreshing this page will not help.",
-      "rate_limited": "GitHub is limiting the board temporarily. Nothing is required of you; the board will refresh after 14:32.",
+      "rate_limited": "GitHub is limiting the board temporarily. Refresh after Tue 15 Jan 10:30.",
       "network": "GitHub is unreachable from the server. Your session is intact; try again shortly.",
       "server": "Discovery failed — tasks are not refreshed. Refresh to try again."
     },
     "fr": {
       "auth": "Le tableau ne peut pas lire GitHub : le jeton a été refusé. Une personne qui détient le jeton doit le renouveler ; actualiser cette page n’y changera rien.",
-      "rate_limited": "GitHub limite temporairement le tableau. Rien ne vous est demandé ; le tableau s’actualisera après 14:32.",
+      "rate_limited": "GitHub limite temporairement le tableau. Actualisez après mar. 15 janv. 10:30.",
       "network": "GitHub est injoignable depuis le serveur. Votre session est intacte ; réessayez dans un instant.",
       "server": "Échec de la découverte — les tâches ne sont pas actualisées. Actualisez pour réessayer."
     }
@@ -308,6 +953,7 @@
     "discovery-auth-1280-dark-fr.png",
     "discovery-rate_limited-1280-dark-fr.png",
     "discovery-network-1280-dark-fr.png",
-    "discovery-server-1280-dark-fr.png"
+    "discovery-server-1280-dark-fr.png",
+    "canvas-discovery-failure-1280.png"
   ]
 }
