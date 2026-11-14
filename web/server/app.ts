@@ -78,6 +78,8 @@ export interface BoardServerOptions {
   // Optional injection point for tests and for a host that already owns a
   // tracker. Without it the server builds one from the configured local URLs.
   sessionActivityTracker?: SessionActivityTracker;
+  // Bound on cached issue-detail bodies. The oldest entry is dropped first.
+  issueDetailCacheLimit?: number;
 }
 
 export interface BoardServer {
@@ -1014,7 +1016,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
         }
         if (!read.notModified && read.etag) {
-          issueDetailCache.set(detailKey, { etag: read.etag, item: structuredClone(source) });
+          cacheIssueDetail(detailKey, { etag: read.etag, item: structuredClone(source) });
         }
         // Enrich a copy: the cached item must stay exactly what GitHub returned.
         const item = structuredClone(source);
@@ -1377,6 +1379,26 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     item: any;
   }
   const issueDetailCache = new Map<string, CachedIssueDetail>();
+  // One cached body per issue ever opened would grow for the life of the
+  // process, so the map is capped and the oldest entry is dropped first.
+  const DEFAULT_ISSUE_DETAIL_CACHE_LIMIT = 1000;
+  const issueDetailCacheLimit = (() => {
+    const configured = options.issueDetailCacheLimit;
+    if (typeof configured !== 'number' || !Number.isFinite(configured)) {
+      return DEFAULT_ISSUE_DETAIL_CACHE_LIMIT;
+    }
+    return Math.max(1, Math.floor(configured));
+  })();
+  function cacheIssueDetail(key: string, entry: CachedIssueDetail): void {
+    // Re-insert so the entry moves to the newest position.
+    issueDetailCache.delete(key);
+    issueDetailCache.set(key, entry);
+    while (issueDetailCache.size > issueDetailCacheLimit) {
+      const oldest = issueDetailCache.keys().next();
+      if (oldest.done) break;
+      issueDetailCache.delete(oldest.value);
+    }
+  }
 
   interface CachedRepoBoard {
     issues: ReturnType<typeof buildBoardList>['issues'];

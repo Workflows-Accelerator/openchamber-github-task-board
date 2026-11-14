@@ -133,6 +133,9 @@ export interface ParentCapabilityRef {
 }
 
 export const DEPENDENCY_CACHE_TTL_MS = 60_000;
+// Backstop for a burst of distinct reads inside one TTL window. Expiry is the
+// primary bound; this keeps a pathological minute from growing without limit.
+export const DEPENDENCY_CACHE_MAX_ENTRIES = 500;
 
 export interface PageCache {
   etags: string[];
@@ -939,8 +942,18 @@ export class GitHubClient {
     const safeNumber = parseIssueNumber(number);
     const includeParent = options.includeParent !== false;
     const key = `${this.repo?.full?.toLowerCase() ?? ''}#${safeNumber}`;
+    const now = this.now();
     const cached = this.dependencyCache.entries.get(key);
-    if (!options.forceRefresh && cached && this.now() - cached.fetchedAt < DEPENDENCY_CACHE_TTL_MS) {
+    const cacheAge = cached ? now - cached.fetchedAt : Number.POSITIVE_INFINITY;
+    // A cached entry that never read the parent cannot answer a request that
+    // needs it: `parent: null` would claim a parented issue is unparented. Only
+    // an entry that actually asked GitHub (`parent` present, even as null) may
+    // satisfy an `includeParent: true` read.
+    const reusable = Boolean(cached) &&
+      !options.forceRefresh &&
+      cacheAge < DEPENDENCY_CACHE_TTL_MS &&
+      (!includeParent || cached?.parent !== undefined);
+    if (reusable && cached) {
       return {
         blockedBy: cached.blockedBy,
         blocking: cached.blocking,
@@ -965,13 +978,32 @@ export class GitHubClient {
     const entry: DependencyCacheEntry = {
       blockedBy,
       blocking,
-      fetchedAt: this.now(),
+      fetchedAt: now,
       // A skipped parent keeps whatever the cache already knew rather than
       // claiming the issue is unparented.
       ...(includeParent ? { parent } : (cached?.parent !== undefined ? { parent: cached.parent } : {})),
     };
+    this.pruneDependencyCache(now);
+    // Re-insert so the entry's position reflects its freshness.
+    this.dependencyCache.entries.delete(key);
     this.dependencyCache.entries.set(key, entry);
     return { blockedBy, blocking, parent: entry.parent ?? null };
+  }
+
+  // Expired entries are never useful again, but a long-lived process would keep
+  // one per issue ever read. Prune on write so the map is bounded by the reads
+  // of the last TTL window, and cap it as a backstop against a burst.
+  private pruneDependencyCache(now: number): void {
+    const entries = this.dependencyCache.entries;
+    const cutoff = now - DEPENDENCY_CACHE_TTL_MS;
+    for (const [key, entry] of entries) {
+      if (entry.fetchedAt <= cutoff) entries.delete(key);
+    }
+    while (entries.size >= DEPENDENCY_CACHE_MAX_ENTRIES) {
+      const oldest = entries.keys().next();
+      if (oldest.done) break;
+      entries.delete(oldest.value);
+    }
   }
 
   async addIssueDependency(number: unknown, issueId: number): Promise<any> {

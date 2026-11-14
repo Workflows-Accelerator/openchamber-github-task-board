@@ -204,6 +204,37 @@ test('W7a repeat drawer reads revalidate the issue and still serve the cached bo
   }
 });
 
+test('W7a the issue-detail cache is bounded and drops its oldest entry first', async () => {
+  const fake = await startFakeGitHub({
+    token: SYNTHETIC_TOKEN,
+    repositories: [{
+      repo: REPO,
+      id: 1,
+      issues: [1, 2, 3].map((number) => makeIssue({ number, labels: ['status:todo'], repo: REPO })),
+    }],
+  });
+  const board = await startBoard(fake, { issueDetailCacheLimit: 2 });
+  const reads = (number) => fake.requests.filter((request) => request.path === `/repos/${REPO}/issues/${number}`);
+  try {
+    const session = await signedIn(board.url);
+    for (const number of [1, 2, 3]) {
+      assert.equal((await session.request(`/api/issues/${number}`)).status, 200);
+    }
+
+    // Limit 2: caching issue 3 evicted issue 1, so the next drawer read of 1
+    // must go back to GitHub instead of revalidating a body that is gone.
+    assert.equal((await session.request('/api/issues/1')).status, 200);
+    assert.equal(reads(1).at(-1).ifNoneMatch, null, 'the evicted body is re-read in full');
+
+    // Issue 3 survived the eviction, so it still revalidates conditionally.
+    assert.equal((await session.request('/api/issues/3')).status, 200);
+    assert.ok(reads(3).at(-1).ifNoneMatch, 'a retained body still revalidates');
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
+
 // ==========================================
 // 3. Dependency GraphQL TTL + invalidation
 // ==========================================
@@ -228,6 +259,27 @@ test('W7a dependency reads are cached for 60s and expire afterwards', async () =
 
     await client.getIssueDependencies(2, { forceRefresh: true });
     assert.equal(dependencyQueries(fake).length, 3, 'forceRefresh bypasses the TTL');
+  } finally {
+    await fake.close();
+  }
+});
+
+test('W7a the dependency cache drops entries once their 60s TTL has passed', async () => {
+  let clock = Date.parse('2026-11-14T09:00:00Z');
+  const fake = await startFakeGitHub({
+    token: SYNTHETIC_TOKEN,
+    issues: [1, 2, 3, 4].map((number) => makeIssue({ number })),
+  });
+  try {
+    const entries = new Map();
+    const client = clientFor(fake, { now: () => clock, dependencyCacheRef: { entries } });
+    for (const number of [1, 2, 3]) await client.getIssueDependencies(number);
+    assert.equal(entries.size, 3);
+
+    clock += 60_001;
+    await client.getIssueDependencies(4);
+    assert.equal(entries.size, 1, 'expired entries are pruned instead of kept for the process lifetime');
+    assert.ok(entries.has(`${REPO}#4`), 'the fresh entry is the one that survived');
   } finally {
     await fake.close();
   }
@@ -306,6 +358,32 @@ test('W7a parent is read on the drawer and on board rows', async () => {
     assert.equal(parentRow.parentTitle, null);
   } finally {
     await board.app.close();
+    await fake.close();
+  }
+});
+
+test('W7a a drawer read never answers a later parent read with a false null', async () => {
+  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN, repositories: [parentFixture()] });
+  try {
+    const client = clientFor(fake);
+
+    // The drawer deliberately skips the GraphQL parent read.
+    const drawer = await client.getIssueDependencies(5, { includeParent: false });
+    assert.equal(drawer.parent, null);
+    assert.equal(dependencyQueries(fake).length, 0, 'the drawer read asks GitHub for no parent');
+
+    // A dependency read does need the parent. The parent-less cache entry must
+    // not be reused: reporting null would claim a parented issue is unparented.
+    const deps = await client.getIssueDependencies(5);
+    assert.equal(dependencyQueries(fake).length, 1, 'the parent is read instead of reported absent');
+    assert.equal(deps.parent?.number, 3);
+    assert.equal(deps.parent?.repository, REPO);
+    assert.equal(deps.parent?.title, 'Parent task');
+
+    // The entry now carries the parent, so a later read is served from cache.
+    await client.getIssueDependencies(5);
+    assert.equal(dependencyQueries(fake).length, 1);
+  } finally {
     await fake.close();
   }
 });
