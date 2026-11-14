@@ -29,7 +29,10 @@ Read first:
 
 <requirements>
 1. **Replace status columns on Canvas with Flow Graph (`arrangeFlowGraph`)**:
-   - Load `web/public/flow-layout.js` in `web/public/index.html` (CSP-safe `<script type="module">` or classic script attaching `globalThis.arrangeFlowGraph` before `app.js` — ensure `tests` and `esbuild` / browser both load cleanly!).
+   - Serve & load `web/public/flow-layout.js`:
+     - Register `'/flow-layout.js': { body: loadStatic('flow-layout.js'), type: 'text/javascript; charset=utf-8' }` in `web/server/app.ts` `STATIC` (and `shellAssets` if applicable).
+     - Add `'/flow-layout.js'` to `SHELL_ASSETS` and `pathname === '/flow-layout.js'` in `web/public/sw.js` (and keep `web/tests/sw.test.mjs` passing/updated).
+     - Add `<script type="module" src="/flow-layout.js"></script>` in `web/public/index.html` next to `markdown.js` / `arrange.js` before `<script src="/app.js" defer></script>` (module scripts execute in document order before `defer` classic scripts and populate `globalThis.arrangeFlowGraph`). Also check `web/tests/helpers.mjs` or any DOM harness in tests if needed so `arrangeFlowGraph` is available in JS unit/browser tests too.
    - Remove the status-column backdrop headers on Canvas; replace with **repository + parent-issue flow graph**:
      - Group cards by `repo` and `parentKey` (unparented bucket per repo).
      - **Collapsed by default** (especially critical for 345 issues across 27 repos): render each collapsed group as a calm, scannable group card showing: repo short name + parent title (or "Standalone" / "Sans parent"), and clear counts (`total`, `running`, `needs me`, `done`), plus an expand/collapse toggle button.
