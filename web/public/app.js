@@ -44,6 +44,16 @@
     canvasFitFloored: false,
     canvasFitCount: 0,
     canvasFitLimited: false,
+    // Flow graph state. The server owns direction, expanded groups and manual
+    // positions; the client only resolves Auto against the viewport.
+    canvasLayout: null,
+    canvasDirectionMode: 'auto',
+    canvasResolvedDirection: 'LR',
+    canvasExpandedGroups: new Set(),
+    canvasManualPositions: {},
+    canvasGroups: [],
+    canvasFlowPositions: null,
+    canvasFlowEdges: [],
     // The viewport the user had before the first narrowing filter, so clearing
     // the last filter can put them back instead of re-framing.
     filterView: null,
@@ -788,6 +798,28 @@
       arrange_scope_all: 'All cards (cards you placed by hand will also move)',
       arrange_confirm: 'Arrange',
       arrange_cancel: 'Cancel',
+      canvas_direction_label: 'Flow direction',
+      canvas_direction_auto: 'Auto',
+      canvas_direction_lr: 'LR',
+      canvas_direction_td: 'TD',
+      canvas_direction_auto_title: 'Automatic direction (left to right on wide screens, top to bottom on narrow ones)',
+      canvas_direction_lr_title: 'Left to right',
+      canvas_direction_td_title: 'Top to bottom',
+      canvas_group_standalone: 'Standalone',
+      canvas_group_expand: 'Expand',
+      canvas_group_collapse: 'Collapse',
+      canvas_group_total: 'tasks',
+      canvas_group_running: 'running',
+      canvas_group_needs_me: 'needs me',
+      canvas_group_done: 'done',
+      canvas_agent_running: 'Agent running',
+      canvas_agent_idle: 'In progress',
+      drawer_order_label: 'Execution order',
+      drawer_order_apply: 'Set order',
+      drawer_order_auto: 'Auto',
+      canvas_layout_error: 'Canvas not saved. Your view is kept locally; try again.',
+      canvas_layout_signed_out: 'Canvas not saved: your session expired. Sign in again.',
+      canvas_layout_forbidden: 'Canvas not saved: this board refused the change.',
       drawer_add_note: 'Add note',
       agent_note_too_long: 'The board limits notes to 4,000 characters. Shorten your text and retry.',
       agent_note_rate_limited: 'GitHub is limiting requests. Your text is kept. Wait before retrying.',
@@ -1031,6 +1063,28 @@
       arrange_scope_all: 'Toutes les cartes (les cartes déplacées manuellement bougeront aussi)',
       arrange_confirm: 'Organiser',
       arrange_cancel: 'Annuler',
+      canvas_direction_label: 'Sens du flux',
+      canvas_direction_auto: 'Auto',
+      canvas_direction_lr: 'LR',
+      canvas_direction_td: 'TD',
+      canvas_direction_auto_title: 'Sens automatique (gauche à droite sur grand écran, haut en bas sur écran étroit)',
+      canvas_direction_lr_title: 'De gauche à droite',
+      canvas_direction_td_title: 'De haut en bas',
+      canvas_group_standalone: 'Sans parent',
+      canvas_group_expand: 'Développer',
+      canvas_group_collapse: 'Réduire',
+      canvas_group_total: 'tâches',
+      canvas_group_running: 'en cours',
+      canvas_group_needs_me: 'à traiter',
+      canvas_group_done: 'terminées',
+      canvas_agent_running: 'Agent actif',
+      canvas_agent_idle: 'En cours',
+      drawer_order_label: 'Ordre d’exécution',
+      drawer_order_apply: 'Définir l’ordre',
+      drawer_order_auto: 'Auto',
+      canvas_layout_error: 'Canevas non enregistré. Votre vue reste locale ; réessayez.',
+      canvas_layout_signed_out: 'Canevas non enregistré : votre session a expiré. Reconnectez-vous.',
+      canvas_layout_forbidden: 'Canevas non enregistré : ce tableau a refusé la modification.',
       drawer_add_note: 'Ajouter une note',
       agent_note_too_long: 'Le tableau limite les notes à 4 000 caractères. Raccourcissez le texte puis réessayez.',
       agent_note_rate_limited: 'GitHub limite les requêtes. Votre texte est conservé. Patientez avant de réessayer.',
@@ -1213,6 +1267,13 @@
               element.setAttribute('aria-label', dict[key]);
             }
           }
+        });
+      }
+      var labelled = document.querySelectorAll ? document.querySelectorAll('[data-i18n-aria-label]') : [];
+      if (labelled && labelled.forEach) {
+        labelled.forEach(function (element) {
+          var key = element.getAttribute('data-i18n-aria-label');
+          if (dict[key]) element.setAttribute('aria-label', dict[key]);
         });
       }
       var searchInput = $('board-search');
@@ -2839,7 +2900,7 @@
     var viewport = $('canvas-viewport');
     if (!viewport) return;
     cancelCanvasViewAnimation();
-    var nodes = viewport.querySelectorAll('.canvas-card, .canvas-sticky-note, .canvas-project-band-label');
+    var nodes = viewport.querySelectorAll('.canvas-card, .canvas-group-card, .canvas-group-frame, .canvas-sticky-note, .canvas-project-band-label');
     if (!nodes || nodes.length === 0) {
       resetCanvasView();
       return;
@@ -2945,6 +3006,337 @@
     });
 
     return positions;
+  }
+
+  /* ------------------------------------------------------------------
+     Flow graph. Cards are grouped by repository and parent issue, the
+     dependency DAG is layered by flow-layout.js, and groups start collapsed.
+     The server owns direction, expanded groups and manual positions; nothing
+     here writes GitHub.
+     ------------------------------------------------------------------ */
+  function flowGroupKeyOf(issue) {
+    var repo = '';
+    if (issue && issue.repository) {
+      repo = typeof issue.repository === 'string' ? issue.repository : (issue.repository.full || '');
+    }
+    if (!repo && issue && typeof issue.repo === 'string') repo = issue.repo;
+    if (!repo) repo = 'unknown';
+    var parent = issue && issue.parentKey ? String(issue.parentKey) : 'standalone';
+    return repo + '::' + parent;
+  }
+
+  // Auto follows the device: a phone reads a top-down flow, a desktop reads
+  // left-to-right. An explicit choice always wins over the viewport.
+  function resolveFlowDirection(mode, viewportWidth) {
+    if (mode === 'LR' || mode === 'TD') return mode;
+    var width = Number(viewportWidth);
+    if (!isFinite(width) || width <= 0) width = (typeof window !== 'undefined' && window.innerWidth) || 1280;
+    return width >= 768 ? 'LR' : 'TD';
+  }
+
+  function canvasLayoutScope() {
+    if (typeof state.selected === 'string' && state.selected && state.selected !== 'all') return state.selected;
+    var repo = state.board && state.board.repository && state.board.repository.full;
+    return repo || 'all';
+  }
+
+  function applyServerLayout(layout) {
+    var value = (layout && typeof layout === 'object') ? layout : {};
+    state.canvasLayout = value;
+    state.canvasDirectionMode = (value.direction === 'LR' || value.direction === 'TD') ? value.direction : 'auto';
+    var groups = Array.isArray(value.expandedGroups) ? value.expandedGroups.filter(function (key) { return typeof key === 'string' && key; }) : [];
+    state.canvasExpandedGroups = new Set(groups);
+    state.canvasManualPositions = (value.positions && typeof value.positions === 'object' && !Array.isArray(value.positions)) ? value.positions : {};
+  }
+
+  // A search or a filter is a request to see matches now. Matching groups are
+  // expanded for that render only; the saved set is never rewritten by a query.
+  function canvasIsNarrowed() {
+    return Boolean(state.searchQuery) || (Array.isArray(state.viewState.filters) && state.viewState.filters.length > 0);
+  }
+
+  function effectiveExpandedGroups(issues) {
+    var expanded = new Set(state.canvasExpandedGroups || []);
+    if (!canvasIsNarrowed()) return expanded;
+    (Array.isArray(issues) ? issues : []).forEach(function (issue) {
+      if (issue) expanded.add(flowGroupKeyOf(issue));
+    });
+    return expanded;
+  }
+
+  // Flow positions are local layout, not GitHub data. Move a card's sticky
+  // notes by the same delta so their absolute coordinates stay aligned with
+  // the card, without writing anything to GitHub. Notes are only persisted
+  // when the user edits them.
+  function syncIssueNotesToPosition(issue, x, y) {
+    if (!issue) return;
+    if (!issue.canvas || typeof issue.canvas !== 'object') issue.canvas = {};
+    var prevX = typeof issue.canvas.x === 'number' ? issue.canvas.x : x;
+    var prevY = typeof issue.canvas.y === 'number' ? issue.canvas.y : y;
+    var dx = x - prevX;
+    var dy = y - prevY;
+    if (dx !== 0 || dy !== 0) {
+      var notes = Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
+      notes.forEach(function (note) {
+        if (!note || typeof note !== 'object') return;
+        if (typeof note.x === 'number') note.x = Math.round(note.x + dx);
+        if (typeof note.y === 'number') note.y = Math.round(note.y + dy);
+      });
+    }
+    issue.canvas.x = x;
+    issue.canvas.y = y;
+  }
+
+  function flowCardInput(issue) {
+    var notes = issue && issue.canvas && Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
+    var dependencies = [];
+    (Array.isArray(issue.blockedBy) ? issue.blockedBy : []).forEach(function (blocker) {
+      if (blocker && typeof blocker === 'object') {
+        var repo = blocker.repository ? (blocker.repository.full || blocker.repository) : null;
+        dependencies.push(repo ? (repo + '#' + blocker.number) : String(blocker.number));
+      } else if (blocker !== null && blocker !== undefined) {
+        dependencies.push(String(blocker));
+      }
+    });
+    return {
+      id: identity(issue),
+      number: issue.number,
+      repo: issue.repository ? (issue.repository.full || issue.repository) : '',
+      parentKey: issue.parentKey || null,
+      parentTitle: issue.parentTitle || null,
+      stage: stageOf(issue),
+      activeSession: Boolean(issue.activeSession && issue.activeSession.active === true),
+      order: Number.isFinite(issue.order) ? issue.order : undefined,
+      priority: priorityOf(issue),
+      createdAt: issue.createdAt,
+      dependencies: dependencies,
+      w: 280,
+      h: 150,
+      notes: notes.map(function (note) {
+        return { w: note.w, h: note.h, dx: note._dx, dy: note._dy };
+      }),
+    };
+  }
+
+  function computeFlowLayout(issues) {
+    var size = canvasViewportSize() || { width: (typeof window !== 'undefined' && window.innerWidth) || 1280, height: 800 };
+    var direction = resolveFlowDirection(state.canvasDirectionMode, size.width);
+    var expanded = effectiveExpandedGroups(issues);
+    state.canvasResolvedDirection = direction;
+    var layoutFn = (typeof window !== 'undefined' && typeof window.arrangeFlowGraph === 'function') ? window.arrangeFlowGraph : null;
+    var result = layoutFn
+      ? layoutFn((Array.isArray(issues) ? issues : []).map(flowCardInput), {
+        direction: direction,
+        // An array crosses the vm boundary in tests; the layout accepts both.
+        expandedGroups: Array.from(expanded),
+        cardWidth: 280,
+        cardHeight: 150,
+        gapX: 72,
+        gapY: 40,
+      })
+      : { groups: [], positions: {}, edges: [], width: 0, height: 0 };
+
+    // A card the user dragged keeps its own place, even after an auto-layout.
+    Object.keys(state.canvasManualPositions || {}).forEach(function (key) {
+      var manual = state.canvasManualPositions[key];
+      if (!manual || !isFinite(manual.x) || !isFinite(manual.y)) return;
+      if (result.positions && result.positions[key]) {
+        result.positions[key].x = manual.x;
+        result.positions[key].y = manual.y;
+      }
+    });
+
+    result.direction = direction;
+    result.expanded = expanded;
+    return result;
+  }
+
+  function canvasLayoutFailureMessage(err, dict) {
+    var status = (err && typeof err.status === 'number') ? err.status : 0;
+    if (status === 401) return dict.canvas_layout_signed_out || 'Canvas not saved: your session expired. Sign in again.';
+    if (status === 403) return dict.canvas_layout_forbidden || 'Canvas not saved: this board refused the change.';
+    return dict.canvas_layout_error || 'Canvas not saved. Your view is kept locally; try again.';
+  }
+
+  function persistCanvasLayout(patch) {
+    var body = Object.assign({ scope: canvasLayoutScope() }, patch);
+    return api('/api/layout', { method: 'PATCH', body: body }).then(function (layout) {
+      applyServerLayout(layout);
+      updateCanvasDirectionButtons();
+      return layout;
+    });
+  }
+
+  function toggleCanvasGroup(groupKey, expanded) {
+    if (!groupKey) return;
+    var next = new Set(state.canvasExpandedGroups || []);
+    if (expanded) next.add(groupKey); else next.delete(groupKey);
+    state.canvasExpandedGroups = next;
+    renderCanvasIssues(state.currentCanvasIssues || []);
+    var dict = I18N[getLanguage()] || I18N.en;
+    persistCanvasLayout({ expandedGroups: Array.from(next) }).catch(function (error) {
+      setNotice(canvasLayoutFailureMessage(error, dict), true);
+    });
+  }
+
+  function groupCount(label, value, tone) {
+    return el('span', { class: 'canvas-group-count' + (tone ? ' ' + tone : '') }, [
+      el('strong', { text: String(value) }),
+      el('span', { text: ' ' + label }),
+    ]);
+  }
+
+  function groupCountsChildren(group, dict) {
+    var children = [groupCount(dict.canvas_group_total || 'tasks', group.total, '')];
+    if (group.running > 0) children.push(groupCount(dict.canvas_group_running || 'running', group.running, 'is-running'));
+    if (group.needsMe > 0) children.push(groupCount(dict.canvas_group_needs_me || 'needs me', group.needsMe, 'is-needs-me'));
+    if (group.done > 0) children.push(groupCount(dict.canvas_group_done || 'done', group.done, ''));
+    return children;
+  }
+
+  function groupTitleText(group, dict) {
+    return group.parentKey ? (group.title || group.parentKey) : (dict.canvas_group_standalone || 'Standalone');
+  }
+
+  function createCollapsedGroupCard(group) {
+    var dict = I18N[getLanguage()] || I18N.en;
+    var repoLabel = shortName(group.repo);
+    var title = groupTitleText(group, dict);
+    var toggle = el('button', {
+      type: 'button',
+      class: 'canvas-group-toggle',
+      'data-group-key': group.groupKey,
+      'aria-expanded': 'false',
+      title: dict.canvas_group_expand || 'Expand',
+      'aria-label': (dict.canvas_group_expand || 'Expand') + ' ' + repoLabel + ' ' + title,
+      text: dict.canvas_group_expand || 'Expand',
+    });
+    toggle.addEventListener('pointerdown', function (event) { event.stopPropagation(); });
+    toggle.addEventListener('click', function (event) {
+      event.stopPropagation();
+      event.preventDefault();
+      toggleCanvasGroup(group.groupKey, true);
+    });
+    var card = el('div', {
+      class: 'canvas-group-card',
+      'data-group-key': group.groupKey,
+      'data-repo': group.repo,
+      role: 'group',
+      'aria-label': repoLabel + ' ' + title + ', ' + group.total + ' ' + (dict.canvas_group_total || 'tasks'),
+    }, [
+      el('div', { class: 'canvas-group-head' }, [
+        el('div', {}, [
+          el('div', { class: 'canvas-group-repo', text: repoLabel }),
+          el('div', { class: 'canvas-group-title', text: title }),
+        ]),
+        toggle,
+      ]),
+      el('div', { class: 'canvas-group-counts' }, groupCountsChildren(group, dict)),
+    ]);
+    card.style.left = group.x + 'px';
+    card.style.top = group.y + 'px';
+    return card;
+  }
+
+  function createExpandedGroupFrame(group) {
+    var dict = I18N[getLanguage()] || I18N.en;
+    var repoLabel = shortName(group.repo);
+    var title = groupTitleText(group, dict);
+    var toggle = el('button', {
+      type: 'button',
+      class: 'canvas-group-toggle',
+      'data-group-key': group.groupKey,
+      'aria-expanded': 'true',
+      title: dict.canvas_group_collapse || 'Collapse',
+      'aria-label': (dict.canvas_group_collapse || 'Collapse') + ' ' + repoLabel + ' ' + title,
+      text: dict.canvas_group_collapse || 'Collapse',
+    });
+    toggle.addEventListener('pointerdown', function (event) { event.stopPropagation(); });
+    toggle.addEventListener('click', function (event) {
+      event.stopPropagation();
+      event.preventDefault();
+      toggleCanvasGroup(group.groupKey, false);
+    });
+    var frame = el('div', { class: 'canvas-group-frame', 'data-group-key': group.groupKey }, [
+      el('div', { class: 'canvas-group-frame-head' }, [
+        el('span', { class: 'canvas-group-frame-repo', text: repoLabel }),
+        el('span', { class: 'canvas-group-frame-title', text: title }),
+        el('span', { class: 'canvas-group-counts' }, groupCountsChildren(group, dict)),
+        toggle,
+      ]),
+    ]);
+    frame.style.left = group.x + 'px';
+    frame.style.top = group.y + 'px';
+    frame.style.width = group.w + 'px';
+    frame.style.height = group.h + 'px';
+    return frame;
+  }
+
+  // Edges between a collapsed group and anything else come straight from the
+  // flow layout; card-to-card wires inside an expanded group stay the existing
+  // dependency wires.
+  function renderFlowEdges(wiresLayer, allPoints) {
+    var edges = Array.isArray(state.canvasFlowEdges) ? state.canvasFlowEdges : [];
+    if (!edges.length) return;
+    var groupKeys = new Set((state.canvasGroups || []).map(function (group) { return group.groupKey; }));
+    edges.forEach(function (edge) {
+      if (!edge || !Array.isArray(edge.points) || edge.points.length < 2) return;
+      var fromGroup = groupKeys.has(edge.from);
+      var toGroup = groupKeys.has(edge.to);
+      if (!fromGroup && !toGroup) return; // card-to-card: renderCanvasWires owns it
+      var d = 'M ' + edge.points[0].x + ' ' + edge.points[0].y;
+      for (var i = 1; i < edge.points.length; i++) d += ' L ' + edge.points[i].x + ' ' + edge.points[i].y;
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'canvas-flow-wire' + (edge.crossGroup ? ' is-cross-group' : ''));
+      path.setAttribute('d', d);
+      path.setAttribute('marker-end', 'url(#wire-arrow-open)');
+      path.setAttribute('data-from', String(edge.from));
+      path.setAttribute('data-to', String(edge.to));
+      wiresLayer.appendChild(path);
+      edge.points.forEach(function (point) { allPoints.push({ x: point.x, y: point.y }); });
+    });
+  }
+
+  function updateCanvasDirectionButtons() {
+    ['auto', 'LR', 'TD'].forEach(function (value) {
+      var button = $('canvas-direction-' + value.toLowerCase());
+      if (!button) return;
+      var pressed = value === 'auto'
+        ? state.canvasDirectionMode === 'auto'
+        : state.canvasDirectionMode === value;
+      button.setAttribute('aria-pressed', String(pressed));
+    });
+  }
+
+  function setCanvasDirection(mode) {
+    var value = mode === 'LR' || mode === 'TD' ? mode : 'auto';
+    state.canvasDirectionMode = value;
+    updateCanvasDirectionButtons();
+    renderCanvasIssues(state.currentCanvasIssues || []);
+    frameFilteredCanvas();
+    var dict = I18N[getLanguage()] || I18N.en;
+    persistCanvasLayout({ direction: value }).catch(function (error) {
+      setNotice(canvasLayoutFailureMessage(error, dict), true);
+    });
+  }
+
+  function saveIssueOrder(issue, order) {
+    var currentIssue = (state.board && Array.isArray(state.board.issues))
+      ? state.board.issues.find(function (item) { return sameIdentity(item, issue); }) || issue
+      : issue;
+    return api(issuePath(currentIssue), {
+      method: 'PATCH',
+      body: { order: order, fingerprint: currentIssue.fingerprint },
+    }).then(function (response) {
+      if (response && response.issue) {
+        currentIssue.order = response.issue.order;
+        issue.order = response.issue.order;
+      } else {
+        currentIssue.order = order;
+        issue.order = order;
+      }
+      return response;
+    });
   }
 
   function dependenciesVisible() {
@@ -3159,7 +3551,7 @@
     if (canvasCardRectsCache) return canvasCardRectsCache;
     var cardsLayer = $('canvas-cards');
     var rects = [];
-    if (cardsLayer) cardsLayer.querySelectorAll('.canvas-card').forEach(function (card) {
+    if (cardsLayer) cardsLayer.querySelectorAll('.canvas-card, .canvas-group-card, .canvas-group-frame').forEach(function (card) {
       rects.push({
         key: card.getAttribute('data-issue-key'),
         x: card.offsetLeft,
@@ -3328,7 +3720,10 @@
     var kind = '';
     if (state.dependencyFocus) {
       if (state.dependencyFocusFloored) { count = state.dependencyFocusCount; kind = 'focus'; }
-    } else if (state.canvasFitFloored && state.viewState.filters.length) { count = state.canvasFitCount; kind = 'filter'; }
+    } else if (state.canvasFitFloored) {
+      count = state.canvasFitCount;
+      kind = state.viewState.filters.length ? 'filter' : 'flow';
+    }
     var limited = !state.dependencyFocus && state.canvasFitLimited && state.viewState.filters.length > 0 &&
       state.activeViewMode === 'canvas' && !state.activeSectionView;
     var warning = $('canvas-fit-limit');
@@ -3559,6 +3954,12 @@
     if (questionCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: questionCount + ' q' }));
 
     var dict = I18N[getLanguage()] || I18N.en;
+    // A live agent session and an idle in-progress task must never look alike:
+    // only the live one rotates, and it says so.
+    var agentActive = Boolean(issue.activeSession && issue.activeSession.active === true);
+    if (agentActive) {
+      metaChildren.push(el('span', { class: 'canvas-card-agent-badge', text: dict.canvas_agent_running || 'Agent running' }));
+    }
     // The card summarizes the gate; the drawer carries its one primary action.
     var review = humanReviewView(issue);
     if (humanReviewStatus(issue) === 'waiting') {
@@ -3632,6 +4033,14 @@
 
     card.style.left = pos.x + 'px';
     card.style.top = pos.y + 'px';
+
+    if (agentActive) {
+      card.className += ' canvas-card-agent-active';
+      card.setAttribute('data-agent', 'running');
+    } else if (stage === 'in-progress') {
+      card.className += ' canvas-card-in-progress-idle';
+      card.setAttribute('data-agent', 'idle');
+    }
 
     return card;
   }
@@ -3774,15 +4183,6 @@
     return escapeHtml(text || '').replace(/\n/g, '<br>');
   }
 
-  function safeArrangeCards(cards, options) {
-    if (typeof window !== 'undefined' && typeof window.arrangeCards === 'function') {
-      return window.arrangeCards(cards, options);
-    }
-    var map = new Map();
-    map.bands = [];
-    return map;
-  }
-
   function saveIssueCanvas(issue, canvasUpdates, options) {
     var key = identity(issue);
     var previous = cardSaveQueues.get(key) || Promise.resolve();
@@ -3801,30 +4201,57 @@
     return nextSave;
   }
 
+  // Dragging a card is local layout, never a GitHub write: the coordinates go
+  // to /api/layout, keyed by card identity, and survive a reload. Notes follow
+  // the card through their stored offset, so no issue body changes either.
   function saveCardPosition(issue, newX, newY, oldPos, cardEl) {
+    var key = identity(issue);
+    var prevCanvas = issue.canvas;
+    var previousPosition = (state.canvasManualPositions && state.canvasManualPositions[key]) || null;
+    var positionPatch = {};
+    positionPatch[key] = { x: newX, y: newY };
+
+    // Notes keep their offset to the card. Shift them locally by the same
+    // delta; only /api/layout is written.
     var deltaX = (oldPos && typeof oldPos.x === 'number') ? (newX - oldPos.x) : 0;
     var deltaY = (oldPos && typeof oldPos.y === 'number') ? (newY - oldPos.y) : 0;
-
-    var updatedNotes = undefined;
-    if (issue.canvas && Array.isArray(issue.canvas.notes) && issue.canvas.notes.length > 0) {
-      updatedNotes = issue.canvas.notes.map(function (n) {
-        var nx = typeof n.x === 'number' ? n.x + deltaX : (newX + 20);
-        var ny = typeof n.y === 'number' ? n.y + deltaY : (newY + 160);
-        return Object.assign({}, n, { x: Math.round(nx), y: Math.round(ny) });
+    if ((deltaX !== 0 || deltaY !== 0) && issue.canvas && Array.isArray(issue.canvas.notes)) {
+      issue.canvas.notes.forEach(function (note) {
+        if (!note || typeof note !== 'object') return;
+        if (typeof note.x === 'number') note.x = Math.round(note.x + deltaX);
+        if (typeof note.y === 'number') note.y = Math.round(note.y + deltaY);
       });
     }
 
-    var updates = { x: newX, y: newY };
-    if (updatedNotes !== undefined) {
-      updates.notes = updatedNotes;
+    issue.canvas = Object.assign({}, issue.canvas || {}, { x: newX, y: newY });
+    state.canvasManualPositions = Object.assign({}, state.canvasManualPositions || {}, positionPatch);
+    if (state.canvasFlowPositions && state.canvasFlowPositions[key]) {
+      state.canvasFlowPositions[key].x = newX;
+      state.canvasFlowPositions[key].y = newY;
     }
 
-    return saveIssueCanvas(issue, updates, {
-      oldPos: oldPos,
-      cardEl: cardEl,
-      isCardMove: true,
-      deltaX: deltaX,
-      deltaY: deltaY,
+    return persistCanvasLayout({ setPositions: positionPatch }).catch(function (err) {
+      if ((deltaX !== 0 || deltaY !== 0) && prevCanvas && Array.isArray(prevCanvas.notes)) {
+        prevCanvas.notes.forEach(function (note) {
+          if (!note || typeof note !== 'object') return;
+          if (typeof note.x === 'number') note.x = Math.round(note.x - deltaX);
+          if (typeof note.y === 'number') note.y = Math.round(note.y - deltaY);
+        });
+      }
+      issue.canvas = prevCanvas;
+      var restored = Object.assign({}, state.canvasManualPositions || {});
+      if (previousPosition) restored[key] = previousPosition; else delete restored[key];
+      state.canvasManualPositions = restored;
+      if (cardEl && oldPos) {
+        cardEl.style.left = oldPos.x + 'px';
+        cardEl.style.top = oldPos.y + 'px';
+      }
+      renderCanvasWires();
+      renderCanvasNotes();
+      var dict = I18N[getLanguage()] || I18N.en;
+      var cleanMsg = canvasLayoutFailureMessage(err, dict).replace(/\.+$/, '');
+      setNotice(cleanMsg + '.', true);
+      throw err;
     });
   }
 
@@ -4754,132 +5181,22 @@
       return;
     }
 
-    var issuesToArrange = [];
-    if (scope === 'all') {
-      issuesToArrange = allIssues.slice();
-    } else {
-      issuesToArrange = allIssues.filter(function (c) {
-        return !(c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y));
-      });
-    }
-
-    if (issuesToArrange.length === 0) {
+    var manual = state.canvasManualPositions || {};
+    var manualKeys = Object.keys(manual);
+    if (scope === 'unplaced' && manualKeys.length === 0) {
       var summaryEl = $('arrange-summary');
       if (summaryEl) {
         summaryEl.hidden = false;
-        summaryEl.textContent = getLanguage() === 'fr' ? 'Toutes les cartes sont positionnées. Choisissez « Toutes les cartes » pour réorganiser.' : 'All cards already placed. Choose "All cards" to re-arrange.';
+        summaryEl.textContent = getLanguage() === 'fr' ? 'Toutes les cartes suivent déjà la disposition automatique. Choisissez « Toutes les cartes » pour réorganiser.' : 'All cards already follow the automatic layout. Choose "All cards" to re-arrange.';
       }
       return;
     }
 
-    state.lastArrangeUndo = new Map();
-    issuesToArrange.forEach(function (c) {
-      state.lastArrangeUndo.set(identity(c), {
-        hadCoordinates: !!(c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y)),
-        saved: false,
-        x: c.canvas ? c.canvas.x : undefined,
-        y: c.canvas ? c.canvas.y : undefined,
-        notes: (c.canvas && Array.isArray(c.canvas.notes)) ? JSON.parse(JSON.stringify(c.canvas.notes)) : [],
-      });
-    });
+    // Arrange is local layout only: snapshot the manual positions so Undo can
+    // restore them, then clear them through /api/layout. GitHub is untouched.
+    state.lastArrangeUndo = { positions: JSON.parse(JSON.stringify(manual)) };
     var undoBtn = $('canvas-arrange-undo');
     if (undoBtn) undoBtn.hidden = false;
-
-    var options = {
-      startX: 120,
-      startY: 80,
-    };
-    if (scope === 'unplaced') {
-      var placed = allIssues.filter(function (c) {
-        return c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y);
-      });
-      if (placed.length > 0) {
-        var maxExtentX = 0;
-        var minY = Infinity;
-        placed.forEach(function (c) {
-          var cardX = c.canvas.x;
-          var cardY = c.canvas.y;
-          var cardW = 280;
-          var cardRight = cardX + cardW;
-          if (Array.isArray(c.canvas.notes)) {
-            c.canvas.notes.forEach(function (n) {
-              var nx = typeof n.x === 'number' ? n.x : cardX + 20;
-              var nw = typeof n.w === 'number' ? n.w : 220;
-              if (nx + nw > cardRight) cardRight = nx + nw;
-            });
-          }
-          if (cardRight > maxExtentX) maxExtentX = cardRight;
-          if (cardY < minY) minY = cardY;
-        });
-        options.startX = Math.max(120, maxExtentX + 120);
-        options.startY = Math.max(80, minY);
-      }
-    }
-
-    var cardsLayer = $('canvas-cards');
-    var cardsInput = issuesToArrange.map(function (c) {
-      var blockers = [];
-      if (Array.isArray(c.blockedBy)) {
-        c.blockedBy.forEach(function (b) {
-          if (b && typeof b === 'object') {
-            blockers.push(identity(b));
-            if (b.number !== undefined) blockers.push(String(b.number));
-          } else if (b !== null && b !== undefined) {
-            blockers.push(String(b));
-          }
-        });
-      }
-      var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(c) + '"]') : null;
-      var w = cardEl ? (cardEl.offsetWidth || 280) : 280;
-      var h = cardEl ? (cardEl.offsetHeight || 150) : 150;
-      return {
-        id: identity(c),
-        number: c.number,
-        project: (c.repository && c.repository.name) ? c.repository.name : 'Default',
-        blockers: blockers,
-        w: w,
-        h: h,
-        x: c.canvas ? c.canvas.x : undefined,
-        y: c.canvas ? c.canvas.y : undefined,
-        notes: (c.canvas && Array.isArray(c.canvas.notes)) ? c.canvas.notes : [],
-      };
-    });
-
-    var arrangeFn = (typeof window !== 'undefined' && typeof window.arrangeCards === 'function')
-      ? window.arrangeCards
-      : safeArrangeCards;
-    var layoutResult = arrangeFn(cardsInput, options);
-
-    issuesToArrange.forEach(function (issue) {
-      var key = identity(issue);
-      var pos = layoutResult.get(key) || layoutResult[key];
-      if (pos) {
-        var oldX = (issue.canvas && typeof issue.canvas.x === 'number') ? issue.canvas.x : pos.x;
-        var oldY = (issue.canvas && typeof issue.canvas.y === 'number') ? issue.canvas.y : pos.y;
-        var deltaX = pos.x - oldX;
-        var deltaY = pos.y - oldY;
-
-        issue.canvas = Object.assign({}, issue.canvas || {}, {
-          x: pos.x,
-          y: pos.y,
-        });
-
-        if (issue.canvas && Array.isArray(issue.canvas.notes)) {
-          issue.canvas.notes.forEach(function (n) {
-            var nx = typeof n.x === 'number' ? n.x + deltaX : (pos.x + 20);
-            var ny = typeof n.y === 'number' ? n.y + deltaY : (pos.y + 160);
-            n.x = Math.round(nx);
-            n.y = Math.round(ny);
-          });
-        }
-      }
-    });
-
-    if (Array.isArray(layoutResult.bands)) {
-      state.canvasProjectBands = layoutResult.bands;
-    }
-
-    renderCanvasIssues(allIssues);
 
     var progressContainer = $('arrange-progress-container');
     var progressBar = $('arrange-progress-bar');
@@ -4892,44 +5209,20 @@
     if (arrangeSummaryEl) arrangeSummaryEl.hidden = true;
     if (confirmBtn) confirmBtn.disabled = true;
     if (cancelBtn) cancelBtn.disabled = true;
+    if (progressText) progressText.textContent = getLanguage() === 'fr' ? 'Réorganisation…' : 'Arranging…';
+    if (progressBar) progressBar.style.width = '100%';
 
-    var total = issuesToArrange.length;
-    var savedCount = 0;
+    var savedCount = allIssues.length;
     var failedCount = 0;
-
-    for (var i = 0; i < issuesToArrange.length; i++) {
-      var cur = issuesToArrange[i];
-      if (progressText) progressText.textContent = (getLanguage() === 'fr' ? 'Enregistrement ' : 'Saving ') + (i + 1) + ' / ' + total + '…';
-      if (progressBar) progressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
-      try {
-        await saveIssueCanvas(cur, {
-          x: cur.canvas.x,
-          y: cur.canvas.y,
-          notes: cur.canvas.notes,
-        });
-        savedCount++;
-        var snap = state.lastArrangeUndo.get(identity(cur));
-        if (snap) snap.saved = true;
-      } catch (e) {
-        failedCount++;
-        // Keep the screen honest: a card whose save failed returns to its saved place.
-        var failedSnap = state.lastArrangeUndo.get(identity(cur));
-        if (failedSnap && cur.canvas) {
-          if (failedSnap.hadCoordinates) {
-            cur.canvas.x = failedSnap.x;
-            cur.canvas.y = failedSnap.y;
-          } else {
-            delete cur.canvas.x;
-            delete cur.canvas.y;
-          }
-          if (failedSnap.notes.length > 0) cur.canvas.notes = JSON.parse(JSON.stringify(failedSnap.notes));
-        }
-      }
-    }
-
-    if (failedCount > 0) renderCanvasIssues(allIssues);
-    if (savedCount === 0 && undoBtn) {
-      undoBtn.hidden = true;
+    try {
+      await persistCanvasLayout({ resetPositions: true });
+      state.canvasManualPositions = {};
+      renderCanvasIssues(allIssues);
+      frameFilteredCanvas();
+    } catch (error) {
+      failedCount = allIssues.length;
+      savedCount = 0;
+      if (undoBtn) undoBtn.hidden = true;
     }
 
     if (confirmBtn) confirmBtn.disabled = false;
@@ -4950,55 +5243,28 @@
   }
 
   async function undoLastArrange() {
-    if (!state.lastArrangeUndo) return;
+    var snapshot = state.lastArrangeUndo;
+    if (!snapshot) return;
     var undoBtn = $('canvas-arrange-undo');
     if (undoBtn) undoBtn.disabled = true;
 
     var allIssues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
-    for (var i = 0; i < allIssues.length; i++) {
-      var issue = allIssues[i];
-      var snap = state.lastArrangeUndo.get(identity(issue));
-      if (snap && snap.saved) {
-        if (!issue.canvas) issue.canvas = {};
-        if (snap.hadCoordinates) {
-          issue.canvas.x = snap.x;
-          issue.canvas.y = snap.y;
-        } else {
-          delete issue.canvas.x;
-          delete issue.canvas.y;
-        }
-        // Restore only the positions of notes that existed at Arrange time; keep notes
-        // added or edited since then instead of overwriting them with the old snapshot.
-        var snapNotesById = new Map();
-        (snap.notes || []).forEach(function (sn) { snapNotesById.set(sn.id, sn); });
-        var currentNotes = Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
-        var restoredNotes = currentNotes.map(function (n) {
-          var sn = snapNotesById.get(n.id);
-          return sn ? Object.assign({}, n, { x: sn.x, y: sn.y }) : n;
-        });
-        if (currentNotes.length > 0) issue.canvas.notes = restoredNotes;
-
-        try {
-          var undoPayload = {};
-          if (currentNotes.length > 0) undoPayload.notes = restoredNotes;
-          if (snap.hadCoordinates) {
-            undoPayload.x = snap.x;
-            undoPayload.y = snap.y;
-          } else {
-            undoPayload.clearPosition = true;
-          }
-          await saveIssueCanvas(issue, undoPayload);
-        } catch (_) {}
-      }
+    try {
+      // Reset then restore the exact snapshot so a position added after Arrange
+      // cannot survive the undo.
+      await persistCanvasLayout({ resetPositions: true, setPositions: snapshot.positions || {} });
+    } catch (_) {
+      if (undoBtn) undoBtn.disabled = false;
+      return;
     }
 
-    state.canvasProjectBands = null;
     state.lastArrangeUndo = null;
     if (undoBtn) {
       undoBtn.hidden = true;
       undoBtn.disabled = false;
     }
     renderCanvasIssues(allIssues);
+    frameFilteredCanvas();
   }
 
   function chooseWirePorts(source, target, cardList) {
@@ -5220,6 +5486,8 @@
 
     var existingGroups = wiresLayer.querySelectorAll('.canvas-wire-group');
     existingGroups.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
+    var existingFlow = wiresLayer.querySelectorAll('.canvas-flow-wire');
+    existingFlow.forEach(function (path) { if (path.parentNode) path.parentNode.removeChild(path); });
     var labelsLayer = $('canvas-wire-labels');
     if (labelsLayer) labelsLayer.textContent = '';
     canvasCardRectsCache = null;
@@ -5233,12 +5501,20 @@
       toggle.setAttribute('title', fr ? 'Dépendances' : 'Dependencies');
     }
     if (!visible) return;
+
+    // Group-level edges exist even when every group is collapsed, so they are
+    // drawn before the card loop and its early return.
+    var allPoints = [];
+    renderFlowEdges(wiresLayer, allPoints);
+
     var cardElements = cardsLayer.querySelectorAll('.canvas-card');
-    if (cardElements.length === 0) return;
+    if (cardElements.length === 0) {
+      canvasCardRectsCache = null;
+      return;
+    }
 
     var cardMap = new Map();
     var cardByKey = new Map();
-    var allPoints = [];
     var cardRects = [];
 
     cardElements.forEach(function (card) {
@@ -5256,6 +5532,17 @@
       cardRects.push({ key: key, x: pos.x, y: pos.y, w: pos.w, h: pos.h });
       allPoints.push({ x: pos.x, y: pos.y });
       allPoints.push({ x: pos.x + pos.w, y: pos.y + pos.h });
+    });
+    // Collapsed group cards and expanded frames are part of the layout the
+    // viewport frames and the wire labels avoid.
+    cardsLayer.querySelectorAll('.canvas-group-card, .canvas-group-frame').forEach(function (node) {
+      cardRects.push({
+        key: node.getAttribute('data-group-key'),
+        x: node.offsetLeft,
+        y: node.offsetTop,
+        w: node.offsetWidth || 280,
+        h: node.offsetHeight || 96,
+      });
     });
     canvasCardRectsCache = cardRects;
 
@@ -5728,34 +6015,40 @@
     var cardsLayer = $('canvas-cards');
     if (!cardsLayer) return;
     cardsLayer.textContent = '';
+    canvasCardRectsCache = null;
 
-    var positions = computeCanvasCardPositions(issues);
+    // The flow layout owns positions: groups start collapsed, expanded groups
+    // expose their cards, and dependency edges connect whatever is visible.
+    var layout = computeFlowLayout(issues);
+    state.canvasGroups = Array.isArray(layout.groups) ? layout.groups : [];
+    state.canvasFlowPositions = layout.positions || {};
+    state.canvasFlowEdges = Array.isArray(layout.edges) ? layout.edges : [];
+
+    state.canvasGroups.forEach(function (group) {
+      cardsLayer.appendChild(group.collapsed ? createCollapsedGroupCard(group) : createExpandedGroupFrame(group));
+    });
 
     issues.forEach(function (issue) {
       var key = identity(issue);
-      var pos = positions.get(key) || { x: 60, y: 60, saved: false };
-      var cardEl = createIssueCanvasCard(issue, pos);
+      var pos = state.canvasFlowPositions[key];
+      if (!pos) return; // card sits inside a collapsed group
+      syncIssueNotesToPosition(issue, pos.x, pos.y);
+      var cardEl = createIssueCanvasCard(issue, { x: pos.x, y: pos.y, saved: true });
       cardsLayer.appendChild(cardEl);
-      attachCardDrag(cardEl, issue, pos);
+      attachCardDrag(cardEl, issue, { x: pos.x, y: pos.y, saved: true });
       var portEls = cardEl.querySelectorAll('.canvas-card-port');
       portEls.forEach(function (portEl) { attachPortDrag(portEl, cardEl, issue); });
     });
 
     renderCanvasWires();
     renderCanvasNotes();
+    updateCanvasDirectionButtons();
 
     if (!state.canvasHasSavedState && issues.length > 0) {
       state.canvasHasSavedState = true;
-      fitAllCanvasNodes();
-      var viewport = $('canvas-viewport');
-      if (viewport && viewport.clientWidth <= 640 && state.canvasScale < 0.55) {
-        state.canvasScale = 0.55;
-        var positions = computeCanvasCardPositions(issues);
-        var first = Array.from(positions.values()).sort(function (a, b) { return a.x - b.x || a.y - b.y; })[0];
-        state.canvasPanX = 20 - (first ? first.x : 0) * state.canvasScale;
-        state.canvasPanY = 24 - (first ? first.y : 0) * state.canvasScale;
-        updateCanvasTransform();
-      }
+      // Frame at the readable floor, never at an unreadable whole-board zoom.
+      // "Show all" remains the explicit way to cross that floor.
+      frameFilteredCanvas();
     } else {
       updateCanvasTransform();
     }
@@ -5963,6 +6256,13 @@
     if (arrangeUndoBtn) {
       arrangeUndoBtn.addEventListener('click', undoLastArrange);
     }
+
+    ['auto', 'LR', 'TD'].forEach(function (mode) {
+      var button = $('canvas-direction-' + mode.toLowerCase());
+      if (!button) return;
+      button.addEventListener('click', function () { setCanvasDirection(mode); });
+    });
+    updateCanvasDirectionButtons();
 
     var arrangeConfirmBtn = $('arrange-confirm-btn');
     if (arrangeConfirmBtn) {
@@ -6513,6 +6813,7 @@
       }
       clearDiscoveryFailure();
       state.board = board;
+      applyServerLayout(board && board.layout);
       saveCachedBoard(board);
       state.uncertain.clear();
       state.loadedAt = Date.now();
@@ -7442,6 +7743,17 @@
       priority.href = issue.htmlUrl;
       priority.textContent = (getLanguage() === 'fr' ? 'Priorité : ' : 'Priority: ') + (priorityOf(issue) ? priorityText(priorityOf(issue)) : (getLanguage() === 'fr' ? 'Définir sur GitHub' : 'Set on GitHub'));
       priority.title = getLanguage() === 'fr' ? 'Modifier les étiquettes sur GitHub' : 'Edit labels on GitHub';
+    }
+    var orderInput = $('order-input');
+    if (orderInput) {
+      orderInput.value = Number.isFinite(issue.order) ? String(issue.order) : '';
+      orderInput.disabled = Boolean(state.busy);
+    }
+    var orderStatus = $('order-status');
+    if (orderStatus) {
+      orderStatus.textContent = Number.isFinite(issue.order)
+        ? (getLanguage() === 'fr' ? 'Ordre manuel' : 'Manual order')
+        : (getLanguage() === 'fr' ? 'Ordre automatique' : 'Automatic order');
     }
     $('detail-freshness').textContent = (getLanguage() === 'fr' ? 'Mis à jour sur GitHub ' : 'Updated on GitHub ') + relative(issue.updatedAt);
 
@@ -8970,6 +9282,46 @@
       markDoneBtn.addEventListener('click', toggleMarkDone);
     }
 
+    var orderApplyBtn = $('order-apply');
+    if (orderApplyBtn) {
+      orderApplyBtn.addEventListener('click', async function () {
+        if (!state.detail || state.busy) return;
+        var input = $('order-input');
+        var value = input ? Number(input.value) : NaN;
+        if (!Number.isFinite(value)) {
+          setNotice(getLanguage() === 'fr' ? 'Saisissez un nombre pour l’ordre d’exécution.' : 'Enter a number for the execution order.', true);
+          return;
+        }
+        state.busy = true;
+        try {
+          await saveIssueOrder(state.detail, value);
+          renderDetail(false);
+          announce(getLanguage() === 'fr' ? 'Ordre enregistré.' : 'Order saved.');
+        } catch (error) {
+          setNotice(error && error.message ? error.message : (getLanguage() === 'fr' ? 'Échec de l’enregistrement de l’ordre.' : 'Could not save the order.'), true);
+        } finally {
+          state.busy = false;
+        }
+      });
+    }
+
+    var orderAutoBtn = $('order-auto');
+    if (orderAutoBtn) {
+      orderAutoBtn.addEventListener('click', async function () {
+        if (!state.detail || state.busy) return;
+        state.busy = true;
+        try {
+          await saveIssueOrder(state.detail, null);
+          renderDetail(false);
+          announce(getLanguage() === 'fr' ? 'Ordre automatique rétabli.' : 'Automatic order restored.');
+        } catch (error) {
+          setNotice(error && error.message ? error.message : (getLanguage() === 'fr' ? 'Échec du rétablissement de l’ordre automatique.' : 'Could not restore automatic order.'), true);
+        } finally {
+          state.busy = false;
+        }
+      });
+    }
+
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('online', async function () {
         if (!state.csrf) {
@@ -9252,6 +9604,11 @@
     setDependenciesVisible: setDependenciesVisible,
     dependenciesVisible: dependenciesVisible,
     filterGroups: filterGroups,
+    resolveFlowDirection: resolveFlowDirection,
+    flowGroupKeyOf: flowGroupKeyOf,
+    effectiveExpandedGroups: effectiveExpandedGroups,
+    computeFlowLayout: computeFlowLayout,
+    applyServerLayout: applyServerLayout,
       boot: boot,
       showLogin: showLogin,
       signOut: signOut,

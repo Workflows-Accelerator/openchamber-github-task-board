@@ -165,7 +165,7 @@ export function getVersionStamp(
   const pkgVersion = getPackageVersion(packageJsonUrl);
   try {
     const hash = createHash('sha256');
-    const shellAssets = ['index.html', 'app.js', 'theme.css', 'manifest.json'];
+    const shellAssets = ['index.html', 'app.js', 'theme.css', 'manifest.json', 'flow-layout.js'];
     for (const name of shellAssets) {
       const content = readFileSync(new URL(`../public/${name}`, import.meta.url));
       hash.update(name);
@@ -552,6 +552,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     '/app.js': { body: loadStatic('app.js'), type: 'text/javascript; charset=utf-8' },
     '/markdown.js': { body: loadStatic('markdown.js'), type: 'text/javascript; charset=utf-8' },
     '/arrange.js': { body: loadStatic('arrange.js'), type: 'text/javascript; charset=utf-8' },
+    '/flow-layout.js': { body: loadStatic('flow-layout.js'), type: 'text/javascript; charset=utf-8' },
     '/theme.css': { body: loadStatic('theme.css'), type: 'text/css; charset=utf-8' },
     '/manifest.json': { body: loadStatic('manifest.json'), type: 'application/manifest+json; charset=utf-8' },
     '/sw.js': {
