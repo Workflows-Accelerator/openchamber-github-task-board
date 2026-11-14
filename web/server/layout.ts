@@ -89,6 +89,19 @@ function isDirection(value: unknown): value is CanvasDirection {
   return typeof value === 'string' && (DIRECTIONS as readonly string[]).includes(value);
 }
 
+function normalizeCoordinate(value: number): number {
+  // JSON cannot tell -0 from 0, so collapse it here. Otherwise a patch result
+  // would differ from what reloading the persisted file returns.
+  return value === 0 ? 0 : value;
+}
+
+function resolveLimit(value: number | undefined, fallback: number): number {
+  // A non-finite value (NaN from an unset env var, Infinity) must not silently
+  // disable the cap; fall back to the documented default instead.
+  if (value === undefined || !Number.isFinite(value)) return fallback;
+  return Math.max(1, Math.floor(value));
+}
+
 function isValidKey(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   if (value.length === 0 || value.length > MAX_KEY_LENGTH) return false;
@@ -147,7 +160,7 @@ function sanitizePositions(value: unknown): Record<string, CanvasPosition> {
   for (const [key, raw] of Object.entries(value)) {
     if (!isValidKey(key) || !isRecord(raw)) continue;
     if (!isFiniteNumber(raw.x) || !isFiniteNumber(raw.y)) continue;
-    positions[key] = { x: raw.x, y: raw.y };
+    positions[key] = { x: normalizeCoordinate(raw.x), y: normalizeCoordinate(raw.y) };
   }
   return positions;
 }
@@ -228,7 +241,7 @@ function parsePositionsPatch(value: unknown): Record<string, CanvasPosition | nu
         'positions require finite numeric x and y',
       );
     }
-    entries[key] = { x: raw.x, y: raw.y };
+    entries[key] = { x: normalizeCoordinate(raw.x), y: normalizeCoordinate(raw.y) };
   }
   return entries;
 }
@@ -251,10 +264,10 @@ export class CanvasLayoutStore {
       throw new TypeError('CanvasLayoutStore requires a non-empty filePath');
     }
     this.filePath = options.filePath;
-    this.maxScopes = Math.max(1, Math.floor(options.maxScopes ?? DEFAULT_MAX_SCOPES));
-    this.maxPositionsPerScope = Math.max(
-      1,
-      Math.floor(options.maxPositionsPerScope ?? DEFAULT_MAX_POSITIONS_PER_SCOPE),
+    this.maxScopes = resolveLimit(options.maxScopes, DEFAULT_MAX_SCOPES);
+    this.maxPositionsPerScope = resolveLimit(
+      options.maxPositionsPerScope,
+      DEFAULT_MAX_POSITIONS_PER_SCOPE,
     );
   }
 
@@ -293,17 +306,17 @@ export class CanvasLayoutStore {
       await this.ensureLoaded();
 
       const existing = this.scopes.get(scope);
+      const base = existing ? cloneScope(existing) : defaultScope();
+      if (!hasDirection && !hasGroups && !hasPositions && !shouldReset) {
+        return base;
+      }
+
       if (!existing && this.scopes.size >= this.maxScopes) {
         throw new LayoutValidationError(
           'too-many-scopes',
           'scope',
           `at most ${this.maxScopes} scopes may be stored`,
         );
-      }
-
-      const base = existing ? cloneScope(existing) : defaultScope();
-      if (!hasDirection && !hasGroups && !hasPositions && !shouldReset) {
-        return base;
       }
 
       const next: CanvasScopeLayout = {

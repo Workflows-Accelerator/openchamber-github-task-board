@@ -366,3 +366,107 @@ test('empty patch is a read-only no-op', async () => {
     cleanup();
   }
 });
+
+test('empty patch on a new scope stays a read-only no-op at the scope cap', async () => {
+  const { filePath, store, cleanup } = makeStore({ maxScopes: 1 });
+  try {
+    await store.patchScope('all', { direction: 'LR' });
+
+    const layout = await store.patchScope('acme/widgets', {});
+    assert.deepEqual(layout, DEFAULT_SCOPE);
+    assert.deepEqual(Object.keys(readLayout(filePath).scopes), ['all'], 'no scope was created');
+  } finally {
+    cleanup();
+  }
+});
+
+test('non-finite maxPositionsPerScope falls back to the default cap', async () => {
+  const { store, cleanup } = makeStore({ maxPositionsPerScope: Number.NaN });
+  try {
+    const positions = {};
+    for (let index = 0; index < DEFAULT_MAX_POSITIONS_PER_SCOPE; index += 1) {
+      positions[`p-${index}`] = { x: index, y: index };
+    }
+    await store.patchScope('all', { setPositions: positions });
+
+    await assert.rejects(
+      store.patchScope('all', { setPositions: { overflow: { x: 1, y: 1 } } }),
+      isLayoutError('too-many-positions'),
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test('non-finite maxScopes falls back to the default cap', async () => {
+  const { store, cleanup } = makeStore({ maxScopes: Number.POSITIVE_INFINITY });
+  try {
+    for (let index = 0; index < DEFAULT_MAX_SCOPES - 1; index += 1) {
+      await store.patchScope(`owner-${index}/repo`, { direction: 'LR' });
+    }
+    await store.patchScope('all', { direction: 'LR' });
+
+    await assert.rejects(
+      store.patchScope('one/too-many', { direction: 'LR' }),
+      isLayoutError('too-many-scopes'),
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test('negative zero coordinates are normalized so memory matches the persisted file', async () => {
+  const { filePath, store, cleanup } = makeStore();
+  try {
+    const patched = await store.patchScope('all', { setPositions: { p: { x: -0, y: -0 } } });
+    assert.equal(Object.is(patched.positions.p.x, -0), false, 'patched x is +0');
+    assert.equal(Object.is(patched.positions.p.y, -0), false, 'patched y is +0');
+
+    const reopened = new CanvasLayoutStore({ filePath });
+    assert.deepEqual(patched.positions, (await reopened.getScope('all')).positions);
+  } finally {
+    cleanup();
+  }
+});
+
+test('a failed write rolls back memory, leaves no temp file and keeps the queue usable', async () => {
+  const { dir, filePath, store, cleanup } = makeStore();
+  try {
+    await store.patchScope('all', { direction: 'LR', setPositions: { a: { x: 1, y: 1 } } });
+
+    fs.rmSync(filePath);
+    fs.mkdirSync(filePath);
+    await assert.rejects(store.patchScope('all', { direction: 'TD' }));
+    assert.equal((await store.getScope('all')).direction, 'LR', 'in-memory state rolled back');
+    assert.equal(fs.readdirSync(dir).some((name) => name.endsWith('.tmp')), false, 'temp file removed');
+
+    fs.rmdirSync(filePath);
+    const recovered = await store.patchScope('all', { direction: 'TD' });
+    assert.equal(recovered.direction, 'TD', 'queue survived the failed write');
+  } finally {
+    cleanup();
+  }
+});
+
+test('a rejected patch does not stall queued callers', async () => {
+  const { store, cleanup } = makeStore();
+  try {
+    const results = await Promise.allSettled([
+      store.patchScope('all', { direction: 'LR' }),
+      store.patchScope('all', { direction: 'RL' }),
+      store.patchScope('all', { setPositions: { a: { x: 1, y: 1 } } }),
+      store.getScope('bad scope'),
+      store.patchScope('all', { direction: 'TD' }),
+    ]);
+
+    assert.deepEqual(
+      results.map((result) => result.status),
+      ['fulfilled', 'rejected', 'fulfilled', 'rejected', 'fulfilled'],
+    );
+    const layout = await store.getScope('all');
+    assert.equal(layout.direction, 'TD');
+    assert.deepEqual(layout.positions, { a: { x: 1, y: 1 } });
+  } finally {
+    cleanup();
+  }
+});
