@@ -1,31 +1,12 @@
-# decision-in-task S1 + S2 — implementation report
-
-Status: in progress (this file is written before coding, per work_method step 1).
-
+# decision-in-task S1 + S2 — report
 HEAD_BEFORE: 1bca92a5b342ac35165caa8ac011cf21a9cab238
-Branch: feat/wave1-status-section (worktree `workflows-accelerator-agent-dev-wave1-status-section`)
-Spec: `.agents/run/chamberos-board-v2/specs/decision-in-task.md` (S1 §10, S2 §10)
-Manager decisions applied: `media-src data: blob:` (S3, recorded), no persistence (in-memory store,
-restart shows a named recheck state), `permission-asked` out of scope.
-
-## Plan
-
-1. `service/session-event.ts` — keep top-level `content` exactly as the SDK reader does (§0.3.4);
-   parity test gains content fixtures. This lands first because the manifest change is a silent
-   no-op without it.
-2. `service/decision-form.ts` — pure form model: clamp, `when` visibility, server-side answer
-   validation. Shared by the service and the panel so the two validations cannot drift.
-3. `service/decision-store.ts` — in-memory decision store, `question-asked` creation, close on
-   `turn-finished`/`turn-failed`/`session-archived`/`session-deleted`, `sessions.status`
-   observation, ordering/tie-break, `GET /decisions` projection with the 64 KB cap, and the
-   `POST /decision/answer` state machine (`answering` before the host call, at-most-once, error
-   mapping).
-4. `service/main.ts` + `host-client.ts` — routes, `answerForm`/`send` host calls, marks poll
-   notifies the store of `sessions.status`.
-5. `panel/decisions.ts` — copy table (EN/FR), sanitisation, form renderer (read-only in S1,
-   interactive in S2), page title state, provenance, badges, inbox grouping.
-6. `panel/main.ts` + `index.html` — drawer block slot, card badge, Pending items inbox; delete the
-   synthesised `session-waiting` human todo and its prose path.
-7. Manifest: `sessionEvents.content: true`, `sessionControl.answers: true`, version 1.3.0.
-8. Tests first per behaviour, then mutation checks on the guards that matter (double answer,
-   foreign session, stale form, refused capability, label-vs-value, innerHTML).
+HEAD_AFTER: b5485c9 (54053c3 service store/routes, 180f062 panel surfaces, b5485c9 concurrency test; this report is a later docs-only commit on top), branch feat/wave1-status-section; nothing pushed
+WHAT_SHIPPED: S1 — `session-event.ts` keeps top-level `content`, in-memory decision store (create/order/close, 30 s status poll, `GET /decisions` capped at 64 KB), panel read-only form renderer (all field types, `when`, clamps), page title only, provenance line, Pending inbox grouped Needs-an-answer / Confirming / Not-linked-to-a-task, `session-waiting` human todo and its prose path deleted. S2 — `POST /decision/answer` with server-side re-validation, `answering` before the host call, at-most-once, error mapping, `host-client.answerForm`; panel Answer/Dismiss disabled while sending, "Answer sent, confirming", removal on observation.
+MANIFEST_DIFF: `version` 1.2.2 -> 1.3.0; `contributes.sessionEvents.content: true`; `contributes.sessionControl: { answers: true }`; `capabilities` unchanged (sessions, prompt, files); no `service.provides` (S3).
+TESTS: 752 tests, best full run 751 pass / 1 fail — `scale-and-adversarial.test.js:119`, a wall-clock assertion (62.5 ms vs <60 ms) at host load 7.8, and that file passes 33/33 alone; the two documented flakes (`panel-simple-views.test.js:24`, `stage1-dual-mode-and-scoping.test.js:1220`) also flake under load and pass alone. `tsc --noEmit` 0 errors, `npm run build` ok. New tests: decision-store 26, decision-form 13, decision-render 23.
+MUTATIONS: 9 runs, 9 caught (failing test numbers) — spec M4 label sent instead of value [form 6,7]; spec M5 `answering` set after the host call [store 11 in-flight double answer, 15]; spec M6 answer path touches GitHub [store 26]; spec M7 agent string via `innerHTML` [render 1-14,17-20]; double-answer 409 guard [store 10,11,15]; unknown or foreign id 404 [store 12,25]; stale form deleted [store 13]; refused capability 503 [store 16]; unknown outcome not re-armed [store 15]. Files restored after each run; `git diff` on the three mutated files is empty and they carry no mutation marker.
+STATES: 200 answered-unconfirmed; 404/409 stale, entry gone; 403 permission-missing, back to pending; 400 refused, pending; 429 rate-limited, pending; 502 unknown-outcome, stays answering and is never retried; no host 503 host-unavailable, pending; a failed feed keeps the last list but marks it unconfirmed with the attempt time, and a changed `startedAt` says the service restarted.
+WHAT_THE_OWNER_SEES_AFTER_RELOAD: two capability prompts — `transcript` (from `sessionEvents.content`) and `sessionAnswers` (from `sessionControl.answers`); after approving both, the Pending view and the drawer show what each waiting session asks, with session and project named, forms answerable and pages title-only. Refusing either leaves the board working with the refusal named, never a blank or invented question.
+NOT_DONE: S3 (page content fetch, nested frame, CSP `media-src data: blob:`, `service.provides: ["opencode"]`); one real answer end to end in a live session; the browser fixture run and the 390 px screenshot; no persistence, so a restart shows the named recheck state by design.
+NOT_VERIFIED: the live host round trip (harness and stubs only, no real session answered); rendering in a real OpenChamber window at 390 px; `media-src` CSP in a real page frame.
+REPORT_PATH: .agents/run/chamberos-board-v2/verifications/decision-in-task-s12/README.md
