@@ -183,6 +183,33 @@ test('decision-store: a second answer gets 409 and makes zero further host calls
   assert.equal(host.calls.length, 1, 'at-most-once: the host must be called exactly once');
 });
 
+test('decision-store: two answers in flight make one host call, the second 409', async () => {
+  // The real race is a double click, not a second answer after the first settled:
+  // the `answering` marker must be down before the host call, or both requests
+  // pass the `pending` check and the agent gets the form answered twice.
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const calls = [];
+  const host = {
+    calls,
+    answerForm: async (sessionId, formId, values, message) => {
+      calls.push({ sessionId, formId, values, message });
+      await gate;
+      return { answered: true };
+    },
+  };
+  const { store: decisions } = store(host);
+  decisions.handleEvent(event({}, formContent()));
+  const first = decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  const second = decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'stack' } });
+  release();
+  const [firstResult, secondResult] = await Promise.all([first, second]);
+  assert.equal(secondResult.status, 409);
+  assert.equal(secondResult.body.code, 'DECISION_NOT_PENDING');
+  assert.equal(firstResult.status, 200);
+  assert.equal(calls.length, 1, 'at-most-once: two in-flight answers, one host call');
+});
+
 test('decision-store: an unknown or foreign decision id is 404 and never reaches the host', async () => {
   const host = stubHost();
   const { store: decisions } = store(host);
