@@ -36,6 +36,20 @@ export type DecisionLanguage = 'en' | 'fr';
  */
 export const DECISION_STALENESS_MS = 10 * 60_000;
 
+/**
+ * Thirty minutes from a decision's own first observation. The ten-minute rule
+ * above measures silence, and silence is re-armed by a `waiting` status poll or
+ * a re-delivery of the same ask, so a form superseded by a newer ask stayed
+ * answerable for as long as the session kept reporting waiting. This bound is
+ * never re-armed: past it the board cannot prove the ask is still the one the
+ * session waits on, so it refuses and sends the owner to the session. The
+ * service enforces the same constant (`decision-store.ts`).
+ */
+export const DECISION_MAX_AGE_MS = 30 * 60_000;
+
+/** How often a snapshot or a visibility return may read `GET /decisions`. */
+export const DECISION_REFRESH_MIN_MS = 1_500;
+
 export interface DecisionLinkedItem {
   id: string;
   number: number | null;
@@ -55,6 +69,8 @@ export interface DecisionView {
   askedAt: number;
   state: 'pending' | 'answering' | 'answered-unconfirmed';
   confirmedAt: number;
+  /** When the service first saw this decision. Never re-armed by a re-delivery. */
+  firstSeenAt: number;
   answeredAt: number | null;
   linked: DecisionLinkedItem[];
   fields: FormField[] | null;
@@ -73,8 +89,12 @@ export type AnswerState =
   | 'unknown-outcome'
   /** The service said another answer is already in flight (409, entry `answering`). */
   | 'in-flight'
+  /** The service said this decision was already answered (409, entry `answered-unconfirmed`). */
+  | 'already-answered'
   /** The service refused because the observation is past the staleness window (409 DECISION_STALE). */
   | 'unconfirmed'
+  /** The service refused because the decision is past its absolute maximum age (409 DECISION_EXPIRED). */
+  | 'expired'
   /** The service refused because the session is not linked to a board task. */
   | 'not-linked';
 
@@ -106,6 +126,9 @@ const COPY = {
     waiting: 'waiting for you',
     answering: 'sending answer',
     answerInFlight: 'answer in flight',
+    alreadyAnswered: 'already answered',
+    closedInSession: 'closed in the session',
+    expired: 'too old to answer',
     confirming: 'answered, confirming',
     unconfirmed: 'not confirmed since {time}',
     answeredSent: 'Answer sent',
@@ -119,8 +142,11 @@ const COPY = {
     checking: 'Checking for decisions.',
     noDecision: 'No decision is waiting. Checked at {time}.',
     serviceDown: 'The board service is not answering. Last attempt at {time}.',
+    rateLimited: 'The board service is answering; the read after {time} was rate-limited.',
     restart: 'The board service restarted at {time}. Decisions asked before then are not tracked until the session speaks again.',
     gone: 'This decision was already closed in the session.',
+    alreadyAnsweredNote: 'An answer to this decision was already sent in the session.',
+    expiredNote: 'This decision is too old for the board to answer. Open the session to answer.',
     failed: 'The answer was not sent.',
     unknownOutcome: 'The answer may not have reached the session.',
     openSession: 'Open session',
@@ -150,6 +176,9 @@ const COPY = {
     waiting: 'en attente de vous',
     answering: 'envoi de la réponse',
     answerInFlight: "réponse en cours d'envoi",
+    alreadyAnswered: 'déjà répondu',
+    closedInSession: 'close dans la session',
+    expired: 'trop ancienne pour répondre',
     confirming: 'répondu, confirmation',
     unconfirmed: 'non confirmé depuis {time}',
     answeredSent: 'Réponse envoyée',
@@ -163,8 +192,11 @@ const COPY = {
     checking: 'Vérification des décisions.',
     noDecision: 'Aucune décision en attente. Vérifié à {time}.',
     serviceDown: 'Le service du tableau ne répond pas. Dernière tentative à {time}.',
+    rateLimited: 'Le service du tableau répond ; la lecture après {time} a été limitée.',
     restart: "Le service du tableau a redémarré à {time}. Les décisions demandées avant ne sont pas suivies tant que la session ne parle pas de nouveau.",
     gone: 'Cette décision a déjà été close dans la session.',
+    alreadyAnsweredNote: 'Une réponse à cette décision a déjà été envoyée dans la session.',
+    expiredNote: 'Cette décision est trop ancienne pour que le tableau y réponde. Ouvrez la session pour répondre.',
     failed: "La réponse n'a pas été envoyée.",
     unknownOutcome: "La réponse n'a peut-être pas atteint la session.",
     openSession: 'Ouvrir la session',
@@ -570,6 +602,9 @@ export function renderDecisionBlock(decision: DecisionView, context: DecisionRen
     if (confirming || answerState === 'sent') return copyText(language, 'confirming');
     if (answerState === 'answering') return copyText(language, 'answering');
     if (answeringElsewhere || answerState === 'in-flight') return copyText(language, 'answerInFlight');
+    if (answerState === 'already-answered') return copyText(language, 'alreadyAnswered');
+    if (answerState === 'expired') return copyText(language, 'expired');
+    if (answerState === 'stale') return copyText(language, 'closedInSession');
     if (stale) return copyText(language, 'unconfirmed', { time: formatClock(unconfirmedSince, language) });
     return copyText(language, 'waiting');
   })();
@@ -695,6 +730,8 @@ export function renderDecisionBlock(decision: DecisionView, context: DecisionRen
   } else if (answerState === 'failed') stateNote.textContent = copyText(language, 'failed');
   else if (answerState === 'unknown-outcome') stateNote.textContent = copyText(language, 'unknownOutcome');
   else if (answerState === 'stale') stateNote.textContent = copyText(language, 'gone');
+  else if (answerState === 'already-answered') stateNote.textContent = copyText(language, 'alreadyAnsweredNote');
+  else if (answerState === 'expired') stateNote.textContent = copyText(language, 'expiredNote');
   else if (answerState === 'permission-missing') stateNote.textContent = copyText(language, 'permissionMissing');
   else if (answerState === 'not-linked') stateNote.textContent = copyText(language, 'notLinked');
 
@@ -724,6 +761,201 @@ export function decisionRestartAt(
   return previousStartedAt > 0 && startedAt !== previousStartedAt ? at : previous;
 }
 
+/**
+ * What the panel knows about the decision feed. `status` is one of:
+ *
+ * - `unknown`: no read has finished yet;
+ * - `ok`: the last read returned a list;
+ * - `down`: the service did not answer (or answered 401/403/5xx);
+ * - `limited`: the service answered but refused this read with 429. That is a
+ *   rate limit, not an outage, and it must never be shown as one.
+ */
+export type DecisionFeedStatus = 'unknown' | 'ok' | 'down' | 'limited';
+
+export interface DecisionFeedFacts {
+  status: DecisionFeedStatus;
+  /** The time of the last successful read, or 0. */
+  at: number;
+  startedAt: number;
+  /** Set when a successful read saw a different `startedAt` than the previous one. */
+  restartedAt: number | null;
+  decisions: DecisionView[];
+  lastAttemptAt: number;
+}
+
+/** Why the feed is being refreshed; a snapshot or a visibility return is throttled. */
+export type DecisionRefreshReason = 'snapshot' | 'visible' | 'view' | 'drawer' | 'recheck' | 'answer';
+
+/**
+ * Whether a refresh may start now. A snapshot and a visibility return are the
+ * two host-driven reasons that can burst (D5); `GET /decisions` allows 120
+ * reads a minute, so they are capped at one per `DECISION_REFRESH_MIN_MS`.
+ * An explicit reason (Recheck, a view switch, a drawer open, an answer) is
+ * always allowed: the owner asked, and a stale list there is a lie.
+ */
+export function shouldRefreshDecisions(
+  reason: DecisionRefreshReason,
+  lastAttemptAt: number,
+  now: number,
+  inFlight: boolean
+): boolean {
+  if (inFlight) return false;
+  if (reason === 'snapshot' || reason === 'visible') {
+    return lastAttemptAt <= 0 || now - lastAttemptAt >= DECISION_REFRESH_MIN_MS;
+  }
+  return true;
+}
+
+function parseJsonObject(text: unknown): Record<string, unknown> | null {
+  if (typeof text !== 'string' || text.length === 0) return null;
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return Object(parsed) === parsed && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The next feed state after one read. A 429 is `limited`, never `down`: the
+ * service answered, so telling the owner it is not answering would be false.
+ * A malformed 200 body is `down` (the feed did not produce a list).
+ */
+export function decisionFeedFromResponse(
+  previous: DecisionFeedFacts,
+  httpStatus: number,
+  body: unknown,
+  now: number
+): DecisionFeedFacts {
+  if (httpStatus === 429) return { ...previous, status: 'limited', lastAttemptAt: now };
+  if (httpStatus !== 200) return { ...previous, status: 'down', lastAttemptAt: now };
+  const parsed = typeof body === 'string'
+    ? parseJsonObject(body)
+    : Object(body) === body && !Array.isArray(body)
+    ? (body as Record<string, unknown>)
+    : null;
+  if (!parsed || !Array.isArray(parsed.decisions)) {
+    return { ...previous, status: 'down', lastAttemptAt: now };
+  }
+  const startedAt = typeof parsed.startedAt === 'number' ? parsed.startedAt : previous.startedAt;
+  const decisions = parsed.decisions as DecisionView[];
+  let restartedAt = decisionRestartAt(previous.startedAt, startedAt, now, previous.restartedAt);
+  // A4: a decision confirmed after the service started is the session speaking
+  // again, so the restart note has said its piece and must clear. The store was
+  // emptied at `startedAt`, so any entry confirmed at or after it is post-restart.
+  if (
+    restartedAt !== null &&
+    decisions.some((entry) => typeof entry?.confirmedAt === 'number' && entry.confirmedAt >= startedAt)
+  ) {
+    restartedAt = null;
+  }
+  return {
+    status: 'ok',
+    at: typeof parsed.at === 'number' ? parsed.at : now,
+    startedAt,
+    restartedAt,
+    decisions,
+    lastAttemptAt: now,
+  };
+}
+
+export interface DecisionObservation {
+  /** The block may offer controls: the service answered, the observation is fresh, it is bound and not expired. */
+  canAnswer: boolean;
+  /** The last confirmation to name when the feed is down; never the failed attempt. */
+  unconfirmedSince: number | null;
+  checking: boolean;
+  staleByObservation: boolean;
+  expired: boolean;
+}
+
+/**
+ * The one place the panel decides whether a decision is answerable. Three
+ * clocks: `confirmedAt` (silence, re-armed), `firstSeenAt` (the form's own age,
+ * never re-armed) and the feed's last successful read (was the list confirmed).
+ * The overlay and the service's 409 must agree, so the constants are shared.
+ */
+export function decisionObservation(
+  decision: Pick<DecisionView, 'confirmedAt' | 'firstSeenAt'>,
+  feed: Pick<DecisionFeedFacts, 'status' | 'at'>,
+  now: number,
+  unbound: boolean
+): DecisionObservation {
+  const confirmedAt = typeof decision.confirmedAt === 'number' ? decision.confirmedAt : 0;
+  const firstSeenAt = typeof decision.firstSeenAt === 'number' && decision.firstSeenAt > 0 ? decision.firstSeenAt : 0;
+  const staleByObservation = confirmedAt > 0 && now - confirmedAt > DECISION_STALENESS_MS;
+  const expired = firstSeenAt > 0 && now - firstSeenAt > DECISION_MAX_AGE_MS;
+  // A3: the last *confirmation* is the last successful read (`at`), not the
+  // failed attempt (`lastAttemptAt`), which the failure itself advances. A 429
+  // is not an outage: the service answered, so the last list still stands and
+  // only the decision's own silence can make it unconfirmed.
+  const unconfirmedSince = feed.status === 'down'
+    ? feed.at > 0 ? feed.at : now
+    : staleByObservation
+    ? confirmedAt
+    : null;
+  const serviceAnswers = feed.status === 'ok' || feed.status === 'limited';
+  return {
+    canAnswer: serviceAnswers && !staleByObservation && !expired && !unbound,
+    unconfirmedSince,
+    checking: feed.status === 'unknown',
+    staleByObservation,
+    expired,
+  };
+}
+
+/** The one note the feed may print. `null` means the list itself is current. */
+export function decisionFeedNote(
+  feed: Pick<DecisionFeedFacts, 'status' | 'restartedAt'>,
+  decisionCount: number
+): DecisionNoteKind | null {
+  if (feed.status === 'down') return 'service-down';
+  if (feed.status === 'unknown') return 'checking';
+  if (feed.status === 'limited') return 'rate-limited';
+  if (feed.restartedAt !== null) return 'restarted';
+  if (decisionCount === 0) return 'no-decisions';
+  return null;
+}
+
+/**
+ * Whether "Nothing is waiting on you" may show. Only after a successful read
+ * with no restart in between: unreachable, unchecked, rate-limited or restarted
+ * all mean the board cannot make that claim (D3).
+ */
+export function decisionEmptyBoxSuppressed(
+  feed: Pick<DecisionFeedFacts, 'status' | 'restartedAt'>
+): boolean {
+  return feed.status !== 'ok' || feed.restartedAt !== null;
+}
+
+/**
+ * One answer response as an answer state that is literally true. A 409 is not
+ * always "already closed": the service names the entry's state, so an answer
+ * that already completed (`answered-unconfirmed`) is not shown as in flight,
+ * and an answer still running (`answering`) is not shown as already answered.
+ */
+export function decisionAnswerStateFromResponse(
+  status: number,
+  code: string,
+  message: string | null,
+  entryState?: string | null
+): { state: AnswerState; message?: string | null } {
+  if (status === 200) return { state: 'sent' };
+  if (status === 404) return { state: 'stale' };
+  if (status === 409) {
+    if (code === 'DECISION_STALE') return { state: 'unconfirmed' };
+    if (code === 'DECISION_EXPIRED') return { state: 'expired' };
+    if (code === 'DECISION_NOT_LINKED') return { state: 'not-linked' };
+    if (code === 'DECISION_NOT_PENDING') {
+      return { state: entryState === 'answered-unconfirmed' ? 'already-answered' : 'in-flight' };
+    }
+    return { state: 'failed' };
+  }
+  if (status === 403) return { state: 'permission-missing', message };
+  if (status === 502) return { state: 'unknown-outcome', message };
+  return { state: 'failed', message };
+}
+
 /** The card line: one short verb and object, no controls (§8.1). */
 export function renderDecisionBadge(
   decision: DecisionView,
@@ -746,9 +978,16 @@ export function renderDecisionBadge(
   return badge;
 }
 
-/** `NO_DECISIONS`, `SERVICE_DOWN` and the restart note (§8.5). */
+/** `NO_DECISIONS`, `SERVICE_DOWN`, the restart note and the rate-limit note (§8.5). */
+export type DecisionNoteKind =
+  | 'no-decisions'
+  | 'service-down'
+  | 'restarted'
+  | 'checking'
+  | 'rate-limited';
+
 export function renderDecisionStatusNote(
-  kind: 'no-decisions' | 'service-down' | 'restarted' | 'checking',
+  kind: DecisionNoteKind,
   language: DecisionLanguage,
   at: number
 ): HTMLElement {
@@ -756,6 +995,7 @@ export function renderDecisionStatusNote(
   const time = formatClock(at, language);
   if (kind === 'no-decisions') node.textContent = copyText(language, 'noDecision', { time });
   else if (kind === 'service-down') node.textContent = copyText(language, 'serviceDown', { time });
+  else if (kind === 'rate-limited') node.textContent = copyText(language, 'rateLimited', { time });
   else if (kind === 'checking') node.textContent = copyText(language, 'checking');
   else node.textContent = copyText(language, 'restart', { time });
   return node;

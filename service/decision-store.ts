@@ -21,6 +21,15 @@ import type { SessionEventRequest } from './session-event.ts';
 export const DECISIONS_MAX = 50;
 export const DECISIONS_BODY_MAX = 64 * 1024;
 export const DECISION_STALENESS_MS = 10 * 60_000;
+/**
+ * Thirty minutes from the entry's own first observation, never re-armed. The
+ * staleness window above measures silence about a session, and a `waiting`
+ * poll or a re-delivery of the same ask re-arms it, so a form superseded by a
+ * newer ask stayed answerable. This bound is the form's age; past it the
+ * service refuses (`DECISION_EXPIRED`) and the owner answers in the session.
+ * The panel enforces the same constant (`panel/decisions.ts`).
+ */
+export const DECISION_MAX_AGE_MS = 30 * 60_000;
 /** Ids removed after the host said they were gone; bounded like the store itself. */
 export const DECISION_TOMBSTONES_MAX = 200;
 export const DECISION_MESSAGE_MAX = 2000;
@@ -55,6 +64,8 @@ export interface DecisionEntry {
   askedAt: number;
   state: DecisionState;
   confirmedAt: number;
+  /** When the store first saw this decision; a re-delivery never moves it. */
+  firstSeenAt: number;
   answeredAt: number | null;
   linked: LinkedItem[];
   fields: FormField[] | null;
@@ -79,6 +90,8 @@ export interface DecisionStoreOptions {
   host?: DecisionAnswerHost;
   maxEntries?: number;
   stalenessMs?: number;
+  /** Absolute maximum age from first observation; defaults to `DECISION_MAX_AGE_MS`. */
+  maxAgeMs?: number;
   /**
    * The board's project directory. When set, an event from another directory is
    * not stored, and an entry outside the scope is never answered. The panel
@@ -142,6 +155,7 @@ export class DecisionStore {
   private readonly now: () => number;
   private readonly maxEntries: number;
   private readonly stalenessMs: number;
+  private readonly maxAgeMs: number;
   private readonly log: (line: string) => void;
   private readonly projects: Set<string> = new Set();
   /** A decision removed after the host said it was gone never comes back as live. */
@@ -154,6 +168,7 @@ export class DecisionStore {
     this.now = options.now ?? Date.now;
     this.maxEntries = options.maxEntries ?? DECISIONS_MAX;
     this.stalenessMs = options.stalenessMs ?? DECISION_STALENESS_MS;
+    this.maxAgeMs = options.maxAgeMs ?? DECISION_MAX_AGE_MS;
     this.log = options.log ?? (() => {});
     this.host = options.host;
     if (options.projectDirectory) this.registerProject(options.projectDirectory);
@@ -258,6 +273,14 @@ export class DecisionStore {
   }
 
   /**
+   * True when the decision is older than its absolute maximum age. Measured
+   * from `firstSeenAt`, so neither a `waiting` poll nor a re-delivery re-arms it.
+   */
+  public isExpired(entry: DecisionEntry): boolean {
+    return this.now() - entry.firstSeenAt > this.maxAgeMs;
+  }
+
+  /**
    * `GET /decisions` (§3.8). Sorted per §3.4 and capped at 64 KB: when the
    * projection is too large, the oldest entries are dropped first.
    */
@@ -286,7 +309,11 @@ export class DecisionStore {
     }
     const entry = this.entries.get(id);
     if (!entry) return { status: 404, body: { v: 1, code: 'DECISION_UNKNOWN' } };
-    if (entry.state !== 'pending') return { status: 409, body: { v: 1, code: 'DECISION_NOT_PENDING' } };
+    if (entry.state !== 'pending') {
+      // The panel needs the entry's real state to tell an answer still running
+      // from one that already completed; both are 409 but they are not the same.
+      return { status: 409, body: { v: 1, code: 'DECISION_NOT_PENDING', state: entry.state } };
+    }
     // A decision the host linked to nothing is shown as UNBOUND and answered in
     // the session, never through the board: the board cannot prove it owns it.
     if (entry.linked.length === 0) return { status: 409, body: { v: 1, code: 'DECISION_NOT_LINKED' } };
@@ -296,6 +323,10 @@ export class DecisionStore {
     // §5.1 step 2: past the staleness window is a refusal, not an answer. The
     // entry stays `pending`; only an observation deletes it (§7.2).
     if (this.isUnconfirmed(entry)) return { status: 409, body: { v: 1, code: 'DECISION_STALE' } };
+    // The form's own age, independent of any re-arming. A superseded ask stays
+    // in the store while the session reports waiting; past this bound the board
+    // cannot prove it is still the ask the session waits on.
+    if (this.isExpired(entry)) return { status: 409, body: { v: 1, code: 'DECISION_EXPIRED' } };
     if (entry.kind !== 'form') {
       // S2 answers forms only. A page is answered by a message, which S3 ships.
       return { status: 400, body: { v: 1, code: 'ANSWER_INVALID', detail: [] } };
@@ -430,6 +461,7 @@ export class DecisionStore {
       askedAt: event.at,
       state: 'pending',
       confirmedAt: now,
+      firstSeenAt: now,
       answeredAt: null,
       linked: normalizeLinked(event.linked),
       fields: null,

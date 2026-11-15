@@ -5397,11 +5397,16 @@ ${placeholder}
 
   // panel/decisions.ts
   var DECISION_STALENESS_MS = 10 * 6e4;
+  var DECISION_MAX_AGE_MS = 30 * 6e4;
+  var DECISION_REFRESH_MIN_MS = 1500;
   var COPY = {
     en: {
       waiting: "waiting for you",
       answering: "sending answer",
       answerInFlight: "answer in flight",
+      alreadyAnswered: "already answered",
+      closedInSession: "closed in the session",
+      expired: "too old to answer",
       confirming: "answered, confirming",
       unconfirmed: "not confirmed since {time}",
       answeredSent: "Answer sent",
@@ -5415,8 +5420,11 @@ ${placeholder}
       checking: "Checking for decisions.",
       noDecision: "No decision is waiting. Checked at {time}.",
       serviceDown: "The board service is not answering. Last attempt at {time}.",
+      rateLimited: "The board service is answering; the read after {time} was rate-limited.",
       restart: "The board service restarted at {time}. Decisions asked before then are not tracked until the session speaks again.",
       gone: "This decision was already closed in the session.",
+      alreadyAnsweredNote: "An answer to this decision was already sent in the session.",
+      expiredNote: "This decision is too old for the board to answer. Open the session to answer.",
       failed: "The answer was not sent.",
       unknownOutcome: "The answer may not have reached the session.",
       openSession: "Open session",
@@ -5446,6 +5454,9 @@ ${placeholder}
       waiting: "en attente de vous",
       answering: "envoi de la r\xE9ponse",
       answerInFlight: "r\xE9ponse en cours d'envoi",
+      alreadyAnswered: "d\xE9j\xE0 r\xE9pondu",
+      closedInSession: "close dans la session",
+      expired: "trop ancienne pour r\xE9pondre",
       confirming: "r\xE9pondu, confirmation",
       unconfirmed: "non confirm\xE9 depuis {time}",
       answeredSent: "R\xE9ponse envoy\xE9e",
@@ -5459,8 +5470,11 @@ ${placeholder}
       checking: "V\xE9rification des d\xE9cisions.",
       noDecision: "Aucune d\xE9cision en attente. V\xE9rifi\xE9 \xE0 {time}.",
       serviceDown: "Le service du tableau ne r\xE9pond pas. Derni\xE8re tentative \xE0 {time}.",
+      rateLimited: "Le service du tableau r\xE9pond ; la lecture apr\xE8s {time} a \xE9t\xE9 limit\xE9e.",
       restart: "Le service du tableau a red\xE9marr\xE9 \xE0 {time}. Les d\xE9cisions demand\xE9es avant ne sont pas suivies tant que la session ne parle pas de nouveau.",
       gone: "Cette d\xE9cision a d\xE9j\xE0 \xE9t\xE9 close dans la session.",
+      alreadyAnsweredNote: "Une r\xE9ponse \xE0 cette d\xE9cision a d\xE9j\xE0 \xE9t\xE9 envoy\xE9e dans la session.",
+      expiredNote: "Cette d\xE9cision est trop ancienne pour que le tableau y r\xE9ponde. Ouvrez la session pour r\xE9pondre.",
       failed: "La r\xE9ponse n'a pas \xE9t\xE9 envoy\xE9e.",
       unknownOutcome: "La r\xE9ponse n'a peut-\xEAtre pas atteint la session.",
       openSession: "Ouvrir la session",
@@ -5774,6 +5788,9 @@ ${placeholder}
       if (confirming || answerState === "sent") return copyText(language, "confirming");
       if (answerState === "answering") return copyText(language, "answering");
       if (answeringElsewhere || answerState === "in-flight") return copyText(language, "answerInFlight");
+      if (answerState === "already-answered") return copyText(language, "alreadyAnswered");
+      if (answerState === "expired") return copyText(language, "expired");
+      if (answerState === "stale") return copyText(language, "closedInSession");
       if (stale) return copyText(language, "unconfirmed", { time: formatClock(unconfirmedSince, language) });
       return copyText(language, "waiting");
     })();
@@ -5875,6 +5892,8 @@ ${placeholder}
     } else if (answerState === "failed") stateNote.textContent = copyText(language, "failed");
     else if (answerState === "unknown-outcome") stateNote.textContent = copyText(language, "unknownOutcome");
     else if (answerState === "stale") stateNote.textContent = copyText(language, "gone");
+    else if (answerState === "already-answered") stateNote.textContent = copyText(language, "alreadyAnsweredNote");
+    else if (answerState === "expired") stateNote.textContent = copyText(language, "expiredNote");
     else if (answerState === "permission-missing") stateNote.textContent = copyText(language, "permissionMissing");
     else if (answerState === "not-linked") stateNote.textContent = copyText(language, "notLinked");
     const answerMessage = typeof context.answerMessage === "string" ? sanitizeAgentText(context.answerMessage).trim() : "";
@@ -5886,6 +5905,86 @@ ${placeholder}
   }
   function decisionRestartAt(previousStartedAt, startedAt, at, previous) {
     return previousStartedAt > 0 && startedAt !== previousStartedAt ? at : previous;
+  }
+  function shouldRefreshDecisions(reason, lastAttemptAt, now, inFlight) {
+    if (inFlight) return false;
+    if (reason === "snapshot" || reason === "visible") {
+      return lastAttemptAt <= 0 || now - lastAttemptAt >= DECISION_REFRESH_MIN_MS;
+    }
+    return true;
+  }
+  function parseJsonObject(text) {
+    if (typeof text !== "string" || text.length === 0) return null;
+    try {
+      const parsed = JSON.parse(text);
+      return Object(parsed) === parsed && !Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  function decisionFeedFromResponse(previous, httpStatus, body, now) {
+    if (httpStatus === 429) return { ...previous, status: "limited", lastAttemptAt: now };
+    if (httpStatus !== 200) return { ...previous, status: "down", lastAttemptAt: now };
+    const parsed = typeof body === "string" ? parseJsonObject(body) : Object(body) === body && !Array.isArray(body) ? body : null;
+    if (!parsed || !Array.isArray(parsed.decisions)) {
+      return { ...previous, status: "down", lastAttemptAt: now };
+    }
+    const startedAt = typeof parsed.startedAt === "number" ? parsed.startedAt : previous.startedAt;
+    const decisions = parsed.decisions;
+    let restartedAt = decisionRestartAt(previous.startedAt, startedAt, now, previous.restartedAt);
+    if (restartedAt !== null && decisions.some((entry) => typeof entry?.confirmedAt === "number" && entry.confirmedAt >= startedAt)) {
+      restartedAt = null;
+    }
+    return {
+      status: "ok",
+      at: typeof parsed.at === "number" ? parsed.at : now,
+      startedAt,
+      restartedAt,
+      decisions,
+      lastAttemptAt: now
+    };
+  }
+  function decisionObservation(decision, feed, now, unbound) {
+    const confirmedAt = typeof decision.confirmedAt === "number" ? decision.confirmedAt : 0;
+    const firstSeenAt = typeof decision.firstSeenAt === "number" && decision.firstSeenAt > 0 ? decision.firstSeenAt : 0;
+    const staleByObservation = confirmedAt > 0 && now - confirmedAt > DECISION_STALENESS_MS;
+    const expired = firstSeenAt > 0 && now - firstSeenAt > DECISION_MAX_AGE_MS;
+    const unconfirmedSince = feed.status === "down" ? feed.at > 0 ? feed.at : now : staleByObservation ? confirmedAt : null;
+    const serviceAnswers = feed.status === "ok" || feed.status === "limited";
+    return {
+      canAnswer: serviceAnswers && !staleByObservation && !expired && !unbound,
+      unconfirmedSince,
+      checking: feed.status === "unknown",
+      staleByObservation,
+      expired
+    };
+  }
+  function decisionFeedNote(feed, decisionCount) {
+    if (feed.status === "down") return "service-down";
+    if (feed.status === "unknown") return "checking";
+    if (feed.status === "limited") return "rate-limited";
+    if (feed.restartedAt !== null) return "restarted";
+    if (decisionCount === 0) return "no-decisions";
+    return null;
+  }
+  function decisionEmptyBoxSuppressed(feed) {
+    return feed.status !== "ok" || feed.restartedAt !== null;
+  }
+  function decisionAnswerStateFromResponse(status, code, message, entryState) {
+    if (status === 200) return { state: "sent" };
+    if (status === 404) return { state: "stale" };
+    if (status === 409) {
+      if (code === "DECISION_STALE") return { state: "unconfirmed" };
+      if (code === "DECISION_EXPIRED") return { state: "expired" };
+      if (code === "DECISION_NOT_LINKED") return { state: "not-linked" };
+      if (code === "DECISION_NOT_PENDING") {
+        return { state: entryState === "answered-unconfirmed" ? "already-answered" : "in-flight" };
+      }
+      return { state: "failed" };
+    }
+    if (status === 403) return { state: "permission-missing", message };
+    if (status === 502) return { state: "unknown-outcome", message };
+    return { state: "failed", message };
   }
   function renderDecisionBadge(decision, language, extraCount = 0) {
     const badge = element("span", "decision-badge");
@@ -5904,6 +6003,7 @@ ${placeholder}
     const time = formatClock(at, language);
     if (kind === "no-decisions") node.textContent = copyText(language, "noDecision", { time });
     else if (kind === "service-down") node.textContent = copyText(language, "serviceDown", { time });
+    else if (kind === "rate-limited") node.textContent = copyText(language, "rateLimited", { time });
     else if (kind === "checking") node.textContent = copyText(language, "checking");
     else node.textContent = copyText(language, "restart", { time });
     return node;
@@ -10279,7 +10379,7 @@ Blocked by ${blockerRef}`;
         if (!decisionFeedStarted) {
           seedDecisionFeed();
         } else {
-          void refreshDecisions();
+          maybeRefreshDecisions("snapshot");
         }
         statusReconciler.schedule(issues);
         handleDraftSessionUpdates(sessions);
@@ -13980,28 +14080,12 @@ Blocked by ${blockerRef}`;
       const res = await host.serviceRequest({ method: "GET", path: "/decisions" });
       const now = Date.now();
       const status = res && typeof res.status === "number" ? res.status : 0;
-      if (status === 200) {
-        const parsed = safeJsonParse(res.body);
-        if (!parsed || !Array.isArray(parsed.decisions)) {
-          decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: now };
-        } else {
-          const startedAt = typeof parsed.startedAt === "number" ? parsed.startedAt : decisionFeed.startedAt;
-          const restartedAt = decisionRestartAt(decisionFeed.startedAt, startedAt, now, decisionFeed.restartedAt);
-          decisionFeed = {
-            status: "ok",
-            at: typeof parsed.at === "number" ? parsed.at : now,
-            startedAt,
-            restartedAt,
-            decisions: parsed.decisions,
-            lastAttemptAt: now
-          };
-          const liveIds = new Set(decisionFeed.decisions.map((entry) => entry.id));
-          for (const id of [...decisionAnswerState.keys()]) {
-            if (!liveIds.has(id)) decisionAnswerState.delete(id);
-          }
+      decisionFeed = decisionFeedFromResponse(decisionFeed, status, res && res.body, now);
+      if (decisionFeed.status === "ok") {
+        const liveIds = new Set(decisionFeed.decisions.map((entry) => entry.id));
+        for (const id of [...decisionAnswerState.keys()]) {
+          if (!liveIds.has(id)) decisionAnswerState.delete(id);
         }
-      } else {
-        decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: now };
       }
     } catch {
       decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: Date.now() };
@@ -14010,9 +14094,14 @@ Blocked by ${blockerRef}`;
     }
     if (decisionSignature() !== previousSignature || decisionFeed.restartedAt !== previousRestartedAt) {
       renderDecisionSurfaces();
-    } else if (decisionFeed.status !== previousStatus && viewState.view === "pending") {
-      renderViews();
+    } else if (decisionFeed.status !== previousStatus) {
+      if (viewState.view === "pending") renderViews();
+      if (activeIssue) renderDrawerDecision(activeIssue);
     }
+  }
+  function maybeRefreshDecisions(reason) {
+    if (!shouldRefreshDecisions(reason, decisionFeed.lastAttemptAt, Date.now(), decisionRefreshInFlight)) return;
+    void refreshDecisions();
   }
   function renderDecisionSurfaces() {
     renderViews();
@@ -14030,41 +14119,29 @@ Blocked by ${blockerRef}`;
     const parsed = safeJsonParse(res && res.body);
     return {
       code: parsed && typeof parsed.code === "string" ? parsed.code : "",
-      message: parsed && typeof parsed.message === "string" ? parsed.message : null
+      message: parsed && typeof parsed.message === "string" ? parsed.message : null,
+      state: parsed && typeof parsed.state === "string" ? parsed.state : null
     };
-  }
-  function decisionAnswerStateFromResponse(status, code, message) {
-    if (status === 200) return { state: "sent" };
-    if (status === 404) return { state: "stale" };
-    if (status === 409) {
-      if (code === "DECISION_STALE") return { state: "unconfirmed" };
-      if (code === "DECISION_NOT_LINKED") return { state: "not-linked" };
-      if (code === "DECISION_NOT_PENDING") return { state: "in-flight" };
-      return { state: "failed" };
-    }
-    if (status === 403) return { state: "permission-missing", message };
-    if (status === 502) return { state: "unknown-outcome", message };
-    return { state: "failed", message };
   }
   function decisionBlockContext(decision, issueNumber, unbound) {
     const answer = renderDecisionAnswerStateNote(decision.id);
     const now = Date.now();
-    const staleByObservation = decision.confirmedAt > 0 && now - decision.confirmedAt > DECISION_STALENESS_MS;
-    const unconfirmedSince = decisionFeed.status === "down" ? decisionFeed.lastAttemptAt || now : staleByObservation ? decision.confirmedAt : null;
+    const observation = decisionObservation(decision, decisionFeed, now, unbound);
+    const state = answer.state === "idle" && observation.expired ? "expired" : answer.state;
     return {
       language: decisionLanguage(),
       now,
       // Answer controls exist only when the service feed answered, the
-      // observation is fresh, and the decision belongs to a board task. A
-      // refusal at call time still maps to a named state.
-      canAnswer: decisionFeed.status === "ok" && !staleByObservation && !unbound,
-      checking: decisionFeed.status === "unknown",
+      // observation is fresh, the form is not past its age, and the decision
+      // belongs to a board task. A refusal at call time still maps to a named state.
+      canAnswer: observation.canAnswer,
+      checking: observation.checking,
       unbound,
       issueNumber,
-      answerState: answer.state,
+      answerState: state,
       answerMessage: answer.message ?? null,
       dismissal: answer.dismissal === true,
-      unconfirmedSince,
+      unconfirmedSince: observation.unconfirmedSince,
       onSubmit: (target, values) => {
         void submitDecisionAnswer(target, values);
       },
@@ -14075,7 +14152,7 @@ Blocked by ${blockerRef}`;
         void host.openSession(target.sessionId);
       },
       onRecheck: () => {
-        void refreshDecisions();
+        maybeRefreshDecisions("recheck");
       }
     };
   }
@@ -14090,8 +14167,8 @@ Blocked by ${blockerRef}`;
         body: JSON.stringify({ v: 1, id: decision.id, values })
       });
       const status = res && typeof res.status === "number" ? res.status : 0;
-      const { code, message } = decisionErrorBody(res);
-      decisionAnswerState.set(decision.id, decisionAnswerStateFromResponse(status, code, message));
+      const { code, message, state: entryState } = decisionErrorBody(res);
+      decisionAnswerState.set(decision.id, decisionAnswerStateFromResponse(status, code, message, entryState));
     } catch {
       decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
     } finally {
@@ -14110,8 +14187,8 @@ Blocked by ${blockerRef}`;
         body: JSON.stringify({ v: 1, id: decision.id, values: null, message })
       });
       const status = res && typeof res.status === "number" ? res.status : 0;
-      const { code, message: errorMessage } = decisionErrorBody(res);
-      const next = decisionAnswerStateFromResponse(status, code, errorMessage);
+      const { code, message: errorMessage, state: entryState } = decisionErrorBody(res);
+      const next = decisionAnswerStateFromResponse(status, code, errorMessage, entryState);
       decisionAnswerState.set(decision.id, next.state === "sent" ? { state: "sent", dismissal: true } : next);
     } catch {
       decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
@@ -14120,27 +14197,23 @@ Blocked by ${blockerRef}`;
       renderDecisionSurfaces();
     }
   }
+  function decisionNoteAt(kind) {
+    if (kind === "service-down") return decisionFeed.lastAttemptAt || Date.now();
+    if (kind === "restarted") return decisionFeed.restartedAt ?? Date.now();
+    if (kind === "rate-limited" || kind === "no-decisions") return decisionFeed.at || Date.now();
+    return Date.now();
+  }
   function renderDrawerDecision(issue) {
     if (!elDrawerDecisionSlot) return;
     elDrawerDecisionSlot.innerHTML = "";
     const list = decisionsForIssue(issue);
     if (list.length === 0) {
-      const language = decisionLanguage();
-      if (decisionFeed.status === "down") {
-        elDrawerDecisionSlot.style.display = "";
-        elDrawerDecisionSlot.appendChild(
-          renderDecisionStatusNote("service-down", language, decisionFeed.lastAttemptAt || Date.now())
-        );
-      } else if (decisionFeed.status === "unknown") {
-        elDrawerDecisionSlot.style.display = "";
-        elDrawerDecisionSlot.appendChild(renderDecisionStatusNote("checking", language, Date.now()));
-      } else if (decisionFeed.restartedAt) {
-        elDrawerDecisionSlot.style.display = "";
-        elDrawerDecisionSlot.appendChild(
-          renderDecisionStatusNote("restarted", language, decisionFeed.restartedAt)
-        );
-      } else {
+      const note = decisionFeedNote(decisionFeed, decisionFeed.decisions.length);
+      if (note === null || note === "no-decisions") {
         elDrawerDecisionSlot.style.display = "none";
+      } else {
+        elDrawerDecisionSlot.style.display = "";
+        elDrawerDecisionSlot.appendChild(renderDecisionStatusNote(note, decisionLanguage(), decisionNoteAt(note)));
       }
       return;
     }
@@ -14188,21 +14261,16 @@ Blocked by ${blockerRef}`;
     renderGroup(copyText(language, "inboxNeeds"), bound.filter((entry) => entry.state === "pending"), false);
     renderGroup(copyText(language, "inboxConfirming"), bound.filter((entry) => entry.state !== "pending"), false);
     renderGroup(copyText(language, "inboxUnbound"), unbound, true);
-    if (decisionFeed.status === "down") {
-      section.appendChild(renderDecisionStatusNote("service-down", language, decisionFeed.lastAttemptAt || Date.now()));
-    } else if (decisionFeed.status === "unknown") {
-      section.appendChild(renderDecisionStatusNote("checking", language, Date.now()));
-    } else if (decisionFeed.restartedAt) {
-      section.appendChild(renderDecisionStatusNote("restarted", language, decisionFeed.restartedAt));
-    } else if (decisionFeed.decisions.length === 0) {
-      section.appendChild(renderDecisionStatusNote("no-decisions", language, decisionFeed.at || Date.now()));
+    const note = decisionFeedNote(decisionFeed, decisionFeed.decisions.length);
+    if (note !== null) {
+      section.appendChild(renderDecisionStatusNote(note, language, decisionNoteAt(note)));
     }
     const recheck = document.createElement("button");
     recheck.type = "button";
     recheck.className = "btn btn-xs decision-recheck";
     recheck.textContent = copyText(language, "recheck");
     recheck.addEventListener("click", () => {
-      void refreshDecisions();
+      maybeRefreshDecisions("recheck");
     });
     section.appendChild(recheck);
     elHumanViewContainer.appendChild(section);
@@ -14236,7 +14304,7 @@ Blocked by ${blockerRef}`;
     });
     if (humanIssues.length === 0) {
       if (decisionCount > 0) return;
-      if (decisionFeed.status !== "ok" || decisionFeed.restartedAt) return;
+      if (decisionEmptyBoxSuppressed(decisionFeed)) return;
       if (isLoading && issues.length === 0) {
         elHumanViewContainer.innerHTML = `
         <div class="empty-box">
@@ -15653,7 +15721,7 @@ Blocked by ${blockerRef}`;
   function openDrawer(issue) {
     drawerGeneration++;
     activeIssue = issue;
-    void refreshDecisions();
+    maybeRefreshDecisions("drawer");
     renderDrawer(issue, false, drawerGeneration, true);
     elDrawerScrim.classList.add("active");
     elTaskDrawer.classList.add("active");
@@ -17680,7 +17748,7 @@ Blocked by ${blockerRef}`;
         viewState.view = item.getAttribute("data-mode");
         rememberViewState();
         applyLayoutMode();
-        if (viewState.view === "pending") void refreshDecisions();
+        if (viewState.view === "pending") maybeRefreshDecisions("view");
         closeViewPicker();
         elBtnViewSelect?.focus();
       });
@@ -18033,7 +18101,7 @@ Blocked by ${blockerRef}`;
         flushScratchpadSave();
       } else if (boardWasHidden && !isLoading && currentRepo && !isAllProjectsMode) {
         void fetchIssues();
-        if (decisionFeedStarted) void refreshDecisions();
+        if (decisionFeedStarted) maybeRefreshDecisions("visible");
       }
       boardWasHidden = document.hidden;
     });

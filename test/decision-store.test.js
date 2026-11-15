@@ -180,6 +180,7 @@ test('decision-store: a second answer gets 409 and makes zero further host calls
   const second = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'stack' } });
   assert.equal(second.status, 409);
   assert.equal(second.body.code, 'DECISION_NOT_PENDING');
+  assert.equal(second.body.state, 'answered-unconfirmed', 'the 409 names the entry state, so the panel can say "already answered"');
   assert.equal(host.calls.length, 1, 'at-most-once: the host must be called exactly once');
 });
 
@@ -206,6 +207,7 @@ test('decision-store: two answers in flight make one host call, the second 409',
   const [firstResult, secondResult] = await Promise.all([first, second]);
   assert.equal(secondResult.status, 409);
   assert.equal(secondResult.body.code, 'DECISION_NOT_PENDING');
+  assert.equal(secondResult.body.state, 'answering', 'an answer still running is not "already answered"');
   assert.equal(firstResult.status, 200);
   assert.equal(calls.length, 1, 'at-most-once: two in-flight answers, one host call');
 });
@@ -255,6 +257,47 @@ test('decision-store: a fresh confirmation re-arms a decision that had gone stal
   decisions.observeStatus('ses_1', 'waiting');
   const result = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
   assert.equal(result.status, 200);
+  assert.equal(host.calls.length, 1);
+});
+
+test('decision-store: a superseded form past its absolute age is refused even after re-arming', async () => {
+  const host = stubHost();
+  const { store: decisions, advance } = store(host);
+  const askContent = (askId) => ({
+    type: 'question-asked',
+    sessionTitle: 'issue-52-worktree',
+    ask: { kind: 'form', id: askId, title: 'Choose a layout', fields: FORM_FIELDS },
+  });
+
+  decisions.handleEvent(event({}, formContent()));
+  const firstSeenAt = decisions.get('ses_1:form:q_1').firstSeenAt;
+  assert.equal(firstSeenAt, NOW);
+  assert.equal(decisions.list().decisions[0].firstSeenAt, NOW, 'the list names the first observation');
+
+  // The agent asks a second form in the same session. q_1 is superseded, but
+  // the store keeps it while the session reports waiting.
+  advance(11 * 60_000);
+  decisions.handleEvent(
+    event({ at: NOW + 11 * 60_000, question: { kind: 'form', id: 'q_2' } }, askContent('q_2'))
+  );
+  decisions.observeStatus('ses_1', 'waiting'); // re-arms q_1's confirmedAt
+  advance(20 * 60_000); // 31 minutes from q_1's first observation
+  // A duplicate delivery of q_1 re-arms it again; it must not reset its age.
+  decisions.handleEvent(event({ at: NOW + 31 * 60_000 }, formContent()));
+  const entry = decisions.get('ses_1:form:q_1');
+  assert.equal(entry.firstSeenAt, firstSeenAt, 'a re-delivery never moves the first observation');
+  assert.equal(decisions.isUnconfirmed(entry), false, 'silence was re-armed, so only the age can refuse it');
+
+  const refused = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  assert.equal(refused.status, 409);
+  assert.equal(refused.body.code, 'DECISION_EXPIRED');
+  assert.equal(host.calls.length, 0, 'an expired form is never sent to the host');
+
+  // The newer ask is only 20 minutes old and is still answerable: the rule is
+  // per form, not per session. A waiting poll re-arms silence, not age.
+  decisions.observeStatus('ses_1', 'waiting');
+  const newer = await decisions.answer({ id: 'ses_1:form:q_2', values: { layout: 'split' } });
+  assert.equal(newer.status, 200);
   assert.equal(host.calls.length, 1);
 });
 

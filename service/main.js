@@ -1140,6 +1140,7 @@ function formIsComplete(fields, values) {
 var DECISIONS_MAX = 50;
 var DECISIONS_BODY_MAX = 64 * 1024;
 var DECISION_STALENESS_MS = 10 * 6e4;
+var DECISION_MAX_AGE_MS = 30 * 6e4;
 var DECISION_TOMBSTONES_MAX = 200;
 var DECISION_MESSAGE_MAX = 2e3;
 var DECISION_TITLE_MAX = 200;
@@ -1172,6 +1173,7 @@ var DecisionStore = class {
   now;
   maxEntries;
   stalenessMs;
+  maxAgeMs;
   log;
   projects = /* @__PURE__ */ new Set();
   /** A decision removed after the host said it was gone never comes back as live. */
@@ -1183,6 +1185,7 @@ var DecisionStore = class {
     this.now = options.now ?? Date.now;
     this.maxEntries = options.maxEntries ?? DECISIONS_MAX;
     this.stalenessMs = options.stalenessMs ?? DECISION_STALENESS_MS;
+    this.maxAgeMs = options.maxAgeMs ?? DECISION_MAX_AGE_MS;
     this.log = options.log ?? (() => {
     });
     this.host = options.host;
@@ -1277,6 +1280,13 @@ var DecisionStore = class {
     return this.now() - entry.confirmedAt > this.stalenessMs;
   }
   /**
+   * True when the decision is older than its absolute maximum age. Measured
+   * from `firstSeenAt`, so neither a `waiting` poll nor a re-delivery re-arms it.
+   */
+  isExpired(entry) {
+    return this.now() - entry.firstSeenAt > this.maxAgeMs;
+  }
+  /**
    * `GET /decisions` (§3.8). Sorted per §3.4 and capped at 64 KB: when the
    * projection is too large, the oldest entries are dropped first.
    */
@@ -1304,12 +1314,15 @@ var DecisionStore = class {
     }
     const entry = this.entries.get(id);
     if (!entry) return { status: 404, body: { v: 1, code: "DECISION_UNKNOWN" } };
-    if (entry.state !== "pending") return { status: 409, body: { v: 1, code: "DECISION_NOT_PENDING" } };
+    if (entry.state !== "pending") {
+      return { status: 409, body: { v: 1, code: "DECISION_NOT_PENDING", state: entry.state } };
+    }
     if (entry.linked.length === 0) return { status: 409, body: { v: 1, code: "DECISION_NOT_LINKED" } };
     if (!this.inScope(entry.directory)) {
       return { status: 409, body: { v: 1, code: "DECISION_FOREIGN_PROJECT" } };
     }
     if (this.isUnconfirmed(entry)) return { status: 409, body: { v: 1, code: "DECISION_STALE" } };
+    if (this.isExpired(entry)) return { status: 409, body: { v: 1, code: "DECISION_EXPIRED" } };
     if (entry.kind !== "form") {
       return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: [] } };
     }
@@ -1415,6 +1428,7 @@ var DecisionStore = class {
       askedAt: event.at,
       state: "pending",
       confirmedAt: now,
+      firstSeenAt: now,
       answeredAt: null,
       linked: normalizeLinked(event.linked),
       fields: null,
@@ -2360,6 +2374,7 @@ export {
   CoordinatorService,
   DECISIONS_BODY_MAX,
   DECISIONS_MAX,
+  DECISION_MAX_AGE_MS,
   DECISION_MESSAGE_MAX,
   DECISION_STALENESS_MS,
   DECISION_TITLE_MAX,

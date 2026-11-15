@@ -286,6 +286,7 @@ test('decision-render: no fixed string carries an emoji or an exclamation mark',
     'fieldsNotShown', 'optionsNotShown', 'external', 'notAnswered', 'yes', 'other',
     'subagentOf', 'unlinkedProvenance', 'waitingSince', 'older', 'moreInAnother',
     'inboxNeeds', 'inboxConfirming', 'inboxUnbound', 'inboxHuman', 'noHuman',
+    'alreadyAnswered', 'closedInSession', 'expired', 'rateLimited', 'alreadyAnsweredNote', 'expiredNote',
   ];
   for (const language of ['en', 'fr']) {
     for (const key of keys) {
