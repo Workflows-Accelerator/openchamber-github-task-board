@@ -66,8 +66,13 @@ const DIRECTORY_MAX = 1024;
 const TITLE_MAX = 2048;
 /** C0/C1 controls, bidi overrides and isolates: never accepted on the wire. */
 const FORBIDDEN_CHARS = /[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/;
+/** Half of a UTF-16 pair: a string that carries one is not valid text. */
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 /** Credential shapes the threat model refuses in any string we keep. */
 const CREDENTIAL_PATTERNS = [/gh[pousr]_[A-Za-z0-9]{20,}/, /github_pat_[A-Za-z0-9_]{20,}/, /Bearer\s+\S+/];
+
+/** True for text the wire must never carry: control/bidi characters or a lone surrogate. */
+export const hasForbiddenText = (value: string): boolean => FORBIDDEN_CHARS.test(value) || LONE_SURROGATE.test(value);
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   if (Object(value) !== value || value === null || Array.isArray(value)) return false;
@@ -98,7 +103,7 @@ export function normalizeDirectory(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   if (value.length === 0 || value.length > DIRECTORY_MAX) return null;
   if (!path.isAbsolute(value)) return null;
-  if (FORBIDDEN_CHARS.test(value)) return null;
+  if (hasForbiddenText(value)) return null;
   if (value.split('/').some((segment) => segment === '..')) return null;
   const normalized = path.normalize(value);
   if (!path.isAbsolute(normalized)) return null;
@@ -144,6 +149,11 @@ export function parseSnapshotBody(raw: string, receivedAt: number): SnapshotPars
     total: counts.total as number,
   };
   if (parsedCounts.done > parsedCounts.total) return { ok: false, reason: 'invalid_snapshot' };
+  // `needsMe` and `blocked` count subsets of the same issue list, so neither can
+  // exceed `total`. A body that claims more tasks than the board holds would
+  // render a section that contradicts itself.
+  if (parsedCounts.needsMe > parsedCounts.total) return { ok: false, reason: 'invalid_snapshot' };
+  if (parsedCounts.blocked > parsedCounts.total) return { ok: false, reason: 'invalid_snapshot' };
 
   let top: SnapshotTop | null = null;
   if (wire.top !== null) {
@@ -155,7 +165,7 @@ export function parseSnapshotBody(raw: string, receivedAt: number): SnapshotPars
     if (typeof candidate.title !== 'string') return { ok: false, reason: 'invalid_snapshot' };
     const title = candidate.title.trim();
     if (title.length === 0 || title.length > TITLE_MAX) return { ok: false, reason: 'invalid_snapshot' };
-    if (FORBIDDEN_CHARS.test(title) || looksLikeCredential(title) || looksLikeCredential(candidate.repo)) {
+    if (FORBIDDEN_CHARS.test(title) || LONE_SURROGATE.test(title) || looksLikeCredential(title) || looksLikeCredential(candidate.repo)) {
       return { ok: false, reason: 'invalid_snapshot' };
     }
     top = { repo: candidate.repo, number: candidate.number, title };

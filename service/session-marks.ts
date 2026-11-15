@@ -22,6 +22,8 @@ import type { SessionEventRequest } from './session-event.ts';
 export const MARK_POLL_MS = 30_000;
 export const MARK_POLL_MAX_MS = 300_000;
 export const MARK_CHANGES_PER_MINUTE = 60;
+/** Most sessions that may carry a mark at once (threat model 0fd4f44 invariant 15). */
+export const MARK_MAX = 200;
 
 export const MARK_TEXT = {
   running: { en: 'Agent running', fr: 'Agent en cours' },
@@ -41,8 +43,10 @@ export interface SessionMarksOptions {
   pollMs?: number;
   /** Clock, for tests. */
   now?: () => number;
-  /** Mark changes allowed per minute; the host refuses past 60. */
+  /** Mark changes allowed per window; the host refuses past 60. */
   changesPerMinute?: number;
+  /** Length of that window. One minute in production; short in tests. */
+  windowMs?: number;
 }
 
 interface Entry {
@@ -51,21 +55,34 @@ interface Entry {
   delay: number;
 }
 
+/** What the host currently shows for a session, as far as we know. */
+interface Delivered {
+  state: SessionMarkState;
+  lang: MarkLanguage;
+}
+
 export class SessionMarks {
   private entries: Map<string, Entry> = new Map();
   /** French before the section has ever polled: the owner's language (D49.2). */
   private language: MarkLanguage = 'fr';
   private changeTimes: number[] = [];
+  /** Sessions whose desired mark differs from the delivered one but had no slot yet. */
+  private pending: Set<string> = new Set();
+  private flushTimer: NodeJS.Timeout | null = null;
   private readonly pollMs: number;
   private readonly now: () => number;
   private readonly changesPerMinute: number;
+  private readonly windowMs: number;
   private host: MarkHost;
+  /** What the host currently shows per session; absence means no mark. */
+  private delivered: Map<string, Delivered> = new Map();
 
   constructor(host: MarkHost, options: SessionMarksOptions = {}) {
     this.host = host;
     this.pollMs = options.pollMs ?? MARK_POLL_MS;
     this.now = options.now ?? Date.now;
     this.changesPerMinute = options.changesPerMinute ?? MARK_CHANGES_PER_MINUTE;
+    this.windowMs = options.windowMs ?? 60_000;
   }
 
   /** Applies one session event. A subagent's row is ignored: its parent's turn is the one to watch. */
@@ -94,8 +111,8 @@ export class SessionMarks {
     const next: MarkLanguage = isFrenchLocale(locale) ? 'fr' : 'en';
     if (next === this.language) return;
     this.language = next;
-    for (const [sessionId, entry] of this.entries) {
-      this.send(sessionId, entry.state);
+    for (const sessionId of this.entries.keys()) {
+      this.request(sessionId);
     }
   }
 
@@ -108,19 +125,32 @@ export class SessionMarks {
     return this.language;
   }
 
-  /** Stops every poll. Marks themselves die with the process. */
+  /** Stops every poll and every deferred change. Marks themselves die with the process. */
   public stop(): void {
     for (const entry of this.entries.values()) this.stopTimer(entry);
     this.entries.clear();
+    if (this.flushTimer) clearTimeout(this.flushTimer);
+    this.flushTimer = null;
+    this.pending.clear();
+    this.delivered.clear();
   }
 
   private apply(sessionId: string, state: SessionMarkState): void {
     const current = this.entries.get(sessionId);
-    if (current && current.state === state) return;
+    if (current && current.state === state) {
+      // The state did not change, so there is nothing to send: a change that was
+      // held back for the rate limit is now moot.
+      this.pending.delete(sessionId);
+      return;
+    }
+    // A page that can reach this route can name any session id. Past the mark
+    // cap a new session is ignored rather than polled forever: no mark is the
+    // truthful state, and the cap bounds the timers (invariant 15).
+    if (!current && this.entries.size >= MARK_MAX) return;
     if (current) this.stopTimer(current);
     const entry: Entry = { state, timer: null, delay: this.pollMs };
     this.entries.set(sessionId, entry);
-    this.send(sessionId, state);
+    this.request(sessionId);
     if (state === 'waiting') this.schedulePoll(sessionId);
   }
 
@@ -129,11 +159,37 @@ export class SessionMarks {
     if (!current) return;
     this.stopTimer(current);
     this.entries.delete(sessionId);
-    this.send(sessionId, null);
+    this.request(sessionId);
   }
 
-  private send(sessionId: string, state: SessionMarkState | null): void {
-    if (!this.takeChangeSlot()) return;
+  /**
+   * Sends the desired mark of one session when it differs from what the host
+   * already shows. A change the rate limit refuses is remembered and delivered
+   * when the window frees: dropping it would leave a stale "waiting" mark that
+   * no later event ever clears.
+   */
+  private request(sessionId: string): void {
+    const desired = this.entries.get(sessionId)?.state ?? null;
+    const shown = this.delivered.get(sessionId);
+    const upToDate = desired === null
+      ? shown === undefined
+      : shown !== undefined && shown.state === desired && shown.lang === this.language;
+    if (upToDate) {
+      this.pending.delete(sessionId);
+      return;
+    }
+    if (!this.takeChangeSlot()) {
+      this.pending.add(sessionId);
+      this.armFlush();
+      return;
+    }
+    this.pending.delete(sessionId);
+    this.deliver(sessionId, desired);
+  }
+
+  private deliver(sessionId: string, state: SessionMarkState | null): void {
+    if (state === null) this.delivered.delete(sessionId);
+    else this.delivered.set(sessionId, { state, lang: this.language });
     const mark = state === null
       ? null
       : {
@@ -149,9 +205,34 @@ export class SessionMarks {
       });
   }
 
+  /** Delivers the changes held back by the rate limit, once the window frees a slot. */
+  private armFlush(): void {
+    if (this.flushTimer) return;
+    const oldest = this.changeTimes[0];
+    const wait = oldest === undefined ? 1 : oldest + this.windowMs - this.now() + 1;
+    const timer = setTimeout(() => {
+      this.flushTimer = null;
+      this.flush();
+    }, Math.max(1, wait));
+    timer.unref?.();
+    this.flushTimer = timer;
+  }
+
+  private flush(): void {
+    for (const sessionId of [...this.pending]) {
+      if (!this.pending.has(sessionId)) continue;
+      this.request(sessionId);
+      if (this.pending.has(sessionId)) {
+        // Still no slot: wait for the next window rather than spin.
+        this.armFlush();
+        return;
+      }
+    }
+  }
+
   private takeChangeSlot(): boolean {
     const now = this.now();
-    while (this.changeTimes.length > 0 && now - this.changeTimes[0] >= 60_000) this.changeTimes.shift();
+    while (this.changeTimes.length > 0 && now - this.changeTimes[0] >= this.windowMs) this.changeTimes.shift();
     if (this.changeTimes.length >= this.changesPerMinute) return false;
     this.changeTimes.push(now);
     return true;

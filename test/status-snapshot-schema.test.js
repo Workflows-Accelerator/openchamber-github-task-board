@@ -65,6 +65,17 @@ test('status-snapshot-schema: unknown key, __proto__, and wrong types are reject
     doneOverTotal: validBody({
       counts: { needsMe: 0, running: 0, blocked: 0, done: 5, total: 1 },
     }),
+    // `needsMe` and `blocked` are subsets of the issue list, so neither can
+    // exceed `total`. A body that says 8 tasks need the owner while the board
+    // holds 1 task is internally impossible: the section would show "8 tasks"
+    // beside "1 of 1 done" and a bar that disagrees with both.
+    needsMeOverTotal: validBody({
+      counts: { needsMe: 8, running: 0, blocked: 0, done: 0, total: 1 },
+      top: { repo: 'owner/repo', number: 1, title: 't' },
+    }),
+    blockedOverTotal: validBody({
+      counts: { needsMe: 0, running: 0, blocked: 3, done: 0, total: 1 },
+    }),
     topUnknownKey: validBody({
       top: { repo: 'owner/repo', number: 1, title: 't', extra: true },
     }),
@@ -72,6 +83,12 @@ test('status-snapshot-schema: unknown key, __proto__, and wrong types are reject
     topBadNumber: validBody({ top: { repo: 'owner/repo', number: 0, title: 't' } }),
     topEmptyTitle: validBody({ top: { repo: 'owner/repo', number: 1, title: '   ' } }),
     topControlChar: validBody({ top: { repo: 'owner/repo', number: 1, title: 'a\u0000b' } }),
+    // A lone surrogate is not valid text: a slice of one produces half a
+    // character on the owner's row, so it never enters the store.
+    topLoneSurrogate: validBody({ top: { repo: 'owner/repo', number: 1, title: 'a\uD800b' } }),
+    directoryLoneSurrogate: validBody({ directory: '/workspace/\uDC00project' }),
+    // `1e999` parses to Infinity: an age that cannot be computed.
+    atInfinite: validBody().replace('"at":' + (NOW - 1_000), '"at":1e999'),
     topCredential: validBody({
       top: { repo: 'owner/repo', number: 1, title: 'ghp_abcdefghijklmnopqrstuvwxyz0123' },
     }),

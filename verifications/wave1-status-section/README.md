@@ -198,3 +198,51 @@ stay inside this wave's scope.
 - `5aab000` `fix(service): arm the socket idle timeout once per keep-alive socket`
 - `ad2e940` `build(extension): rebuild service bundle after the socket timeout fix`
 - this receipt
+- the hostile-review commit (below)
+
+---
+
+## 9. Hostile review (diff `6db9602..5d67423`)
+
+Every fix below had a test that failed first.
+
+| Severity | Defect | Fix | Test that proves it |
+|---|---|---|---|
+| P1 | A request carrying any `Origin` header was served. A browser page can address the loopback port, so a hostile page could read `/status` and drive the marks. | 403 before auth and before the body is read (`service/main.ts`). | `status-routes: a request that names an Origin is refused, and no CORS header is ever sent` |
+| P1 | A mark change refused by the 60/min cap was dropped. A dropped clear leaves "Waiting for your answer" on a row forever: a false all-clear, the exact failure the rule exists to prevent. | Deferred queue: a refused change is remembered and delivered when the window frees; a newer state supersedes it (`service/session-marks.ts`). | `session-marks: a change refused by the per-minute cap is delivered later, never lost`; `a held-back change is superseded, not duplicated, by a newer one` |
+| P1 | Mark state was unbounded: any page that reaches `/session-events` could create a timer per made-up session id. | `MARK_MAX = 200`; past the cap a new session is ignored, which is the truthful state. | `session-marks: the mark map stops at 200 sessions and polls no more` |
+| P2 | A cut of the `top` value could split a UTF-16 pair, and a snapshot could carry a lone surrogate. The row then shows half a character. | `dropLoneSurrogates` in the clamp, `hasForbiddenText`/`LONE_SURROGATE` in the parser. | `status-view: a cut never splits an emoji in two...`; `topLoneSurrogate`/`directoryLoneSurrogate` rejected |
+| P2 | A non-finite `at` rendered "Data loaded NaN h ago". | `Number.isFinite` guard falls back to the stale note. | `status-view: an age that cannot be computed is stale, never "NaN"` |
+| P2 | `needsMe` or `blocked` greater than `total` was accepted, so the section could show "8 tasks" beside "1 of 1 done". | Rejected like the existing `done > total` check (`service/snapshot.ts`). | `needsMeOverTotal`/`blockedOverTotal` in `status-snapshot-schema: unknown key...` |
+
+Attack list also exercised: hostile title and locale fuzz (14 titles × 10 locales,
+each parsed by the real `guestStatusViewSchema`); directory scoping against a
+trailing slash, case, `..`, `%00`, an NFD twin, an empty value and 10 000
+characters; a 50-write and 500-read burst; 200 waiting sessions; a failed board
+load; one post per load.
+
+Mutation testing: 11 mutations attempted, 11 caught — no-clamp, directory-match,
+complete-check, poll-on-error-clears, origin-allowed, cap-drops-clear,
+surrogate-accepted, nan-age, post-every-render, post-on-failed-load,
+no-mark-cap. The panel test executes the built `panel/main.js`, so a panel
+mutation must be applied to the bundle to be visible.
+
+Recorded, not fixed (out of this wave's scope):
+
+- `setInstructions(null, …)` is global while the design's security note asks for
+  project scope.
+- No audit ring and no rejected-update note (threat model §3.3).
+- `SnapshotStore` is unbounded by directory.
+- `setMark` is fire-and-forget: the local view of the host mark can lead the host
+  by one call.
+- `/session-events` has no rate limit of its own (it is bounded by `MARK_MAX`
+  and the per-minute cap).
+- `renderAttentionView` still counts with its own three groups, so its headline
+  can differ from the section's unified `needsMe` (pre-existing, D44.2).
+- A forged snapshot with `needsMe: 0` and `top: null` is accepted. The section
+  is display data, not authority; the age note is the only signal.
+
+**P3, open — second pre-existing timing flake.**
+`test/stage1-dual-mode-and-scoping.test.js:1220` asserts 5 000 checkboxes parse
+in under 50 ms. It failed once under a full-suite run and passed 3/3 in
+isolation and on the next full run. The file is untouched by this branch.

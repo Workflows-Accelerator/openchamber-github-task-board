@@ -92,6 +92,45 @@ test('status-routes: /status and /snapshot refuse a request without the bearer a
   }
 });
 
+test('status-routes: a request that names an Origin is refused, and no CORS header is ever sent', async () => {
+  const app = await start();
+  try {
+    const event = JSON.stringify({
+      v: 1,
+      requestId: 'req-origin',
+      event: {
+        id: 'evt-origin',
+        type: 'question-asked',
+        at: NOW,
+        session: { id: 'ses-origin', parentId: null },
+        project: { directory: DIRECTORY },
+        linked: [],
+      },
+    });
+    for (const origin of ['https://evil.example', 'null']) {
+      for (const [method, path, body] of [
+        ['GET', `/status?directory=${encodeURIComponent(DIRECTORY)}`, null],
+        ['POST', '/snapshot', snapshotBody()],
+        ['POST', '/session-events', event],
+      ]) {
+        const res = await request(app.port, { method, path, headers: { ...AUTH, Origin: origin }, body });
+        assert.equal(res.status, 403, `${method} ${path} from ${origin}`);
+        assert.deepEqual(JSON.parse(res.body), { error: 'Forbidden' });
+        assert.equal(res.body.includes('rows'), false);
+        assert.equal(res.body.includes('owner/repo'), false);
+        assert.equal(res.headers['access-control-allow-origin'], undefined);
+        assert.equal(res.headers['access-control-allow-credentials'], undefined);
+      }
+    }
+    // A refused request changed nothing: no snapshot, no mark, no rows.
+    assert.equal(app.snapshotStore.size(), 0);
+    const view = await statusJson(app.port, `?directory=${encodeURIComponent(DIRECTORY)}`);
+    assert.equal(view.rows[0].id, 'empty');
+  } finally {
+    await app.close();
+  }
+});
+
 test('status-routes: methods are confined and /session-events answers ok', async () => {
   const app = await start();
   try {
@@ -208,6 +247,8 @@ test('status-routes: every rejected body answers 400 and leaves the snapshot byt
       snapshotBody({ counts: { needsMe: 0, running: 0, blocked: 0, done: 0, total: 0 }, top: { repo: 'owner/repo', number: 1, title: 't' } }),
       snapshotBody({ counts: { needsMe: 10_000, running: 0, blocked: 0, done: 0, total: 1 } }),
       snapshotBody({ top: { repo: 'not-a-repo', number: 1, title: 't' } }),
+      snapshotBody({ top: { repo: 'owner/repo', number: 1, title: 'a\uD800b' } }),
+      snapshotBody().replace(`"at":${NOW - 1_000}`, '"at":1e999'),
       'not json',
     ];
 
@@ -250,6 +291,48 @@ test('status-routes: a non-JSON content type answers 415', async () => {
       body: snapshotBody(),
     });
     assert.equal(res.status, 415);
+  } finally {
+    await app.close();
+  }
+});
+
+test('status-routes: a concurrent burst is bounded and leaves one consistent snapshot', async () => {
+  const app = await start();
+  try {
+    // 50 writes at once: at most 10 may be accepted in one minute, and the store
+    // must end with exactly one complete snapshot, never a half-applied one.
+    const writes = await Promise.all(
+      Array.from({ length: 50 }, (_, index) =>
+        request(app.port, {
+          method: 'POST',
+          path: '/snapshot',
+          headers: AUTH,
+          body: snapshotBody({ counts: { needsMe: index + 1, running: 0, blocked: 0, done: 0, total: 50 } }),
+        })
+      )
+    );
+    const accepted = writes.filter((res) => res.status === 204).length;
+    const refused = writes.filter((res) => res.status === 429).length;
+    assert.equal(accepted, 10, `accepted ${accepted}`);
+    assert.equal(accepted + refused, 50);
+    assert.equal(app.snapshotStore.size(), 1);
+
+    const view = await statusJson(app.port, `?directory=${encodeURIComponent(DIRECTORY)}`);
+    assert.equal(view.rows.length, 6);
+    const stored = Number(view.rows[0].value.split(' ')[0]);
+    assert.ok(Number.isInteger(stored) && stored >= 1 && stored <= 10, `stored needs-me is ${view.rows[0].value}`);
+
+    // 500 reads at once: the read limiter holds and every accepted answer parses.
+    const reads = await Promise.all(
+      Array.from({ length: 500 }, () => request(app.port, { path: `/status?directory=${encodeURIComponent(DIRECTORY)}`, headers: AUTH }))
+    );
+    const ok = reads.filter((res) => res.status === 200);
+    const throttled = reads.filter((res) => res.status === 429);
+    assert.ok(ok.length <= 240, `the 240/min bound held: ${ok.length}`);
+    assert.ok(ok.length > 200, `reads were served: ${ok.length}`);
+    assert.equal(ok.length + throttled.length, 500);
+    for (const res of throttled) assert.equal(res.headers['retry-after'], '60');
+    for (const res of ok) assert.equal(JSON.parse(res.body).rows.length, 6);
   } finally {
     await app.close();
   }

@@ -17,18 +17,25 @@ export const CLAMP = { label: 60, value: 80, content: 200, note: 300 } as const;
 const ELLIPSIS = '...';
 
 const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g;
+/** Half of a UTF-16 pair: never valid text, and a slice can cut one in two. */
+const LONE_SURROGATES = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+
+const dropLoneSurrogates = (value: string): string => value.replace(LONE_SURROGATES, '');
 
 /**
  * Collapses control characters and runs of whitespace, then cuts to `max`
  * characters with the design's `...` marker. A GitHub title is arbitrary text;
  * it is only ever sent as a plain string in `value` or `text`.
+ *
+ * A cut can land between the two halves of an emoji. Both halves are dropped
+ * rather than sent, so the row never carries half a character.
  */
 export function clampText(value: unknown, max: number): string {
   const raw = typeof value === 'string' ? value : '';
-  const clean = raw.replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim();
+  const clean = dropLoneSurrogates(raw.replace(CONTROL_CHARS, ' ')).replace(/\s+/g, ' ').trim();
   if (clean.length <= max) return clean;
-  if (max <= ELLIPSIS.length) return clean.slice(0, max);
-  return `${clean.slice(0, max - ELLIPSIS.length).trimEnd()}${ELLIPSIS}`;
+  if (max <= ELLIPSIS.length) return dropLoneSurrogates(clean.slice(0, max));
+  return dropLoneSurrogates(`${clean.slice(0, max - ELLIPSIS.length).trimEnd()}${ELLIPSIS}`);
 }
 
 /** French when the tag starts with `fr` (case-insensitive), English otherwise. */
@@ -171,7 +178,11 @@ export function buildStatusView(
     return { rows: [{ kind: 'note', id: 'empty', text: clampText(copy.empty, CLAMP.note), tone: 'muted' }] };
   }
 
-  const age = Math.max(0, now - snapshot.at);
+  // A snapshot whose `at` is not a finite number cannot be dated. The parser
+  // refuses it, so this only guards a programming error: the section shows the
+  // stale warning with the last values, never "NaN" and never a silent zero.
+  const elapsed = now - snapshot.at;
+  const age = Number.isFinite(elapsed) ? Math.max(0, elapsed) : STALE_MS;
   const { needsMe, running, blocked, done, total } = snapshot.counts;
   const rows: StatusRow[] = [
     {

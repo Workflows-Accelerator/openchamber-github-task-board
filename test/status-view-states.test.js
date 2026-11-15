@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { guestStatusViewSchema } from '@openchamber/sdk/schemas';
-import { buildStatusView, CLAMP, topValue } from '../service/status-view.ts';
+import { buildStatusView, clampText, CLAMP, topValue } from '../service/status-view.ts';
 
 /**
  * The six rows, the three states and the clamp rule, asserted against the copy
@@ -233,6 +233,72 @@ test('status-view: control characters and bidi overrides never reach the wire', 
   const top = row(view, 'top');
   assert.equal(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/.test(top.value), false);
   assert.ok(top.value.includes('Fix the parser now'));
+});
+
+test('status-view: a cut never splits an emoji in two and no lone surrogate reaches the wire', () => {
+  // The 80-character cut lands inside a surrogate pair: sending half of it puts
+  // a broken character on the owner's row.
+  const title = `${'a'.repeat(70)}${'😀'.repeat(4)}`;
+  const value = topValue({ repo: 'owner/repo', number: 1, title }, CLAMP.value);
+  const LONE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  assert.equal(LONE.test(value), false, JSON.stringify(value));
+  assert.ok(value.length <= CLAMP.value, `value is ${value.length}`);
+  assert.equal(clampText('\uD800abc\uDC00', 80), 'abc');
+  const view = parseView(
+    buildStatusView(snapshot({ top: { repo: 'owner/repo', number: 1, title } }), 'en', NOW)
+  );
+  assert.equal(LONE.test(row(view, 'top').value), false);
+});
+
+test('status-view: an age that cannot be computed is stale, never "NaN"', () => {
+  for (const at of [NaN, Infinity, -Infinity, undefined, 'yesterday', 0]) {
+    const view = buildStatusView(snapshot({ at }), 'en', NOW);
+    parseView(view);
+    const note = view.rows[view.rows.length - 1];
+    assert.equal(note.kind, 'note');
+    assert.equal(/NaN|undefined|yesterday|Infinity/.test(note.text), false, `${String(at)} -> ${note.text}`);
+    // The counts are still measured numbers: they are not rewritten to zero.
+    assert.equal(row(view, 'needs-me').value, '8 tasks');
+  }
+});
+
+test('status-view: every hostile title and locale still yields one view that parses, within every limit', () => {
+  const hostileTitles = [
+    'x'.repeat(10_000),
+    'line\nbreak\ttab',
+    'مرحبا بالعالم',
+    'e\u0301'.repeat(500),
+    '__proto__',
+    'constructor',
+    'prototype',
+    '</script><img src=x onerror=alert(1)>',
+    '%00',
+    '\uD800',
+    'a\uDC00b\uD800c',
+    '😀'.repeat(100),
+    '\u202Ereversed\u2066',
+    '{"rows":[]}',
+  ];
+  const hostileLocales = ['fr', 'fr-FR', 'fr-CA', 'FR', 'fr;q=0.9', 'de', '', 'x'.repeat(1_000), null, undefined];
+  const LONE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+  for (const title of hostileTitles) {
+    for (const locale of hostileLocales) {
+      const view = buildStatusView(snapshot({ top: { repo: 'owner/repo', number: 7, title } }), locale, NOW);
+      parseView(view);
+      assert.equal(view.rows.length, 6);
+      for (const entry of view.rows) {
+        if (entry.kind === 'line') {
+          assert.ok(entry.label.length >= 1 && entry.label.length <= CLAMP.label, entry.label);
+          assert.ok(entry.value.length >= 1 && entry.value.length <= CLAMP.value, entry.value);
+          assert.equal(LONE.test(entry.value), false);
+          assert.equal(LONE.test(entry.label), false);
+        } else {
+          assert.ok(entry.text.length >= 1 && entry.text.length <= CLAMP.note, entry.text);
+        }
+      }
+    }
+  }
 });
 
 test('status-view: every label, value and note stays inside its host limit', () => {

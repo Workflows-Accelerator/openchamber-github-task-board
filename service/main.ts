@@ -349,6 +349,17 @@ export function createCoordinatorHostServer(
       });
     }
 
+    // A browser page can address a loopback port. The host reaches this service
+    // with a server-side fetch and names no origin, so any request that carries
+    // one is not the host: refuse it before auth, before routing and before the
+    // body is read (threat model 0fd4f44 §3.2, invariant 2).
+    if (req.headers.origin !== undefined) {
+      res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Forbidden' }));
+      req.resume();
+      return;
+    }
+
     // Constant-time Bearer authentication: verify first before body buffering or route disclosure
     const authHeader = req.headers.authorization;
     if (!authenticateRequest(authHeader, token)) {

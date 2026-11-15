@@ -423,7 +423,9 @@ var REPO_PATTERN = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 var DIRECTORY_MAX = 1024;
 var TITLE_MAX = 2048;
 var FORBIDDEN_CHARS = /[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/;
+var LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 var CREDENTIAL_PATTERNS = [/gh[pousr]_[A-Za-z0-9]{20,}/, /github_pat_[A-Za-z0-9_]{20,}/, /Bearer\s+\S+/];
+var hasForbiddenText = (value) => FORBIDDEN_CHARS.test(value) || LONE_SURROGATE.test(value);
 var isPlainObject = (value) => {
   if (Object(value) !== value || value === null || Array.isArray(value)) return false;
   const proto = Object.getPrototypeOf(value);
@@ -441,7 +443,7 @@ function normalizeDirectory(value) {
   if (typeof value !== "string") return null;
   if (value.length === 0 || value.length > DIRECTORY_MAX) return null;
   if (!path3.isAbsolute(value)) return null;
-  if (FORBIDDEN_CHARS.test(value)) return null;
+  if (hasForbiddenText(value)) return null;
   if (value.split("/").some((segment) => segment === "..")) return null;
   const normalized = path3.normalize(value);
   if (!path3.isAbsolute(normalized)) return null;
@@ -478,6 +480,8 @@ function parseSnapshotBody(raw, receivedAt) {
     total: counts.total
   };
   if (parsedCounts.done > parsedCounts.total) return { ok: false, reason: "invalid_snapshot" };
+  if (parsedCounts.needsMe > parsedCounts.total) return { ok: false, reason: "invalid_snapshot" };
+  if (parsedCounts.blocked > parsedCounts.total) return { ok: false, reason: "invalid_snapshot" };
   let top = null;
   if (wire.top !== null) {
     const candidate = wire.top;
@@ -488,7 +492,7 @@ function parseSnapshotBody(raw, receivedAt) {
     if (typeof candidate.title !== "string") return { ok: false, reason: "invalid_snapshot" };
     const title = candidate.title.trim();
     if (title.length === 0 || title.length > TITLE_MAX) return { ok: false, reason: "invalid_snapshot" };
-    if (FORBIDDEN_CHARS.test(title) || looksLikeCredential(title) || looksLikeCredential(candidate.repo)) {
+    if (FORBIDDEN_CHARS.test(title) || LONE_SURROGATE.test(title) || looksLikeCredential(title) || looksLikeCredential(candidate.repo)) {
       return { ok: false, reason: "invalid_snapshot" };
     }
     top = { repo: candidate.repo, number: candidate.number, title };
@@ -522,12 +526,14 @@ var SnapshotStore = class {
 var CLAMP = { label: 60, value: 80, content: 200, note: 300 };
 var ELLIPSIS = "...";
 var CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g;
+var LONE_SURROGATES = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+var dropLoneSurrogates = (value) => value.replace(LONE_SURROGATES, "");
 function clampText(value, max) {
   const raw = typeof value === "string" ? value : "";
-  const clean = raw.replace(CONTROL_CHARS, " ").replace(/\s+/g, " ").trim();
+  const clean = dropLoneSurrogates(raw.replace(CONTROL_CHARS, " ")).replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
-  if (max <= ELLIPSIS.length) return clean.slice(0, max);
-  return `${clean.slice(0, max - ELLIPSIS.length).trimEnd()}${ELLIPSIS}`;
+  if (max <= ELLIPSIS.length) return dropLoneSurrogates(clean.slice(0, max));
+  return dropLoneSurrogates(`${clean.slice(0, max - ELLIPSIS.length).trimEnd()}${ELLIPSIS}`);
 }
 function isFrenchLocale(locale) {
   return typeof locale === "string" && /^fr/i.test(locale.trim());
@@ -597,7 +603,8 @@ function buildStatusView(snapshot, locale, now) {
   if (!snapshot) {
     return { rows: [{ kind: "note", id: "empty", text: clampText(copy.empty, CLAMP.note), tone: "muted" }] };
   }
-  const age = Math.max(0, now - snapshot.at);
+  const elapsed = now - snapshot.at;
+  const age = Number.isFinite(elapsed) ? Math.max(0, elapsed) : STALE_MS;
   const { needsMe, running, blocked, done, total } = snapshot.counts;
   const rows = [
     {
@@ -735,6 +742,7 @@ function readSessionEvent(body) {
 var MARK_POLL_MS = 3e4;
 var MARK_POLL_MAX_MS = 3e5;
 var MARK_CHANGES_PER_MINUTE = 60;
+var MARK_MAX = 200;
 var MARK_TEXT = {
   running: { en: "Agent running", fr: "Agent en cours" },
   waiting: { en: "Waiting for your answer", fr: "En attente de votre r\xE9ponse" }
@@ -744,15 +752,22 @@ var SessionMarks = class {
   /** French before the section has ever polled: the owner's language (D49.2). */
   language = "fr";
   changeTimes = [];
+  /** Sessions whose desired mark differs from the delivered one but had no slot yet. */
+  pending = /* @__PURE__ */ new Set();
+  flushTimer = null;
   pollMs;
   now;
   changesPerMinute;
+  windowMs;
   host;
+  /** What the host currently shows per session; absence means no mark. */
+  delivered = /* @__PURE__ */ new Map();
   constructor(host, options = {}) {
     this.host = host;
     this.pollMs = options.pollMs ?? MARK_POLL_MS;
     this.now = options.now ?? Date.now;
     this.changesPerMinute = options.changesPerMinute ?? MARK_CHANGES_PER_MINUTE;
+    this.windowMs = options.windowMs ?? 6e4;
   }
   /** Applies one session event. A subagent's row is ignored: its parent's turn is the one to watch. */
   handleEvent(request) {
@@ -779,8 +794,8 @@ var SessionMarks = class {
     const next = isFrenchLocale(locale) ? "fr" : "en";
     if (next === this.language) return;
     this.language = next;
-    for (const [sessionId, entry] of this.entries) {
-      this.send(sessionId, entry.state);
+    for (const sessionId of this.entries.keys()) {
+      this.request(sessionId);
     }
   }
   /** The current mark state of a session, for tests and diagnostics. */
@@ -790,18 +805,26 @@ var SessionMarks = class {
   languageOf() {
     return this.language;
   }
-  /** Stops every poll. Marks themselves die with the process. */
+  /** Stops every poll and every deferred change. Marks themselves die with the process. */
   stop() {
     for (const entry of this.entries.values()) this.stopTimer(entry);
     this.entries.clear();
+    if (this.flushTimer) clearTimeout(this.flushTimer);
+    this.flushTimer = null;
+    this.pending.clear();
+    this.delivered.clear();
   }
   apply(sessionId, state) {
     const current = this.entries.get(sessionId);
-    if (current && current.state === state) return;
+    if (current && current.state === state) {
+      this.pending.delete(sessionId);
+      return;
+    }
+    if (!current && this.entries.size >= MARK_MAX) return;
     if (current) this.stopTimer(current);
     const entry = { state, timer: null, delay: this.pollMs };
     this.entries.set(sessionId, entry);
-    this.send(sessionId, state);
+    this.request(sessionId);
     if (state === "waiting") this.schedulePoll(sessionId);
   }
   clear(sessionId) {
@@ -809,10 +832,33 @@ var SessionMarks = class {
     if (!current) return;
     this.stopTimer(current);
     this.entries.delete(sessionId);
-    this.send(sessionId, null);
+    this.request(sessionId);
   }
-  send(sessionId, state) {
-    if (!this.takeChangeSlot()) return;
+  /**
+   * Sends the desired mark of one session when it differs from what the host
+   * already shows. A change the rate limit refuses is remembered and delivered
+   * when the window frees: dropping it would leave a stale "waiting" mark that
+   * no later event ever clears.
+   */
+  request(sessionId) {
+    const desired = this.entries.get(sessionId)?.state ?? null;
+    const shown = this.delivered.get(sessionId);
+    const upToDate = desired === null ? shown === void 0 : shown !== void 0 && shown.state === desired && shown.lang === this.language;
+    if (upToDate) {
+      this.pending.delete(sessionId);
+      return;
+    }
+    if (!this.takeChangeSlot()) {
+      this.pending.add(sessionId);
+      this.armFlush();
+      return;
+    }
+    this.pending.delete(sessionId);
+    this.deliver(sessionId, desired);
+  }
+  deliver(sessionId, state) {
+    if (state === null) this.delivered.delete(sessionId);
+    else this.delivered.set(sessionId, { state, lang: this.language });
     const mark = state === null ? null : {
       icon: state === "running" ? "time" : "question",
       tone: state === "running" ? "info" : "warning",
@@ -821,9 +867,31 @@ var SessionMarks = class {
     void Promise.resolve().then(() => this.host.setMark({ sessionId }, mark)).catch(() => {
     });
   }
+  /** Delivers the changes held back by the rate limit, once the window frees a slot. */
+  armFlush() {
+    if (this.flushTimer) return;
+    const oldest = this.changeTimes[0];
+    const wait = oldest === void 0 ? 1 : oldest + this.windowMs - this.now() + 1;
+    const timer = setTimeout(() => {
+      this.flushTimer = null;
+      this.flush();
+    }, Math.max(1, wait));
+    timer.unref?.();
+    this.flushTimer = timer;
+  }
+  flush() {
+    for (const sessionId of [...this.pending]) {
+      if (!this.pending.has(sessionId)) continue;
+      this.request(sessionId);
+      if (this.pending.has(sessionId)) {
+        this.armFlush();
+        return;
+      }
+    }
+  }
   takeChangeSlot() {
     const now = this.now();
-    while (this.changeTimes.length > 0 && now - this.changeTimes[0] >= 6e4) this.changeTimes.shift();
+    while (this.changeTimes.length > 0 && now - this.changeTimes[0] >= this.windowMs) this.changeTimes.shift();
     if (this.changeTimes.length >= this.changesPerMinute) return false;
     this.changeTimes.push(now);
     return true;
@@ -1473,6 +1541,12 @@ function createCoordinatorHostServer(token, getStatus, options = {}) {
         socket.destroy();
       });
     }
+    if (req.headers.origin !== void 0) {
+      res.writeHead(403, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "Forbidden" }));
+      req.resume();
+      return;
+    }
     const authHeader = req.headers.authorization;
     if (!authenticateRequest(authHeader, token)) {
       res.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
@@ -1682,6 +1756,7 @@ export {
   HostCallError,
   LeaseStore,
   MARK_CHANGES_PER_MINUTE,
+  MARK_MAX,
   MARK_POLL_MAX_MS,
   MARK_POLL_MS,
   MARK_TEXT,
@@ -1708,6 +1783,7 @@ export {
   createCoordinatorHostServer,
   createHostClient,
   getDefaultLeasesFilePath,
+  hasForbiddenText,
   inspectSessionLiveness,
   isFrenchLocale,
   isTaskEligibleForPilot,

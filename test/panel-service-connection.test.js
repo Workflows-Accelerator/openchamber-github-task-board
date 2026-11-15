@@ -501,6 +501,23 @@ test('panel-service-connection: one snapshot post per successful load, counts eq
   assert.equal(app.logs.warn.filter((line) => line.includes('snapshot')).length, 0);
 });
 
+test('panel-service-connection: a failed board load posts no snapshot', async () => {
+  const app = createRealPanelApp({
+    hasSelectedRepo: true,
+    onServiceRequest: () => ({ ok: true, payload: { status: 200, body: '{"status":"ok"}' } }),
+    onHostRequest: () => ({ ok: false, code: 'HOST_REJECTED', error: 'no network' }),
+  });
+
+  await app.waitForReady();
+  await app.waitFor(() => app.logs.warn.some((line) => line.includes('Full refresh incomplete')));
+
+  assert.deepEqual(
+    app.serviceRequests.filter((request) => request.path === '/snapshot'),
+    [],
+    'a load that failed publishes nothing: the section keeps its last snapshot and its age'
+  );
+});
+
 test('panel-service-connection: Invariant: zero emojis in UI banner copy or log output', async () => {
   const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
 
