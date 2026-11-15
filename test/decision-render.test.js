@@ -4,6 +4,7 @@ import { installDocument, collectText, collectElements, structureOf } from './do
 import {
   copyText,
   decisionRepoKeys,
+  decisionRestartAt,
   formatWaiting,
   provenanceLine,
   renderDecisionBadge,
@@ -387,6 +388,13 @@ test('decision-render: a badge for an in-flight answer never says "waiting for y
   assert.equal(text.includes('waiting for you'), false);
 });
 
+test('decision-render: a changed service startedAt is a restart, a first read is not', () => {
+  assert.equal(decisionRestartAt(0, 5, NOW, null), null, 'the first read is not a restart');
+  assert.equal(decisionRestartAt(5, 5, NOW, null), null, 'the same clock is not a restart');
+  assert.equal(decisionRestartAt(5, 6, NOW, null), NOW, 'a changed clock is a restart');
+  assert.equal(decisionRestartAt(5, 5, NOW, 123), 123, 'an observed restart stays observed');
+});
+
 test('decision-render: the panel and the service share one staleness threshold', async () => {
   const { DECISION_STALENESS_MS: serviceMs } = await import('../service/decision-store.ts');
   const { DECISION_STALENESS_MS: panelMs } = await import('../panel/decisions.ts');
@@ -427,6 +435,7 @@ test('decision-render: badge is one line with no controls, and status notes name
   assert.match(collectText(renderDecisionStatusNote('no-decisions', 'en', NOW)).join(' '), /No decision is waiting/);
   assert.match(collectText(renderDecisionStatusNote('service-down', 'en', NOW)).join(' '), /not answering/);
   assert.match(collectText(renderDecisionStatusNote('restarted', 'fr', NOW)).join(' '), /a redémarré/);
+  assert.match(collectText(renderDecisionStatusNote('checking', 'en', NOW)).join(' '), /Checking for decisions/);
 });
 
 test('decision-render: ordering is waiting before confirming, newest first, then ask id', () => {

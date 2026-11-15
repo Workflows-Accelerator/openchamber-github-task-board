@@ -709,6 +709,21 @@ export function renderDecisionBlock(decision: DecisionView, context: DecisionRen
   return block;
 }
 
+/**
+ * The observation time of a service restart, or the previous value when there
+ * was none. `startedAt` is the service's own start clock; a change means its
+ * in-memory decision store was emptied, so "nothing is waiting" would be a
+ * claim the board cannot make (§7.5).
+ */
+export function decisionRestartAt(
+  previousStartedAt: number,
+  startedAt: number,
+  at: number,
+  previous: number | null
+): number | null {
+  return previousStartedAt > 0 && startedAt !== previousStartedAt ? at : previous;
+}
+
 /** The card line: one short verb and object, no controls (§8.1). */
 export function renderDecisionBadge(
   decision: DecisionView,

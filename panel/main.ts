@@ -7,6 +7,7 @@ import {
   isFrenchLocale,
   DECISION_STALENESS_MS,
   decisionRepoKeys,
+  decisionRestartAt,
   renderDecisionBadge,
   renderDecisionBlock,
   renderDecisionStatusNote,
@@ -5088,9 +5089,7 @@ async function refreshDecisions(): Promise<void> {
         // A changed `startedAt` is a restart: the in-memory store is empty and
         // decisions asked before it are not tracked. Say so, never "nothing is
         // waiting" (§7.5).
-        const restartedAt = decisionFeed.startedAt > 0 && startedAt !== decisionFeed.startedAt
-          ? now
-          : decisionFeed.restartedAt;
+        const restartedAt = decisionRestartAt(decisionFeed.startedAt, startedAt, now, decisionFeed.restartedAt);
         decisionFeed = {
           status: 'ok',
           at: typeof parsed.at === 'number' ? parsed.at : now,

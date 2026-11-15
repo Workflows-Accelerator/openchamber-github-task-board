@@ -5884,6 +5884,9 @@ ${placeholder}
     update();
     return block;
   }
+  function decisionRestartAt(previousStartedAt, startedAt, at, previous) {
+    return previousStartedAt > 0 && startedAt !== previousStartedAt ? at : previous;
+  }
   function renderDecisionBadge(decision, language, extraCount = 0) {
     const badge = element("span", "decision-badge");
     const label = decision.state === "answered-unconfirmed" ? copyText(language, "confirming") : decision.state === "answering" ? copyText(language, "answerInFlight") : copyText(language, "waiting");
@@ -13983,7 +13986,7 @@ Blocked by ${blockerRef}`;
           decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: now };
         } else {
           const startedAt = typeof parsed.startedAt === "number" ? parsed.startedAt : decisionFeed.startedAt;
-          const restartedAt = decisionFeed.startedAt > 0 && startedAt !== decisionFeed.startedAt ? now : decisionFeed.restartedAt;
+          const restartedAt = decisionRestartAt(decisionFeed.startedAt, startedAt, now, decisionFeed.restartedAt);
           decisionFeed = {
             status: "ok",
             at: typeof parsed.at === "number" ? parsed.at : now,
