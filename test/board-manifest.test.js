@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseManifestJson } from '@openchamber/sdk/schemas';
+import { isGuestPackageSvgIcon } from '@openchamber/sdk';
 import { TASK_BOARD_INSTRUCTIONS } from '../service/instructions.ts';
 
 /**
@@ -52,7 +53,7 @@ test('board-manifest: the panel opts into the phone and the version moves with i
   assert.deepEqual(raw.openchamber.contributes.panel, {
     id: 'github-task-board',
     name: 'Task Board',
-    icon: 'icon.svg',
+    icon: 'list-check-2',
     entry: 'panel/index.html',
     mobile: true,
   });
@@ -62,6 +63,34 @@ test('board-manifest: the panel opts into the phone and the version moves with i
   const parsed = parseManifestJson(manifestText);
   assert.equal(parsed.ok, true, parsed.ok ? '' : `${parsed.code}: ${parsed.message}`);
   if (parsed.ok) assert.equal(parsed.manifest.contributes.panel.mobile, true);
+});
+
+test('board-manifest: the rail icon is a Remixicon name the host inlines, not a fetched .svg', () => {
+  // The client resolves `panel.icon` two ways (host bundle: `dB`/`O2`/`Hm`).
+  // A name it finds in its own Remixicon map is inlined as markup: no request,
+  // nothing to fail. An `.svg` path becomes `/api/guests/<id>/<path>`, fetched
+  // with the auth token and drawn as a CSS mask; on the owner's install that
+  // fetch is refused and the client silently draws the lucide `apps` glyph.
+  // So the declaration must stay on the inline branch: a kebab-case name with
+  // no folder and no `.svg` suffix.
+  const icon = raw.openchamber.contributes.panel.icon;
+  assert.equal(typeof icon, 'string');
+  // Same shape rule as the host's `PANEL_ID` (SDK `dist/manifest.js:2`), which
+  // `isPanelIcon` accepts alongside a package `.svg` path.
+  assert.match(icon, /^[a-z][a-z0-9-]*$/);
+  // The host's own predicate: false means "not a served package file".
+  assert.equal(isGuestPackageSvgIcon(icon), false);
+  // The host's icon map only inlines names it knows; an unknown name falls back
+  // to `apps` with no error. This is the name proven present in the map.
+  assert.equal(icon, 'list-check-2');
+
+  const parsed = parseManifestJson(manifestText);
+  assert.equal(parsed.ok, true, parsed.ok ? '' : `${parsed.code}: ${parsed.message}`);
+  if (parsed.ok) assert.equal(parsed.manifest.contributes.panel.icon, icon);
+
+  // The artwork stays in the package: hosts that do serve a package `.svg` still
+  // find a real file, and the inline branch never reads it.
+  assert.match(fs.readFileSync(path.join(ROOT, 'icon.svg'), 'utf8'), /^<svg[\s>]/);
 });
 
 test('board-manifest: contributes.capabilities stays declared', () => {

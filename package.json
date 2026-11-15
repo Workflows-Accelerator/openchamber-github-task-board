@@ -34,7 +34,7 @@
       "panel": {
         "id": "github-task-board",
         "name": "Task Board",
-        "icon": "icon.svg",
+        "icon": "list-check-2",
         "entry": "panel/index.html",
         "mobile": true
       },

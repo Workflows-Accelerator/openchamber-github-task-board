@@ -87,7 +87,7 @@ The extension is declared in `package.json`:
       "panel": {
         "id": "github-task-board",
         "name": "Task Board",
-        "icon": "icon.svg",
+        "icon": "list-check-2",
         "entry": "panel/index.html"
       }
     }
@@ -96,6 +96,8 @@ The extension is declared in `package.json`:
 ```
 
 Once installed, "Task Board" appears in the OpenChamber panel tray and browser interface.
+
+`icon` names a Remixicon glyph the host draws from its own bundled icon set (no request, so it always renders). `icon.svg` stays in the package for hosts that serve a package `.svg` instead.
 
 ---
 
@@ -129,7 +131,7 @@ If working on a project without a remote git repository, the extension prompts y
 ├── LICENSE                      # MIT License
 ├── README.md                     # Technical project documentation
 ├── CONTRIBUTING.md               # Contribution workflow and coding standards
-├── icon.svg                      # Extension icon
+├── icon.svg                      # Extension artwork (for hosts that serve a package .svg)
 ├── package.json                  # Manifest, metadata, and build scripts
 ├── tsconfig.json                 # TypeScript compiler configuration
 ├── panel/
