@@ -59,7 +59,9 @@
           "turn-finished",
           "turn-failed",
           "permission-asked",
-          "question-asked"
+          "question-asked",
+          "session-archived",
+          "session-deleted"
         ]
       },
       "instructions": true,

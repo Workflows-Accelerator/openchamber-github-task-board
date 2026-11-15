@@ -105,6 +105,82 @@ test('session-marks: turn-finished and turn-failed clear the mark', async () => 
   }
 });
 
+test('session-marks: session-archived clears a waiting mark and stops its poll', async () => {
+  // A session archived mid-turn must not keep "Waiting for your answer" on a
+  // row that no longer accepts one (design §4.3).
+  for (const type of ['session-archived', 'session-deleted']) {
+    const { calls, state, marks } = harness({ nextStatus: 'waiting' });
+    try {
+      marks.handleEvent(event('question-asked'));
+      await flush();
+      assert.equal(marks.stateOf('ses-1'), 'waiting');
+      await sleep(25);
+      assert.ok(state.statusCalls >= 1, 'the waiting mark is polled');
+
+      marks.handleEvent(event(type));
+      await flush();
+      assert.deepEqual(calls[calls.length - 1], { target: { sessionId: 'ses-1' }, mark: null });
+      assert.equal(marks.stateOf('ses-1'), undefined);
+
+      const afterClear = state.statusCalls;
+      await sleep(50);
+      assert.equal(state.statusCalls, afterClear, `${type}: the poll stops`);
+    } finally {
+      marks.stop();
+    }
+  }
+});
+
+test('session-marks: session-archived clears a running mark', async () => {
+  for (const type of ['session-archived', 'session-deleted']) {
+    const { calls, marks } = harness();
+    try {
+      marks.handleEvent(event('turn-started'));
+      await flush();
+      assert.equal(marks.stateOf('ses-1'), 'running');
+      marks.handleEvent(event(type));
+      await flush();
+      assert.equal(calls.length, 2);
+      assert.deepEqual(calls[1], { target: { sessionId: 'ses-1' }, mark: null });
+      assert.equal(marks.stateOf('ses-1'), undefined);
+    } finally {
+      marks.stop();
+    }
+  }
+});
+
+test('session-marks: the archive path never sends a mark with text', async () => {
+  for (const type of ['session-archived', 'session-deleted']) {
+    const { calls, marks } = harness();
+    try {
+      marks.handleEvent(event('turn-started'));
+      await flush();
+      marks.handleEvent(event(type));
+      await flush();
+      const archiveCalls = calls.filter((call) => call.mark !== null);
+      assert.equal(archiveCalls.length, 1, 'only the running mark carried text');
+      assert.equal(calls[calls.length - 1].mark, null);
+    } finally {
+      marks.stop();
+    }
+  }
+});
+
+test('session-marks: archived and deleted events on a subagent are ignored', async () => {
+  const { calls, marks } = harness();
+  try {
+    marks.handleEvent(event('turn-started', { sessionId: 'child', parentId: 'ses-1' }));
+    for (const type of ['session-archived', 'session-deleted']) {
+      marks.handleEvent(event(type, { sessionId: 'child', parentId: 'ses-1' }));
+    }
+    await flush();
+    assert.equal(calls.length, 0);
+    assert.equal(marks.stateOf('child'), undefined);
+  } finally {
+    marks.stop();
+  }
+});
+
 test('session-marks: a subagent session is ignored', async () => {
   const { calls, marks } = harness();
   try {

@@ -32,6 +32,8 @@ test('board-manifest: the package parses with the installed SDK', () => {
     'turn-failed',
     'permission-asked',
     'question-asked',
+    'session-archived',
+    'session-deleted',
   ]);
 });
 
@@ -58,14 +60,22 @@ test('board-manifest: the Work Status section is per project and polls /status',
   });
 });
 
-test('board-manifest: marks, read-only session control and the five session events are declared', () => {
+test('board-manifest: marks, read-only session control and the seven session events are declared', () => {
   const contributes = raw.openchamber.contributes;
   assert.equal(contributes.marks, true);
   assert.deepEqual(contributes.sessionControl, {});
   assert.equal(Object.prototype.hasOwnProperty.call(contributes.sessionControl, 'content'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(contributes.sessionControl, 'answers'), false);
   assert.deepEqual(contributes.sessionEvents, {
-    events: ['turn-started', 'turn-finished', 'turn-failed', 'permission-asked', 'question-asked'],
+    events: [
+      'turn-started',
+      'turn-finished',
+      'turn-failed',
+      'permission-asked',
+      'question-asked',
+      'session-archived',
+      'session-deleted',
+    ],
   });
 });
 

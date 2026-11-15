@@ -783,6 +783,10 @@ var SessionMarks = class {
         break;
       case "turn-finished":
       case "turn-failed":
+      // An archived or deleted session can no longer answer, so its mark must
+      // not outlive it (design §4.3). Clearing stops the poll with the entry.
+      case "session-archived":
+      case "session-deleted":
         this.clear(session.id);
         break;
       default:
