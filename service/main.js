@@ -1248,6 +1248,7 @@ var CoordinatorReconciler = class {
 };
 
 // service/main.ts
+var SOCKET_TIMEOUT_ARMED = Symbol("socketTimeoutArmed");
 var CoordinatorService = class {
   config;
   status = "stopped";
@@ -1465,9 +1466,13 @@ function createCoordinatorHostServer(token, getStatus, options = {}) {
   const snapshotWrites = new MinuteWindow(10, now);
   const statusReads = new MinuteWindow(240, now);
   const server = http.createServer((req, res) => {
-    req.socket.setTimeout(15e3, () => {
-      req.socket.destroy();
-    });
+    const socket = req.socket;
+    if (!socket[SOCKET_TIMEOUT_ARMED]) {
+      socket[SOCKET_TIMEOUT_ARMED] = true;
+      socket.setTimeout(15e3, () => {
+        socket.destroy();
+      });
+    }
     const authHeader = req.headers.authorization;
     if (!authenticateRequest(authHeader, token)) {
       res.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
