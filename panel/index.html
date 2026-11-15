@@ -3522,6 +3522,36 @@
     .project-name-row input { width: 55%; }
     .project-pill { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     :focus-visible { outline: 2px solid var(--prim); outline-offset: 2px; }
+
+    /* ---- Pending decision block (D53). Agent text is never styled as markup. ---- */
+    .decision-inbox { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+    .decision-inbox-group { display: flex; flex-direction: column; gap: 8px; }
+    .decision-inbox-heading { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted); }
+    .decision-block { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--surf); border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: var(--rad); }
+    .decision-eyebrow { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--warn); }
+    .decision-title { font-size: 13.5px; font-weight: 600; color: var(--fg); overflow-wrap: anywhere; }
+    .decision-provenance { font-size: 10.5px; font-family: var(--font-mono); color: var(--fg-muted); overflow-wrap: anywhere; }
+    .decision-warning { font-size: 10.5px; color: var(--fg-muted); }
+    .decision-form-body { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+    .decision-field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+    .decision-field-title { font-size: 12px; font-weight: 500; color: var(--fg); }
+    .decision-field-description { font-size: 11px; color: var(--fg-muted); }
+    .decision-required { color: var(--err); font-size: 11px; position: absolute; right: 0; top: 0; }
+    .decision-input { font-size: 16px; min-height: 36px; padding: 6px 8px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: var(--rad-sm); }
+    .decision-input:disabled { opacity: 0.7; }
+    .decision-choices { display: flex; flex-direction: column; gap: 2px; }
+    .decision-choice { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 2px 0; cursor: pointer; }
+    .decision-choice input { width: 16px; height: 16px; flex-shrink: 0; }
+    .decision-choice-label { font-size: 12.5px; color: var(--fg); overflow-wrap: anywhere; }
+    .decision-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+    .decision-dismiss-box { display: flex; gap: 6px; width: 100%; }
+    .decision-dismiss-box .decision-input { flex: 1; }
+    .decision-state-note { font-size: 11px; color: var(--fg-muted); }
+    .decision-status-note { font-size: 11.5px; color: var(--fg-muted); padding: 6px 0; }
+    .decision-clamp-note, .decision-readonly-reason, .decision-page-unavailable, .decision-blind-wait { font-size: 11px; color: var(--fg-muted); }
+    .decision-badge { display: inline-flex; align-items: baseline; gap: 6px; max-width: 320px; padding: 1px 7px; border-radius: 10px; background: var(--warn-subtle); color: var(--warn); font-size: 10px; font-weight: 600; flex-shrink: 0; overflow: hidden; }
+    .decision-badge-title { font-weight: 400; color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .decision-badge-more { font-weight: 400; color: var(--fg-muted); white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -3814,6 +3844,8 @@
     </div>
 
     <div class="drawer-scroll">
+      <!-- Pending decision (D53): rendered above every other section -->
+      <div id="drawerDecisionSlot" style="display: none;"></div>
       <!-- Priority Picker -->
       <div>
         <div class="section-label">Priority</div>

@@ -692,7 +692,7 @@ function readSessionEvent(body) {
   } catch {
     return null;
   }
-  const { v, requestId, event } = wire;
+  const { v, requestId, event, content } = wire;
   if (v !== SESSION_EVENTS_WIRE_VERSION) return null;
   if (typeof requestId !== "string" || requestId.length === 0) return null;
   if (!isObject(event) || event === void 0) return null;
@@ -735,6 +735,10 @@ function readSessionEvent(body) {
     if (typeof questionId !== "string" || questionId.length === 0) return null;
     request.event.question = { kind, id: questionId };
   }
+  if (content !== void 0) {
+    if (!isObject(content) || content.type !== type) return null;
+    request.content = content;
+  }
   return request;
 }
 
@@ -759,6 +763,7 @@ var SessionMarks = class {
   now;
   changesPerMinute;
   windowMs;
+  onStatus;
   host;
   /** What the host currently shows per session; absence means no mark. */
   delivered = /* @__PURE__ */ new Map();
@@ -768,6 +773,7 @@ var SessionMarks = class {
     this.now = options.now ?? Date.now;
     this.changesPerMinute = options.changesPerMinute ?? MARK_CHANGES_PER_MINUTE;
     this.windowMs = options.windowMs ?? 6e4;
+    this.onStatus = options.onStatus;
   }
   /** Applies one session event. A subagent's row is ignored: its parent's turn is the one to watch. */
   handleEvent(request) {
@@ -915,6 +921,7 @@ var SessionMarks = class {
     entry.timer = null;
     try {
       const status = await this.host.sessionStatus(sessionId);
+      this.onStatus?.(sessionId, status);
       if (status === "busy") {
         this.apply(sessionId, "running");
         return;
@@ -934,6 +941,485 @@ var SessionMarks = class {
     if (!entry.timer) return;
     clearTimeout(entry.timer);
     entry.timer = null;
+  }
+};
+
+// service/decision-form.ts
+var FORM_MAX_FIELDS = 40;
+var FORM_MAX_OPTIONS = 50;
+var FORM_MAX_TITLE = 200;
+var FORM_MAX_DESCRIPTION = 500;
+var FORM_MAX_CUSTOM = 2e3;
+var isObject2 = (value) => Object(value) === value && !Array.isArray(value);
+function cutText(value, max) {
+  if (value.length <= max) return { text: value, cut: false };
+  let end = max;
+  const code = value.charCodeAt(end - 1);
+  if (code >= 55296 && code <= 56319) end -= 1;
+  return { text: value.slice(0, end), cut: true };
+}
+var isFieldType = (value) => value === "string" || value === "number" || value === "integer" || value === "boolean" || value === "multiselect" || value === "external";
+function clampFormFields(raw) {
+  const result = { fields: [], droppedFields: 0, droppedOptions: 0, truncated: false };
+  if (!Array.isArray(raw)) return result;
+  const seenKeys = /* @__PURE__ */ new Set();
+  for (const candidate of raw) {
+    if (!isObject2(candidate)) continue;
+    const key = candidate.key;
+    if (typeof key !== "string" || key.length === 0 || seenKeys.has(key)) continue;
+    if (!isFieldType(candidate.type)) continue;
+    const rawTitle = candidate.title;
+    if (typeof rawTitle !== "string") continue;
+    if (result.fields.length >= FORM_MAX_FIELDS) {
+      result.droppedFields += 1;
+      continue;
+    }
+    const title = cutText(rawTitle, FORM_MAX_TITLE);
+    if (title.cut) result.truncated = true;
+    const rawDescription = candidate.description;
+    const description = typeof rawDescription === "string" ? cutText(rawDescription, FORM_MAX_DESCRIPTION) : { text: null, cut: false };
+    if (description.cut) result.truncated = true;
+    const field = {
+      key,
+      type: candidate.type,
+      title: title.text,
+      description: description.text,
+      required: candidate.required === true
+    };
+    if (Array.isArray(candidate.options)) {
+      const options = [];
+      for (const option of candidate.options) {
+        if (!isObject2(option)) continue;
+        const value = option.value;
+        const label = option.label;
+        if (typeof value !== "string" || typeof label !== "string") continue;
+        if (options.length >= FORM_MAX_OPTIONS) {
+          result.droppedOptions += 1;
+          continue;
+        }
+        options.push({ value, label });
+      }
+      if (options.length > 0) field.options = options;
+    }
+    if (candidate.custom === true) field.custom = true;
+    if (Array.isArray(candidate.when)) {
+      const when = [];
+      for (const condition of candidate.when) {
+        if (!isObject2(condition)) continue;
+        const op = condition.op;
+        const conditionValue = condition.value;
+        if (typeof condition.key !== "string" || condition.key.length === 0) continue;
+        if (op !== "eq" && op !== "neq") continue;
+        if (typeof conditionValue !== "string" && typeof conditionValue !== "number" && typeof conditionValue !== "boolean") {
+          continue;
+        }
+        when.push({ key: condition.key, op, value: conditionValue });
+      }
+      if (when.length > 0) field.when = when;
+    }
+    seenKeys.add(key);
+    result.fields.push(field);
+  }
+  return result;
+}
+function conditionHolds(actual, condition) {
+  if (actual === void 0 || actual === null) return condition.op === "neq";
+  const expected = condition.value;
+  let equal;
+  if (typeof expected === "number") {
+    equal = typeof actual === "number" ? actual === expected : Number(actual) === expected;
+  } else if (typeof expected === "boolean") {
+    equal = typeof actual === "boolean" ? actual === expected : String(actual) === String(expected);
+  } else {
+    equal = typeof actual === "string" ? actual === expected : String(actual) === expected;
+  }
+  return condition.op === "eq" ? equal : !equal;
+}
+function visibleFieldKeys(fields, values) {
+  const known = new Set(fields.map((field) => field.key));
+  const visible = /* @__PURE__ */ new Set();
+  for (const field of fields) {
+    const conditions = field.when ?? [];
+    const holds = conditions.every((condition) => {
+      if (!known.has(condition.key)) return false;
+      return conditionHolds(values[condition.key], condition);
+    });
+    if (holds) visible.add(field.key);
+  }
+  return visible;
+}
+var isEmpty = (value) => {
+  if (value === void 0) return true;
+  if (typeof value === "string") return value.trim().length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+};
+var isPlainValue = (value) => {
+  if (typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+};
+function validateFormAnswer(fields, raw) {
+  if (!isObject2(raw)) return { ok: false, code: "ANSWER_INVALID", detail: [] };
+  const submitted = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!isPlainValue(value)) return { ok: false, code: "ANSWER_INVALID", detail: [key] };
+    submitted[key] = value;
+  }
+  if (Object.keys(submitted).length === 0) return { ok: false, code: "ANSWER_INVALID", detail: [] };
+  if (fields.some((field) => field.type === "external")) {
+    return { ok: false, code: "ANSWER_NEEDS_EXTERNAL", detail: fields.filter((f) => f.type === "external").map((f) => f.key) };
+  }
+  const known = new Set(fields.map((field) => field.key));
+  for (const key of Object.keys(submitted)) {
+    if (!known.has(key)) return { ok: false, code: "ANSWER_INVALID", detail: [key] };
+  }
+  const visible = visibleFieldKeys(fields, submitted);
+  const values = {};
+  const dropped = [];
+  const invalid = [];
+  for (const field of fields) {
+    const value = submitted[field.key];
+    if (!visible.has(field.key)) {
+      if (value !== void 0) dropped.push(field.key);
+      continue;
+    }
+    if (value === void 0) {
+      if (field.required) invalid.push(field.key);
+      continue;
+    }
+    if (!fieldValid(field, value)) {
+      invalid.push(field.key);
+      continue;
+    }
+    values[field.key] = value;
+  }
+  if (invalid.length > 0) return { ok: false, code: "ANSWER_INVALID", detail: invalid };
+  return { ok: true, values, dropped };
+}
+function fieldValid(field, value) {
+  switch (field.type) {
+    case "string": {
+      if (typeof value !== "string") return false;
+      if (field.required && value.trim().length === 0) return false;
+      if (field.options && field.options.length > 0) {
+        if (field.options.some((option) => option.value === value)) return true;
+        return field.custom === true && value.trim().length > 0 && value.trim().length <= FORM_MAX_CUSTOM;
+      }
+      return true;
+    }
+    case "number":
+      return typeof value === "number" && Number.isFinite(value);
+    case "integer":
+      return typeof value === "number" && Number.isInteger(value);
+    case "boolean":
+      return typeof value === "boolean";
+    case "multiselect": {
+      if (!Array.isArray(value) || value.length === 0) return false;
+      const offered = new Set((field.options ?? []).map((option) => option.value));
+      return value.every((entry) => offered.has(entry) || field.custom === true && entry.length <= FORM_MAX_CUSTOM);
+    }
+    case "external":
+      return false;
+  }
+}
+function formIsAnswerable(fields) {
+  return !fields.some((field) => field.type === "external");
+}
+function formIsComplete(fields, values) {
+  const visible = visibleFieldKeys(fields, values);
+  return fields.every((field) => {
+    if (!visible.has(field.key) || !field.required) return true;
+    const value = values[field.key];
+    if (isEmpty(value)) return false;
+    return fieldValid(field, value);
+  });
+}
+
+// service/decision-store.ts
+var DECISIONS_MAX = 50;
+var DECISIONS_BODY_MAX = 64 * 1024;
+var DECISION_STALENESS_MS = 10 * 6e4;
+var DECISION_MESSAGE_MAX = 2e3;
+var DECISION_TITLE_MAX = 200;
+var LINKED_MAX = 8;
+var isObject3 = (value) => Object(value) === value && !Array.isArray(value);
+var cut = (value, max) => value.length <= max ? value : value.slice(0, max);
+function normalizeLinked(raw) {
+  if (!Array.isArray(raw)) return [];
+  const items = [];
+  for (const candidate of raw) {
+    if (!isObject3(candidate)) continue;
+    const id = candidate.id;
+    if (typeof id !== "string" || id.length === 0) continue;
+    const number = typeof candidate.number === "number" && Number.isFinite(candidate.number) ? candidate.number : null;
+    const url = typeof candidate.url === "string" ? candidate.url : "";
+    items.push({ id: cut(id, 300), number, url: cut(url, 500) });
+    if (items.length >= LINKED_MAX) break;
+  }
+  return items;
+}
+function readAsk(content, askId) {
+  if (!content || content.type !== "question-asked") return null;
+  const ask = content.ask;
+  if (!isObject3(ask)) return null;
+  if (ask.id !== askId) return null;
+  return ask;
+}
+var DecisionStore = class {
+  entries = /* @__PURE__ */ new Map();
+  now;
+  maxEntries;
+  stalenessMs;
+  log;
+  host;
+  startedAt;
+  constructor(options = {}) {
+    this.now = options.now ?? Date.now;
+    this.maxEntries = options.maxEntries ?? DECISIONS_MAX;
+    this.stalenessMs = options.stalenessMs ?? DECISION_STALENESS_MS;
+    this.log = options.log ?? (() => {
+    });
+    this.host = options.host;
+    this.startedAt = this.now();
+  }
+  /** Set once the host client exists, or replaced in a test. */
+  setHost(host) {
+    this.host = host;
+  }
+  size() {
+    return this.entries.size;
+  }
+  get(id) {
+    return this.entries.get(id);
+  }
+  entriesOf(sessionId) {
+    return [...this.entries.values()].filter((entry) => entry.sessionId === sessionId);
+  }
+  /**
+   * Applies one session event.
+   *
+   * - `question-asked` creates or refreshes one entry (§3.1).
+   * - `turn-finished` / `turn-failed` close every entry of the session: the
+   *   host's own definition of idle is "nothing waiting" (§3.5).
+   * - `session-archived` / `session-deleted` remove every entry of the session.
+   * - `turn-started` clears nothing: answering a form resumes the turn without
+   *   a new `turn-started` (§3.5).
+   * - `permission-asked` is out of scope for this release (D53 scope decision).
+   */
+  handleEvent(request) {
+    const { event } = request;
+    const sessionId = event.session.id;
+    switch (event.type) {
+      case "question-asked":
+        this.createFromQuestion(request);
+        break;
+      case "turn-finished":
+      case "turn-failed":
+        this.removeSession(sessionId);
+        break;
+      case "session-archived":
+      case "session-deleted":
+        this.removeSession(sessionId);
+        break;
+      default:
+        break;
+    }
+  }
+  /**
+   * One `sessions.status` answer, shared with the marks poll (§7.1). `waiting`
+   * confirms every entry of the session; `idle`/`busy` closes them.
+   */
+  observeStatus(sessionId, status) {
+    if (status === "waiting") {
+      const at = this.now();
+      for (const entry of this.entriesOf(sessionId)) entry.confirmedAt = at;
+      return;
+    }
+    this.removeSession(sessionId);
+  }
+  /** True when the last positive observation is older than the staleness window. */
+  isUnconfirmed(entry) {
+    return this.now() - entry.confirmedAt > this.stalenessMs;
+  }
+  /**
+   * `GET /decisions` (§3.8). Sorted per §3.4 and capped at 64 KB: when the
+   * projection is too large, the oldest entries are dropped first.
+   */
+  list() {
+    const at = this.now();
+    let decisions = this.sorted();
+    let view = { v: 1, at, startedAt: this.startedAt, decisions };
+    while (decisions.length > 0 && Buffer.byteLength(JSON.stringify(view), "utf8") > DECISIONS_BODY_MAX) {
+      const oldest = [...decisions].sort((a, b) => a.askedAt - b.askedAt)[0];
+      decisions = decisions.filter((entry) => entry !== oldest);
+      view = { v: 1, at, startedAt: this.startedAt, decisions };
+      this.log(`[decisions] projection over ${DECISIONS_BODY_MAX} bytes; dropped ${oldest.id}`);
+    }
+    return view;
+  }
+  /**
+   * `POST /decision/answer` (§5.1). The client sends a decision id and values;
+   * the service resolves session, form id and kind from its own entry, so a
+   * compromised panel can only answer decisions the service already knows.
+   */
+  async answer(request) {
+    const id = request.id;
+    if (typeof id !== "string" || id.length === 0) {
+      return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: [] } };
+    }
+    const entry = this.entries.get(id);
+    if (!entry) return { status: 404, body: { v: 1, code: "DECISION_UNKNOWN" } };
+    if (entry.state !== "pending") return { status: 409, body: { v: 1, code: "DECISION_NOT_PENDING" } };
+    if (entry.kind !== "form") {
+      return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: [] } };
+    }
+    const values = request.values;
+    const message = request.message;
+    let answerValues = null;
+    let answerMessage;
+    if (values === null || values === void 0) {
+      if (typeof message !== "string") {
+        return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: ["message"] } };
+      }
+      const trimmed = message.trim();
+      if (trimmed.length === 0 || trimmed.length > DECISION_MESSAGE_MAX) {
+        return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: ["message"] } };
+      }
+      answerValues = null;
+      answerMessage = trimmed;
+    } else {
+      if (message !== null && message !== void 0) {
+        return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: ["message"] } };
+      }
+      const validation = validateFormAnswer(entry.fields ?? [], values);
+      if (!validation.ok) {
+        return { status: 400, body: { v: 1, code: validation.code, detail: validation.detail } };
+      }
+      if (Object.keys(validation.values).length === 0) {
+        return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: [] } };
+      }
+      answerValues = validation.values;
+    }
+    const host = this.host;
+    if (!host) {
+      return { status: 503, body: { v: 1, code: "HOST_UNAVAILABLE" } };
+    }
+    entry.state = "answering";
+    try {
+      const result = await host.answerForm(entry.sessionId, entry.askId, answerValues, answerMessage);
+      if (result?.answered !== true) {
+        entry.state = "pending";
+        return { status: 400, body: { v: 1, code: "ANSWER_REFUSED" } };
+      }
+      entry.state = "answered-unconfirmed";
+      entry.answeredAt = this.now();
+      entry.confirmedAt = entry.answeredAt;
+      return { status: 200, body: { v: 1, state: "answered-unconfirmed" } };
+    } catch (error) {
+      return this.mapHostError(entry, error);
+    }
+  }
+  /** Maps one host failure to the wire answer and the entry state, no retry (§5.1). */
+  mapHostError(entry, error) {
+    const status = isObject3(error) || typeof error === "object" ? Number(error?.status ?? 0) : 0;
+    const message = typeof error?.message === "string" ? String(error.message) : void 0;
+    if (status === 404) {
+      this.entries.delete(entry.id);
+      return { status: 404, body: { v: 1, code: "DECISION_GONE" } };
+    }
+    if (status === 403) {
+      entry.state = "pending";
+      return { status: 403, body: { v: 1, code: "PERMISSION_MISSING", message: message ?? null } };
+    }
+    if (status === 400) {
+      entry.state = "pending";
+      return { status: 400, body: { v: 1, code: "ANSWER_REFUSED", message: message ?? null } };
+    }
+    if (status === 429) {
+      entry.state = "pending";
+      return { status: 429, body: { v: 1, code: "RATE_LIMITED" } };
+    }
+    return { status: 502, body: { v: 1, code: "UNKNOWN", message: message ?? null } };
+  }
+  createFromQuestion(request) {
+    const { event } = request;
+    const question = event.question;
+    if (!question) return;
+    const sessionId = event.session.id;
+    const askId = question.id;
+    const id = `${sessionId}:${question.kind}:${askId}`;
+    const ask = readAsk(request.content, askId);
+    const now = this.now();
+    const existing = this.entries.get(id);
+    if (existing) {
+      existing.askedAt = Math.min(existing.askedAt, event.at);
+      existing.confirmedAt = now;
+      if (ask) {
+        this.applyAsk(existing, ask);
+      }
+      return;
+    }
+    if (!sessionId || !event.project.directory && !sessionId) return;
+    const entry = {
+      id,
+      kind: question.kind,
+      sessionId,
+      parentId: event.session.parentId,
+      directory: event.project.directory,
+      askId,
+      title: null,
+      sessionTitle: typeof request.content?.sessionTitle === "string" ? request.content.sessionTitle : null,
+      askedAt: event.at,
+      state: "pending",
+      confirmedAt: now,
+      answeredAt: null,
+      linked: normalizeLinked(event.linked),
+      fields: null,
+      page: question.kind === "page" ? { hasHtml: false, hasUi: false, htmlChars: 0, mode: null } : null,
+      droppedFields: 0,
+      droppedOptions: 0
+    };
+    if (ask) this.applyAsk(entry, ask);
+    this.entries.set(id, entry);
+    this.enforceCap();
+  }
+  /** Reads title/fields from an ask. Without `transcript` the ask is absent and the entry stays blind. */
+  applyAsk(entry, ask) {
+    const title = ask.title;
+    if (typeof title === "string" && title.length > 0) entry.title = cut(title, DECISION_TITLE_MAX);
+    if (entry.kind !== "form") return;
+    if (!Array.isArray(ask.fields)) return;
+    const clamped = clampFormFields(ask.fields);
+    entry.fields = clamped.fields;
+    entry.droppedFields = clamped.droppedFields;
+    entry.droppedOptions = clamped.droppedOptions;
+  }
+  removeSession(sessionId) {
+    for (const [id, entry] of this.entries) {
+      if (entry.sessionId === sessionId) this.entries.delete(id);
+    }
+  }
+  /** §7.6: at most 50 entries; answered entries are evicted before waiting ones. */
+  enforceCap() {
+    while (this.entries.size > this.maxEntries) {
+      const all = [...this.entries.values()];
+      const answered = all.filter((entry) => entry.state === "answered-unconfirmed").sort((a, b) => (a.answeredAt ?? a.askedAt) - (b.answeredAt ?? b.askedAt));
+      const victim = answered[0] ?? all.sort((a, b) => a.askedAt - b.askedAt)[0];
+      if (!victim) return;
+      this.entries.delete(victim.id);
+      this.log(`[decisions] store at ${this.maxEntries}; dropped ${victim.id}`);
+    }
+  }
+  /** §3.4: waiting before confirming, then newest first, then ask id descending. */
+  sorted() {
+    return [...this.entries.values()].sort((a, b) => {
+      const aWaiting = a.state === "answered-unconfirmed" ? 1 : 0;
+      const bWaiting = b.state === "answered-unconfirmed" ? 1 : 0;
+      if (aWaiting !== bWaiting) return aWaiting - bWaiting;
+      if (a.askedAt !== b.askedAt) return b.askedAt - a.askedAt;
+      return a.askId < b.askId ? 1 : a.askId > b.askId ? -1 : 0;
+    });
   }
 };
 
@@ -989,6 +1475,22 @@ function createHostClient(env) {
       const status = result?.status;
       if (status === "idle" || status === "busy" || status === "waiting") return status;
       throw new HostCallError("OpenChamber answered an unknown session status.", "HOST_UNAVAILABLE", 0);
+    },
+    answerForm: async (sessionId, formId, values, message) => {
+      const input = { sessionId, formId, values };
+      if (message !== void 0) input.message = message;
+      const result = await call("sessions.answerForm", input);
+      if (result?.answered !== true) {
+        throw new HostCallError("OpenChamber did not take the answer.", "HOST_UNAVAILABLE", 0);
+      }
+      return { answered: true };
+    },
+    send: async (sessionId, prompt) => {
+      const result = await call("sessions.send", { sessionId, prompt });
+      if (result?.sent !== true) {
+        throw new HostCallError("OpenChamber did not take the message.", "HOST_UNAVAILABLE", 0);
+      }
+      return { sent: true };
     }
   };
 }
@@ -1532,11 +2034,14 @@ function readBody(req, res, cap, onBody) {
 function createCoordinatorHostServer(token, getStatus, options = {}) {
   const MAX_BODY_BYTES = 65536;
   const snapshotStore = options.snapshotStore ?? new SnapshotStore();
-  const marks = options.marks;
   const now = options.now ?? Date.now;
+  const marks = options.marks;
+  const decisions = options.decisions ?? new DecisionStore({ now });
   const snapshotAttempts = new MinuteWindow(30, now);
   const snapshotWrites = new MinuteWindow(10, now);
   const statusReads = new MinuteWindow(240, now);
+  const decisionReads = new MinuteWindow(120, now);
+  const answerAttempts = new MinuteWindow(30, now);
   const server = http.createServer((req, res) => {
     const socket = req.socket;
     if (!socket[SOCKET_TIMEOUT_ARMED]) {
@@ -1635,6 +2140,54 @@ function createCoordinatorHostServer(token, getStatus, options = {}) {
       });
       return;
     }
+    if (normalizedPath === "/decisions") {
+      if (req.method !== "GET") {
+        sendJson(res, 405, { error: "Method Not Allowed" });
+        req.resume();
+        return;
+      }
+      if (!decisionReads.take()) {
+        sendJson(res, 429, { error: "Too Many Requests" }, JSON_HEADERS, { "Retry-After": "60" });
+        req.resume();
+        return;
+      }
+      sendJson(res, 200, decisions.list(), STATUS_HEADERS);
+      req.resume();
+      return;
+    }
+    if (normalizedPath === "/decision/answer") {
+      if (req.method !== "POST") {
+        sendJson(res, 405, { error: "Method Not Allowed" });
+        req.resume();
+        return;
+      }
+      if (!answerAttempts.take()) {
+        sendJson(res, 429, { error: "Too Many Requests" }, JSON_HEADERS, { "Retry-After": "60" });
+        req.resume();
+        return;
+      }
+      const contentType = String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+      if (contentType !== "application/json") {
+        sendJson(res, 415, { error: "Unsupported Media Type" });
+        req.resume();
+        return;
+      }
+      readBody(req, res, MAX_BODY_BYTES, (body) => {
+        let parsed;
+        try {
+          parsed = JSON.parse(body);
+        } catch {
+          sendJson(res, 400, { v: 1, code: "ANSWER_INVALID" });
+          return;
+        }
+        if (Object(parsed) !== parsed || Array.isArray(parsed)) {
+          sendJson(res, 400, { v: 1, code: "ANSWER_INVALID" });
+          return;
+        }
+        void decisions.answer(parsed).then((result) => sendJson(res, result.status, result.body, STATUS_HEADERS)).catch(() => sendJson(res, 502, { v: 1, code: "UNKNOWN" }, STATUS_HEADERS));
+      });
+      return;
+    }
     if (normalizedPath === SESSION_EVENTS_PATH) {
       if (req.method !== "POST") {
         sendJson(res, 405, { error: "Method Not Allowed" });
@@ -1649,6 +2202,7 @@ function createCoordinatorHostServer(token, getStatus, options = {}) {
         }
         sendJson(res, 200, { ok: true });
         marks?.handleEvent(event);
+        decisions.handleEvent(event);
       });
       return;
     }
@@ -1676,10 +2230,16 @@ async function startHostServiceServer() {
   const coordinatorService = new CoordinatorService();
   const snapshotStore = new SnapshotStore();
   const serviceHost = createHostClient(process.env);
-  const marks = new SessionMarks(serviceHost);
+  const decisions = new DecisionStore({ host: serviceHost });
+  const marks = new SessionMarks(serviceHost, {
+    // One poll serves both features: the marks loop already asks for the status
+    // of every waiting session, and the decision store reads the same answer.
+    onStatus: (sessionId, status) => decisions.observeStatus(sessionId, status)
+  });
   const server = createCoordinatorHostServer(token, () => coordinatorService.getStatus(), {
     snapshotStore,
-    marks
+    marks,
+    decisions
   });
   let isShuttingDown = false;
   const shutdown = async (signal) => {
@@ -1751,13 +2311,25 @@ export {
   CasManager,
   CoordinatorReconciler,
   CoordinatorService,
+  DECISIONS_BODY_MAX,
+  DECISIONS_MAX,
+  DECISION_MESSAGE_MAX,
+  DECISION_STALENESS_MS,
+  DECISION_TITLE_MAX,
   DEFAULT_DRY_RUN,
   DEFAULT_HOST_ORIGIN,
   DEFAULT_LEASE_TTL_MS,
   DEFAULT_POLL_INTERVAL_MS,
   DEFAULT_STORAGE_DIR,
+  DecisionStore,
+  FORM_MAX_CUSTOM,
+  FORM_MAX_DESCRIPTION,
+  FORM_MAX_FIELDS,
+  FORM_MAX_OPTIONS,
+  FORM_MAX_TITLE,
   HOST_CALLBACK_URL_ENV,
   HostCallError,
+  LINKED_MAX,
   LeaseStore,
   MARK_CHANGES_PER_MINUTE,
   MARK_MAX,
@@ -1782,10 +2354,15 @@ export {
   authenticateRequest,
   buildStatusView,
   claimPilotTask,
+  clampFormFields,
   clampText,
   computeIssueSha,
+  conditionHolds,
   createCoordinatorHostServer,
   createHostClient,
+  cutText,
+  formIsAnswerable,
+  formIsComplete,
   getDefaultLeasesFilePath,
   hasForbiddenText,
   inspectSessionLiveness,
@@ -1793,6 +2370,7 @@ export {
   isTaskEligibleForPilot,
   loadCoordinatorConfig,
   normalizeDirectory,
+  normalizeLinked,
   parseSnapshotBody,
   readSessionEvent,
   reconcileTaskState,
@@ -1800,6 +2378,8 @@ export {
   resolveStorageDir,
   startHostServiceServer,
   topValue,
+  validateFormAnswer,
   validateServiceHostEnv,
-  verifyIssueCas
+  verifyIssueCas,
+  visibleFieldKeys
 };

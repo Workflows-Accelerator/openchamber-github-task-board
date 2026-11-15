@@ -4,6 +4,20 @@ import { setupCustomDropdown, initAllCustomDropdowns } from './dropdown.js';
 import { escapeHtml, slugify, sanitizeHexColor, addLog, logEntries } from './utils.js';
 import { renderMarkdown, getIssueDescriptionPreview } from './markdown.js';
 import {
+  isFrenchLocale,
+  decisionRepoKeys,
+  renderDecisionBadge,
+  renderDecisionBlock,
+  renderDecisionStatusNote,
+  resolveDecisionBinding,
+  sortDecisions,
+  copyText,
+  formatClock,
+  type AnswerState,
+  type DecisionLanguage,
+  type DecisionView,
+} from './decisions.js';
+import {
   shortName, projectNameKey, normalizeProjectNameOverrides, defaultViewState, normalizeViewState,
   VIEW_LABELS, KIND_FILTER_LABELS, STAGE_IDS, toggleFilter, isQuickCaptureMode, applyFilters, applySort,
   parseOrderMarker, stripOrderMarker, setOrderMarker, computeMove, sortByManualOrder, nextAppendOrder,
@@ -175,6 +189,7 @@ import {
   getSessionIssueRepo,
   parseRepoFullName,
   sessionRepoKeys,
+  issueRepoKey,
   resolveSimplifiedViewTitle,
   formatTaskTextWithLinks,
   extractQuestionOptions,
@@ -406,6 +421,7 @@ const elDrawerIssueAuthor = document.getElementById('drawerIssueAuthor') as HTML
 const elDrawerGithubLink = document.getElementById('drawerGithubLink') as HTMLAnchorElement;
 const elBtnDrawerToggleClose = document.getElementById('btnDrawerToggleClose') as HTMLButtonElement | null;
 const elDrawerIssueTitle = document.getElementById('drawerIssueTitle') as HTMLHeadingElement;
+const elDrawerDecisionSlot = document.getElementById('drawerDecisionSlot') as HTMLElement | null;
 const elDrawerPrioritySelect = document.getElementById('drawerPrioritySelect') as HTMLSelectElement | null;
 const elDrawerStatusSelect = document.getElementById('drawerStatusSelect') as HTMLSelectElement;
 const elDrawerComplexitySelect = document.getElementById('drawerComplexitySelect') as HTMLSelectElement | null;
@@ -635,6 +651,14 @@ async function watchActiveProject(projectId: string): Promise<void> {
       sessionIndexByRepo = buildSessionIndexByRepo(sessions);
       renderViews();
       if (activeIssue) renderDrawer(activeIssue);
+      // The first snapshot seeds the feed; later ones refresh only when a
+      // decision is visible or the Pending view is open, so an idle board stays
+      // quiet (D11: no timer polling).
+      if (!decisionFeedStarted) {
+        seedDecisionFeed();
+      } else if (decisionFeed.decisions.length > 0 || viewState.view === 'pending' || activeIssue) {
+        void refreshDecisions();
+      }
       statusReconciler.schedule(issues);
       handleDraftSessionUpdates(sessions);
 
@@ -3866,6 +3890,10 @@ function renderSimpleListView(sorted: Issue[]): void {
       }
     }
     row.appendChild(content);
+    const issueDecisions = decisionsForIssue(issue);
+    if (issueDecisions.length > 0) {
+      row.appendChild(renderDecisionBadge(issueDecisions[0], decisionLanguage(), issueDecisions.length - 1));
+    }
     if (unconfirmed) {
       const badge = document.createElement('span');
       badge.className = 'badge-unconfirmed';
@@ -4957,9 +4985,320 @@ async function handleFilePathClick(pathStr: string, e?: Event): Promise<void> {
   }
 }
 
+// ==========================================
+// Pending decisions (D53 S1 + S2)
+// ==========================================
+//
+// One feed for the whole panel. The service already stores the decisions and
+// answers them; the panel only renders what the service listed and posts an
+// answer back by decision id. Nothing here reads an issue body, a comment or a
+// URL to learn what an agent asked.
+
+type DecisionFormValues = Record<string, string | number | boolean | string[]>;
+
+let panelLocale: DecisionLanguage = 'en';
+let decisionFeedStarted = false;
+let decisionRefreshInFlight = false;
+let lastDecisionSignature = '';
+
+interface DecisionFeed {
+  status: 'unknown' | 'ok' | 'down';
+  at: number;
+  startedAt: number;
+  decisions: DecisionView[];
+  lastAttemptAt: number;
+}
+
+let decisionFeed: DecisionFeed = {
+  status: 'unknown',
+  at: 0,
+  startedAt: 0,
+  decisions: [],
+  lastAttemptAt: 0,
+};
+
+const decisionAnswerState = new Map<string, { state: AnswerState; message?: string | null }>();
+
+function decisionLanguage(): DecisionLanguage {
+  return panelLocale;
+}
+
+/** The panel's own binding for a decision, from its session index (§3.2). */
+function decisionPanelKeys(decision: DecisionView): string[] {
+  const session = sessions.find((entry) => entry.id === decision.sessionId);
+  return session ? sessionRepoKeys(session) : [];
+}
+
+/**
+ * Decisions shown on one task. The panel's issue↔session binding is primary;
+ * the event's `linked[]` is the fallback when the panel has no session object.
+ */
+function decisionsForIssue(issue: Issue): DecisionView[] {
+  if (decisionFeed.decisions.length === 0) return [];
+  const session = getIssueSession(issue);
+  const key = issueRepoKey(issue);
+  const out: DecisionView[] = [];
+  for (const decision of decisionFeed.decisions) {
+    const binding = resolveDecisionBinding(decision, decisionPanelKeys(decision));
+    if (binding.unbound) continue;
+    if ((session && decision.sessionId === session.id) || (key && binding.keys.includes(key))) {
+      out.push(decision);
+    }
+  }
+  return sortDecisions(out);
+}
+
+function safeJsonParse(text: unknown): any {
+  if (typeof text !== 'string' || text.length === 0) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function decisionSignature(): string {
+  return decisionFeed.decisions.map((entry) => `${entry.id}:${entry.state}`).join(',');
+}
+
+/**
+ * Reads `GET /decisions` once. A failed read is a named state (`down`), never a
+ * stale list presented as current; a restart of the service is visible because
+ * `startedAt` changed, and the inbox says so.
+ */
+async function refreshDecisions(): Promise<void> {
+  if (decisionRefreshInFlight) return;
+  decisionRefreshInFlight = true;
+  const previousSignature = decisionSignature();
+  const previousStatus = decisionFeed.status;
+  try {
+    const res = await (host as any).serviceRequest({ method: 'GET', path: '/decisions' });
+    const now = Date.now();
+    const status = res && typeof res.status === 'number' ? res.status : 0;
+    if (status === 200) {
+      const parsed = safeJsonParse(res.body);
+      if (!parsed || !Array.isArray(parsed.decisions)) {
+        decisionFeed = { ...decisionFeed, status: 'down', lastAttemptAt: now };
+      } else {
+        decisionFeed = {
+          status: 'ok',
+          at: typeof parsed.at === 'number' ? parsed.at : now,
+          startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : decisionFeed.startedAt,
+          decisions: parsed.decisions as DecisionView[],
+          lastAttemptAt: now,
+        };
+        const liveIds = new Set(decisionFeed.decisions.map((entry) => entry.id));
+        for (const id of [...decisionAnswerState.keys()]) {
+          if (!liveIds.has(id)) decisionAnswerState.delete(id);
+        }
+      }
+    } else {
+      // 401/403/503 and anything else: the feed is not answering. Keep the last
+      // list visible but mark it unconfirmed rather than pretending it is fresh.
+      decisionFeed = { ...decisionFeed, status: 'down', lastAttemptAt: now };
+    }
+  } catch {
+    decisionFeed = { ...decisionFeed, status: 'down', lastAttemptAt: Date.now() };
+  } finally {
+    decisionRefreshInFlight = false;
+  }
+  if (decisionSignature() !== previousSignature) {
+    renderDecisionSurfaces();
+  } else if (decisionFeed.status !== previousStatus && viewState.view === 'pending') {
+    renderViews();
+  }
+}
+
+/** Re-renders whatever currently shows decisions. */
+function renderDecisionSurfaces(): void {
+  renderViews();
+  if (activeIssue && elDrawerIssueNumber) renderDrawerDecision(activeIssue);
+}
+
+// D11: no timer polling in the panel. The feed refreshes on the events that can
+// change an answer: the first session snapshot, a later session update, a view
+// switch to Pending, a drawer open, and an explicit Recheck in the inbox.
+function seedDecisionFeed(): void {
+  if (decisionFeedStarted) return;
+  decisionFeedStarted = true;
+  void refreshDecisions();
+}
+
+function renderDecisionAnswerStateNote(decisionId: string): { state: AnswerState; message?: string | null } {
+  return decisionAnswerState.get(decisionId) ?? { state: 'idle' };
+}
+
+function decisionBlockContext(decision: DecisionView, issueNumber: number | null, unbound: boolean) {
+  const answer = renderDecisionAnswerStateNote(decision.id);
+  return {
+    language: decisionLanguage(),
+    now: Date.now(),
+    // Answer controls exist only when the service feed answered. A refusal at
+    // call time still maps to a named state; nothing assumes the grant exists.
+    canAnswer: decisionFeed.status === 'ok',
+    unbound,
+    issueNumber,
+    answerState: answer.state,
+    answerMessage: answer.message ?? null,
+    unconfirmedSince: decisionFeed.status === 'down' ? decisionFeed.lastAttemptAt : null,
+    onSubmit: (target: DecisionView, values: DecisionFormValues) => { void submitDecisionAnswer(target, values); },
+    onDismiss: (target: DecisionView, message: string) => { void dismissDecision(target, message); },
+    onOpenSession: (target: DecisionView) => { void host.openSession(target.sessionId); },
+    onRecheck: () => { void refreshDecisions(); },
+  };
+}
+
+/**
+ * Sends one form answer. The panel validates before sending and the service
+ * validates again; this function maps the service's answer to an honest state.
+ * It never retries and never claims a resolution it did not observe.
+ */
+async function submitDecisionAnswer(decision: DecisionView, values: DecisionFormValues): Promise<void> {
+  if (decisionAnswerState.get(decision.id)?.state === 'answering') return;
+  decisionAnswerState.set(decision.id, { state: 'answering' });
+  renderDecisionSurfaces();
+  try {
+    const res = await (host as any).serviceRequest({
+      method: 'POST',
+      path: '/decision/answer',
+      body: JSON.stringify({ v: 1, id: decision.id, values }),
+    });
+    const status = res && typeof res.status === 'number' ? res.status : 0;
+    if (status === 200) {
+      decisionAnswerState.set(decision.id, { state: 'sent' });
+    } else if (status === 404) {
+      decisionAnswerState.set(decision.id, { state: 'stale' });
+    } else if (status === 409) {
+      decisionAnswerState.set(decision.id, { state: 'stale' });
+    } else if (status === 403) {
+      decisionAnswerState.set(decision.id, { state: 'permission-missing' });
+    } else if (status === 502) {
+      decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
+    } else {
+      decisionAnswerState.set(decision.id, { state: 'failed' });
+    }
+  } catch {
+    // The request may have reached the service; do not claim it failed cleanly.
+    decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
+  } finally {
+    await refreshDecisions();
+    renderDecisionSurfaces();
+  }
+}
+
+/** Sends a dismissal: `null` values plus the owner's message (§5.2). */
+async function dismissDecision(decision: DecisionView, message: string): Promise<void> {
+  if (decisionAnswerState.get(decision.id)?.state === 'answering') return;
+  decisionAnswerState.set(decision.id, { state: 'answering' });
+  renderDecisionSurfaces();
+  try {
+    const res = await (host as any).serviceRequest({
+      method: 'POST',
+      path: '/decision/answer',
+      body: JSON.stringify({ v: 1, id: decision.id, values: null, message }),
+    });
+    const status = res && typeof res.status === 'number' ? res.status : 0;
+    if (status === 200) decisionAnswerState.set(decision.id, { state: 'sent' });
+    else if (status === 404 || status === 409) decisionAnswerState.set(decision.id, { state: 'stale' });
+    else if (status === 403) decisionAnswerState.set(decision.id, { state: 'permission-missing' });
+    else if (status === 502) decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
+    else decisionAnswerState.set(decision.id, { state: 'failed' });
+  } catch {
+    decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
+  } finally {
+    await refreshDecisions();
+    renderDecisionSurfaces();
+  }
+}
+
+/** The decision block in the drawer, above the other sections. */
+function renderDrawerDecision(issue: Issue): void {
+  if (!elDrawerDecisionSlot) return;
+  elDrawerDecisionSlot.innerHTML = '';
+  const list = decisionsForIssue(issue);
+  if (list.length === 0) {
+    elDrawerDecisionSlot.style.display = 'none';
+    return;
+  }
+  elDrawerDecisionSlot.style.display = '';
+  for (const decision of list) {
+    elDrawerDecisionSlot.appendChild(renderDecisionBlock(decision, decisionBlockContext(decision, issue.number, false)));
+  }
+}
+
+/** The issue number a decision names, from its `linked[]` or its repo key. */
+function issueNumberForDecision(decision: DecisionView): number | null {
+  for (const item of decision.linked ?? []) {
+    if (typeof item.number === 'number' && Number.isFinite(item.number)) return item.number;
+  }
+  const key = decisionRepoKeys(decision)[0];
+  const match = key ? key.match(/#(\d+)$/) : null;
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * The Pending-items inbox (§8): "Needs an answer", "Confirming", "Not linked to
+ * a task". Returns how many decisions it drew, so the caller knows whether the
+ * empty state may show.
+ */
+function renderDecisionInbox(): number {
+  if (!elHumanViewContainer) return 0;
+  const language = decisionLanguage();
+  const section = document.createElement('div');
+  section.className = 'decision-inbox';
+
+  const bound: DecisionView[] = [];
+  const unbound: DecisionView[] = [];
+  for (const decision of decisionFeed.decisions) {
+    const binding = resolveDecisionBinding(decision, decisionPanelKeys(decision));
+    if (binding.unbound) unbound.push(decision);
+    else bound.push(decision);
+  }
+
+  const renderGroup = (title: string, list: DecisionView[], unboundGroup: boolean): void => {
+    if (list.length === 0) return;
+    const group = document.createElement('div');
+    group.className = 'decision-inbox-group';
+    const heading = document.createElement('div');
+    heading.className = 'decision-inbox-heading';
+    heading.textContent = title;
+    group.appendChild(heading);
+    for (const decision of sortDecisions(list)) {
+      group.appendChild(renderDecisionBlock(
+        decision,
+        decisionBlockContext(decision, unboundGroup ? null : issueNumberForDecision(decision), unboundGroup)
+      ));
+    }
+    section.appendChild(group);
+  };
+
+  renderGroup(copyText(language, 'inboxNeeds'), bound.filter((entry) => entry.state === 'pending'), false);
+  renderGroup(copyText(language, 'inboxConfirming'), bound.filter((entry) => entry.state !== 'pending'), false);
+  renderGroup(copyText(language, 'inboxUnbound'), unbound, true);
+
+  if (decisionFeed.status === 'down') {
+    section.appendChild(renderDecisionStatusNote('service-down', language, decisionFeed.lastAttemptAt));
+  } else if (decisionFeed.decisions.length === 0) {
+    section.appendChild(renderDecisionStatusNote('no-decisions', language, decisionFeed.at || Date.now()));
+  }
+
+  const recheck = document.createElement('button');
+  recheck.type = 'button';
+  recheck.className = 'btn btn-xs decision-recheck';
+  recheck.textContent = copyText(language, 'recheck');
+  recheck.addEventListener('click', () => { void refreshDecisions(); });
+  section.appendChild(recheck);
+
+  elHumanViewContainer.appendChild(section);
+  return decisionFeed.decisions.length;
+}
+
 function renderHumanTasksView(filteredIssues: Issue[]): void {
   if (!elHumanViewContainer) return;
   elHumanViewContainer.innerHTML = '';
+
+  // Decisions first: a waiting form is the most urgent thing on this view.
+  const decisionCount = renderDecisionInbox();
 
   const getCompletedTasksForIssue = (issue: Issue): HumanTodo[] => {
     const humanTasks = parseHumanTasks(issue.body);
@@ -4991,6 +5330,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
   });
 
   if (humanIssues.length === 0) {
+    if (decisionCount > 0) return;
     if (isLoading && issues.length === 0) {
       elHumanViewContainer.innerHTML = `
         <div class="empty-box">
@@ -5295,12 +5635,6 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
               const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
               await updateIssueBody(issue, updatedBody);
             }
-          } else if (todo.source === 'session-waiting') {
-            cb.checked = false;
-            if (session?.id) {
-              void host.openSession(session.id);
-              await host.toast({ kind: 'info', message: 'Opened waiting session' });
-            }
           }
         });
 
@@ -5310,7 +5644,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
         const badge = document.createElement('span');
         badge.className = `human-todo-badge badge-${todo.source}`;
-        badge.textContent = todo.source === 'human-task' ? 'Human Task' : 'Agent Waiting';
+        badge.textContent = 'Human Task';
 
         itemEl.appendChild(cb);
         itemEl.appendChild(spanText);
@@ -6714,6 +7048,8 @@ function renderDrawerDependencies(issue: Issue): void {
 function openDrawer(issue: Issue): void {
   drawerGeneration++;
   activeIssue = issue;
+  // The drawer's decision block must not show a stale question.
+  void refreshDecisions();
   renderDrawer(issue, false, drawerGeneration, true);
   elDrawerScrim.classList.add('active');
   elTaskDrawer.classList.add('active');
@@ -6912,6 +7248,10 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   // Render labels
   renderDrawerLabels(issue);
   void loadRepoLabels();
+
+  // Pending decision for this task, if any (D53). The slot is the first child
+  // of the drawer scroll, so the question sits above every other section.
+  renderDrawerDecision(issue);
 
   const session = getIssueSession(issue);
   if (session) {
@@ -9138,6 +9478,7 @@ function initEvents(): void {
       viewState.view = item.getAttribute('data-mode') as ViewId;
       rememberViewState();
       applyLayoutMode();
+      if (viewState.view === 'pending') void refreshDecisions();
       closeViewPicker();
       elBtnViewSelect?.focus();
     });
@@ -10007,6 +10348,7 @@ host.onReady(async (ctx) => {
 
   currentDirectory = ctx.directory || '';
   deviceStorageSupported = ctx.features?.deviceStorage === true;
+  panelLocale = isFrenchLocale(ctx.locale) ? 'fr' : 'en';
   void host.storage.get('project_name_overrides').then((stored) => {
     projectNameOverrides = normalizeProjectNameOverrides(stored);
     if (currentRepo && !isAllProjectsMode) elTxtRepoLabel.textContent = displayProjectName(currentRepo);

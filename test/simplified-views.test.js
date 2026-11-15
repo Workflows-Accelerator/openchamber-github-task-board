@@ -159,7 +159,7 @@ test('Human Tasks: collectHumanTodos integrates properly with source badges', ()
   assert.equal(badgeB.label, 'Open Question');
   assert.equal(badgeB.className, 'badge-open-question');
 
-  // Case C: Fallback to waiting session
+  // Case C: a waiting session is a decision (D53), not a synthesized todo.
   const issueC = {
     number: 12,
     title: 'fix: database migration',
@@ -170,12 +170,7 @@ test('Human Tasks: collectHumanTodos integrates properly with source badges', ()
     waitingReason: 'Run DROP TABLE on legacy cache',
   };
   const todosC = collectHumanTodos(issueC, waitingSession);
-  assert.equal(todosC.length, 1);
-  assert.equal(todosC[0].source, 'session-waiting');
-  assert.ok(todosC[0].text.includes('Run DROP TABLE'));
-  const badgeC = formatHumanTodoSourceBadge(todosC[0].source);
-  assert.equal(badgeC.label, 'Agent Waiting');
-  assert.equal(badgeC.className, 'badge-session-waiting');
+  assert.equal(todosC.length, 0, 'a waiting session no longer becomes a human todo');
 });
 
 test('Human Tasks: Checkbox write-back toggles markdown via updateSubtaskInMarkdown', () => {

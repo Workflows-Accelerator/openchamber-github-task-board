@@ -163,7 +163,7 @@ test('(b) collectHumanTodos falls back to unanswered open questions when human t
   ]);
 });
 
-test('(b) collectHumanTodos falls back to synthesized session-waiting item when human tasks and open questions yield nothing', () => {
+test('(b) collectHumanTodos no longer synthesizes a session-waiting item', () => {
   const issue = {
     number: 4,
     body: `
@@ -178,60 +178,40 @@ Everything is in progress.
 `,
   };
 
-  // Waiting with explicit reason
+  // D53 replaced the prose path: a waiting session is a decision from the
+  // store, with its own provenance and answer controls. An issue body alone
+  // must not invent the sentence "Agent waiting for permission: ...".
   const sessionWithReason = {
     id: 's-waiting-1',
     activity: 'waiting-permission',
     waitingReason: 'Allow bash command execution',
   };
-  const todosWithReason = collectHumanTodos(issue, sessionWithReason);
-  assert.deepEqual(todosWithReason, [
-    {
-      text: 'Agent waiting for permission: Allow bash command execution',
-      source: 'session-waiting',
-      done: false,
-    },
-  ]);
+  assert.deepEqual(collectHumanTodos(issue, sessionWithReason), []);
 
-  // Waiting-question activity with reason
   const sessionQuestion = {
     id: 's-waiting-2',
     activity: 'waiting-question',
     waitingReason: 'Need choice between Redis and Memcached',
   };
-  const todosQuestion = collectHumanTodos(issue, sessionQuestion);
-  assert.deepEqual(todosQuestion, [
-    {
-      text: 'Agent waiting for question: Need choice between Redis and Memcached',
-      source: 'session-waiting',
-      done: false,
-    },
-  ]);
+  assert.deepEqual(collectHumanTodos(issue, sessionQuestion), []);
 
-  // Waiting without explicit reason
-  const sessionNoReason = {
-    id: 's-waiting-3',
-    activity: 'waiting-permission',
-  };
-  const todosNoReason = collectHumanTodos(issue, sessionNoReason);
-  assert.deepEqual(todosNoReason, [
-    {
-      text: 'Agent waiting for permission',
-      source: 'session-waiting',
-      done: false,
-    },
-  ]);
+  const sessionNoReason = { id: 's-waiting-3', activity: 'waiting-permission' };
+  assert.deepEqual(collectHumanTodos(issue, sessionNoReason), []);
 
-  // Non-waiting session yields nothing
   const sessionIdle = { id: 's-idle', activity: 'idle' };
   assert.deepEqual(collectHumanTodos(issue, sessionIdle), []);
 
   const sessionRunning = { id: 's-run', activity: 'running' };
   assert.deepEqual(collectHumanTodos(issue, sessionRunning), []);
 
-  // Null/missing session yields nothing
   assert.deepEqual(collectHumanTodos(issue, null), []);
   assert.deepEqual(collectHumanTodos(issue), []);
+
+  // The real human task and open question paths still work.
+  assert.deepEqual(collectHumanTodos({
+    number: 5,
+    body: `### Human Tasks:\n- [ ] Grant AWS access\n`,
+  }, sessionWithReason), [{ text: 'Grant AWS access', source: 'human-task', done: false }]);
 });
 
 test('(c) Issue type exposes parsed human tasks alongside subtasks/queries', () => {
@@ -305,12 +285,10 @@ test('hostile review edge cases: cross-section isolation, CRLF in subtasks/quest
   const parsedHumanTasks = parseHumanTasks(mixedBody);
   assert.equal(parsedHumanTasks.length, 3);
 
-  // 3. collectHumanTodos with null/undefined issue but waiting session
+  // 3. collectHumanTodos with null/undefined issue but waiting session: the
+  // waiting session is now a decision (D53), not a synthesized todo.
   const waitingSession = { id: 's-waiting', activity: 'waiting-permission', reason: 'Access to prod' };
-  const todosNullIssue = collectHumanTodos(null, waitingSession);
-  assert.deepEqual(todosNullIssue, [
-    { text: 'Agent waiting for permission: Access to prod', source: 'session-waiting', done: false },
-  ]);
+  assert.deepEqual(collectHumanTodos(null, waitingSession), []);
 
   // 4. collectHumanTodos with empty array session
   assert.deepEqual(collectHumanTodos(null, []), []);
@@ -424,67 +402,25 @@ test('parsers preserve HTML entities in checklist items', () => {
   assert.equal(tasks[1].text, 'Check &quot;production&quot; credentials');
 });
 
-test('collectHumanTodos multi-session fallback: matches bound issue and prevents cross-issue hijack', () => {
+test('collectHumanTodos ignores session state entirely (D53 moved waiting to decisions)', () => {
   const issue10 = { number: 10, body: '### Overview\nWork in progress' };
 
-  // Multiple sessions bound to other issues — must NOT hijack session[0]
-  const otherSessions = [
-    { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' },
-    { id: 's-99', title: 'Feature #99', activity: 'waiting-question', reason: 'Pick port' },
+  // No session shape — bound, unbound, single, multiple, matching by title,
+  // worktree or items — may produce a todo. A waiting session is a decision
+  // from the store now, and the store carries its own provenance.
+  const cases = [
+    [{ id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' }],
+    [{ id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission' },
+     { id: 's-99', title: 'Feature #99', activity: 'waiting-question' }],
+    [{ id: 's-generic', activity: 'waiting-permission', reason: 'Run build' }],
+    [{ id: 's-10', title: 'Task #10 implementation', activity: 'waiting-question', reason: 'Confirm schema' }],
+    [{ id: 's-10', activity: 'waiting-permission', reason: 'Need token', worktree: { name: 'issue-10-core' } }],
+    [{ id: 's-10', activity: 'waiting-permission', reason: 'Approve run', items: [{ id: '10' }] }],
   ];
-  const todosNoMatch = collectHumanTodos(issue10, otherSessions);
-  assert.deepEqual(todosNoMatch, [], 'Multiple non-matching sessions must not hijack session[0]');
-
-  // Single session fallback DOES apply when session.length === 1
-  const singleSession = [
-    { id: 's-generic', activity: 'waiting-permission', reason: 'Run build' },
-  ];
-  const todosSingle = collectHumanTodos(issue10, singleSession);
-  assert.deepEqual(todosSingle, [
-    { text: 'Agent waiting for permission: Run build', source: 'session-waiting', done: false },
-  ]);
-
-  // Multiple sessions where one matches by title
-  const sessionsWithMatchingTitle = [
-    { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' },
-    { id: 's-10', title: 'Task #10 implementation', activity: 'waiting-question', reason: 'Confirm schema' },
-  ];
-  const todosTitleMatch = collectHumanTodos(issue10, sessionsWithMatchingTitle);
-  assert.deepEqual(todosTitleMatch, [
-    { text: 'Agent waiting for question: Confirm schema', source: 'session-waiting', done: false },
-  ]);
-
-  // Multiple sessions where one matches by worktree
-  const sessionsWithMatchingWorktree = [
-    { id: 's-42', title: 'Unrelated', activity: 'waiting-permission', worktree: 'user/issue-42' },
-    { id: 's-10', title: 'Unrelated', activity: 'waiting-permission', reason: 'Need token', worktree: { name: 'issue-10-core' } },
-  ];
-  const todosWorktreeMatch = collectHumanTodos(issue10, sessionsWithMatchingWorktree);
-  assert.deepEqual(todosWorktreeMatch, [
-    { text: 'Agent waiting for permission: Need token', source: 'session-waiting', done: false },
-  ]);
-
-  // Multiple sessions where one matches by items
-  const sessionsWithMatchingItems = [
-    { id: 's-42', title: 'Unrelated', activity: 'waiting-permission', items: [{ id: '42' }] },
-    { id: 's-10', title: 'Unrelated', activity: 'waiting-permission', reason: 'Approve run', items: [{ id: '10' }] },
-  ];
-  const todosItemsMatch = collectHumanTodos(issue10, sessionsWithMatchingItems);
-  assert.deepEqual(todosItemsMatch, [
-    { text: 'Agent waiting for permission: Approve run', source: 'session-waiting', done: false },
-  ]);
-
-  // Single session bound to another issue must NOT hijack via single-session fallback
-  const singleBoundSession = [
-    { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' },
-  ];
-  const todosWrong = collectHumanTodos(issue10, singleBoundSession);
-  assert.deepEqual(todosWrong, [], 'Single session bound to another issue must not hijack issue 10');
-
-  // Single session object bound to another issue must NOT hijack issue 10
-  const singleBoundObj = { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' };
-  const todosWrongObj = collectHumanTodos(issue10, singleBoundObj);
-  assert.deepEqual(todosWrongObj, [], 'Direct session object bound to another issue must not hijack issue 10');
+  for (const sessions of cases) {
+    assert.deepEqual(collectHumanTodos(issue10, sessions), []);
+  }
+  assert.deepEqual(collectHumanTodos(issue10, { id: 's-42', activity: 'waiting-permission' }), []);
 });
 
 test('parsers ignore checklist items and pseudo-headings inside fenced code blocks', () => {

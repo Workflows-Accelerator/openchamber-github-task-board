@@ -78,6 +78,54 @@
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/microphone.js
+  var GUEST_MICROPHONE_SAMPLE_RATE_MIN = 8e3;
+  var GUEST_MICROPHONE_SAMPLE_RATE_MAX = 192e3;
+  var GUEST_MICROPHONE_OPEN_TIMEOUT_MS = 12e4;
+  var GUEST_MICROPHONE_FRAME_MAX = 16384;
+  var GUEST_MICROPHONE_END_REASONS = ["revoked", "device-lost"];
+  var createSampleQueue = (capacity) => {
+    const chunks = [];
+    let offset = 0;
+    let queued = 0;
+    return {
+      push: (samples) => {
+        chunks.push(samples);
+        queued += samples.length;
+        while (queued - offset > capacity && chunks.length > 1) {
+          const dropped = chunks.shift();
+          queued -= dropped?.length ?? 0;
+          offset = 0;
+        }
+      },
+      /** Fills `out` from the queue and pads the rest with silence. */
+      pull: (out) => {
+        let written = 0;
+        while (written < out.length && chunks.length > 0) {
+          const head = chunks[0];
+          const count = Math.min(out.length - written, head.length - offset);
+          out.set(head.subarray(offset, offset + count), written);
+          written += count;
+          offset += count;
+          if (offset >= head.length) {
+            chunks.shift();
+            queued -= head.length;
+            offset = 0;
+          }
+        }
+        out.fill(0, written);
+      },
+      clear: () => {
+        chunks.length = 0;
+        offset = 0;
+        queued = 0;
+      },
+      get size() {
+        return queued - offset;
+      }
+    };
+  };
+
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
@@ -303,8 +351,8 @@
     custom: contribution.instances.custom
   });
   var serviceProvides = (service, role) => Boolean(service?.provides?.includes(role));
-  var GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "conversation", "service", "network", "filesystem", "origins", "transcript", "sessionControl", "sessionAnswers", "instructions", "skills", "opencodePlugin", "opencode", "links", "wake", "marks"];
-  var DECLARED_GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells"];
+  var GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "microphone", "conversation", "service", "network", "filesystem", "origins", "transcript", "sessionControl", "sessionAnswers", "instructions", "skills", "opencodePlugin", "opencode", "links", "wake", "marks"];
+  var DECLARED_GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "microphone"];
   var GUEST_ORIGINS_MAX = 8;
   var GUEST_FILESYSTEM_PATTERNS_MAX = 16;
   var GUEST_FILESYSTEM_PATTERN_MAX = 256;
@@ -1035,7 +1083,9 @@
     "file-open",
     "file-snapshot",
     "file-saved",
-    "generate-late"
+    "generate-late",
+    "microphone-audio",
+    "microphone-ended"
   ]);
   var asWireRecord = (data) => Object(data) === data ? data : null;
   var isNonEmptyString = (value) => String(value) === value && value.length > 0;
@@ -1141,6 +1191,7 @@
     let popoverPointerActive = false;
     let popoverFocusActive = false;
     let popoverActivityReported = null;
+    let microphone = null;
     const lifecycleFromSession = (session) => {
       if (!session)
         return null;
@@ -1184,6 +1235,19 @@
         const listener = shellsListeners.get(message.payload.subscriptionId);
         if (listener)
           emit([listener], message.payload.snapshot);
+        return;
+      }
+      if (message.type === "microphone-audio") {
+        microphone?.queue.push(message.payload.samples);
+        return;
+      }
+      if (message.type === "microphone-ended") {
+        const open = microphone;
+        if (!open)
+          return;
+        microphone = null;
+        open.release();
+        emit(open.endedListeners, message.payload.reason);
         return;
       }
       if (message.type === "ready") {
@@ -1389,6 +1453,80 @@
         post(message);
     };
     const requestFileSave = () => notify({ ...envelope, type: "file-save" });
+    const postMicrophoneClose = () => {
+      if (!disposed && target.parent !== target)
+        post({ ...envelope, type: "microphone-close", id: nextId(ids) });
+    };
+    const openMicrophone = async () => {
+      if (microphone)
+        throw new HostRequestError("HOST_REJECTED", "The microphone is already open in this frame.");
+      if (lastReady?.features?.microphone !== true) {
+        throw new HostRequestError("UNSUPPORTED", "This OpenChamber cannot share the microphone with extensions.");
+      }
+      const AudioContextCtor = globalThis.AudioContext;
+      if (typeof AudioContextCtor !== "function")
+        throw new HostRequestError("UNSUPPORTED", "This frame has no Web Audio.");
+      const context = new AudioContextCtor();
+      if (context.sampleRate < GUEST_MICROPHONE_SAMPLE_RATE_MIN || context.sampleRate > GUEST_MICROPHONE_SAMPLE_RATE_MAX) {
+        void context.close().catch(() => void 0);
+        throw new HostRequestError("UNSUPPORTED", `Audio at ${context.sampleRate} Hz is not supported.`);
+      }
+      const resumed = context.state === "suspended" ? context.resume().catch(() => void 0) : void 0;
+      const queue = createSampleQueue(Math.round(context.sampleRate / 4));
+      const processor = context.createScriptProcessor(1024, 1, 1);
+      processor.onaudioprocess = (event) => queue.pull(event.outputBuffer.getChannelData(0));
+      const destination = context.createMediaStreamDestination();
+      processor.connect(destination);
+      const endedListeners = /* @__PURE__ */ new Set();
+      const open = {
+        queue,
+        endedListeners,
+        release: () => {
+          processor.onaudioprocess = null;
+          processor.disconnect();
+          queue.clear();
+          for (const track of destination.stream.getTracks())
+            track.stop();
+          void context.close().catch(() => void 0);
+        }
+      };
+      microphone = open;
+      try {
+        const result = await send(
+          { ...envelope, type: "microphone-open", id: nextId(ids), payload: { sampleRate: context.sampleRate } },
+          // The host may be waiting on the system's permission prompt.
+          GUEST_MICROPHONE_OPEN_TIMEOUT_MS
+        );
+        if (!result || !("opened" in result) || result.opened !== true) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not open the microphone.");
+        }
+        await resumed;
+        if (microphone !== open)
+          throw new HostRequestError("DISCONNECTED", "The microphone closed while it was opening.");
+      } catch (error) {
+        if (microphone === open)
+          microphone = null;
+        open.release();
+        postMicrophoneClose();
+        throw error;
+      }
+      return {
+        stream: destination.stream,
+        close: () => {
+          if (microphone !== open)
+            return;
+          microphone = null;
+          open.release();
+          postMicrophoneClose();
+        },
+        onEnded: (listener) => {
+          endedListeners.add(listener);
+          return () => {
+            endedListeners.delete(listener);
+          };
+        }
+      };
+    };
     const onSaveShortcut = (event) => {
       if (!isKeyEvent(event) || !isSaveShortcut(event))
         return;
@@ -1983,6 +2121,7 @@
           lateGenerateListeners.delete(listener);
         };
       },
+      openMicrophone,
       setBadge: (count) => request({
         channel: OPENCHAMBER_SDK_CHANNEL,
         v: OPENCHAMBER_SDK_API_VERSION,
@@ -2034,6 +2173,11 @@
           post({ ...envelope, type: "shells-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
         }
         shellsListeners.clear();
+        if (microphone) {
+          postMicrophoneClose();
+          microphone.release();
+          microphone = null;
+        }
         disposed = true;
         resolveHandler = null;
         actionHandler = null;
@@ -5059,6 +5203,685 @@ ${placeholder}
     return fallback;
   }
 
+  // service/decision-form.ts
+  var FORM_MAX_FIELDS = 40;
+  var FORM_MAX_OPTIONS = 50;
+  var FORM_MAX_TITLE = 200;
+  var FORM_MAX_DESCRIPTION = 500;
+  var FORM_MAX_CUSTOM = 2e3;
+  var isObject = (value) => Object(value) === value && !Array.isArray(value);
+  function cutText(value, max) {
+    if (value.length <= max) return { text: value, cut: false };
+    let end = max;
+    const code = value.charCodeAt(end - 1);
+    if (code >= 55296 && code <= 56319) end -= 1;
+    return { text: value.slice(0, end), cut: true };
+  }
+  var isFieldType = (value) => value === "string" || value === "number" || value === "integer" || value === "boolean" || value === "multiselect" || value === "external";
+  function clampFormFields(raw) {
+    const result = { fields: [], droppedFields: 0, droppedOptions: 0, truncated: false };
+    if (!Array.isArray(raw)) return result;
+    const seenKeys = /* @__PURE__ */ new Set();
+    for (const candidate of raw) {
+      if (!isObject(candidate)) continue;
+      const key = candidate.key;
+      if (typeof key !== "string" || key.length === 0 || seenKeys.has(key)) continue;
+      if (!isFieldType(candidate.type)) continue;
+      const rawTitle = candidate.title;
+      if (typeof rawTitle !== "string") continue;
+      if (result.fields.length >= FORM_MAX_FIELDS) {
+        result.droppedFields += 1;
+        continue;
+      }
+      const title = cutText(rawTitle, FORM_MAX_TITLE);
+      if (title.cut) result.truncated = true;
+      const rawDescription = candidate.description;
+      const description = typeof rawDescription === "string" ? cutText(rawDescription, FORM_MAX_DESCRIPTION) : { text: null, cut: false };
+      if (description.cut) result.truncated = true;
+      const field2 = {
+        key,
+        type: candidate.type,
+        title: title.text,
+        description: description.text,
+        required: candidate.required === true
+      };
+      if (Array.isArray(candidate.options)) {
+        const options = [];
+        for (const option of candidate.options) {
+          if (!isObject(option)) continue;
+          const value = option.value;
+          const label = option.label;
+          if (typeof value !== "string" || typeof label !== "string") continue;
+          if (options.length >= FORM_MAX_OPTIONS) {
+            result.droppedOptions += 1;
+            continue;
+          }
+          options.push({ value, label });
+        }
+        if (options.length > 0) field2.options = options;
+      }
+      if (candidate.custom === true) field2.custom = true;
+      if (Array.isArray(candidate.when)) {
+        const when = [];
+        for (const condition of candidate.when) {
+          if (!isObject(condition)) continue;
+          const op = condition.op;
+          const conditionValue = condition.value;
+          if (typeof condition.key !== "string" || condition.key.length === 0) continue;
+          if (op !== "eq" && op !== "neq") continue;
+          if (typeof conditionValue !== "string" && typeof conditionValue !== "number" && typeof conditionValue !== "boolean") {
+            continue;
+          }
+          when.push({ key: condition.key, op, value: conditionValue });
+        }
+        if (when.length > 0) field2.when = when;
+      }
+      seenKeys.add(key);
+      result.fields.push(field2);
+    }
+    return result;
+  }
+  function conditionHolds(actual, condition) {
+    if (actual === void 0 || actual === null) return condition.op === "neq";
+    const expected = condition.value;
+    let equal;
+    if (typeof expected === "number") {
+      equal = typeof actual === "number" ? actual === expected : Number(actual) === expected;
+    } else if (typeof expected === "boolean") {
+      equal = typeof actual === "boolean" ? actual === expected : String(actual) === String(expected);
+    } else {
+      equal = typeof actual === "string" ? actual === expected : String(actual) === expected;
+    }
+    return condition.op === "eq" ? equal : !equal;
+  }
+  function visibleFieldKeys(fields, values) {
+    const known = new Set(fields.map((field2) => field2.key));
+    const visible = /* @__PURE__ */ new Set();
+    for (const field2 of fields) {
+      const conditions = field2.when ?? [];
+      const holds = conditions.every((condition) => {
+        if (!known.has(condition.key)) return false;
+        return conditionHolds(values[condition.key], condition);
+      });
+      if (holds) visible.add(field2.key);
+    }
+    return visible;
+  }
+  var isEmpty = (value) => {
+    if (value === void 0) return true;
+    if (typeof value === "string") return value.trim().length === 0;
+    if (Array.isArray(value)) return value.length === 0;
+    return false;
+  };
+  var isPlainValue = (value) => {
+    if (typeof value === "string" || typeof value === "boolean") return true;
+    if (typeof value === "number") return Number.isFinite(value);
+    return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+  };
+  function validateFormAnswer(fields, raw) {
+    if (!isObject(raw)) return { ok: false, code: "ANSWER_INVALID", detail: [] };
+    const submitted = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (!isPlainValue(value)) return { ok: false, code: "ANSWER_INVALID", detail: [key] };
+      submitted[key] = value;
+    }
+    if (Object.keys(submitted).length === 0) return { ok: false, code: "ANSWER_INVALID", detail: [] };
+    if (fields.some((field2) => field2.type === "external")) {
+      return { ok: false, code: "ANSWER_NEEDS_EXTERNAL", detail: fields.filter((f) => f.type === "external").map((f) => f.key) };
+    }
+    const known = new Set(fields.map((field2) => field2.key));
+    for (const key of Object.keys(submitted)) {
+      if (!known.has(key)) return { ok: false, code: "ANSWER_INVALID", detail: [key] };
+    }
+    const visible = visibleFieldKeys(fields, submitted);
+    const values = {};
+    const dropped = [];
+    const invalid = [];
+    for (const field2 of fields) {
+      const value = submitted[field2.key];
+      if (!visible.has(field2.key)) {
+        if (value !== void 0) dropped.push(field2.key);
+        continue;
+      }
+      if (value === void 0) {
+        if (field2.required) invalid.push(field2.key);
+        continue;
+      }
+      if (!fieldValid(field2, value)) {
+        invalid.push(field2.key);
+        continue;
+      }
+      values[field2.key] = value;
+    }
+    if (invalid.length > 0) return { ok: false, code: "ANSWER_INVALID", detail: invalid };
+    return { ok: true, values, dropped };
+  }
+  function fieldValid(field2, value) {
+    switch (field2.type) {
+      case "string": {
+        if (typeof value !== "string") return false;
+        if (field2.required && value.trim().length === 0) return false;
+        if (field2.options && field2.options.length > 0) {
+          if (field2.options.some((option) => option.value === value)) return true;
+          return field2.custom === true && value.trim().length > 0 && value.trim().length <= FORM_MAX_CUSTOM;
+        }
+        return true;
+      }
+      case "number":
+        return typeof value === "number" && Number.isFinite(value);
+      case "integer":
+        return typeof value === "number" && Number.isInteger(value);
+      case "boolean":
+        return typeof value === "boolean";
+      case "multiselect": {
+        if (!Array.isArray(value) || value.length === 0) return false;
+        const offered = new Set((field2.options ?? []).map((option) => option.value));
+        return value.every((entry) => offered.has(entry) || field2.custom === true && entry.length <= FORM_MAX_CUSTOM);
+      }
+      case "external":
+        return false;
+    }
+  }
+  function formIsAnswerable(fields) {
+    return !fields.some((field2) => field2.type === "external");
+  }
+  function formIsComplete(fields, values) {
+    const visible = visibleFieldKeys(fields, values);
+    return fields.every((field2) => {
+      if (!visible.has(field2.key) || !field2.required) return true;
+      const value = values[field2.key];
+      if (isEmpty(value)) return false;
+      return fieldValid(field2, value);
+    });
+  }
+
+  // panel/decisions.ts
+  var COPY = {
+    en: {
+      waiting: "waiting for you",
+      answering: "sending answer",
+      confirming: "answered, confirming",
+      unconfirmed: "not confirmed since {time}",
+      answeredSent: "Answer sent",
+      dismissalSent: "Dismissal sent",
+      blindWait: "A decision is waiting in a session. The board cannot show what it asks.",
+      pageUnavailable: "The page content is not available here yet. Open the session to see it.",
+      readonly: "The board is not allowed to answer for you. Open the session to answer.",
+      permissionMissing: "The answer permission is missing.",
+      credentialWarning: "The agent wrote this question. Do not type a password, token or key here.",
+      notLinked: "This session is not linked to a task.",
+      noDecision: "No decision is waiting. Checked at {time}.",
+      serviceDown: "The board service is not answering. Last attempt at {time}.",
+      restart: "The board service restarted at {time}. Decisions asked before then are not tracked until the session speaks again.",
+      gone: "This decision was already closed in the session.",
+      failed: "The answer was not sent.",
+      unknownOutcome: "The answer may not have reached the session.",
+      openSession: "Open session",
+      sendAnswer: "Send answer",
+      dismiss: "Dismiss",
+      sendDismissal: "Send dismissal",
+      dismissReason: "Dismissed from the task board.",
+      recheck: "Recheck",
+      fieldsNotShown: "{n} fields not shown",
+      optionsNotShown: "{n} options not shown",
+      external: "This form needs an answer from another app. Open the session to answer.",
+      notAnswered: "Not answered",
+      yes: "Yes",
+      other: "Other",
+      subagentOf: "subagent of",
+      unlinkedProvenance: "not linked to a task",
+      waitingSince: "waiting since {time}",
+      older: "Older decisions ({n})",
+      moreInAnother: "{n} more decisions in another session",
+      inboxNeeds: "Needs an answer",
+      inboxConfirming: "Confirming",
+      inboxUnbound: "Not linked to a task",
+      inboxHuman: "Human tasks in issue bodies",
+      noHuman: "No unchecked human task in an issue body."
+    },
+    fr: {
+      waiting: "en attente de vous",
+      answering: "envoi de la r\xE9ponse",
+      confirming: "r\xE9pondu, confirmation",
+      unconfirmed: "non confirm\xE9 depuis {time}",
+      answeredSent: "R\xE9ponse envoy\xE9e",
+      dismissalSent: "\xC9cartement envoy\xE9",
+      blindWait: "Une d\xE9cision attend dans une session. Le tableau ne peut pas afficher la question.",
+      pageUnavailable: "Le contenu de la page n'est pas encore disponible ici. Ouvrez la session pour la voir.",
+      readonly: "Le tableau n'est pas autoris\xE9 \xE0 r\xE9pondre \xE0 votre place. Ouvrez la session pour r\xE9pondre.",
+      permissionMissing: "L'autorisation de r\xE9pondre est absente.",
+      credentialWarning: "L'agent a \xE9crit cette question. Ne saisissez pas de mot de passe, de jeton ou de cl\xE9 ici.",
+      notLinked: "Cette session ne correspond \xE0 aucune t\xE2che.",
+      noDecision: "Aucune d\xE9cision en attente. V\xE9rifi\xE9 \xE0 {time}.",
+      serviceDown: "Le service du tableau ne r\xE9pond pas. Derni\xE8re tentative \xE0 {time}.",
+      restart: "Le service du tableau a red\xE9marr\xE9 \xE0 {time}. Les d\xE9cisions demand\xE9es avant ne sont pas suivies tant que la session ne parle pas de nouveau.",
+      gone: "Cette d\xE9cision a d\xE9j\xE0 \xE9t\xE9 close dans la session.",
+      failed: "La r\xE9ponse n'a pas \xE9t\xE9 envoy\xE9e.",
+      unknownOutcome: "La r\xE9ponse n'a peut-\xEAtre pas atteint la session.",
+      openSession: "Ouvrir la session",
+      sendAnswer: "Envoyer la r\xE9ponse",
+      dismiss: "\xC9carter",
+      sendDismissal: "Envoyer l'\xE9cartement",
+      dismissReason: "\xC9cart\xE9 depuis le tableau des t\xE2ches.",
+      recheck: "V\xE9rifier",
+      fieldsNotShown: "{n} champs non affich\xE9s",
+      optionsNotShown: "{n} options non affich\xE9es",
+      external: "Ce formulaire demande une r\xE9ponse depuis une autre application. Ouvrez la session pour r\xE9pondre.",
+      notAnswered: "Sans r\xE9ponse",
+      yes: "Oui",
+      other: "Autre",
+      subagentOf: "sous-agent de",
+      unlinkedProvenance: "li\xE9 \xE0 aucune t\xE2che",
+      waitingSince: "en attente depuis {time}",
+      older: "D\xE9cisions plus anciennes ({n})",
+      moreInAnother: "{n} autres d\xE9cisions dans une autre session",
+      inboxNeeds: "Demande une r\xE9ponse",
+      inboxConfirming: "Confirmation",
+      inboxUnbound: "Li\xE9 \xE0 aucune t\xE2che",
+      inboxHuman: "T\xE2ches humaines dans les corps de t\xE2che",
+      noHuman: "Aucune t\xE2che humaine non coch\xE9e dans un corps de t\xE2che."
+    }
+  };
+  function copyText(language, key, values = {}) {
+    const template = COPY[language][key];
+    return template.replace(
+      /\{(\w+)\}/g,
+      (match, name) => Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match
+    );
+  }
+  function isFrenchLocale(locale) {
+    return typeof locale === "string" && /^fr\b/i.test(locale.trim());
+  }
+  function sanitizeAgentText(value) {
+    if (typeof value !== "string") return "";
+    return value.replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "");
+  }
+  function cutForDisplay(value, max) {
+    if (value.length <= max) return value;
+    let end = max;
+    const code = value.charCodeAt(end - 1);
+    if (code >= 55296 && code <= 56319) end -= 1;
+    return `${value.slice(0, end)}\u2026`;
+  }
+  function projectBasename(directory) {
+    if (typeof directory !== "string" || directory.length === 0) return "";
+    const parts = directory.replace(/\/+$/, "").split("/").filter(Boolean);
+    return parts.length > 0 ? parts[parts.length - 1] : "";
+  }
+  function formatClock(at, language) {
+    try {
+      return new Date(at).toLocaleTimeString(language === "fr" ? "fr-FR" : "en-GB", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch {
+      return "";
+    }
+  }
+  function formatWaiting(askedAt, now, language) {
+    const elapsed = Math.max(0, now - askedAt);
+    if (elapsed < 60 * 6e4) {
+      const minutes = Math.max(0, Math.floor(elapsed / 6e4));
+      return language === "fr" ? `${minutes} min` : `${minutes} min`;
+    }
+    return formatClock(askedAt, language);
+  }
+  function provenanceLine(decision, context) {
+    const session = decision.sessionTitle ? `${sanitizeAgentText(decision.sessionTitle)} (${decision.sessionId})` : decision.sessionId;
+    const parent = decision.parentId ? ` (${copyText(context.language, "subagentOf")} ${decision.parentId})` : "";
+    const project = projectBasename(decision.directory);
+    const issue = context.unbound || !context.issueNumber ? copyText(context.language, "unlinkedProvenance") : `#${context.issueNumber}`;
+    const parts = [session + parent];
+    if (project) parts.push(project);
+    parts.push(issue);
+    parts.push(copyText(context.language, "waitingSince", {
+      time: formatWaiting(decision.askedAt, context.now, context.language)
+    }));
+    return parts.join(" \xB7 ");
+  }
+  function decisionRepoKeys(decision) {
+    const keys = /* @__PURE__ */ new Set();
+    for (const item of decision.linked ?? []) {
+      if (item && typeof item.id === "string" && item.id.includes("#")) keys.add(item.id.toLowerCase());
+    }
+    return [...keys];
+  }
+  function resolveDecisionBinding(decision, panelKeys) {
+    const eventKeys = decisionRepoKeys(decision);
+    const panel = panelKeys.filter((key) => typeof key === "string" && key.length > 0);
+    if (panel.length > 0 && eventKeys.length > 0) {
+      const shared = panel.some((key) => eventKeys.includes(key));
+      if (!shared) return { keys: [], unbound: true };
+    }
+    if (panel.length > 0) return { keys: panel, unbound: false };
+    if (eventKeys.length > 0) return { keys: eventKeys, unbound: false };
+    return { keys: [], unbound: true };
+  }
+  function sortDecisions(decisions) {
+    return [...decisions].sort((a, b) => {
+      const aConfirming = a.state === "answered-unconfirmed" ? 1 : 0;
+      const bConfirming = b.state === "answered-unconfirmed" ? 1 : 0;
+      if (aConfirming !== bConfirming) return aConfirming - bConfirming;
+      if (a.askedAt !== b.askedAt) return b.askedAt - a.askedAt;
+      return a.askId < b.askId ? 1 : a.askId > b.askId ? -1 : 0;
+    });
+  }
+  function element(tag, className) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    return node;
+  }
+  function textNode(tag, value, className) {
+    const node = element(tag, className);
+    node.textContent = value;
+    return node;
+  }
+  function button2(label, className) {
+    const node = document.createElement("button");
+    node.type = "button";
+    node.className = className;
+    node.textContent = label;
+    return node;
+  }
+  function renderFormBody(fields, context, interactive, onChange) {
+    const body = element("div", "decision-form-body");
+    const rows = [];
+    for (const field2 of fields) {
+      const row = element("div", "decision-field");
+      row.setAttribute("data-field-key", field2.key);
+      const label = textNode("div", sanitizeAgentText(field2.title), "decision-field-title");
+      row.appendChild(label);
+      if (field2.description) {
+        row.appendChild(textNode("div", sanitizeAgentText(field2.description), "decision-field-description"));
+      }
+      let read = () => void 0;
+      let focus = () => {
+      };
+      if (field2.type === "string" && (!field2.options || field2.options.length === 0)) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "decision-input";
+        input.disabled = !interactive;
+        input.addEventListener("input", onChange);
+        row.appendChild(input);
+        read = () => input.value.trim() === "" ? void 0 : input.value;
+        focus = () => input.focus();
+      } else if (field2.type === "string" && field2.options && field2.options.length > 6) {
+        const select = document.createElement("select");
+        select.className = "decision-input";
+        select.disabled = !interactive;
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "";
+        select.appendChild(placeholder);
+        for (const option of field2.options) {
+          const entry = document.createElement("option");
+          entry.value = option.value;
+          entry.textContent = sanitizeAgentText(option.label);
+          select.appendChild(entry);
+        }
+        select.addEventListener("change", onChange);
+        row.appendChild(select);
+        read = () => select.value === "" ? void 0 : select.value;
+        focus = () => select.focus();
+      } else if (field2.type === "string" && field2.options && field2.options.length > 0) {
+        const choices = element("div", "decision-choices");
+        const radios = [];
+        const name = `decision-${context.language}-${field2.key}`;
+        for (const option of field2.options) {
+          const choice = element("label", "decision-choice");
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = name;
+          input.value = option.value;
+          input.disabled = !interactive;
+          input.addEventListener("change", onChange);
+          radios.push(input);
+          choice.appendChild(input);
+          choice.appendChild(textNode("span", sanitizeAgentText(option.label), "decision-choice-label"));
+          choices.appendChild(choice);
+        }
+        let customInput = null;
+        if (field2.custom) {
+          const choice = element("label", "decision-choice");
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = name;
+          input.value = "";
+          input.disabled = !interactive;
+          radios.push(input);
+          choice.appendChild(input);
+          choice.appendChild(textNode("span", copyText(context.language, "other"), "decision-choice-label"));
+          choices.appendChild(choice);
+          customInput = document.createElement("input");
+          customInput.type = "text";
+          customInput.className = "decision-input decision-custom-input";
+          customInput.disabled = !interactive;
+          customInput.addEventListener("input", () => {
+            if (customInput) input.checked = customInput.value.trim().length > 0;
+            onChange();
+          });
+          choices.appendChild(customInput);
+        }
+        row.appendChild(choices);
+        read = () => {
+          const chosen = radios.find((radio) => radio.checked);
+          if (!chosen) return void 0;
+          if (field2.custom && chosen.value === "" && customInput) {
+            const typed = customInput.value.trim();
+            return typed === "" ? void 0 : typed;
+          }
+          return chosen.value;
+        };
+        focus = () => radios[0]?.focus();
+      } else if (field2.type === "number" || field2.type === "integer") {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = field2.type === "integer" ? "1" : "any";
+        input.className = "decision-input";
+        input.disabled = !interactive;
+        input.addEventListener("input", onChange);
+        row.appendChild(input);
+        read = () => {
+          if (input.value.trim() === "") return void 0;
+          const value = Number(input.value);
+          if (!Number.isFinite(value)) return void 0;
+          if (field2.type === "integer" && !Number.isInteger(value)) return Number.NaN;
+          return value;
+        };
+        focus = () => input.focus();
+      } else if (field2.type === "boolean") {
+        const choice = element("label", "decision-choice");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.disabled = !interactive;
+        let touched = false;
+        const state = textNode("span", copyText(context.language, "notAnswered"), "decision-choice-label");
+        input.addEventListener("change", () => {
+          touched = true;
+          state.textContent = input.checked ? copyText(context.language, "yes") : copyText(context.language, "notAnswered");
+          onChange();
+        });
+        choice.appendChild(input);
+        choice.appendChild(state);
+        row.appendChild(choice);
+        read = () => touched ? input.checked : void 0;
+        focus = () => input.focus();
+      } else if (field2.type === "multiselect") {
+        const choices = element("div", "decision-choices");
+        const inputs = [];
+        for (const option of field2.options ?? []) {
+          const choice = element("label", "decision-choice");
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.value = option.value;
+          input.disabled = !interactive;
+          input.addEventListener("change", onChange);
+          inputs.push(input);
+          choice.appendChild(input);
+          choice.appendChild(textNode("span", sanitizeAgentText(option.label), "decision-choice-label"));
+          choices.appendChild(choice);
+        }
+        row.appendChild(choices);
+        read = () => {
+          const values2 = inputs.filter((input) => input.checked).map((input) => input.value);
+          return values2.length === 0 ? void 0 : values2;
+        };
+        focus = () => inputs[0]?.focus();
+      } else if (field2.type === "external") {
+        row.appendChild(textNode("div", copyText(context.language, "external"), "decision-field-description"));
+      }
+      if (field2.required) {
+        row.appendChild(textNode("span", "*", "decision-required"));
+      }
+      body.appendChild(row);
+      rows.push({ key: field2.key, row, read, focus });
+    }
+    const values = () => {
+      const collected = {};
+      for (const row of rows) {
+        const value = row.read();
+        if (value !== void 0) collected[row.key] = value;
+      }
+      const visible = visibleFieldKeys(fields, collected);
+      const answered = {};
+      for (const row of rows) {
+        if (!visible.has(row.key)) continue;
+        const value = collected[row.key];
+        if (value !== void 0) answered[row.key] = value;
+      }
+      return answered;
+    };
+    return { body, rows, values };
+  }
+  function renderDecisionBlock(decision, context) {
+    const language = context.language;
+    const block = element("div", "decision-block");
+    block.setAttribute("data-decision-id", decision.id);
+    block.setAttribute("data-decision-kind", decision.kind);
+    const confirming = decision.state === "answered-unconfirmed";
+    const answerState = context.answerState ?? "idle";
+    const stale = typeof context.unconfirmedSince === "number";
+    const inert = confirming || answerState !== "idle" || stale;
+    const eyebrowText = (() => {
+      if (confirming || answerState === "sent") return copyText(language, "confirming");
+      if (answerState === "answering") return copyText(language, "answering");
+      if (stale) return copyText(language, "unconfirmed", { time: formatClock(context.unconfirmedSince, language) });
+      return copyText(language, "waiting");
+    })();
+    const eyebrow = textNode("div", eyebrowText, "decision-eyebrow");
+    block.appendChild(eyebrow);
+    const title = decision.title ? cutForDisplay(sanitizeAgentText(decision.title), 200) : "";
+    block.appendChild(textNode("div", title || copyText(language, "blindWait"), "decision-title"));
+    block.appendChild(textNode("div", provenanceLine(decision, context), "decision-provenance"));
+    if (decision.kind === "form") {
+      block.appendChild(textNode("div", copyText(language, "credentialWarning"), "decision-warning"));
+    }
+    const bodySlot = element("div", "decision-body");
+    block.appendChild(bodySlot);
+    const actions2 = element("div", "decision-actions");
+    block.appendChild(actions2);
+    const stateNote = textNode("div", "", "decision-state-note");
+    block.appendChild(stateNote);
+    const openSession = button2(copyText(language, "openSession"), "btn btn-sm decision-open-session");
+    openSession.addEventListener("click", () => context.onOpenSession?.(decision));
+    if (decision.kind === "page") {
+      bodySlot.appendChild(textNode("div", copyText(language, "pageUnavailable"), "decision-page-unavailable"));
+      actions2.appendChild(openSession);
+      return block;
+    }
+    const fields = decision.fields ?? [];
+    if (fields.length === 0) {
+      bodySlot.appendChild(textNode("div", copyText(language, "blindWait"), "decision-blind-wait"));
+      actions2.appendChild(openSession);
+      return block;
+    }
+    const answerable = context.canAnswer && !inert && formIsAnswerable(fields);
+    const { body, rows, values } = renderFormBody(fields, context, answerable, () => {
+      update();
+    });
+    bodySlot.appendChild(body);
+    if (!answerable) {
+      const reason = !formIsAnswerable(fields) ? copyText(language, "external") : context.canAnswer ? copyText(language, "readonly") : copyText(language, "readonly");
+      bodySlot.appendChild(textNode("div", reason, "decision-readonly-reason"));
+    }
+    if ((decision.droppedFields ?? 0) > 0) {
+      bodySlot.appendChild(textNode("div", copyText(language, "fieldsNotShown", { n: decision.droppedFields ?? 0 }), "decision-clamp-note"));
+    }
+    if ((decision.droppedOptions ?? 0) > 0) {
+      bodySlot.appendChild(textNode("div", copyText(language, "optionsNotShown", { n: decision.droppedOptions ?? 0 }), "decision-clamp-note"));
+    }
+    const submit = button2(copyText(language, "sendAnswer"), "btn btn-sm btn-primary decision-submit");
+    const dismiss = button2(copyText(language, "dismiss"), "btn btn-sm decision-dismiss");
+    const dismissBox = element("div", "decision-dismiss-box");
+    const dismissInput = document.createElement("input");
+    dismissInput.type = "text";
+    dismissInput.className = "decision-input";
+    dismissInput.value = copyText(language, "dismissReason");
+    const sendDismissal = button2(copyText(language, "sendDismissal"), "btn btn-sm btn-primary");
+    dismissBox.appendChild(dismissInput);
+    dismissBox.appendChild(sendDismissal);
+    dismissBox.style.display = "none";
+    const update = () => {
+      const current = values();
+      const visible = visibleFieldKeys(fields, current);
+      for (const row of rows) {
+        row.row.style.display = visible.has(row.key) ? "" : "none";
+      }
+      const complete = formIsComplete(fields, current);
+      const blockedByClamp = (decision.droppedFields ?? 0) > 0 || (decision.droppedOptions ?? 0) > 0;
+      submit.disabled = !answerable || !complete || blockedByClamp;
+      dismiss.disabled = !answerable;
+    };
+    submit.addEventListener("click", () => {
+      if (submit.disabled) return;
+      context.onSubmit?.(decision, values());
+    });
+    dismiss.addEventListener("click", () => {
+      if (dismiss.disabled) return;
+      dismissBox.style.display = dismissBox.style.display === "none" ? "flex" : "none";
+      dismissInput.focus();
+    });
+    sendDismissal.addEventListener("click", () => {
+      const message = dismissInput.value.trim();
+      if (message.length === 0 || message.length > 2e3) return;
+      context.onDismiss?.(decision, message);
+    });
+    if (context.canAnswer && formIsAnswerable(fields)) {
+      actions2.appendChild(submit);
+      actions2.appendChild(dismiss);
+      actions2.appendChild(dismissBox);
+    }
+    actions2.appendChild(openSession);
+    if (answerState === "sent") stateNote.textContent = copyText(language, "answeredSent");
+    else if (answerState === "failed") stateNote.textContent = copyText(language, "failed");
+    else if (answerState === "unknown-outcome") stateNote.textContent = copyText(language, "unknownOutcome");
+    else if (answerState === "stale") stateNote.textContent = copyText(language, "gone");
+    else if (answerState === "permission-missing") stateNote.textContent = copyText(language, "permissionMissing");
+    update();
+    return block;
+  }
+  function renderDecisionBadge(decision, language, extraCount = 0) {
+    const badge = element("span", "decision-badge");
+    const label = decision.state === "answered-unconfirmed" ? copyText(language, "confirming") : copyText(language, "waiting");
+    badge.appendChild(textNode("span", label, "decision-badge-label"));
+    if (decision.title) {
+      badge.appendChild(textNode("span", cutForDisplay(sanitizeAgentText(decision.title), 80), "decision-badge-title"));
+    }
+    if (extraCount > 0) {
+      badge.appendChild(textNode("span", copyText(language, "moreInAnother", { n: extraCount }), "decision-badge-more"));
+    }
+    return badge;
+  }
+  function renderDecisionStatusNote(kind, language, at) {
+    const node = element("div", "decision-status-note");
+    const time = formatClock(at, language);
+    if (kind === "no-decisions") node.textContent = copyText(language, "noDecision", { time });
+    else if (kind === "service-down") node.textContent = copyText(language, "serviceDown", { time });
+    else node.textContent = copyText(language, "restart", { time });
+    return node;
+  }
+
   // panel/labels.ts
   function extractWorktreeName(wt) {
     if (!wt) return "";
@@ -6222,15 +7045,13 @@ ${placeholder}
     }
     return subtasks;
   }
-  function collectHumanTodos(issue, session) {
+  function collectHumanTodos(issue, _session) {
     let body = "";
     let preHumanTasks;
     let preOpenQuestions;
-    let issueObj = null;
     if (typeof issue === "string") {
       body = issue;
     } else if (issue && typeof issue === "object") {
-      issueObj = issue;
       body = typeof issue.body === "string" ? issue.body : "";
       if (Array.isArray(issue.humanTasks)) {
         preHumanTasks = issue.humanTasks;
@@ -6270,76 +7091,6 @@ ${placeholder}
     }
     if (todos.length > 0) {
       return todos;
-    }
-    const isBoundToOther = (s, currentNum) => {
-      if (!s || !currentNum) return false;
-      const currentStr = String(currentNum);
-      if (Array.isArray(s.items)) {
-        for (const it of s.items) {
-          if (!it) continue;
-          if (it.id === currentStr) return false;
-          const otherNum = it.data?.issueNumber || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0] || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
-          if (otherNum && Number(otherNum) !== currentNum) return true;
-        }
-      }
-      if (typeof s.title === "string") {
-        const match = s.title.match(/#(\d+)/);
-        if (match && Number(match[1]) !== currentNum) return true;
-      }
-      const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
-      if (wtName) {
-        const match = wtName.match(/issue-(\d+)/);
-        if (match && Number(match[1]) !== currentNum) return true;
-      }
-      return false;
-    };
-    let activeSession = null;
-    if (Array.isArray(session)) {
-      if (issueObj && Number.isFinite(issueObj.number)) {
-        const issueNumStr = String(issueObj.number);
-        activeSession = session.find((s) => {
-          if (!s) return false;
-          if (s.items && Array.isArray(s.items) && s.items.some((it) => it && (it.id === issueNumStr || it.data?.issueNumber === issueObj.number || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueObj.number)))) {
-            return true;
-          }
-          if (s.title && s.title.includes(`#${issueObj.number}`)) return true;
-          const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
-          if (wtName && wtName.includes(`issue-${issueObj.number}`)) return true;
-          return false;
-        }) || (session.length === 1 && !isBoundToOther(session[0], issueObj.number) ? session[0] : null);
-      } else {
-        activeSession = session.length === 1 ? session[0] : null;
-      }
-    } else if (session && typeof session === "object") {
-      if (issueObj && Number.isFinite(issueObj.number) && isBoundToOther(session, issueObj.number)) {
-        activeSession = null;
-      } else {
-        activeSession = session;
-      }
-    }
-    if (activeSession) {
-      const act = typeof activeSession.activity === "string" ? activeSession.activity.trim() : "";
-      const isWaiting = act === "waiting-permission" || act === "waiting-question" || act.startsWith("waiting");
-      if (isWaiting) {
-        const rawReason = activeSession.waitingReason || activeSession.reason || activeSession.data?.waitingReason || activeSession.data?.reason || "";
-        const reason = typeof rawReason === "string" ? rawReason.trim() : "";
-        let text = "";
-        if (act === "waiting-permission") {
-          text = reason ? `Agent waiting for permission: ${reason}` : "Agent waiting for permission";
-        } else if (act === "waiting-question") {
-          text = reason ? `Agent waiting for question: ${reason}` : "Agent waiting for question";
-        } else if (act.startsWith("waiting-")) {
-          const kind = act.slice(8);
-          text = reason ? `Agent waiting for ${kind}: ${reason}` : `Agent waiting for ${kind}`;
-        } else {
-          text = reason ? `Agent waiting: ${reason}` : "Agent waiting";
-        }
-        return [{
-          text,
-          source: "session-waiting",
-          done: false
-        }];
-      }
     }
     return [];
   }
@@ -9344,6 +10095,7 @@ Blocked by ${blockerRef}`;
   var elDrawerGithubLink = document.getElementById("drawerGithubLink");
   var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
   var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
+  var elDrawerDecisionSlot = document.getElementById("drawerDecisionSlot");
   var elDrawerPrioritySelect = document.getElementById("drawerPrioritySelect");
   var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
   var elDrawerComplexitySelect = document.getElementById("drawerComplexitySelect");
@@ -9497,6 +10249,11 @@ Blocked by ${blockerRef}`;
         sessionIndexByRepo = buildSessionIndexByRepo(sessions);
         renderViews();
         if (activeIssue) renderDrawer(activeIssue);
+        if (!decisionFeedStarted) {
+          seedDecisionFeed();
+        } else if (decisionFeed.decisions.length > 0 || viewState.view === "pending" || activeIssue) {
+          void refreshDecisions();
+        }
         statusReconciler.schedule(issues);
         handleDraftSessionUpdates(sessions);
         const becameIdle = sessions.some((s) => {
@@ -10176,12 +10933,12 @@ Blocked by ${blockerRef}`;
     }, headers);
   }
   function renderBoardFreshness(state, repo) {
-    const element = document.getElementById("boardFreshness");
-    if (!element) return;
+    const element2 = document.getElementById("boardFreshness");
+    if (!element2) return;
     const timestamp = repoFullSyncTimestamps.get(repo);
     const lastSuccess = timestamp ? `Last full sync: ${new Date(timestamp).toLocaleString()}` : "No completed full sync";
-    element.textContent = state === "complete" ? `${displayProjectName(repo)} \xB7 ${lastSuccess}` : `${displayProjectName(repo)} \xB7 ${state === "refreshing" ? "Refreshing \u2014 cached data is provisional" : state === "partial" ? "Partial results \u2014 refresh incomplete" : "Stale / unavailable \u2014 refresh failed"} \xB7 ${lastSuccess}`;
-    element.title = repo;
+    element2.textContent = state === "complete" ? `${displayProjectName(repo)} \xB7 ${lastSuccess}` : `${displayProjectName(repo)} \xB7 ${state === "refreshing" ? "Refreshing \u2014 cached data is provisional" : state === "partial" ? "Partial results \u2014 refresh incomplete" : "Stale / unavailable \u2014 refresh failed"} \xB7 ${lastSuccess}`;
+    element2.title = repo;
   }
   function admitsIssueSnapshot(repo, epoch) {
     return !isAllProjectsMode && currentRepo === repo && activeStreamEpoch === epoch;
@@ -12169,6 +12926,10 @@ Blocked by ${blockerRef}`;
         }
       }
       row.appendChild(content);
+      const issueDecisions = decisionsForIssue(issue);
+      if (issueDecisions.length > 0) {
+        row.appendChild(renderDecisionBadge(issueDecisions[0], decisionLanguage(), issueDecisions.length - 1));
+      }
       if (unconfirmed) {
         const badge = document.createElement("span");
         badge.className = "badge-unconfirmed";
@@ -13138,9 +13899,255 @@ Blocked by ${blockerRef}`;
       }
     }
   }
+  var panelLocale = "en";
+  var decisionFeedStarted = false;
+  var decisionRefreshInFlight = false;
+  var lastDecisionSignature = "";
+  var decisionFeed = {
+    status: "unknown",
+    at: 0,
+    startedAt: 0,
+    decisions: [],
+    lastAttemptAt: 0
+  };
+  var decisionAnswerState = /* @__PURE__ */ new Map();
+  function decisionLanguage() {
+    return panelLocale;
+  }
+  function decisionPanelKeys(decision) {
+    const session = sessions.find((entry) => entry.id === decision.sessionId);
+    return session ? sessionRepoKeys(session) : [];
+  }
+  function decisionsForIssue(issue) {
+    if (decisionFeed.decisions.length === 0) return [];
+    const session = getIssueSession(issue);
+    const key = issueRepoKey(issue);
+    const out = [];
+    for (const decision of decisionFeed.decisions) {
+      const binding = resolveDecisionBinding(decision, decisionPanelKeys(decision));
+      if (binding.unbound) continue;
+      if (session && decision.sessionId === session.id || key && binding.keys.includes(key)) {
+        out.push(decision);
+      }
+    }
+    return sortDecisions(out);
+  }
+  function safeJsonParse(text) {
+    if (typeof text !== "string" || text.length === 0) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
+  function decisionSignature() {
+    return decisionFeed.decisions.map((entry) => `${entry.id}:${entry.state}`).join(",");
+  }
+  async function refreshDecisions() {
+    if (decisionRefreshInFlight) return;
+    decisionRefreshInFlight = true;
+    const previousSignature = decisionSignature();
+    const previousStatus = decisionFeed.status;
+    try {
+      const res = await host.serviceRequest({ method: "GET", path: "/decisions" });
+      const now = Date.now();
+      const status = res && typeof res.status === "number" ? res.status : 0;
+      if (status === 200) {
+        const parsed = safeJsonParse(res.body);
+        if (!parsed || !Array.isArray(parsed.decisions)) {
+          decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: now };
+        } else {
+          decisionFeed = {
+            status: "ok",
+            at: typeof parsed.at === "number" ? parsed.at : now,
+            startedAt: typeof parsed.startedAt === "number" ? parsed.startedAt : decisionFeed.startedAt,
+            decisions: parsed.decisions,
+            lastAttemptAt: now
+          };
+          const liveIds = new Set(decisionFeed.decisions.map((entry) => entry.id));
+          for (const id of [...decisionAnswerState.keys()]) {
+            if (!liveIds.has(id)) decisionAnswerState.delete(id);
+          }
+        }
+      } else {
+        decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: now };
+      }
+    } catch {
+      decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: Date.now() };
+    } finally {
+      decisionRefreshInFlight = false;
+    }
+    if (decisionSignature() !== previousSignature) {
+      renderDecisionSurfaces();
+    } else if (decisionFeed.status !== previousStatus && viewState.view === "pending") {
+      renderViews();
+    }
+  }
+  function renderDecisionSurfaces() {
+    renderViews();
+    if (activeIssue && elDrawerIssueNumber) renderDrawerDecision(activeIssue);
+  }
+  function seedDecisionFeed() {
+    if (decisionFeedStarted) return;
+    decisionFeedStarted = true;
+    void refreshDecisions();
+  }
+  function renderDecisionAnswerStateNote(decisionId) {
+    return decisionAnswerState.get(decisionId) ?? { state: "idle" };
+  }
+  function decisionBlockContext(decision, issueNumber, unbound) {
+    const answer = renderDecisionAnswerStateNote(decision.id);
+    return {
+      language: decisionLanguage(),
+      now: Date.now(),
+      // Answer controls exist only when the service feed answered. A refusal at
+      // call time still maps to a named state; nothing assumes the grant exists.
+      canAnswer: decisionFeed.status === "ok",
+      unbound,
+      issueNumber,
+      answerState: answer.state,
+      answerMessage: answer.message ?? null,
+      unconfirmedSince: decisionFeed.status === "down" ? decisionFeed.lastAttemptAt : null,
+      onSubmit: (target, values) => {
+        void submitDecisionAnswer(target, values);
+      },
+      onDismiss: (target, message) => {
+        void dismissDecision(target, message);
+      },
+      onOpenSession: (target) => {
+        void host.openSession(target.sessionId);
+      },
+      onRecheck: () => {
+        void refreshDecisions();
+      }
+    };
+  }
+  async function submitDecisionAnswer(decision, values) {
+    if (decisionAnswerState.get(decision.id)?.state === "answering") return;
+    decisionAnswerState.set(decision.id, { state: "answering" });
+    renderDecisionSurfaces();
+    try {
+      const res = await host.serviceRequest({
+        method: "POST",
+        path: "/decision/answer",
+        body: JSON.stringify({ v: 1, id: decision.id, values })
+      });
+      const status = res && typeof res.status === "number" ? res.status : 0;
+      if (status === 200) {
+        decisionAnswerState.set(decision.id, { state: "sent" });
+      } else if (status === 404) {
+        decisionAnswerState.set(decision.id, { state: "stale" });
+      } else if (status === 409) {
+        decisionAnswerState.set(decision.id, { state: "stale" });
+      } else if (status === 403) {
+        decisionAnswerState.set(decision.id, { state: "permission-missing" });
+      } else if (status === 502) {
+        decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
+      } else {
+        decisionAnswerState.set(decision.id, { state: "failed" });
+      }
+    } catch {
+      decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
+    } finally {
+      await refreshDecisions();
+      renderDecisionSurfaces();
+    }
+  }
+  async function dismissDecision(decision, message) {
+    if (decisionAnswerState.get(decision.id)?.state === "answering") return;
+    decisionAnswerState.set(decision.id, { state: "answering" });
+    renderDecisionSurfaces();
+    try {
+      const res = await host.serviceRequest({
+        method: "POST",
+        path: "/decision/answer",
+        body: JSON.stringify({ v: 1, id: decision.id, values: null, message })
+      });
+      const status = res && typeof res.status === "number" ? res.status : 0;
+      if (status === 200) decisionAnswerState.set(decision.id, { state: "sent" });
+      else if (status === 404 || status === 409) decisionAnswerState.set(decision.id, { state: "stale" });
+      else if (status === 403) decisionAnswerState.set(decision.id, { state: "permission-missing" });
+      else if (status === 502) decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
+      else decisionAnswerState.set(decision.id, { state: "failed" });
+    } catch {
+      decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
+    } finally {
+      await refreshDecisions();
+      renderDecisionSurfaces();
+    }
+  }
+  function renderDrawerDecision(issue) {
+    if (!elDrawerDecisionSlot) return;
+    elDrawerDecisionSlot.innerHTML = "";
+    const list = decisionsForIssue(issue);
+    if (list.length === 0) {
+      elDrawerDecisionSlot.style.display = "none";
+      return;
+    }
+    elDrawerDecisionSlot.style.display = "";
+    for (const decision of list) {
+      elDrawerDecisionSlot.appendChild(renderDecisionBlock(decision, decisionBlockContext(decision, issue.number, false)));
+    }
+  }
+  function issueNumberForDecision(decision) {
+    for (const item of decision.linked ?? []) {
+      if (typeof item.number === "number" && Number.isFinite(item.number)) return item.number;
+    }
+    const key = decisionRepoKeys(decision)[0];
+    const match = key ? key.match(/#(\d+)$/) : null;
+    return match ? Number(match[1]) : null;
+  }
+  function renderDecisionInbox() {
+    if (!elHumanViewContainer) return 0;
+    const language = decisionLanguage();
+    const section = document.createElement("div");
+    section.className = "decision-inbox";
+    const bound = [];
+    const unbound = [];
+    for (const decision of decisionFeed.decisions) {
+      const binding = resolveDecisionBinding(decision, decisionPanelKeys(decision));
+      if (binding.unbound) unbound.push(decision);
+      else bound.push(decision);
+    }
+    const renderGroup = (title, list, unboundGroup) => {
+      if (list.length === 0) return;
+      const group = document.createElement("div");
+      group.className = "decision-inbox-group";
+      const heading = document.createElement("div");
+      heading.className = "decision-inbox-heading";
+      heading.textContent = title;
+      group.appendChild(heading);
+      for (const decision of sortDecisions(list)) {
+        group.appendChild(renderDecisionBlock(
+          decision,
+          decisionBlockContext(decision, unboundGroup ? null : issueNumberForDecision(decision), unboundGroup)
+        ));
+      }
+      section.appendChild(group);
+    };
+    renderGroup(copyText(language, "inboxNeeds"), bound.filter((entry) => entry.state === "pending"), false);
+    renderGroup(copyText(language, "inboxConfirming"), bound.filter((entry) => entry.state !== "pending"), false);
+    renderGroup(copyText(language, "inboxUnbound"), unbound, true);
+    if (decisionFeed.status === "down") {
+      section.appendChild(renderDecisionStatusNote("service-down", language, decisionFeed.lastAttemptAt));
+    } else if (decisionFeed.decisions.length === 0) {
+      section.appendChild(renderDecisionStatusNote("no-decisions", language, decisionFeed.at || Date.now()));
+    }
+    const recheck = document.createElement("button");
+    recheck.type = "button";
+    recheck.className = "btn btn-xs decision-recheck";
+    recheck.textContent = copyText(language, "recheck");
+    recheck.addEventListener("click", () => {
+      void refreshDecisions();
+    });
+    section.appendChild(recheck);
+    elHumanViewContainer.appendChild(section);
+    return decisionFeed.decisions.length;
+  }
   function renderHumanTasksView(filteredIssues) {
     if (!elHumanViewContainer) return;
     elHumanViewContainer.innerHTML = "";
+    const decisionCount = renderDecisionInbox();
     const getCompletedTasksForIssue = (issue) => {
       const humanTasks = parseHumanTasks(issue.body);
       if (humanTasks.length > 0) {
@@ -13164,6 +14171,7 @@ Blocked by ${blockerRef}`;
       return false;
     });
     if (humanIssues.length === 0) {
+      if (decisionCount > 0) return;
       if (isLoading && issues.length === 0) {
         elHumanViewContainer.innerHTML = `
         <div class="empty-box">
@@ -13415,12 +14423,6 @@ Blocked by ${blockerRef}`;
                 const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
                 await updateIssueBody(issue, updatedBody);
               }
-            } else if (todo.source === "session-waiting") {
-              cb.checked = false;
-              if (session?.id) {
-                void host.openSession(session.id);
-                await host.toast({ kind: "info", message: "Opened waiting session" });
-              }
             }
           });
           const spanText = document.createElement("span");
@@ -13428,7 +14430,7 @@ Blocked by ${blockerRef}`;
           spanText.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
           const badge = document.createElement("span");
           badge.className = `human-todo-badge badge-${todo.source}`;
-          badge.textContent = todo.source === "human-task" ? "Human Task" : "Agent Waiting";
+          badge.textContent = "Human Task";
           itemEl.appendChild(cb);
           itemEl.appendChild(spanText);
           itemEl.appendChild(badge);
@@ -14586,6 +15588,7 @@ Blocked by ${blockerRef}`;
   function openDrawer(issue) {
     drawerGeneration++;
     activeIssue = issue;
+    void refreshDecisions();
     renderDrawer(issue, false, drawerGeneration, true);
     elDrawerScrim.classList.add("active");
     elTaskDrawer.classList.add("active");
@@ -14753,6 +15756,7 @@ Blocked by ${blockerRef}`;
     }
     renderDrawerLabels(issue);
     void loadRepoLabels();
+    renderDrawerDecision(issue);
     const session = getIssueSession(issue);
     if (session) {
       let dotClass = "dot-idle";
@@ -16611,6 +17615,7 @@ Blocked by ${blockerRef}`;
         viewState.view = item.getAttribute("data-mode");
         rememberViewState();
         applyLayoutMode();
+        if (viewState.view === "pending") void refreshDecisions();
         closeViewPicker();
         elBtnViewSelect?.focus();
       });
@@ -16714,9 +17719,9 @@ Blocked by ${blockerRef}`;
       }
     });
     document.getElementById("btnSaveProjectNames")?.addEventListener("click", async () => {
-      const button2 = document.getElementById("btnSaveProjectNames");
-      if (button2.disabled) return;
-      button2.disabled = true;
+      const button3 = document.getElementById("btnSaveProjectNames");
+      if (button3.disabled) return;
+      button3.disabled = true;
       const next = { ...projectNameOverrides };
       document.getElementById("projectNamesList").querySelectorAll("[data-repo-name]").forEach((input) => {
         const key = projectNameKey(input.getAttribute("data-repo-name") || "");
@@ -16733,7 +17738,7 @@ Blocked by ${blockerRef}`;
       } catch (err) {
         void host.toast({ kind: "error", message: `Could not save project names: ${err.message}` });
       } finally {
-        button2.disabled = false;
+        button3.disabled = false;
       }
     });
     elBtnCloseFilePreview?.addEventListener("click", closeFilePreviewModal);
@@ -17402,6 +18407,7 @@ Blocked by ${blockerRef}`;
     applyHostReady(ctx, document.documentElement);
     currentDirectory = ctx.directory || "";
     deviceStorageSupported = ctx.features?.deviceStorage === true;
+    panelLocale = isFrenchLocale(ctx.locale) ? "fr" : "en";
     void host.storage.get("project_name_overrides").then((stored) => {
       projectNameOverrides = normalizeProjectNameOverrides(stored);
       if (currentRepo && !isAllProjectsMode) elTxtRepoLabel.textContent = displayProjectName(currentRepo);

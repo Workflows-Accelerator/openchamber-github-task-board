@@ -27,7 +27,7 @@ export interface Subtask {
 
 export interface HumanTodo {
   text: string;
-  source: 'human-task' | 'open-question' | 'session-waiting';
+  source: 'human-task' | 'open-question';
   done: boolean;
 }
 
@@ -811,17 +811,15 @@ export function parseSubtasks(body: string | null | undefined): Subtask[] {
 
 export function collectHumanTodos(
   issue: Issue | string | null | undefined,
-  session?: any
+  _session?: any
 ): HumanTodo[] {
   let body = '';
   let preHumanTasks: Subtask[] | undefined;
   let preOpenQuestions: Subtask[] | undefined;
-  let issueObj: Issue | null = null;
 
   if (typeof issue === 'string') {
     body = issue;
   } else if (issue && typeof issue === 'object') {
-    issueObj = issue;
     body = typeof issue.body === 'string' ? issue.body : '';
     if (Array.isArray(issue.humanTasks)) {
       preHumanTasks = issue.humanTasks;
@@ -872,83 +870,10 @@ export function collectHumanTodos(
     return todos;
   }
 
-  // 3. If an attached agent session is in a waiting* state and (1)+(2) yield nothing:
-  // one synthesized item from the waiting reason (source session-waiting)
-  const isBoundToOther = (s: any, currentNum: number): boolean => {
-    if (!s || !currentNum) return false;
-    const currentStr = String(currentNum);
-    if (Array.isArray(s.items)) {
-      for (const it of s.items) {
-        if (!it) continue;
-        if (it.id === currentStr) return false;
-        const otherNum = it.data?.issueNumber || (Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0]) || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
-        if (otherNum && Number(otherNum) !== currentNum) return true;
-      }
-    }
-    if (typeof s.title === 'string') {
-      const match = s.title.match(/#(\d+)/);
-      if (match && Number(match[1]) !== currentNum) return true;
-    }
-    const wtName = typeof s.worktree === 'string' ? s.worktree : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
-    if (wtName) {
-      const match = wtName.match(/issue-(\d+)/);
-      if (match && Number(match[1]) !== currentNum) return true;
-    }
-    return false;
-  };
-
-  let activeSession: any = null;
-  if (Array.isArray(session)) {
-    if (issueObj && Number.isFinite(issueObj.number)) {
-      const issueNumStr = String(issueObj.number);
-      activeSession = session.find((s: any) => {
-        if (!s) return false;
-        if (s.items && Array.isArray(s.items) && s.items.some((it: any) => it && (it.id === issueNumStr || it.data?.issueNumber === issueObj!.number || (Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueObj!.number))))) {
-          return true;
-        }
-        if (s.title && s.title.includes(`#${issueObj!.number}`)) return true;
-        const wtName = typeof s.worktree === 'string' ? s.worktree : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
-        if (wtName && wtName.includes(`issue-${issueObj!.number}`)) return true;
-        return false;
-      }) || (session.length === 1 && !isBoundToOther(session[0], issueObj.number) ? session[0] : null);
-    } else {
-      activeSession = session.length === 1 ? session[0] : null;
-    }
-  } else if (session && typeof session === 'object') {
-    if (issueObj && Number.isFinite(issueObj.number) && isBoundToOther(session, issueObj.number)) {
-      activeSession = null;
-    } else {
-      activeSession = session;
-    }
-  }
-
-  if (activeSession) {
-    const act = typeof activeSession.activity === 'string' ? activeSession.activity.trim() : '';
-    const isWaiting = act === 'waiting-permission' || act === 'waiting-question' || act.startsWith('waiting');
-    if (isWaiting) {
-      const rawReason = activeSession.waitingReason || activeSession.reason || activeSession.data?.waitingReason || activeSession.data?.reason || '';
-      const reason = typeof rawReason === 'string' ? rawReason.trim() : '';
-
-      let text = '';
-      if (act === 'waiting-permission') {
-        text = reason ? `Agent waiting for permission: ${reason}` : 'Agent waiting for permission';
-      } else if (act === 'waiting-question') {
-        text = reason ? `Agent waiting for question: ${reason}` : 'Agent waiting for question';
-      } else if (act.startsWith('waiting-')) {
-        const kind = act.slice(8);
-        text = reason ? `Agent waiting for ${kind}: ${reason}` : `Agent waiting for ${kind}`;
-      } else {
-        text = reason ? `Agent waiting: ${reason}` : 'Agent waiting';
-      }
-
-      return [{
-        text,
-        source: 'session-waiting',
-        done: false,
-      }];
-    }
-  }
-
+  // The former `session-waiting` synthesis is gone: a waiting session is now a
+  // decision from the store (D53), with its own provenance and answer controls.
+  // An issue body alone cannot say what an agent is waiting for, and inventing
+  // that sentence here was the prose path this replaces.
   return [];
 }
 
