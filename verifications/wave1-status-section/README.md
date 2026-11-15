@@ -5,8 +5,9 @@ Branch: `feat/wave1-status-section` (worktree
 Design: `.agents/run/chamberos-board-v2/verifications/extension-design/README.md`
 (`697a173`). Brief: `.agents/run/chamberos-board-v2/tasks/wave1-status-section.md`.
 
-Status: implemented, tested, built, guest-checked. Nothing pushed, nothing
-deployed, the live board was not restarted.
+Status: implemented, tested, built, guest-checked, and the phone drawer tab is
+declared in the manifest (version 1.2.2; not observed on a device). Nothing
+pushed, nothing deployed, the live board was not restarted.
 
 ---
 
@@ -24,8 +25,10 @@ Added inside `contributes`:
 | `sessionEvents` | `{ "events": ["turn-started", "turn-finished", "turn-failed", "permission-asked", "question-asked", "session-archived", "session-deleted"] }` |
 | `instructions` | `true` |
 | `skills` | `"skills"` |
+| `panel.mobile` | `true` (added in §11; version 1.2.2) |
 
-Changed: `service.keepRunning` is `true`; `engines.openchamber` is `>=2.7.1`.
+Changed: `service.keepRunning` is `true`; `engines.openchamber` is `>=2.7.1`;
+`version` is `1.2.2`.
 
 Removed: the top-level `openchamber.capabilities` duplicate. Only
 `contributes.capabilities` (`sessions`, `prompt`, `files`) counts. The old root
@@ -90,9 +93,15 @@ installed at service start with `host.setInstructions(null, text)`
 | Before this change (manager's baseline) | — | 618 | 0 |
 | After wave 1 (`npm test`) | 672 | 672 | 0 |
 | After this fix (`npm test`) | 686 | 686 | 0 |
+| After the phone tab (`npm test`, 1.2.2) | 687 | 687 | 0 |
 
 This fix adds four tests to `test/session-marks.test.js` (16 → 20 in that
 file); `test/board-manifest.test.js` keeps its count and now pins seven events.
+
+The phone-tab change adds one test to `test/board-manifest.test.js` (8 → 9)
+and updates the version pin in `test/repo-detector.test.js:128` from `1.2.1` to
+`1.2.2`, which is a changed expectation forced by the version bump, not a
+loosened assertion.
 
 `npm test` = `node --test test/*.test.js`. The two tests that asserted the old
 truth were updated, not deleted: `test/service-host-connection.test.js` (`/status`
@@ -121,6 +130,8 @@ removed or loosened.
   zero errors.
 - A second `npm run build:service` leaves the tree clean, so the committed bundle
   matches a fresh build byte for byte.
+- After the 1.2.2 manifest-only change, `npm run build` reproduced both bundles
+  byte for byte (`sha256sum -c` on `panel/main.js` and `service/main.js`: OK).
 - `npm run typecheck` (`tsc --noEmit`): exit 0, no output.
 - `test/shipped-parity.test.js`: 18/18 pass.
 
@@ -144,7 +155,8 @@ Output, verbatim:
 Package is ready to add in Settings → Extensions.
 ```
 
-Exit code 0.
+Exit code 0. Re-run on 1.2.2 with the same copy (checksum equal to the installed
+script), same output, exit 0.
 
 ---
 
@@ -203,6 +215,8 @@ stay inside this wave's scope.
 - `5aab000` `fix(service): arm the socket idle timeout once per keep-alive socket`
 - `ad2e940` `build(extension): rebuild service bundle after the socket timeout fix`
 - `02128b6` `fix(service): clear the mark when a session is archived or deleted`
+- `73c597c` `docs(extension): record the archived and deleted session mark fix`
+- `4cbb3ff` `feat(extension): declare panel.mobile so the phone shows a drawer tab`
 - this receipt
 - the hostile-review commit (below)
 
@@ -300,3 +314,51 @@ longer accepts an answer.
   18/18. `openchamber-guest-check`: `Package is ready to add in Settings →
   Extensions.`, exit 0 (same `/tmp/opencode/guest-check` copy, checksum equal to
   the installed script).
+
+---
+
+## 11. Phone drawer tab: `contributes.panel.mobile` (1.2.2)
+
+The owner reported the extension invisible on the phone while the "resources"
+extension shows. The mobile investigation
+(`.agents/run/chamberos-board-v2/verifications/extension-mobile/README.md`,
+`e144c9d`) read the installed 2.7.1 bundles and the server catalog: the phone
+does load extensions and does render status sections; it filters the drawer tab
+on `contributes.panel.mobile === true` (`server/lib/guests/catalog.js:233`,
+`panel.entry && panel.mobile === true`). Our manifest declared no `mobile` key,
+so the tab and the page were filtered out. The "resources" surface is the
+`resource-monitor` extension, one of only two installed extensions that sets
+the key.
+
+- **Manifest.** One key added inside `contributes.panel`:
+  `"mobile": true`; `version` 1.2.1 → 1.2.2 so an installed copy is seen as an
+  update. Every other key is unchanged. The key is **not** in `statusSection`:
+  that object is a non-strict `z.object`, so a `statusSection.mobile` key is
+  stripped silently and does nothing. No host change is needed; with
+  `page: true`, `panel.mobile` also enables the full-screen page.
+- **Tests.** `test/board-manifest.test.js` gained one test: it pins the whole
+  `panel` object including `mobile: true`, the `1.2.2` version, the absence of
+  `statusSection.mobile`, the unchanged root allowlist (`apiVersion`, `engines`,
+  `contributes`), and that `parseManifestJson` accepts the key and keeps it.
+  `test/repo-detector.test.js:128` moved its version pin to `1.2.2`.
+- **Section with no project open.** `requiresProject` stays `true`; the section
+  is per project by design and by the threat model (the service scopes
+  `/status` by directory). The installed mobile bundle gates it exactly so:
+  `d=!n.statusRequiresProject||!!s` then `if(!d) return null`
+  (`useAppFontEffects-xaAfmUwn.js`, `pZt`; `s` is the resolved directory). So on
+  the phone the Task Board section is **not rendered at all** while no project
+  directory is resolved, and it renders once a session in a project is open.
+- **Checks.** `npm test`: 687/687 (was 686). `npm run typecheck`: exit 0, no
+  output. `npm run build`: `panel/main.js` 738.4 kb, `service/main.js` 64.8 kb,
+  both byte-identical to the committed bundles (`sha256sum -c`: OK).
+  `test/shipped-parity.test.js`: 18/18. Guest check, output verbatim:
+
+  ```
+  Package is ready to add in Settings → Extensions.
+  ```
+
+  Exit code 0, run as `node /tmp/opencode/guest-check/scripts/check-guest.ts .`
+  on the same copy whose checksum equals the installed script.
+- **Not verified.** No phone, browser or device run: the drawer tab and the
+  page were not observed. Nothing was installed, reloaded, pushed or deployed,
+  and the live board was not restarted.
