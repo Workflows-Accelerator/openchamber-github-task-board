@@ -639,6 +639,9 @@ export function createTestApp(options = {}) {
       clearQuestionDraft,
       getRecoverableQuestionDrafts,
       addLog,
+      inspectGitConfigInDir,
+      resolveWorktreeParentRepoRoot,
+      __getDirGitCache: () => dirGitCache,
       getElements: () => elements,
       setWorkspaceGitToken: (t) => { workspaceGitToken = t; },
       getState: () => ({

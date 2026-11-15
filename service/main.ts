@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { loadCoordinatorConfig, resolveStorageDir, validateServiceHostEnv } from './config.ts';
 import { LeaseStore } from './lease-store.ts';
+import { isSafeGitDirectory, resolveGitRemote } from './git-remote.ts';
 import type { ClaimResult, CoordinatorConfig, CoordinatorStatus } from './types.js';
 
 interface HeldLeaseEntry {
@@ -200,6 +201,7 @@ export { LeaseStore, resolveLeaseStorageDir, getDefaultLeasesFilePath } from './
 export * from './task-claim.ts';
 export * from './session-watcher.ts';
 export * from './reconciler.ts';
+export * from './git-remote.ts';
 
 /**
  * Timing-safe Bearer token authentication using SHA-256 digests.
@@ -216,6 +218,40 @@ export function authenticateRequest(authHeader: string | undefined, expectedToke
   const presentedHash = crypto.createHash('sha256').update(presentedToken, 'utf8').digest();
 
   return crypto.timingSafeEqual(expectedHash, presentedHash);
+}
+
+/**
+ * Answers `POST /git-remote` with a sanitized GitHub remote lookup. The
+ * directory is validated as an absolute path; the reply never echoes it and
+ * never contains credentials from `.git/config`.
+ */
+async function handleGitRemoteLookup(rawBody: string, res: http.ServerResponse): Promise<void> {
+  const writeJson = (status: number, payload: unknown) => {
+    if (res.headersSent) return;
+    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(payload));
+  };
+
+  let directory: unknown;
+  try {
+    const parsed = JSON.parse(rawBody || '{}') as { directory?: unknown };
+    directory = parsed?.directory;
+  } catch {
+    writeJson(400, { status: 'error', hasGit: false, remote: null, reason: 'invalid_json' });
+    return;
+  }
+
+  if (!isSafeGitDirectory(directory)) {
+    writeJson(400, { status: 'error', hasGit: false, remote: null, reason: 'invalid_path' });
+    return;
+  }
+
+  try {
+    const lookup = await resolveGitRemote(directory);
+    writeJson(200, lookup);
+  } catch {
+    writeJson(500, { status: 'error', hasGit: false, remote: null, reason: 'service_error' });
+  }
 }
 
 /**
@@ -268,6 +304,43 @@ export function createCoordinatorHostServer(
     // Normalize path by stripping trailing slashes while preserving root /
     const url = new URL(req.url || '/', 'http://127.0.0.1');
     const normalizedPath = url.pathname.replace(/\/+$/, '') || '/';
+
+    if (normalizedPath === '/git-remote') {
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+        return;
+      }
+      const chunks: Buffer[] = [];
+      let received = 0;
+      let stopped = false;
+      req.on('data', (chunk: Buffer) => {
+        if (stopped) return;
+        received += chunk.length;
+        if (received > MAX_BODY_BYTES) {
+          stopped = true;
+          if (!res.headersSent) {
+            res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: 'Payload Too Large' }));
+          }
+          req.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      req.on('error', () => {
+        if (!res.headersSent) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ status: 'error', hasGit: false, remote: null, reason: 'invalid_body' }));
+        }
+      });
+      req.on('end', () => {
+        if (stopped) return;
+        void handleGitRemoteLookup(Buffer.concat(chunks).toString('utf8'), res);
+      });
+      return;
+    }
+
     if (normalizedPath === '/health') {
       if (req.method === 'GET') {
         if (getStatus && getStatus() !== 'running') {
