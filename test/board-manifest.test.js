@@ -44,6 +44,26 @@ test('board-manifest: nothing sits at the root of the openchamber block but apiV
   }
 });
 
+test('board-manifest: the panel opts into the phone and the version moves with it', () => {
+  // The phone filters the drawer tab on `panel.mobile === true` (server
+  // catalog: `panel.entry && panel.mobile === true`). A `mobile` key inside
+  // `statusSection` is stripped by the schema, so only this location counts.
+  assert.equal(raw.version, '1.2.2');
+  assert.deepEqual(raw.openchamber.contributes.panel, {
+    id: 'github-task-board',
+    name: 'Task Board',
+    icon: 'icon.svg',
+    entry: 'panel/index.html',
+    mobile: true,
+  });
+  assert.equal(raw.openchamber.contributes.panel.mobile, true);
+  assert.equal(Object.prototype.hasOwnProperty.call(raw.openchamber.contributes.statusSection, 'mobile'), false);
+
+  const parsed = parseManifestJson(manifestText);
+  assert.equal(parsed.ok, true, parsed.ok ? '' : `${parsed.code}: ${parsed.message}`);
+  if (parsed.ok) assert.equal(parsed.manifest.contributes.panel.mobile, true);
+});
+
 test('board-manifest: contributes.capabilities stays declared', () => {
   assert.ok(Array.isArray(raw.openchamber.contributes.capabilities));
   for (const capability of ['sessions', 'prompt', 'files']) {
