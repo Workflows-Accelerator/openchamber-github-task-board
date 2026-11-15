@@ -3916,6 +3916,43 @@ export function filterIssuesByAttention(
   return grouped[attention] || [];
 }
 
+/**
+ * The board's single "needs me" predicate. Every surface that says a task waits
+ * for the person uses this one: the attention groups from
+ * `groupIssuesByAttention` (which already covers open questions and explicit
+ * attention labels), the `needs-human` column, and unchecked human tasks.
+ * A done task never needs anyone (D44.2, D47).
+ */
+export function needsMeOf(
+  issue: Issue,
+  attention: Record<HumanAttention, Issue[]>,
+  session?: any
+): boolean {
+  if (!issue || typeof issue !== 'object') return false;
+  if (resolveIssueColumn(issue) === 'done') return false;
+  if (
+    attention &&
+    (attention['needs-decision']?.includes(issue) ||
+      attention['needs-permission']?.includes(issue) ||
+      attention['needs-review']?.includes(issue))
+  ) {
+    return true;
+  }
+  if (resolveIssueColumn(issue) === 'needs-human') return true;
+  return collectHumanTodos(issue, session).length > 0;
+}
+
+/**
+ * The board's priority weight: critical/urgent 4, important/high 3,
+ * useful/medium 2, optional/low 1, none 0. One definition, shared by the view
+ * sort and the "next task" of the Work Status section.
+ */
+export const PRIORITY_WEIGHTS: Record<string, number> = { critical: 4, important: 3, useful: 2, optional: 1 };
+
+export function priorityWeightOf(priorityOrIssue: string | Issue | any): number {
+  return PRIORITY_WEIGHTS[normalizePriority(priorityOrIssue) || ''] || 0;
+}
+
 export function normalizeGithubIssues(rawItems: any[]): Issue[] {
   if (!rawItems || !Array.isArray(rawItems)) return [];
   const parseRepo = (val: string | null | undefined): string | null => {

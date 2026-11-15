@@ -188,6 +188,8 @@ import {
   resolveOptimisticTestItemUpdate,
   groupIssuesByAttention,
   filterIssuesByAttention,
+  needsMeOf,
+  priorityWeightOf,
   resolveV2Metadata,
   parseAcceptanceCriteria,
   detectDraftAmbiguity,
@@ -207,6 +209,8 @@ export {
   resolveSimplifiedViewTitle,
   groupIssuesByAttention,
   filterIssuesByAttention,
+  needsMeOf,
+  priorityWeightOf,
   resolveV2Metadata,
   formatTaskTextWithLinks,
   extractQuestionOptions,
@@ -1674,6 +1678,60 @@ function reconcileIssueSnapshot(repo: string, snapshot: Issue[], localIssues: Is
   return reconciled;
 }
 
+/**
+ * Publishes one board snapshot for the Work Status section (D47, design 697a173 §1.1).
+ *
+ * The counts come from the same state the views render, through the same
+ * predicates: `needsMeOf` for "needs me", `resolveV2Metadata` for blocked,
+ * `resolveIssueColumn` for done, `host.onSessions` state for running agents.
+ * The section is per project, so the All Projects board is never published and
+ * an unknown directory answers the empty state on the service side.
+ *
+ * One post per successful load. A failed post is silent: the section keeps its
+ * last snapshot and shows its age.
+ */
+function publishBoardSnapshot(): void {
+  if (isAllProjectsMode) return;
+  const directory = (currentProject?.directory || currentDirectory || '').replace(/\/+$/, '');
+  if (!directory || !directory.startsWith('/')) return;
+
+  try {
+    const attentionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
+    const attention = groupIssuesByAttention(issues, attentionIndex);
+    const needsMeIssues = issues.filter((issue) => needsMeOf(issue, attention, getIssueSession(issue)));
+    const blocked = issues.filter(
+      (issue) =>
+        resolveIssueColumn(issue) !== 'done' &&
+        resolveV2Metadata(issue, getIssueSession(issue), issues).dependencyState === 'blocked-by-dependency'
+    ).length;
+    const done = issues.filter((issue) => resolveIssueColumn(issue) === 'done').length;
+    const running = sessions.filter((session) => session.activity === 'running').length;
+
+    const topIssue = needsMeIssues.length === 0
+      ? null
+      : [...needsMeIssues].sort(
+          (a, b) => priorityWeightOf(getIssuePriority(b)) - priorityWeightOf(getIssuePriority(a)) || b.number - a.number
+        )[0];
+    const topRepo = topIssue ? repoForIssue(topIssue) : '';
+    const top = topIssue && topRepo && Number.isFinite(topIssue.number)
+      ? { repo: topRepo, number: topIssue.number, title: topIssue.title }
+      : null;
+
+    const body = JSON.stringify({
+      v: 1,
+      directory,
+      at: Date.now(),
+      complete: true,
+      counts: { needsMe: needsMeIssues.length, running, blocked, done, total: issues.length },
+      top,
+    });
+
+    void Promise.resolve((host as any).serviceRequest({ method: 'POST', path: '/snapshot', body })).catch(() => {});
+  } catch {
+    // Silent by design: no banner, no toast, no retry storm.
+  }
+}
+
 function publishIssueSnapshot(repo: string, storageKey: string, snapshot: Issue[], startedAt: number, epoch: number): void {
   pruneIssueWriteTrackers();
   if (obsoleteIssueSnapshotEpochs.has(epoch)) {
@@ -1693,6 +1751,7 @@ function publishIssueSnapshot(repo: string, storageKey: string, snapshot: Issue[
   repoSyncWatermarks.set(repo, Math.max(startedAt, repoSyncWatermarks.get(repo) || 0));
   lastSyncErrorState = null;
   renderViews();
+  publishBoardSnapshot();
   statusReconciler.schedule(issues);
   renderBoardFreshness('complete', repo);
 }
@@ -3508,16 +3567,14 @@ function renderViews(): void {
       (issue.labels || []).some((label) => (typeof label === 'string' ? label : label.name || '').toLowerCase().includes(q));
   });
   const attention = groupIssuesByAttention(searched, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
-  const needsMe = new Set([...attention['needs-decision'], ...attention['needs-permission'], ...attention['needs-review']]);
   const filtered = applyFilters(searched, viewState.filters, {
     stageOf: (issue) => resolveIssueColumn(issue) || 'todo',
     repoOf: repoForIssue,
-    needsMe: (issue) => needsMe.has(issue) || resolveIssueColumn(issue) === 'needs-human' || collectHumanTodos(issue, getIssueSession(issue)).length > 0,
+    needsMe: (issue) => needsMeOf(issue, attention, getIssueSession(issue)),
     hasHumanTasks: (issue) => parseHumanTasks(issue.body || '').length > 0 || (issue.humanTasks || []).length > 0,
     hasOpenQuestions: (issue) => parseOpenQuestions(issue.body || '').some((question) => !question.completed) || getRecoverableQuestionDrafts(issue).length > 0,
   });
-  const priorityWeights: Record<string, number> = { critical: 4, important: 3, useful: 2, optional: 1 };
-  const sorted = applySort(filtered, viewState.sort, (issue) => priorityWeights[normalizePriority(getIssuePriority(issue)) || ''] || 0);
+  const sorted = applySort(filtered, viewState.sort, (issue) => priorityWeightOf(getIssuePriority(issue)));
   applyLayoutMode(false);
   if (showArchivedOnly) {
     renderArchiveView(sorted);

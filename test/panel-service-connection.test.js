@@ -71,6 +71,7 @@ function createRealPanelApp(options = {}) {
   };
 
   const serviceRequests = [];
+  const hostRequests = [];
   let messageHandler = null;
 
   const mockWindow = {
@@ -130,6 +131,29 @@ function createRealPanelApp(options = {}) {
               res = await options.onServiceRequest(msg.payload);
             } else {
               res = { ok: true, payload: { status: 200, body: '{"status":"ok","service":"task-coordinator"}' } };
+            }
+            const evt = new MessageEvent('message', {
+              data: {
+                channel: 'openchamber.sdk',
+                v: 1,
+                type: 'result',
+                id: msg.id,
+                ...res,
+              },
+            });
+            Object.defineProperty(evt, 'source', { value: mockWindow.parent });
+            messageHandler?.(evt);
+          }, 1);
+        } else if (msg?.type === 'request') {
+          hostRequests.push(msg.payload);
+          setTimeout(async () => {
+            let res;
+            try {
+              res = options.onHostRequest
+                ? await options.onHostRequest(msg.payload)
+                : { ok: false, code: 'HOST_REJECTED', error: 'no host request handler' };
+            } catch (error) {
+              res = { ok: false, code: 'HOST_REJECTED', error: error?.message || 'host request failed' };
             }
             const evt = new MessageEvent('message', {
               data: {
@@ -220,12 +244,29 @@ function createRealPanelApp(options = {}) {
   const bundleJs = fs.readFileSync(PANEL_MAIN_JS_PATH, 'utf8');
   vm.runInContext(bundleJs, context);
 
+  // Poll instead of sleeping a fixed interval: under load the ready probe and
+  // the board load can take longer than any fixed wait, and a flaky test is not
+  // evidence about the panel.
+  const waitFor = async (predicate, timeoutMs = 5000) => {
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      if (predicate()) return;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error('timed out waiting for the panel');
+  };
+
   return {
     mockWindow,
     elements,
     logs,
     serviceRequests,
-    waitForReady: () => new Promise((resolve) => setTimeout(resolve, 40)),
+    hostRequests,
+    waitFor,
+    waitForReady: () => waitFor(() =>
+      [...logs.info, ...logs.warn].some((line) => line.includes('Background coordinator'))
+    ),
+    waitForSnapshot: () => waitFor(() => serviceRequests.some((request) => request.path === '/snapshot')),
   };
 }
 
@@ -387,6 +428,77 @@ test('panel-service-connection: real window hook __taskBoardBackgroundService is
   // Trigger manual invocation via exported window hook
   await app.mockWindow.__taskBoardBackgroundService.checkBackgroundServiceConnection();
   assert.equal(app.serviceRequests.length, 2);
+});
+
+test('panel-service-connection: one snapshot post per successful load, counts equal to the rendered numbers', async () => {
+  const issues = [
+    {
+      number: 1,
+      title: 'Decide the rollout order',
+      state: 'open',
+      labels: [{ name: 'status:needs-human' }],
+      html_url: 'https://github.com/test-org/test-repo/issues/1',
+      body: '',
+      created_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      number: 2,
+      title: 'Ship the parser',
+      state: 'open',
+      labels: [{ name: 'status:done' }],
+      html_url: 'https://github.com/test-org/test-repo/issues/2',
+      body: '',
+      created_at: '2026-01-02T00:00:00Z',
+    },
+    {
+      number: 3,
+      title: 'Draft the announcement',
+      state: 'open',
+      labels: [{ name: 'status:todo' }],
+      html_url: 'https://github.com/test-org/test-repo/issues/3',
+      body: '',
+      created_at: '2026-01-03T00:00:00Z',
+    },
+    {
+      number: 4,
+      title: 'Waits on #3',
+      state: 'open',
+      labels: [{ name: 'dependency:blocked' }],
+      html_url: 'https://github.com/test-org/test-repo/issues/4',
+      body: '',
+      created_at: '2026-01-04T00:00:00Z',
+    },
+  ];
+
+  const app = createRealPanelApp({
+    hasSelectedRepo: true,
+    onServiceRequest: (payload) =>
+      payload.path === '/snapshot'
+        ? { ok: true, payload: { status: 204, body: '' } }
+        : { ok: true, payload: { status: 200, body: '{"status":"ok"}' } },
+    onHostRequest: () => ({ ok: true, payload: { status: 200, body: JSON.stringify(issues) } }),
+  });
+
+  await app.waitForReady();
+  await app.waitFor(() => app.serviceRequests.some((request) => request.path === '/snapshot'));
+
+  const posts = app.serviceRequests.filter((request) => request.path === '/snapshot');
+  assert.equal(posts.length, 1, 'exactly one snapshot post per successful load');
+  assert.equal(posts[0].method, 'POST');
+
+  const body = JSON.parse(posts[0].body);
+  assert.equal(body.v, 1);
+  assert.equal(body.directory, '/test');
+  assert.equal(body.complete, true);
+  assert.equal(Number.isFinite(body.at), true);
+  // Same numbers the views render: one needs-me (#1), one blocked (#4), one
+  // done (#2), no running agent, all four issues in the denominator.
+  assert.deepEqual(body.counts, { needsMe: 1, running: 0, blocked: 1, done: 1, total: 4 });
+  assert.deepEqual(body.top, { repo: 'test-org/test-repo', number: 1, title: 'Decide the rollout order' });
+
+  // A failed post is silent: no banner change beyond the healthy probe.
+  assert.equal(app.elements.get('boardBanner').style.display, 'none');
+  assert.equal(app.logs.warn.filter((line) => line.includes('snapshot')).length, 0);
 });
 
 test('panel-service-connection: Invariant: zero emojis in UI banner copy or log output', async () => {

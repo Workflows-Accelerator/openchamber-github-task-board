@@ -23,15 +23,8 @@
   "openchamber": {
     "apiVersion": 1,
     "engines": {
-      "openchamber": ">=1.22.0"
+      "openchamber": ">=2.7.1"
     },
-    "capabilities": [
-      "sessions",
-      "prompt",
-      "files",
-      "origins",
-      "filesystem"
-    ],
     "contributes": {
       "capabilities": [
         "sessions",
@@ -46,8 +39,31 @@
       },
       "service": {
         "entry": "service/main.js",
-        "runtime": "host"
+        "runtime": "host",
+        "keepRunning": true
       },
+      "statusSection": {
+        "source": {
+          "path": "/status",
+          "interval": 5000
+        },
+        "title": "Task Board",
+        "requiresProject": true,
+        "defaultExpanded": true
+      },
+      "marks": true,
+      "sessionControl": {},
+      "sessionEvents": {
+        "events": [
+          "turn-started",
+          "turn-finished",
+          "turn-failed",
+          "permission-asked",
+          "question-asked"
+        ]
+      },
+      "instructions": true,
+      "skills": "skills",
       "page": true,
       "attach": true,
       "filesystem": [

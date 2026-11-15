@@ -144,13 +144,15 @@
   var GUEST_SURFACE_DOCK_SIZE_MAX = 480;
   var GUEST_STATUS_SECTION_TITLE_MAX = 60;
   var GUEST_STATUS_SECTION_HEIGHT_MIN = 24;
-  var GUEST_STATUS_SECTION_HEIGHT_MAX = 320;
+  var GUEST_STATUS_SECTION_HEIGHT_MAX = 480;
   var GUEST_STATUS_SECTION_HEIGHT_DEFAULT = 120;
   var GUEST_ACTIONS_MAX = 8;
   var GUEST_ACTION_LABEL_MAX = 40;
   var GUEST_COMMANDS_MAX = 8;
   var GUEST_COMMAND_DESCRIPTION_MAX = 80;
   var GUEST_COMMAND_NAME = /^[a-z][a-z0-9-]{0,23}$/;
+  var GUEST_PROVIDER_LOGOS_MAX = 256;
+  var GUEST_PROVIDER_LOGO_BYTES_MAX = 1024 * 1024;
   var GUEST_TOOLS_MAX = 16;
   var GUEST_TOOL_MATCH_MAX = 128;
   var GUEST_TOOL_MATCH = /^[A-Za-z0-9_.:-]+\*?$/;
@@ -160,7 +162,25 @@
   var GUEST_TOOL_LANGUAGE_MAX = 32;
   var GUEST_TOOL_COLUMNS_MAX = 16;
   var GUEST_TOOL_COLUMN_MAX = 64;
-  var GUEST_TOOL_OUTPUTS = ["auto", "text", "json", "markdown", "code", "table"];
+  var GUEST_TOOL_CARD_FIELDS_MAX = 8;
+  var GUEST_TOOL_CARD_TONES_MAX = 16;
+  var GUEST_TOOL_CARD_TONE_KEY_MAX = 64;
+  var GUEST_TOOL_CARD_URL_MAX = 2048;
+  var GUEST_TOOL_OUTPUTS = ["auto", "text", "json", "markdown", "code", "table", "card"];
+  var GUEST_TONES = ["neutral", "info", "success", "warning", "error"];
+  var GUEST_TOOL_TEMPLATE_ROOTS = ["input", "output", "metadata"];
+  var guestToolPlaceholderPattern = (roots) => new RegExp(`\\{(${roots.join("|")})((?:\\.[A-Za-z0-9_-]+)*)\\}`, "g");
+  var GUEST_TOOL_CARD_TEMPLATE_ROOTS = ["input", "output", "metadata", "settings"];
+  var guestToolLinkSettingIds = (tools) => {
+    const ids = /* @__PURE__ */ new Set();
+    for (const tool of tools ?? []) {
+      for (const match of (tool.card?.link?.url ?? "").matchAll(guestToolPlaceholderPattern(["settings"]))) {
+        if (match[2])
+          ids.add(match[2].slice(1));
+      }
+    }
+    return [...ids];
+  };
   var HOST_LINEAR_API_ORIGIN = "https://api.linear.app";
   var resolveIntegrationAuth = (integration) => {
     const kinds = [Boolean(integration.oauth), Boolean(integration.token), Boolean(integration.host)].filter(Boolean).length;
@@ -200,9 +220,79 @@
     }
     return null;
   };
-  var GUEST_SERVICE_PROVIDES = ["browser", "source-control"];
+  var GUEST_SERVICE_PROVIDES = ["browser", "source-control", "notifications", "tracker", "quota", "opencode"];
   var SOURCE_CONTROL_GUEST_ID_MAX = 28;
   var sourceControlProviderIdOf = (guestId) => `ext-${guestId}`;
+  var NOTIFICATIONS_GUEST_ID_MAX = 28;
+  var notificationProviderIdOf = (guestId) => `ext-${guestId}`;
+  var toPublicNotifications = (contribution) => {
+    const token = {
+      scheme: contribution.token.scheme,
+      username: contribution.token.username === true,
+      scopes: [...contribution.token.scopes ?? []]
+    };
+    if (contribution.token.createPath)
+      token.createPath = contribution.token.createPath;
+    return { label: contribution.label, instances: { ...contribution.instances }, token };
+  };
+  var QUOTA_GUEST_ID_MAX = 28;
+  var quotaProviderIdOf = (guestId) => `ext-${guestId}`;
+  var QUOTA_PROVIDERS_MAX = 16;
+  var OPENCODE_PROVIDER_ID = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+  var isOpenCodeProviderId = (value) => OPENCODE_PROVIDER_ID.test(value);
+  var toPublicQuota = (contribution) => ({ providers: [...contribution.providers] });
+  var TRACKER_GUEST_ID_MAX = 28;
+  var trackerProviderIdOf = (guestId) => `ext-${guestId}`;
+  var TRACKER_URL_TEMPLATES_MAX = 8;
+  var TRACKER_URL_TEMPLATE_MAX = 256;
+  var TRACKER_URL_TOKENS = ["{id}", "{segment}", "{segments+}"];
+  var TRACKER_URL_TEMPLATE_LITERAL = /^[A-Za-z0-9._~-]+$/;
+  var TRACKER_URL_TOKEN_SET = new Set(TRACKER_URL_TOKENS);
+  var TRACKER_QUERY_TEMPLATE = /^([A-Za-z0-9_.-]{1,64})=\{id\}$/;
+  var isTrackerUrlTemplate = (value) => {
+    if (!value.startsWith("/") || value.length > TRACKER_URL_TEMPLATE_MAX)
+      return false;
+    const queryAt = value.indexOf("?");
+    const pathPart = queryAt === -1 ? value : value.slice(0, queryAt);
+    const queryPart = queryAt === -1 ? null : value.slice(queryAt + 1);
+    const segments = pathPart === "/" ? [] : pathPart.slice(1).split("/");
+    if (segments.some((segment) => segment === "." || segment === ".."))
+      return false;
+    if (segments.some((segment) => !TRACKER_URL_TOKEN_SET.has(segment) && !TRACKER_URL_TEMPLATE_LITERAL.test(segment)))
+      return false;
+    const count = (token) => segments.filter((segment) => segment === token).length;
+    if (count("{segments+}") > 1)
+      return false;
+    if (queryPart === null)
+      return count("{id}") === 1;
+    return TRACKER_QUERY_TEMPLATE.test(queryPart) && count("{id}") === 0;
+  };
+  var TRACKER_BASE_STATE_FILTERS = ["open", "all"];
+  var TRACKER_STATE_FILTERS_MAX = 16;
+  var TRACKER_IDENTIFIER_KINDS = ["key-number", "number", "short-code"];
+  var toPublicTracker = (contribution) => {
+    const view = {
+      label: contribution.label,
+      instances: { ...contribution.instances },
+      // Browser sign-in first where both exist: it needs no token to be made by hand.
+      authMethods: [
+        ...contribution.auth.oauth ? ["oauth"] : [],
+        ...contribution.auth.token ? ["token"] : []
+      ]
+    };
+    if (contribution.auth.token) {
+      view.token = {
+        scheme: contribution.auth.token.scheme,
+        username: contribution.auth.token.username === true,
+        scopes: [...contribution.auth.token.scopes ?? []]
+      };
+      if (contribution.auth.token.createPath)
+        view.token.createPath = contribution.auth.token.createPath;
+    }
+    if (contribution.auth.oauth)
+      view.oauth = { scopes: [...contribution.auth.oauth.scopes ?? []] };
+    return view;
+  };
   var SOURCE_CONTROL_DEFAULT_INSTANCES_MAX = 4;
   var SOURCE_CONTROL_URL_TEMPLATES_MAX = 8;
   var SOURCE_CONTROL_URL_TEMPLATE_MAX = 256;
@@ -213,7 +303,7 @@
     custom: contribution.instances.custom
   });
   var serviceProvides = (service, role) => Boolean(service?.provides?.includes(role));
-  var GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "conversation", "service", "network", "filesystem", "origins"];
+  var GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "conversation", "service", "network", "filesystem", "origins", "transcript", "sessionControl", "sessionAnswers", "instructions", "skills", "opencodePlugin", "opencode", "links", "wake", "marks"];
   var DECLARED_GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells"];
   var GUEST_ORIGINS_MAX = 8;
   var GUEST_FILESYSTEM_PATTERNS_MAX = 16;
@@ -231,6 +321,44 @@
     const segments = value.split("/").slice(1);
     return !segments.some((segment) => segment === "" || segment === "..");
   };
+  var GUEST_MENTIONS_LABEL_MAX = 40;
+  var GUEST_LINK_KEYS_MAX = 8;
+  var GUEST_LINK_KEY = /^[A-Z][A-Z0-9_]{0,31}$/;
+  var GUEST_LINK_ACTIONS = ["open", "attach"];
+  var isBuildableLinkTemplate = (template) => isTrackerUrlTemplate(template) && !template.includes("{segment}") && !template.includes("{segments+}");
+  var buildLinkUrl = (origin, template, identifier) => `${origin}${template.replace("{id}", encodeURIComponent(identifier))}`;
+  var GUEST_BLOCK_NAME = /^[A-Z][A-Za-z0-9]{1,31}$/;
+  var GUEST_BLOCK_ARG_NAME = /^[a-z][A-Za-z0-9]{0,31}$/;
+  var GUEST_BLOCKS_MAX = 4;
+  var GUEST_BLOCK_ARGS_MAX = 8;
+  var GUEST_BLOCK_DESCRIPTION_MAX = 120;
+  var GUEST_BLOCK_ARGS_TEXT_MAX = 16e3;
+  var GUEST_BLOCK_HEIGHT_DEFAULT = 120;
+  var GUEST_BLOCK_RESERVED_NAMES = [
+    "Stack",
+    "Row",
+    "Card",
+    "Tabs",
+    "Tab",
+    "Text",
+    "Badge",
+    "Callout",
+    "KeyValue",
+    "Table",
+    "Steps",
+    "BarChart",
+    "LineChart",
+    "Series",
+    "Stat",
+    "Progress",
+    "Choice",
+    "Input",
+    "DateInput",
+    "Slider",
+    "Details",
+    "Button"
+  ];
+  var GUEST_BLOCK_HEIGHT_MAX = 960;
   var guestActionsNeedConversation = (actions2) => Boolean(actions2?.some((action) => action.payload?.includes("messages")));
   var requestedGuestCapabilities = (contributes) => {
     const declared = new Set(contributes.capabilities ?? []);
@@ -238,14 +366,38 @@
       declared.add("conversation");
     if (contributes.service)
       declared.add("service");
+    if (serviceProvides(contributes.service, "opencode"))
+      declared.add("opencode");
     if (contributes.integration)
       declared.add("network");
     if (contributes.filesystem && contributes.filesystem.length > 0)
       declared.add("filesystem");
     if (contributes.origins && contributes.origins.length > 0)
       declared.add("origins");
+    if (contributes.sessionEvents?.content || contributes.sessionControl?.content)
+      declared.add("transcript");
+    if (contributes.sessionControl)
+      declared.add("sessionControl");
+    if (contributes.sessionControl?.answers)
+      declared.add("sessionAnswers");
+    if (contributes.instructions)
+      declared.add("instructions");
+    if (contributes.skills)
+      declared.add("skills");
+    if (contributes.opencodePlugin)
+      declared.add("opencodePlugin");
+    if (contributes.links)
+      declared.add("links");
+    if (contributes.waits && contributes.waits.length > 0)
+      declared.add("wake");
+    if (contributes.marks)
+      declared.add("marks");
     return GUEST_CAPABILITIES.filter((capability) => declared.has(capability));
   };
+  var toPublicSessionEvents = (contribution) => ({
+    events: [...contribution.events],
+    content: contribution.content === true
+  });
   var hasGuestPage = (contributes) => Boolean(contributes.panel.entry);
   var isGuestApproved = (capabilities) => capabilities.requested.every((capability) => capabilities.granted.includes(capability));
   var hasGuestCapability = (capabilities, capability) => capabilities.granted.includes(capability);
@@ -266,9 +418,14 @@
     return attach.entry ?? null;
   };
   var resolvePageEntry = (contributes) => {
-    if (!contributes.page || !contributes.panel.entry)
+    if (!contributes.page)
       return null;
-    return contributes.page === true ? contributes.panel.entry : contributes.page.entry;
+    return contributes.page === true ? contributes.panel.entry ?? null : contributes.page.entry;
+  };
+  var resolvePageMobile = (contributes) => {
+    if (!contributes.page)
+      return false;
+    return (contributes.page === true ? contributes.panel.mobile : contributes.page.mobile) === true;
   };
   var resolveStatusSectionEntry = (contributes) => {
     const section = contributes.statusSection;
@@ -298,6 +455,7 @@
     return /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(value);
   };
   var isGuestPackageSvgIcon = (value) => isSafeAssetPath(value) && value.toLowerCase().endsWith(".svg");
+  var isGuestProviderLogoPath = (value) => isSafeAssetPath(value) && /\.(?:svg|png)$/i.test(value);
   var toPublicIntegration = (integration) => {
     const auth = resolveIntegrationAuth(integration) ?? "oauth";
     const next = {
@@ -318,7 +476,8 @@
     if (integration.settings && integration.settings.length > 0) {
       next.settings = integration.settings.map((field2) => ({
         id: field2.id,
-        label: field2.label
+        label: field2.label,
+        ...field2.secret ? { secret: true } : {}
       }));
     }
     return next;
@@ -357,7 +516,221 @@
     if (service.surface) {
       next.surface = true;
     }
+    if (service.keepRunning) {
+      next.keepRunning = true;
+    }
+    if (service.schedule) {
+      next.schedule = service.schedule.map((entry) => ({ ...entry }));
+    }
     return next;
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/session-events.js
+  var GUEST_SESSION_EVENT_TYPES = [
+    "turn-finished",
+    "turn-failed",
+    "permission-asked",
+    "question-asked",
+    "turn-started",
+    "session-created",
+    "session-archived",
+    "session-deleted"
+  ];
+  var SESSION_EVENTS_PATH = "/session-events";
+  var SESSION_EVENTS_WIRE_VERSION = 1;
+  var SESSION_EVENT_TIMEOUT_MS = 1e4;
+  var SESSION_EVENTS_IDLE_MS = 10 * 6e4;
+  var SESSION_EVENT_REPLY_MAX = 64e3;
+  var SESSION_EVENT_PENDING_MAX = 200;
+  var SESSION_EVENT_ERROR_MAX = 2e3;
+  var EVENT_TYPES = new Set(GUEST_SESSION_EVENT_TYPES);
+  var isGuestSessionEventType = (value) => EVENT_TYPES.has(value);
+  var readSessionEventRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { v: v2, requestId, event, content } = wire;
+    if (v2 !== SESSION_EVENTS_WIRE_VERSION)
+      return null;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (Object(event) !== event || event === void 0)
+      return null;
+    const { id, type, at, session, project, linked, permission, question } = event;
+    if (String(id) !== id || id.length === 0)
+      return null;
+    if (String(type) !== type || !isGuestSessionEventType(type))
+      return null;
+    if (!Number.isFinite(at))
+      return null;
+    if (Object(session) !== session || session === void 0)
+      return null;
+    const sessionId = session.id;
+    if (String(sessionId) !== sessionId || sessionId.length === 0)
+      return null;
+    const parentId = session.parentId;
+    if (parentId !== null && (String(parentId) !== parentId || parentId.length === 0))
+      return null;
+    if (Object(project) !== project || project === void 0)
+      return null;
+    const directory = project.directory;
+    if (directory !== null && (String(directory) !== directory || directory.length === 0))
+      return null;
+    if (!Array.isArray(linked))
+      return null;
+    const request = {
+      v: SESSION_EVENTS_WIRE_VERSION,
+      requestId,
+      event: { id, type, at: Number(at), session: { id: sessionId, parentId }, project: { directory }, linked }
+    };
+    if (permission !== void 0) {
+      if (Object(permission) !== permission)
+        return null;
+      const permissionRequestId = permission.requestId;
+      if (String(permissionRequestId) !== permissionRequestId || permissionRequestId.length === 0)
+        return null;
+      request.event.permission = { requestId: permissionRequestId };
+    }
+    if (question !== void 0) {
+      if (Object(question) !== question)
+        return null;
+      const { kind, id: questionId } = question;
+      if (kind !== "form" && kind !== "page")
+        return null;
+      if (String(questionId) !== questionId || questionId.length === 0)
+        return null;
+      request.event.question = { kind, id: questionId };
+    }
+    if (content !== void 0) {
+      if (Object(content) !== content || content.type !== type)
+        return null;
+      request.content = content;
+    }
+    return request;
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-host.js
+  var SERVICE_HOST_PATH = "/service/call";
+  var OPENCHAMBER_HOST_CALLBACK_URL_ENV = "OPENCHAMBER_HOST_CALLBACK_URL";
+  var SERVICE_PROMPT_MAX = 64e3;
+  var SERVICE_INSTRUCTIONS_MAX = 4096;
+  var SERVICE_EVENT_TOPIC_MAX = 64;
+  var SERVICE_EVENT_DATA_MAX = 64e3;
+  var SERVICE_EVENT_RATE_MAX = 30;
+  var SERVICE_STATUS_MESSAGE_MAX = 200;
+  var SERVICE_MARK_TEXT_MAX = 200;
+  var SERVICE_MARK_URL_MAX = 2048;
+  var SERVICE_MARKS_MAX = 200;
+  var SERVICE_MARK_RATE_MAX = 60;
+  var SERVICE_HOST_TIMEOUT_MS = 3e4;
+  var SERVICE_SCHEDULE_PATH = "/schedule";
+  var SERVICE_SCHEDULE_WIRE_VERSION = 1;
+  var SERVICE_SCHEDULE_TIMEOUT_MS = 1e4;
+  var SERVICE_SCHEDULE_IDLE_MS = 10 * 6e4;
+  var SERVICE_SCHEDULE_MAX = 8;
+  var SERVICE_SCHEDULE_CRON_MAX = 64;
+  var SERVICE_SCHEDULE_TIMEZONE_MAX = 64;
+  var isServiceScheduleCron = (value) => value.length <= SERVICE_SCHEDULE_CRON_MAX && /^[A-Za-z0-9*/,\-?]+(?: +[A-Za-z0-9*/,\-?]+){4}$/.test(value);
+  var readServiceScheduleRequest = (body) => {
+    let wire;
+    try {
+      wire = JSON.parse(body);
+    } catch {
+      return null;
+    }
+    if (Object(wire) !== wire || wire === null)
+      return null;
+    const { v: v2, requestId, id, at } = wire;
+    if (v2 !== SERVICE_SCHEDULE_WIRE_VERSION)
+      return null;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(id) !== id || id.length === 0)
+      return null;
+    if (!Number.isFinite(at))
+      return null;
+    return { v: SERVICE_SCHEDULE_WIRE_VERSION, requestId, id, at: Number(at) };
+  };
+  var MENTIONS_SEARCH_PATH = "/mentions/search";
+  var MENTIONS_RESOLVE_PATH = "/mentions/resolve";
+  var MENTIONS_SEARCH_TIMEOUT_MS = 2e3;
+  var MENTIONS_RESOLVE_TIMEOUT_MS = 1e4;
+  var MENTIONS_IDLE_MS = 10 * 6e4;
+  var MENTIONS_ITEMS_MAX = 20;
+  var MENTION_TITLE_MAX = 120;
+  var MENTION_ID_MAX = 256;
+  var MENTION_TEXT_MAX = 16e3;
+  var SERVICE_ANSWER_MESSAGE_MAX = 2e3;
+  var SERVICE_HOST_METHODS = [
+    "sessions.start",
+    "sessions.send",
+    "sessions.retry",
+    "sessions.status",
+    "sessions.lastReply",
+    "sessions.stop",
+    "sessions.answerPermission",
+    "sessions.answerForm",
+    "instructions.set",
+    "panels.emit",
+    "settings.read",
+    "status.set",
+    "marks.set"
+  ];
+  var ServiceHostError = class extends Error {
+    code;
+    status;
+    constructor(message, code, status) {
+      super(message);
+      this.name = "ServiceHostError";
+      this.code = code;
+      this.status = status;
+    }
+  };
+  var createServiceHost = ({ env }) => {
+    const call = async (method, input) => {
+      const base = env[OPENCHAMBER_HOST_CALLBACK_URL_ENV];
+      const token = env.OPENCHAMBER_SERVICE_TOKEN;
+      if (!base || !token)
+        throw new ServiceHostError("This service was not started by OpenChamber.", "HOST_UNAVAILABLE", 0);
+      let response;
+      try {
+        response = await fetch(`${base.replace(/\/+$/, "")}${SERVICE_HOST_PATH}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ method, input }),
+          signal: AbortSignal.timeout(SERVICE_HOST_TIMEOUT_MS)
+        });
+      } catch {
+        throw new ServiceHostError("OpenChamber did not answer.", "HOST_UNAVAILABLE", 0);
+      }
+      const body = await response.json().catch(() => null);
+      if (response.ok && body?.result !== void 0)
+        return body.result;
+      throw new ServiceHostError(body?.error?.message ?? `OpenChamber answered HTTP ${response.status}.`, body?.error?.code ?? "HOST_UNAVAILABLE", response.status);
+    };
+    return {
+      sessions: {
+        start: (input) => call("sessions.start", input),
+        send: (sessionId, prompt) => call("sessions.send", { sessionId, prompt }),
+        retry: (sessionId) => call("sessions.retry", { sessionId }),
+        status: (sessionId) => call("sessions.status", { sessionId }),
+        lastReply: (sessionId) => call("sessions.lastReply", { sessionId }),
+        stop: (sessionId) => call("sessions.stop", { sessionId }),
+        answerPermission: (sessionId, requestId, answer) => call("sessions.answerPermission", { sessionId, requestId, ...answer }),
+        answerForm: (sessionId, formId, values, message) => call("sessions.answerForm", { sessionId, formId, values, ...message === void 0 ? {} : { message } })
+      },
+      setInstructions: (directory, text) => call("instructions.set", { directory, text }),
+      emit: (topic, data) => call("panels.emit", { topic, data }),
+      readSettings: () => call("settings.read", {}).then(({ settings }) => settings),
+      needsConfiguration: (message) => call("status.set", { needsConfiguration: message }),
+      setMark: (target, mark) => call("marks.set", { target, mark })
+    };
   };
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
@@ -464,6 +837,7 @@
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
+  var GUEST_BLOCK_ANSWER_MAX = 2e3;
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
   var GUEST_FILE_STAT_KINDS = ["file", "directory", "other", "missing"];
@@ -473,9 +847,12 @@
     connected: false,
     account: ""
   };
+  var DEVICE_FORM_FACTORS = ["phone", "tablet", "desktop"];
+  var DEVICE_POINTERS = ["coarse", "fine"];
   var isGuestMessageItem = (item) => item !== null && item.kind === "message";
   var isGuestSessionItem = (item) => item !== null && item.kind === "session";
-  var isGuestAttachItem = (item) => item !== null && item.kind !== "message" && item.kind !== "session";
+  var isGuestLinkItem = (item) => item !== null && item.kind === "link";
+  var isGuestAttachItem = (item) => item !== null && (item.kind === void 0 || item.kind === "issue" || item.kind === "pull");
   var GUEST_COMMIT_SHA = /^[0-9a-f]{7,64}$/i;
   var isGuestCommitSha = (value) => GUEST_COMMIT_SHA.test(value);
   var GUEST_TOAST_MAX = 500;
@@ -652,6 +1029,7 @@
     "item",
     "resolve",
     "action",
+    "service-event",
     "status-control-event",
     "popover-closed",
     "file-open",
@@ -740,6 +1118,8 @@
     const connectionListeners = /* @__PURE__ */ new Set();
     const settingsListeners = /* @__PURE__ */ new Set();
     const itemListeners = /* @__PURE__ */ new Set();
+    const blockListeners = /* @__PURE__ */ new Set();
+    const serviceEventListeners = /* @__PURE__ */ new Set();
     const statusControlListeners = /* @__PURE__ */ new Set();
     const popoverClosedListeners = /* @__PURE__ */ new Set();
     const lateGenerateListeners = /* @__PURE__ */ new Set();
@@ -818,7 +1198,13 @@
         emit(connectionListeners, message.payload.connection);
         emit(settingsListeners, message.payload.settings);
         emit(itemListeners, message.payload.item);
+        if (message.payload.block)
+          emit(blockListeners, message.payload.block);
         listenForLateGenerate();
+        return;
+      }
+      if (message.type === "service-event") {
+        emit(serviceEventListeners, message.payload);
         return;
       }
       if (message.type === "generate-late") {
@@ -1285,6 +1671,20 @@
           itemListeners.delete(listener);
         };
       },
+      onBlock: (listener) => {
+        blockListeners.add(listener);
+        if (lastReady?.block)
+          listener(lastReady.block);
+        return () => {
+          blockListeners.delete(listener);
+        };
+      },
+      onServiceEvent: (listener) => {
+        serviceEventListeners.add(listener);
+        return () => {
+          serviceEventListeners.delete(listener);
+        };
+      },
       onStatusControl: (listener) => {
         statusControlListeners.add(listener);
         return () => {
@@ -1354,6 +1754,13 @@
         id: nextId(ids),
         payload: { sha }
       }) : Promise.reject(new HostRequestError("HOST_REJECTED", "Commit id must be 7 to 64 hex characters.")),
+      answerBlock: (text) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "block-answer",
+        id: nextId(ids),
+        payload: { text: text.trim().slice(0, GUEST_BLOCK_ANSWER_MAX) }
+      }),
       openSurface: (surfaceId) => request({
         channel: OPENCHAMBER_SDK_CHANNEL,
         v: OPENCHAMBER_SDK_API_VERSION,
@@ -1654,6 +2061,8 @@
         connectionListeners.clear();
         settingsListeners.clear();
         itemListeners.clear();
+        blockListeners.clear();
+        serviceEventListeners.clear();
         statusControlListeners.clear();
         popoverClosedListeners.clear();
         lateGenerateListeners.clear();
@@ -1718,6 +2127,7 @@
   var SOURCE_CONTROL_PROVIDER_METHODS = [
     "auth.verify",
     "auth.probe",
+    "auth.status",
     "changeRequestStatus",
     "listChangeRequests",
     "changeRequestContext",
@@ -1748,13 +2158,14 @@
   var sourceControlProviderTimeoutMs = (method) => {
     if (method === "changeRequestStatus")
       return SOURCE_CONTROL_PROVIDER_STATUS_TIMEOUT_MS;
-    if (method === "auth.verify" || method === "auth.probe")
+    if (method === "auth.verify" || method === "auth.probe" || method === "auth.status")
       return SOURCE_CONTROL_PROVIDER_AUTH_TIMEOUT_MS;
     if (method.startsWith("mutation."))
       return SOURCE_CONTROL_PROVIDER_MUTATION_TIMEOUT_MS;
     return SOURCE_CONTROL_PROVIDER_READ_TIMEOUT_MS;
   };
   var OPENCHAMBER_HOST_CALLBACK_URL = "OPENCHAMBER_HOST_CALLBACK_URL";
+  var OPENCHAMBER_SERVICE_DATA_DIR = "OPENCHAMBER_SERVICE_DATA_DIR";
   var SOURCE_CONTROL_OUTBOUND_PATH = "/source-control/outbound";
   var SOURCE_CONTROL_OUTBOUND_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
   var SOURCE_CONTROL_OUTBOUND_REQUEST_HEADERS = ["accept", "content-type", "if-none-match", "range"];
@@ -1770,9 +2181,12 @@
     if (Object(user) !== user || user === void 0)
       return void 0;
     const { id, login } = user;
-    if (!Number.isSafeInteger(id) || String(login) !== login || login.length === 0)
+    const isPositiveSafeIntegerId = typeof id === "number" && Number.isSafeInteger(id) && id > 0;
+    const isBoundedStringId = typeof id === "string" && id.length > 0 && id.length <= 256;
+    const validId = isPositiveSafeIntegerId || isBoundedStringId;
+    if (!validId || String(login) !== login || login.length === 0)
       return void 0;
-    return { id: Number(id), login };
+    return { id, login };
   };
   var readSession = (session) => {
     if (session === null)
@@ -1823,47 +2237,247 @@
       this.status = status;
     }
   };
+  var postOutbound = async (url, handle, request, timeoutMs, fail) => {
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { authorization: `Bearer ${handle}`, "content-type": "application/json" },
+        body: JSON.stringify(request),
+        // A little past OpenChamber's own deadline, so its answer wins.
+        signal: AbortSignal.timeout(timeoutMs + 5e3)
+      });
+    } catch (error) {
+      throw fail(`OpenChamber did not answer: ${error instanceof Error ? error.message : String(error)}`, "HOST_UNAVAILABLE", 0);
+    }
+    let answer;
+    try {
+      answer = Object(await response.json());
+    } catch {
+      throw fail("OpenChamber answered with something other than JSON", "HOST_UNAVAILABLE", response.status);
+    }
+    if (!response.ok) {
+      const message = answer.error?.message;
+      const code = answer.error?.code;
+      throw fail(String(message) === message && message.length > 0 ? message : `OpenChamber refused the request (${response.status})`, String(code) === code && code.length > 0 ? code : "OUTBOUND_REFUSED", response.status);
+    }
+    if (!Number.isSafeInteger(answer.status) || String(answer.body) !== answer.body) {
+      throw fail("OpenChamber relayed a malformed answer", "HOST_UNAVAILABLE", response.status);
+    }
+    const headers = {};
+    for (const [name, text] of Object.entries(Object(answer.headers ?? {}))) {
+      if (String(text) === text)
+        headers[name] = text;
+    }
+    return { status: Number(answer.status), headers, body: answer.body };
+  };
   var createSourceControlForge = ({ env }) => {
     const base = env[OPENCHAMBER_HOST_CALLBACK_URL];
     if (!base)
       throw new Error(`${OPENCHAMBER_HOST_CALLBACK_URL} is not set: only a service that provides "source-control" can reach a forge.`);
     const url = `${base.replace(/\/+$/, "")}${SOURCE_CONTROL_OUTBOUND_PATH}`;
     return {
-      async request(handle, request) {
-        let response;
-        try {
-          response = await fetch(url, {
-            method: "POST",
-            headers: { authorization: `Bearer ${handle}`, "content-type": "application/json" },
-            body: JSON.stringify(request),
-            // A little past OpenChamber's own deadline, so its answer wins.
-            signal: AbortSignal.timeout(SOURCE_CONTROL_OUTBOUND_TIMEOUT_MS + 5e3)
-          });
-        } catch (error) {
-          throw new SourceControlForgeError(`OpenChamber did not answer: ${error instanceof Error ? error.message : String(error)}`, "HOST_UNAVAILABLE", 0);
-        }
-        let answer;
-        try {
-          answer = Object(await response.json());
-        } catch {
-          throw new SourceControlForgeError("OpenChamber answered with something other than JSON", "HOST_UNAVAILABLE", response.status);
-        }
-        if (!response.ok) {
-          const message = answer.error?.message;
-          const code = answer.error?.code;
-          throw new SourceControlForgeError(String(message) === message && message.length > 0 ? message : `OpenChamber refused the request (${response.status})`, String(code) === code && code.length > 0 ? code : "OUTBOUND_REFUSED", response.status);
-        }
-        if (!Number.isSafeInteger(answer.status) || String(answer.body) !== answer.body) {
-          throw new SourceControlForgeError("OpenChamber relayed a malformed forge answer", "HOST_UNAVAILABLE", response.status);
-        }
-        const headers = {};
-        for (const [name, text] of Object.entries(Object(answer.headers ?? {}))) {
-          if (String(text) === text)
-            headers[name] = text;
-        }
-        return { status: Number(answer.status), headers, body: answer.body };
-      }
+      request: (handle, request) => postOutbound(url, handle, request, SOURCE_CONTROL_OUTBOUND_TIMEOUT_MS, (message, code, status) => new SourceControlForgeError(message, code, status))
     };
+  };
+  var NOTIFICATIONS_PROVIDER_PATH = "/notifications";
+  var NOTIFICATIONS_PROVIDER_WIRE_VERSION = 1;
+  var NOTIFICATIONS_PROVIDER_METHODS = ["auth.verify", "auth.probe", "notify"];
+  var NOTIFICATIONS_PROVIDER_NOTIFY_TIMEOUT_MS = 1e4;
+  var NOTIFICATIONS_PROVIDER_AUTH_TIMEOUT_MS = 15e3;
+  var NOTIFICATIONS_PROVIDER_RESPONSE_MAX = 16e3;
+  var NOTIFICATIONS_PROVIDER_ERROR_MESSAGE_MAX = 2e3;
+  var NOTIFICATIONS_PROVIDER_IDLE_MS = 10 * 6e4;
+  var NOTIFICATIONS_OUTBOUND_PATH = "/notifications/outbound";
+  var NOTIFICATIONS_OUTBOUND_TIMEOUT_MS = 2e4;
+  var notificationsProviderTimeoutMs = (method) => method === "notify" ? NOTIFICATIONS_PROVIDER_NOTIFY_TIMEOUT_MS : NOTIFICATIONS_PROVIDER_AUTH_TIMEOUT_MS;
+  var GUEST_NOTIFICATION_KINDS = ["ready", "error", "question", "permission", "review", "goal_complete", "goal_blocked", "goal_budget", "pull-request"];
+  var isNotificationsProviderMethod = (value) => NOTIFICATIONS_PROVIDER_METHODS.some((method) => method === value);
+  var readNotificationsAccount = (account) => {
+    if (account === null)
+      return null;
+    if (Object(account) !== account || account === void 0)
+      return void 0;
+    const { id, login } = account;
+    if (String(id) !== id || id.length === 0)
+      return void 0;
+    if (login !== null && (String(login) !== login || login.length === 0))
+      return void 0;
+    return { id, login };
+  };
+  var readNotificationsProviderRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { v: v2, requestId, method, provider, session, input } = wire;
+    if (v2 !== NOTIFICATIONS_PROVIDER_WIRE_VERSION)
+      return null;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(provider) !== provider || provider.length === 0)
+      return null;
+    if (String(method) !== method || !isNotificationsProviderMethod(method))
+      return null;
+    if (Object(input) !== input || Array.isArray(input))
+      return null;
+    if (Object(session) !== session || session === null || session === void 0)
+      return null;
+    const { instance, handle } = session;
+    if (String(instance) !== instance || instance.length === 0 || String(handle) !== handle || handle.length === 0)
+      return null;
+    const account = readNotificationsAccount(session.account);
+    if (account === void 0)
+      return null;
+    return { v: NOTIFICATIONS_PROVIDER_WIRE_VERSION, requestId, method, provider, session: { instance, handle, account }, input };
+  };
+  var NotificationsOutboundError = class extends Error {
+    code;
+    status;
+    constructor(message, code, status) {
+      super(message);
+      this.name = "NotificationsOutboundError";
+      this.code = code;
+      this.status = status;
+    }
+  };
+  var createNotificationsOutbound = ({ env }) => {
+    const base = env[OPENCHAMBER_HOST_CALLBACK_URL];
+    if (!base)
+      throw new Error(`${OPENCHAMBER_HOST_CALLBACK_URL} is not set: only a service that provides "notifications" can reach a channel's server.`);
+    const url = `${base.replace(/\/+$/, "")}${NOTIFICATIONS_OUTBOUND_PATH}`;
+    return {
+      request: (handle, request) => postOutbound(url, handle, request, NOTIFICATIONS_OUTBOUND_TIMEOUT_MS, (message, code, status) => new NotificationsOutboundError(message, code, status))
+    };
+  };
+  var TRACKER_PROVIDER_PATH = "/tracker";
+  var TRACKER_PROVIDER_WIRE_VERSION = 1;
+  var TRACKER_PROVIDER_METHODS = [
+    "auth.probe",
+    "auth.verify",
+    "items.list",
+    "items.get",
+    "items.updateState",
+    "items.liveSummaries",
+    "states.list",
+    "containers.list",
+    "comments.create"
+  ];
+  var TRACKER_PROVIDER_WRITE_METHODS = ["items.updateState", "comments.create"];
+  var TRACKER_PROVIDER_AUTH_TIMEOUT_MS = 15e3;
+  var TRACKER_PROVIDER_READ_TIMEOUT_MS = 2e4;
+  var TRACKER_PROVIDER_WRITE_TIMEOUT_MS = 3e4;
+  var TRACKER_PROVIDER_RESPONSE_MAX = 2e6;
+  var TRACKER_PROVIDER_ERROR_MESSAGE_MAX = 2e3;
+  var TRACKER_PROVIDER_IDLE_MS = 10 * 6e4;
+  var TRACKER_PROVIDER_LIST_MAX = 100;
+  var TRACKER_PROVIDER_LIVE_SUMMARIES_MAX = 50;
+  var TRACKER_PROVIDER_CONTAINERS_MAX = 500;
+  var TRACKER_OUTBOUND_PATH = "/tracker/outbound";
+  var TRACKER_OUTBOUND_TIMEOUT_MS = 2e4;
+  var isTrackerProviderWriteMethod = (method) => TRACKER_PROVIDER_WRITE_METHODS.some((write) => write === method);
+  var trackerProviderTimeoutMs = (method) => {
+    if (method === "auth.probe" || method === "auth.verify")
+      return TRACKER_PROVIDER_AUTH_TIMEOUT_MS;
+    if (isTrackerProviderWriteMethod(method))
+      return TRACKER_PROVIDER_WRITE_TIMEOUT_MS;
+    return TRACKER_PROVIDER_READ_TIMEOUT_MS;
+  };
+  var isTrackerProviderMethod = (value) => TRACKER_PROVIDER_METHODS.some((method) => method === value);
+  var readTrackerProviderRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { v: v2, requestId, method, provider, session, input } = wire;
+    if (v2 !== TRACKER_PROVIDER_WIRE_VERSION)
+      return null;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(provider) !== provider || provider.length === 0)
+      return null;
+    if (String(method) !== method || !isTrackerProviderMethod(method))
+      return null;
+    if (Object(input) !== input || Array.isArray(input))
+      return null;
+    if (Object(session) !== session || session === null || session === void 0)
+      return null;
+    const { instance, handle } = session;
+    if (String(instance) !== instance || instance.length === 0 || String(handle) !== handle || handle.length === 0)
+      return null;
+    const account = readNotificationsAccount(session.account);
+    if (account === void 0)
+      return null;
+    return { v: TRACKER_PROVIDER_WIRE_VERSION, requestId, method, provider, session: { instance, handle, account }, input };
+  };
+  var TrackerOutboundError = class extends Error {
+    code;
+    status;
+    constructor(message, code, status) {
+      super(message);
+      this.name = "TrackerOutboundError";
+      this.code = code;
+      this.status = status;
+    }
+  };
+  var createTrackerOutbound = ({ env }) => {
+    const base = env[OPENCHAMBER_HOST_CALLBACK_URL];
+    if (!base)
+      throw new Error(`${OPENCHAMBER_HOST_CALLBACK_URL} is not set: only a service that provides "tracker" can reach a tracker's server.`);
+    const url = `${base.replace(/\/+$/, "")}${TRACKER_OUTBOUND_PATH}`;
+    return {
+      request: (handle, request) => postOutbound(url, handle, request, TRACKER_OUTBOUND_TIMEOUT_MS, (message, code, status) => new TrackerOutboundError(message, code, status))
+    };
+  };
+  var QUOTA_PROVIDER_PATH = "/quota";
+  var QUOTA_PROVIDER_WIRE_VERSION = 1;
+  var QUOTA_PROVIDER_METHODS = ["usage.read"];
+  var QUOTA_PROVIDER_TIMEOUT_MS = 2e4;
+  var QUOTA_PROVIDER_RESPONSE_MAX = 1e6;
+  var QUOTA_PROVIDER_ERROR_MESSAGE_MAX = 2e3;
+  var QUOTA_PROVIDER_IDLE_MS = 10 * 6e4;
+  var QUOTA_PROVIDER_WINDOWS_MAX = 32;
+  var QUOTA_PROVIDER_MODELS_MAX = 64;
+  var QUOTA_PROVIDER_NAME_MAX = 128;
+  var QUOTA_PROVIDER_LABEL_MAX = 128;
+  var isQuotaProviderMethod = (value) => QUOTA_PROVIDER_METHODS.some((method) => method === value);
+  var readQuotaProviderRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { v: v2, requestId, method, provider, input } = wire;
+    if (v2 !== QUOTA_PROVIDER_WIRE_VERSION)
+      return null;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(provider) !== provider || provider.length === 0)
+      return null;
+    if (String(method) !== method || !isQuotaProviderMethod(method))
+      return null;
+    if (Object(input) !== input || input === null || input === void 0 || Array.isArray(input))
+      return null;
+    const { credentials } = input;
+    if (Object(credentials) !== credentials || credentials === null || Array.isArray(credentials))
+      return null;
+    if (Object.values(Object(credentials)).some((credential) => Object(credential) !== credential || credential === null || Array.isArray(credential)))
+      return null;
+    return { v: QUOTA_PROVIDER_WIRE_VERSION, requestId, method, provider, input: { credentials } };
   };
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
@@ -1926,7 +2540,11 @@
         return null;
       if (!isText(value.key) || !isText(value.code) || value.key.length > 64 || value.code.length > 64)
         return null;
-      return { type: "key", action: value.action, key: value.key, code: value.code, modifiers };
+      if (value.keyCode === void 0)
+        return { type: "key", action: value.action, key: value.key, code: value.code, modifiers };
+      if (!isFiniteNumber(value.keyCode) || !Number.isInteger(value.keyCode) || value.keyCode < 0 || value.keyCode > 255)
+        return null;
+      return { type: "key", action: value.action, key: value.key, code: value.code, keyCode: value.keyCode, modifiers };
     }
     return null;
   };
@@ -2065,7 +2683,7 @@
       root.style.setProperty(hostName, value);
     }
     root.style.setProperty("font-family", theme.tokens.font);
-    root.style.setProperty("font-size", "0.875rem");
+    root.style.setProperty("font-size", theme.tokens.fontSize ?? "0.875rem");
     root.style.setProperty("line-height", "1.45");
     root.style.setProperty("color", theme.tokens.foreground);
   };
@@ -2129,36 +2747,37 @@
   var smallRadius = `calc(${radius} - 4px)`;
   var mix = (color, pct, base = "transparent") => `color-mix(in srgb, ${color} ${pct}%, ${base})`;
   var focusFill = `background-image: linear-gradient(${hover}, ${hover});`;
-  var field = (edge) => `box-shadow: inset 0 0 0 1px ${edge}, var(--oc-sdk-field-lift);`;
+  var field = (edge, width = "0.5px") => `box-shadow: inset 0 0 0 ${width} ${edge}, var(--oc-sdk-field-lift);`;
   var raised = "border-color: var(--oc-sdk-edge); box-shadow: var(--oc-sdk-raised-lift);";
   var litButton = "box-shadow: var(--oc-sdk-lit);";
-  var darkLift = `inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2)`;
+  var darkLift = `inset 0 0.5px 0 0 ${mix(fg, 8)}, 0 1px 2px 0 rgb(0 0 0 / 0.4)`;
   var THEME_VARS = `
 :root {
-  --oc-sdk-edge: ${mix(fg, 10)};
+  --oc-sdk-edge: ${mix(fg, 16)};
   --oc-sdk-field-bg: ${elevated};
   --oc-sdk-raised-bg: ${bg};
   --oc-sdk-field-lift: inset 0 1px 2px 0 rgb(0 0 0 / 0.04);
-  --oc-sdk-raised-lift: 0 1px 2px 0 rgb(0 0 0 / 0.06);
-  --oc-sdk-lit: inset 0 1px 0 0 rgb(255 255 255 / 0.45), 0 1px 2px 0 rgb(0 0 0 / 0.08);
-  --oc-sdk-float-edge: rgb(0 0 0 / 0.1);
-  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.8), inset 0 0 0 1px rgb(0 0 0 / 0.04), 0 1px 2px -0.5px rgb(0 0 0 / 0.08), 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 12px 20px -4px rgb(0 0 0 / 0.08);
+  --oc-sdk-raised-lift: 0 1px 1.5px 0 rgb(0 0 0 / 0.08);
+  --oc-sdk-lit: inset 0 1px 0 0 rgb(255 255 255 / 0.2), 0 1px 1.5px 0 rgb(0 0 0 / 0.1);
+  --oc-sdk-float-edge: rgb(0 0 0 / 0.14);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.7), 0 1px 2px -0.5px rgb(0 0 0 / 0.06), 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 12px 20px -4px rgb(0 0 0 / 0.06);
 }
 :root[data-oc-theme="dark"] {
-  --oc-sdk-edge: ${mix(fg, 6)};
+  --oc-sdk-edge: ${mix(fg, 14)};
   --oc-sdk-field-bg: ${mix(bg, 50, elevated)};
   --oc-sdk-raised-bg: ${elevated};
   --oc-sdk-field-lift: ${darkLift};
   --oc-sdk-raised-lift: ${darkLift};
-  --oc-sdk-lit: inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2);
-  --oc-sdk-float-edge: rgb(0 0 0 / 0.36);
-  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 1px -0.5px rgb(0 0 0 / 0.22), 0 3px 3px -1.5px rgb(0 0 0 / 0.2), 0 6px 6px -3px rgb(0 0 0 / 0.16);
+  --oc-sdk-lit: ${darkLift};
+  --oc-sdk-float-edge: rgb(0 0 0 / 0.55);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.04), inset 0 0 0 0.5px rgb(255 255 255 / 0.08), 0 8px 16px 0 rgb(0 0 0 / 0.25), 0 4px 8px 0 rgb(0 0 0 / 0.25);
 }`;
   var tone = (name) => {
     const color = v(`status-${name}`, "currentColor");
     return `
 .oc-sdk[data-tone="${name}"], .oc-sdk [data-tone="${name}"] { --oc-sdk-tone: ${color}; --oc-sdk-tone-text: ${v(`${name}-text`, "inherit")}; }`;
   };
+  var len = (px) => `calc(${px}rem / 14)`;
   var UI_SIZE_CSS = `
 .oc-sdk { box-sizing: border-box; font-size: 0.875rem; line-height: 1.45; }
 .oc-sdk *, .oc-sdk *::before, .oc-sdk *::after { box-sizing: border-box; }
@@ -2167,93 +2786,106 @@
 :where(.oc-sdk) :where(button), :where(button.oc-sdk) { cursor: pointer; background: none; border: 0; padding: 0; }
 .oc-sdk button:disabled, button.oc-sdk:disabled, .oc-sdk[aria-disabled="true"], .oc-sdk [aria-disabled="true"] { opacity: .5; pointer-events: none; }
 
-.oc-sdk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid transparent; font-size: 0.875rem; font-weight: 500; line-height: 1; white-space: nowrap; }
-.oc-sdk-btn[data-size="sm"] { gap: 6px; height: 28px; padding: 0 10px; font-size: 0.8125rem; }
-.oc-sdk-btn[data-size="xs"] { gap: 4px; height: 24px; padding: 0 8px; font-size: 0.75rem; }
+.oc-sdk-btn { display: inline-flex; align-items: center; justify-content: center; gap: ${len(8)}; height: ${len(32)}; padding: 0 ${len(12)}; border: 1px solid transparent; font-size: 0.875rem; font-weight: 500; line-height: 1; white-space: nowrap; }
+.oc-sdk-btn[data-size="sm"] { gap: ${len(6)}; height: ${len(28)}; padding: 0 ${len(10)}; font-size: 0.8125rem; }
+.oc-sdk-btn[data-size="xs"] { gap: ${len(4)}; height: ${len(24)}; padding: 0 ${len(8)}; font-size: 0.75rem; }
 .oc-sdk-btn[data-loading="true"] { opacity: .5; pointer-events: none; }
-.oc-sdk-btn > .oc-sdk-spinner-ring { width: 14px; height: 14px; }
+.oc-sdk-btn > .oc-sdk-spinner-ring { width: ${len(14)}; height: ${len(14)}; }
 
-.oc-sdk-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-field { display: flex; flex-direction: column; gap: ${len(4)}; min-width: 0; }
 .oc-sdk-field-label { font-size: 0.8125rem; font-weight: 500; }
 .oc-sdk-field-note { font-size: 0.75rem; }
-.oc-sdk-input { display: block; width: 100%; min-width: 0; height: 32px; padding: 0 10px; border: 0; font-size: 0.875rem; line-height: 1.45; appearance: none; }
-textarea.oc-sdk-input { height: auto; padding: 8px 10px; resize: vertical; }
+.oc-sdk-input { display: block; width: 100%; min-width: 0; height: ${len(32)}; padding: 0 ${len(10)}; border: 0; font-size: 0.875rem; line-height: 1.45; appearance: none; }
+textarea.oc-sdk-input { height: auto; padding: ${len(8)} ${len(10)}; resize: vertical; }
 
 .oc-sdk-search { position: relative; min-width: 0; }
-.oc-sdk-search .oc-sdk-input { padding-left: 34px; padding-right: 34px; }
-.oc-sdk-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-.oc-sdk-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: none; align-items: center; justify-content: center; width: 24px; height: 24px; }
+.oc-sdk-search .oc-sdk-input { padding-left: ${len(34)}; padding-right: ${len(34)}; }
+.oc-sdk-search-icon { position: absolute; left: ${len(11)}; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.oc-sdk-search-clear { position: absolute; right: ${len(6)}; top: 50%; transform: translateY(-50%); display: none; align-items: center; justify-content: center; width: ${len(24)}; height: ${len(24)}; }
 .oc-sdk-search[data-active="true"] .oc-sdk-search-clear { display: inline-flex; }
 
-.oc-sdk-select { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.oc-sdk-trigger { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; width: auto; max-width: 100%; min-width: 0; height: 28px; padding: 0 10px; border: 1px solid transparent; font-size: 0.8125rem; text-align: left; }
+.oc-sdk-select { position: relative; display: flex; flex-direction: column; gap: ${len(4)}; min-width: 0; }
+.oc-sdk-trigger { display: inline-flex; align-items: center; gap: ${len(6)}; align-self: flex-start; width: auto; max-width: 100%; min-width: 0; height: ${len(28)}; padding: 0 ${len(10)}; border: 1px solid transparent; font-size: 0.8125rem; text-align: left; }
 .oc-sdk-trigger-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .oc-sdk-trigger-chevron { flex: 0 0 auto; }
-.oc-sdk-popup { position: fixed; z-index: 50; display: flex; flex-direction: column; gap: 2px; min-width: 160px; max-width: calc(100vw - 16px); max-height: min(320px, calc(100vh - 16px)); overflow: auto; padding: 4px; border: 1px solid transparent; }
-.oc-sdk-popup-search { flex: 0 0 auto; padding: 2px 2px 4px; }
-.oc-sdk-popup-search .oc-sdk-input { height: 28px; font-size: 0.8125rem; }
-.oc-sdk-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; font-size: 0.8125rem; text-align: left; }
+.oc-sdk-popup { position: fixed; z-index: 50; display: flex; flex-direction: column; gap: ${len(2)}; min-width: ${len(160)}; max-width: calc(100vw - ${len(16)}); max-height: min(${len(320)}, calc(100vh - ${len(16)})); overflow: auto; padding: ${len(4)}; border: 1px solid transparent; }
+.oc-sdk-popup-search { flex: 0 0 auto; padding: ${len(2)} ${len(2)} ${len(4)}; }
+.oc-sdk-popup-search .oc-sdk-input { height: ${len(28)}; font-size: 0.8125rem; }
+.oc-sdk-option { display: flex; align-items: center; gap: ${len(8)}; width: 100%; padding: ${len(6)} ${len(8)}; font-size: 0.8125rem; text-align: left; }
 .oc-sdk-option-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .oc-sdk-option-hint { flex: 0 0 auto; font-size: 0.75rem; }
-.oc-sdk-option-check { flex: 0 0 auto; display: inline-flex; width: 14px; visibility: hidden; }
+.oc-sdk-option-check { flex: 0 0 auto; display: inline-flex; width: ${len(14)}; visibility: hidden; }
 .oc-sdk-option[aria-selected="true"] > .oc-sdk-option-check { visibility: visible; }
-.oc-sdk-popup-empty { padding: 8px; font-size: 0.8125rem; }
+.oc-sdk-popup-empty { padding: ${len(8)}; font-size: 0.8125rem; }
 
-.oc-sdk-check { display: inline-flex; align-items: flex-start; gap: 8px; width: 100%; text-align: left; }
-.oc-sdk-check-box { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-top: 3px; border: 1px solid transparent; }
+.oc-sdk-check { display: inline-flex; align-items: flex-start; gap: ${len(8)}; width: 100%; text-align: left; }
+.oc-sdk-check-box { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: ${len(14)}; height: ${len(14)}; margin-top: ${len(3)}; border: 1px solid transparent; }
 .oc-sdk-check-box > svg { display: none; }
 .oc-sdk-check[aria-checked="true"] .oc-sdk-check-box > svg { display: block; }
-.oc-sdk-check-thumb { flex: 0 0 auto; position: relative; width: 36px; height: 20px; }
-.oc-sdk-check-thumb::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; }
+.oc-sdk-check-thumb { flex: 0 0 auto; position: relative; width: ${len(36)}; height: ${len(20)}; --oc-sdk-thumb-travel: ${len(16)}; }
+.oc-sdk-check-thumb::after { content: ""; position: absolute; top: ${len(2)}; left: ${len(2)}; width: ${len(16)}; height: ${len(16)}; }
 .oc-sdk-check-text { display: flex; flex-direction: column; min-width: 0; }
 .oc-sdk-check-label { font-size: 0.875rem; }
 .oc-sdk-check-desc { font-size: 0.75rem; }
 
-.oc-sdk-tabs { display: inline-flex; gap: 2px; padding: 2px; max-width: 100%; overflow: auto; }
-.oc-sdk-tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid transparent; font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
+.oc-sdk-tabs { display: inline-flex; gap: ${len(2)}; padding: ${len(2)}; max-width: 100%; overflow: auto; }
+.oc-sdk-tab { display: inline-flex; align-items: center; gap: ${len(6)}; height: ${len(28)}; padding: 0 ${len(10)}; border: 1px solid transparent; font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
 .oc-sdk-tab-count { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 
-.oc-sdk-badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: 11px; font-weight: 500; line-height: 16px; white-space: nowrap; }
+.oc-sdk-badge { display: inline-flex; align-items: center; padding: ${len(1)} ${len(6)}; font-size: ${len(11)}; font-weight: 500; line-height: ${len(16)}; white-space: nowrap; }
 
 .oc-sdk-list { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.oc-sdk-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; text-align: left; }
-.oc-sdk-row-lead { flex: 0 0 auto; width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+.oc-sdk-row { display: flex; align-items: center; gap: ${len(8)}; width: 100%; padding: ${len(6)} ${len(8)}; text-align: left; }
+.oc-sdk-row-lead { flex: 0 0 auto; width: ${len(64)}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
 .oc-sdk-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .oc-sdk-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .oc-sdk-row-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
 .oc-sdk-row-meta { flex: 0 0 auto; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
-.oc-sdk-list-empty { padding: 16px 8px; text-align: center; font-size: 0.8125rem; }
+.oc-sdk-list-empty { padding: ${len(16)} ${len(8)}; text-align: center; font-size: 0.8125rem; }
 
-.oc-sdk-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 40px 16px; text-align: center; }
+.oc-sdk-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: ${len(4)}; padding: ${len(40)} ${len(16)}; text-align: center; }
 .oc-sdk-empty-title { margin: 0; font-size: 0.8125rem; font-weight: 600; }
 .oc-sdk-empty-body { margin: 0; max-width: 32rem; font-size: 0.8125rem; }
-.oc-sdk-empty-action { margin-top: 12px; }
+.oc-sdk-empty-action { margin-top: ${len(12)}; }
 
 @keyframes oc-sdk-spin { to { transform: rotate(360deg); } }
-.oc-sdk-spinner { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8125rem; }
-.oc-sdk-spinner-ring { width: 16px; height: 16px; border: 2px solid transparent; animation: oc-sdk-spin .8s linear infinite; }
-.oc-sdk-spinner[data-size="sm"] .oc-sdk-spinner-ring { width: 12px; height: 12px; }
+.oc-sdk-spinner { display: inline-flex; align-items: center; gap: ${len(8)}; font-size: 0.8125rem; }
+.oc-sdk-spinner-ring { width: ${len(16)}; height: ${len(16)}; border: 2px solid transparent; animation: oc-sdk-spin .8s linear infinite; }
+.oc-sdk-spinner[data-size="sm"] .oc-sdk-spinner-ring { width: ${len(12)}; height: ${len(12)}; }
 
-.oc-sdk-banner { display: flex; align-items: flex-start; gap: 12px; padding: 8px 12px; border: 1px solid transparent; }
-.oc-sdk-banner-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.oc-sdk-banner { display: flex; align-items: flex-start; gap: ${len(12)}; padding: ${len(8)} ${len(12)}; border: 1px solid transparent; }
+.oc-sdk-banner-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: ${len(2)}; }
 .oc-sdk-banner-title { font-size: 0.8125rem; font-weight: 500; }
 .oc-sdk-banner-body { font-size: 0.8125rem; }
 .oc-sdk-banner-action { flex: 0 0 auto; }
 
-.oc-sdk-separator { display: flex; align-items: center; gap: 8px; width: 100%; margin: 8px 0; font-size: 0.75rem; }
+.oc-sdk-separator { display: flex; align-items: center; gap: ${len(8)}; width: 100%; margin: ${len(8)} 0; font-size: 0.75rem; }
 .oc-sdk-separator::before, .oc-sdk-separator::after { content: ""; flex: 1 1 auto; height: 1px; }
 .oc-sdk-separator[data-labeled="false"]::after { display: none; }
-.oc-sdk-popup > .oc-sdk-separator { margin: 4px 0; }
+.oc-sdk-popup > .oc-sdk-separator { margin: ${len(4)} 0; }
 
-.oc-sdk-progress { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-progress { display: flex; flex-direction: column; gap: ${len(4)}; min-width: 0; }
 .oc-sdk-progress-label { display: flex; justify-content: space-between; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
-.oc-sdk-progress-track { height: 6px; overflow: hidden; }
+.oc-sdk-progress-track { height: ${len(6)}; overflow: hidden; }
 .oc-sdk-progress-fill { height: 100%; transform-origin: left; transition: transform 200ms ease-out; }
+.oc-sdk-progress-value { display: inline-flex; align-items: center; gap: ${len(2)}; }
+.oc-sdk-progress[data-done="true"] .oc-sdk-progress-value { font-weight: 600; }
 
 .oc-sdk-menu { position: relative; display: inline-flex; }
 
 .oc-sdk-text { white-space: pre-wrap; overflow-wrap: anywhere; }
-.oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; }
+.oc-sdk-text img { display: block; max-width: 100%; margin: ${len(8)} 0; }
+
+/* Under a finger the controls reach the app's touch sizes: rows and options 44px like its sheets, every other
+   control at least 36px. Inputs keep 16px text, below which iOS zooms the page on focus. */
+@media (pointer: coarse) {
+  .oc-sdk-btn, .oc-sdk-input { height: ${len(40)}; }
+  .oc-sdk-btn[data-size="sm"], .oc-sdk-btn[data-size="xs"], .oc-sdk-trigger, .oc-sdk-tab, .oc-sdk-popup-search .oc-sdk-input { height: ${len(36)}; }
+  .oc-sdk-input, .oc-sdk-popup-search .oc-sdk-input { font-size: max(16px, 0.875rem); }
+  .oc-sdk-search-clear { width: ${len(36)}; height: ${len(36)}; right: 0; }
+  .oc-sdk-row, .oc-sdk-option { min-height: ${len(44)}; }
+  .oc-sdk-check { min-height: ${len(36)}; padding: ${len(8)} 0; }
+}
 `;
   var GUEST_UI_LOOK_CSS = `${THEME_VARS}
 .oc-sdk { color: ${fg}; font-family: ${font}; }
@@ -2287,8 +2919,8 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-input { border-radius: ${controlRadius}; background: var(--oc-sdk-field-bg); color: ${elevatedFg}; ${field("var(--oc-sdk-edge)")} transition: background 150ms ease-out; }
 .oc-sdk-input::placeholder { color: ${muted}; }
 .oc-sdk-input:hover:not(:focus) { background-image: linear-gradient(${hover}, ${hover}); }
-.oc-sdk-input:focus, .oc-sdk-input:focus-visible { ${field(mix(fg, 26))} }
-.oc-sdk-field[data-invalid="true"] .oc-sdk-input, .oc-sdk-field[data-invalid="true"] .oc-sdk-input:focus { ${field(v("status-error", "red"))} }
+.oc-sdk-input:focus, .oc-sdk-input:focus-visible { ${field(mix(fg, 26), "1px")} }
+.oc-sdk-field[data-invalid="true"] .oc-sdk-input, .oc-sdk-field[data-invalid="true"] .oc-sdk-input:focus { ${field(v("status-error", "red"), "1px")} }
 .oc-sdk-input[data-mono="true"] { font-family: ${mono}; }
 
 .oc-sdk-search-icon { color: ${muted}; }
@@ -2301,7 +2933,7 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-trigger[aria-expanded="true"] { background-image: linear-gradient(${active}, ${active}); }
 .oc-sdk-trigger-value[data-empty="true"] { color: ${muted}; }
 .oc-sdk-trigger-chevron { color: ${muted}; }
-/* The app's dropdown light: lit top, hairline rings and a layered shadow. Its outer ring is the border, over the page like the app's. */
+/* The app's floating level: the glass edge (a hairline ring and a lit top line, dark outside and light inside in dark themes) over soft shadows. The outer ring is the border, over the page like the app's. */
 .oc-sdk-popup { --surface-foreground: ${elevatedFg}; border-color: var(--oc-sdk-float-edge); border-radius: 12px; background: ${elevated}; background-clip: padding-box; color: ${elevatedFg}; box-shadow: var(--oc-sdk-float); }
 .oc-sdk-option { border-radius: 8px; }
 .oc-sdk-option[data-active="true"] { background: ${hover}; }
@@ -2320,7 +2952,7 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-check-thumb { border-radius: 9999px; background: ${border}; transition: background 150ms ease-out; }
 .oc-sdk-check-thumb::after { border-radius: 9999px; background: ${bg}; transition: transform 150ms ease-out; }
 .oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb { background: ${primary}; }
-.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb::after { transform: translateX(16px); }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb::after { transform: translateX(var(--oc-sdk-thumb-travel, 16px)); }
 .oc-sdk-check:focus-visible { box-shadow: none; }
 .oc-sdk-check:focus-visible .oc-sdk-check-box, .oc-sdk-check:focus-visible .oc-sdk-check-thumb { ${focusFill} }
 .oc-sdk-check-desc { color: ${muted}; }
@@ -2333,7 +2965,8 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-tabs[data-track="true"] .oc-sdk-tab[aria-selected="true"] { color: ${elevatedFg}; background: var(--oc-sdk-raised-bg); ${raised} }
 .oc-sdk-tab-count { color: ${muted}; }
 
-.oc-sdk-badge { border-radius: 9999px; background: ${hover}; color: ${muted}; }
+/* The app's neutral badge: a step of the text colour, the same in every theme. */
+.oc-sdk-badge { border-radius: 9999px; background: ${mix(fg, 6)}; color: ${muted}; }
 .oc-sdk-badge[data-tone] { color: var(--oc-sdk-tone-text, var(--oc-sdk-tone)); background: ${mix("var(--oc-sdk-tone)", 15)}; }
 
 .oc-sdk-row { border-radius: 6px; transition: background 120ms ease-out; }
@@ -2359,8 +2992,11 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-separator::before, .oc-sdk-separator::after { background: ${mix(border, 40)}; }
 
 .oc-sdk-progress-label { color: ${muted}; }
-.oc-sdk-progress-track { border-radius: 9999px; background: ${border}; }
+/* The app's progress: a groove a step of the text colour, green once done. Older bundles mark done only through aria-valuenow. */
+.oc-sdk-progress-track { border-radius: 9999px; background: ${mix(fg, 6)}; }
 .oc-sdk-progress-fill { border-radius: 9999px; background: var(--oc-sdk-tone, ${primary}); }
+.oc-sdk-progress-track[aria-valuenow="100"] > .oc-sdk-progress-fill:not([data-tone]) { background: ${v("status-success", "currentColor")}; }
+.oc-sdk-progress[data-done="true"] .oc-sdk-progress-value { color: ${v("success-text", "inherit")}; }
 
 .oc-sdk-text a { color: ${primaryText}; text-decoration: underline; text-underline-offset: 2px; }
 .oc-sdk-text img { border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
@@ -2538,6 +3174,8 @@ ${GUEST_UI_LOOK_CSS}`;
     node.setAttribute("viewBox", "0 0 24 24");
     node.setAttribute("width", String(size));
     node.setAttribute("height", String(size));
+    node.style.width = len(size);
+    node.style.height = len(size);
     node.setAttribute("aria-hidden", "true");
     node.setAttribute("fill", "currentColor");
     if (className) {
@@ -3242,14 +3880,17 @@ ${GUEST_UI_LOOK_CSS}`;
   };
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
-  var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
+  var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.floor(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
     const node = el("div", "oc-sdk oc-sdk-progress");
     const caption = el("div", "oc-sdk-progress-label");
     const label = el("span");
-    const percent = el("span");
+    const percent = el("span", "oc-sdk-progress-value");
+    const percentText = el("span");
+    const doneMark = icon("check", 14);
+    percent.append(doneMark, percentText);
     caption.append(label, percent);
     const track = el("div", "oc-sdk-progress-track");
     track.setAttribute("role", "progressbar");
@@ -3269,7 +3910,10 @@ ${GUEST_UI_LOOK_CSS}`;
       else
         track.removeAttribute("aria-label");
       setText(label, props.label);
-      setText(percent, `${value}%`);
+      setText(percentText, `${value}%`);
+      const done = value === 100 && (!props.tone || props.tone === "neutral");
+      setAttr(node, "data-done", done ? "true" : null);
+      doneMark.style.display = done ? "" : "none";
       caption.hidden = !props.label;
     };
     paint();
@@ -3979,19 +4623,19 @@ ${GUEST_UI_LOOK_CSS}`;
       }
       if (valid && writes.length > 0) return writes;
     }
-    for (let len = 1; len <= markedCount; len++) {
-      const startL = Math.max(0, to - len + 1);
-      const endL = Math.min(to, markedCount - len);
+    for (let len2 = 1; len2 <= markedCount; len2++) {
+      const startL = Math.max(0, to - len2 + 1);
+      const endL = Math.min(to, markedCount - len2);
       let best = null;
       for (let left = startL; left <= endL; left++) {
-        const right = left + len - 1;
+        const right = left + len2 - 1;
         const low = left > 0 ? entries[left - 1].order : null;
         const high = right + 1 < markedCount ? entries[right + 1].order : null;
         if (left > 0 && low === null || right + 1 < markedCount && high === null) continue;
-        const values = buildSpanOrders(low, high, len);
+        const values = buildSpanOrders(low, high, len2);
         if (!values) continue;
         const candidate = [];
-        for (let k = 0; k < len; k++) {
+        for (let k = 0; k < len2; k++) {
           if (entries[left + k].order !== values[k]) {
             candidate.push({ index: entries[left + k].index, order: values[k] });
           }
@@ -8065,6 +8709,19 @@ Blocked by ${blockerRef}`;
     const grouped = groupIssuesByAttention(issues2, sessionIndex2);
     return grouped[attention] || [];
   }
+  function needsMeOf(issue, attention, session) {
+    if (!issue || typeof issue !== "object") return false;
+    if (resolveIssueColumn2(issue) === "done") return false;
+    if (attention && (attention["needs-decision"]?.includes(issue) || attention["needs-permission"]?.includes(issue) || attention["needs-review"]?.includes(issue))) {
+      return true;
+    }
+    if (resolveIssueColumn2(issue) === "needs-human") return true;
+    return collectHumanTodos(issue, session).length > 0;
+  }
+  var PRIORITY_WEIGHTS2 = { critical: 4, important: 3, useful: 2, optional: 1 };
+  function priorityWeightOf(priorityOrIssue) {
+    return PRIORITY_WEIGHTS2[normalizePriority2(priorityOrIssue) || ""] || 0;
+  }
   function normalizeGithubIssues(rawItems) {
     if (!rawItems || !Array.isArray(rawItems)) return [];
     const parseRepo = (val) => {
@@ -9688,6 +10345,37 @@ Blocked by ${blockerRef}`;
     }
     return reconciled;
   }
+  function publishBoardSnapshot() {
+    if (isAllProjectsMode) return;
+    const directory = (currentProject?.directory || currentDirectory || "").replace(/\/+$/, "");
+    if (!directory || !directory.startsWith("/")) return;
+    try {
+      const attentionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
+      const attention = groupIssuesByAttention(issues, attentionIndex);
+      const needsMeIssues = issues.filter((issue) => needsMeOf(issue, attention, getIssueSession(issue)));
+      const blocked = issues.filter(
+        (issue) => resolveIssueColumn3(issue) !== "done" && resolveV2Metadata(issue, getIssueSession(issue), issues).dependencyState === "blocked-by-dependency"
+      ).length;
+      const done = issues.filter((issue) => resolveIssueColumn3(issue) === "done").length;
+      const running = sessions.filter((session) => session.activity === "running").length;
+      const topIssue = needsMeIssues.length === 0 ? null : [...needsMeIssues].sort(
+        (a, b) => priorityWeightOf(getIssuePriority(b)) - priorityWeightOf(getIssuePriority(a)) || b.number - a.number
+      )[0];
+      const topRepo = topIssue ? repoForIssue(topIssue) : "";
+      const top = topIssue && topRepo && Number.isFinite(topIssue.number) ? { repo: topRepo, number: topIssue.number, title: topIssue.title } : null;
+      const body = JSON.stringify({
+        v: 1,
+        directory,
+        at: Date.now(),
+        complete: true,
+        counts: { needsMe: needsMeIssues.length, running, blocked, done, total: issues.length },
+        top
+      });
+      void Promise.resolve(host.serviceRequest({ method: "POST", path: "/snapshot", body })).catch(() => {
+      });
+    } catch {
+    }
+  }
   function publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch) {
     pruneIssueWriteTrackers();
     if (obsoleteIssueSnapshotEpochs.has(epoch)) {
@@ -9704,6 +10392,7 @@ Blocked by ${blockerRef}`;
     repoSyncWatermarks.set(repo, Math.max(startedAt, repoSyncWatermarks.get(repo) || 0));
     lastSyncErrorState = null;
     renderViews();
+    publishBoardSnapshot();
     statusReconciler.schedule(issues);
     renderBoardFreshness("complete", repo);
   }
@@ -11200,16 +11889,14 @@ Blocked by ${blockerRef}`;
       return !q || issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) || (issue.labels || []).some((label) => (typeof label === "string" ? label : label.name || "").toLowerCase().includes(q));
     });
     const attention = groupIssuesByAttention(searched, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
-    const needsMe = /* @__PURE__ */ new Set([...attention["needs-decision"], ...attention["needs-permission"], ...attention["needs-review"]]);
     const filtered = applyFilters(searched, viewState.filters, {
       stageOf: (issue) => resolveIssueColumn3(issue) || "todo",
       repoOf: repoForIssue,
-      needsMe: (issue) => needsMe.has(issue) || resolveIssueColumn3(issue) === "needs-human" || collectHumanTodos(issue, getIssueSession(issue)).length > 0,
+      needsMe: (issue) => needsMeOf(issue, attention, getIssueSession(issue)),
       hasHumanTasks: (issue) => parseHumanTasks(issue.body || "").length > 0 || (issue.humanTasks || []).length > 0,
       hasOpenQuestions: (issue) => parseOpenQuestions(issue.body || "").some((question) => !question.completed) || getRecoverableQuestionDrafts(issue).length > 0
     });
-    const priorityWeights = { critical: 4, important: 3, useful: 2, optional: 1 };
-    const sorted = applySort(filtered, viewState.sort, (issue) => priorityWeights[normalizePriority(getIssuePriority(issue)) || ""] || 0);
+    const sorted = applySort(filtered, viewState.sort, (issue) => priorityWeightOf(getIssuePriority(issue)));
     applyLayoutMode(false);
     if (showArchivedOnly) {
       renderArchiveView(sorted);

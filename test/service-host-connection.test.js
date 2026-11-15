@@ -222,7 +222,7 @@ test('service-host-connection: timing-safe auth rejects missing, invalid, and ma
   }
 });
 
-test('service-host-connection: route and method confinement (no /status, only GET /health)', async () => {
+test('service-host-connection: route and method confinement (/status empty, /health only)', async () => {
   const port = await getFreePort();
   const token = 'auth-token-confine-12345';
   const tmpDir = createTempDir();
@@ -236,14 +236,23 @@ test('service-host-connection: route and method confinement (no /status, only GE
   try {
     await waitForHealthOk(port, token);
 
-    // 1. GET /status -> 404 Not Found (zero ownerId/activeLeases disclosure)
+    // 1. GET /status with no directory -> 200, one empty note, no ownerId/activeLeases
     const resStatus = await makeHttpRequest(port, {
       path: '/status',
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });
-    assert.equal(resStatus.statusCode, 404);
-    assert.deepEqual(JSON.parse(resStatus.body), { error: 'Not Found' });
+    assert.equal(resStatus.statusCode, 200);
+    assert.deepEqual(JSON.parse(resStatus.body), {
+      rows: [
+        {
+          kind: 'note',
+          id: 'empty',
+          text: 'No board data yet. Open the board once to load it.',
+          tone: 'muted',
+        },
+      ],
+    });
     assert.equal(resStatus.body.includes('ownerId'), false);
     assert.equal(resStatus.body.includes('activeLeases'), false);
 
