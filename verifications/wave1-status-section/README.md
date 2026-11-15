@@ -21,7 +21,7 @@ Added inside `contributes`:
 | `statusSection` | `{ "source": { "path": "/status", "interval": 5000 }, "title": "Task Board", "requiresProject": true, "defaultExpanded": true }` |
 | `marks` | `true` |
 | `sessionControl` | `{}` (read-only state; no `content`, no `answers`) |
-| `sessionEvents` | `{ "events": ["turn-started", "turn-finished", "turn-failed", "permission-asked", "question-asked"] }` |
+| `sessionEvents` | `{ "events": ["turn-started", "turn-finished", "turn-failed", "permission-asked", "question-asked", "session-archived", "session-deleted"] }` |
 | `instructions` | `true` |
 | `skills` | `"skills"` |
 
@@ -88,7 +88,11 @@ installed at service start with `host.setInstructions(null, text)`
 | | Tests | Pass | Fail |
 |---|---|---|---|
 | Before this change (manager's baseline) | — | 618 | 0 |
-| After this change (`npm test`) | 672 | 672 | 0 |
+| After wave 1 (`npm test`) | 672 | 672 | 0 |
+| After this fix (`npm test`) | 686 | 686 | 0 |
+
+This fix adds four tests to `test/session-marks.test.js` (16 → 20 in that
+file); `test/board-manifest.test.js` keeps its count and now pins seven events.
 
 `npm test` = `node --test test/*.test.js`. The two tests that asserted the old
 truth were updated, not deleted: `test/service-host-connection.test.js` (`/status`
@@ -112,10 +116,11 @@ removed or loosened.
 
 ## 3. Build and typecheck
 
-- `npm run build` (esbuild): `panel/main.js` 738.4 kb, `service/main.js` 61.5 kb,
+- `npm run build` (esbuild): `panel/main.js` 738.4 kb (unchanged by this fix),
+  `service/main.js` 64.8 kb after the archived/deleted fix (61.5 kb at wave 1),
   zero errors.
-- A second `npm run build` leaves the tree clean, so the committed bundles match
-  a fresh build byte for byte.
+- A second `npm run build:service` leaves the tree clean, so the committed bundle
+  matches a fresh build byte for byte.
 - `npm run typecheck` (`tsc --noEmit`): exit 0, no output.
 - `test/shipped-parity.test.js`: 18/18 pass.
 
@@ -197,6 +202,7 @@ stay inside this wave's scope.
 - `795a530` `test(extension): allow the snapshot post and read capabilities from contributes`
 - `5aab000` `fix(service): arm the socket idle timeout once per keep-alive socket`
 - `ad2e940` `build(extension): rebuild service bundle after the socket timeout fix`
+- `02128b6` `fix(service): clear the mark when a session is archived or deleted`
 - this receipt
 - the hostile-review commit (below)
 
@@ -246,3 +252,51 @@ Recorded, not fixed (out of this wave's scope):
 `test/stage1-dual-mode-and-scoping.test.js:1220` asserts 5 000 checkboxes parse
 in under 50 ms. It failed once under a full-suite run and passed 3/3 in
 isolation and on the next full run. The file is untouched by this branch.
+
+---
+
+## 10. Copy-check gap: archived and deleted sessions (`02128b6`)
+
+The independent copy check found a case the hostile review did not cover, and
+the manager's brief omitted it: D49.3 reduced `sessionEvents` to five events and
+dropped `session-archived` and `session-deleted`, although design §4.3 requires
+both to clear the mark. A session archived or deleted mid-turn therefore kept
+"Agent en cours" or "En attente de votre réponse" forever, on a row that no
+longer accepts an answer.
+
+- **Manifest.** `contributes.sessionEvents.events` now lists seven events, the
+  two added at the end. Parsed with the installed SDK:
+
+  ```
+  node --input-type=module -e "import fs from 'node:fs';
+  import { parseManifestJson } from '@openchamber/sdk/schemas';
+  const p = parseManifestJson(fs.readFileSync('package.json','utf8'));
+  console.log(p.ok, p.manifest.contributes.sessionEvents.events.join(','));"
+  → true turn-started,turn-finished,turn-failed,permission-asked,question-asked,session-archived,session-deleted
+  ```
+
+  `isGuestSessionEventType('session-archived')` and
+  `isGuestSessionEventType('session-deleted')` both return `true`, and
+  `readSessionEventRequest` parses a `session-archived` body. The parser, not
+  `API.md`'s stale four-event row, is authoritative (§9 of the design).
+
+- **Marks.** `service/session-marks.ts:100-106`: `session-archived` and
+  `session-deleted` share the `turn-finished` / `turn-failed` branch and call
+  `this.clear(session.id)`. `clear` deletes the entry, stops its timer and
+  requests a `null` mark, so the 30 s poll stops with the entry. One mark per
+  target, the deferred queue and `MARK_MAX = 200` from `95f429c` are untouched.
+
+- **Tests, failing first.** `node --test test/session-marks.test.js` showed
+  `not ok 4/5/6` before the fix (17 pass, 3 fail), then 20/20 pass:
+  `session-archived clears a waiting mark and stops its poll` (both events),
+  `session-archived clears a running mark` (both events),
+  `the archive path never sends a mark with text`, and
+  `archived and deleted events on a subagent are ignored`.
+  `test/board-manifest.test.js` now pins the seven events.
+
+- **Build and checks.** `npm run build:service`: `service/main.js` 64.8 kb, no
+  error; a second build leaves the tree clean. `panel/main.js` did not change.
+  `npm run typecheck`: exit 0. `npm test`: 686/686. `test/shipped-parity.test.js`:
+  18/18. `openchamber-guest-check`: `Package is ready to add in Settings →
+  Extensions.`, exit 0 (same `/tmp/opencode/guest-check` copy, checksum equal to
+  the installed script).
