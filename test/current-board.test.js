@@ -36,7 +36,14 @@ async function setup(read, options = {}) {
   return { ...harness, requests };
 }
 function assertNoWrites(hostCalls) {
-  assert.deepEqual(hostCalls.filter((call) => call.payload?.method && call.payload.method !== 'GET'), []);
+  // A refresh stays read-only on the board. The panel now publishes its counts
+  // to the extension service after each load; that POST /snapshot carries no
+  // board mutation and is the only non-GET allowed here.
+  const isSnapshot = (call) => call.payload?.method === 'POST' && call.payload?.path === '/snapshot';
+  assert.deepEqual(
+    hostCalls.filter((call) => call.payload?.method && call.payload.method !== 'GET' && !isSnapshot(call)),
+    []
+  );
 }
 
 test('current board: successful empty refresh clears retained membership', async () => {

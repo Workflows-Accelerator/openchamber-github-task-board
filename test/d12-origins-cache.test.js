@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { requestedGuestCapabilities } from '@openchamber/sdk';
 import { createTestApp } from './test-app-harness.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,14 +19,22 @@ test('D12 Manifest: package.json declares origins capability and api.github.com 
 
   assert.ok(pkg.openchamber, 'package.json must contain openchamber config block');
 
-  // Verify capabilities includes "origins"
-  assert.ok(
-    Array.isArray(pkg.openchamber.capabilities),
-    'openchamber.capabilities must be an array'
+  // Verify the origin capability is requested. `origins` and `filesystem` are
+  // derived from contributes.origins / contributes.filesystem, never listed in
+  // capabilities; only contributes.capabilities counts, and the root duplicate
+  // was deleted, so assert it stays absent too.
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(pkg.openchamber, 'capabilities'),
+    false,
+    'openchamber.capabilities must not be reintroduced at the root'
   );
   assert.ok(
-    pkg.openchamber.capabilities.includes('origins'),
-    'openchamber.capabilities must include "origins"'
+    Array.isArray(pkg.openchamber.contributes?.capabilities),
+    'openchamber.contributes.capabilities must be an array'
+  );
+  assert.ok(
+    requestedGuestCapabilities(pkg.openchamber.contributes).includes('origins'),
+    'contributes.origins must request the "origins" capability'
   );
 
   // Verify contributes.origins includes "https://api.github.com"
