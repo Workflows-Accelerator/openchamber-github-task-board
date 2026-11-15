@@ -125,7 +125,7 @@ test('manifest validates declared capabilities under openchamber.contributes', a
 
   const parsed = parseManifest(pkg);
   assert.equal(parsed.ok, true, 'parseManifest must succeed');
-  assert.equal(pkg.version, '1.2.2');
+  assert.equal(pkg.version, '1.3.0');
   assert.deepEqual(pkg.openchamber.contributes.capabilities, ['sessions', 'prompt', 'files']);
 });
 

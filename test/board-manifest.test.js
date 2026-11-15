@@ -49,7 +49,7 @@ test('board-manifest: the panel opts into the phone and the version moves with i
   // The phone filters the drawer tab on `panel.mobile === true` (server
   // catalog: `panel.entry && panel.mobile === true`). A `mobile` key inside
   // `statusSection` is stripped by the schema, so only this location counts.
-  assert.equal(raw.version, '1.2.2');
+  assert.equal(raw.version, '1.3.0');
   assert.deepEqual(raw.openchamber.contributes.panel, {
     id: 'github-task-board',
     name: 'Task Board',
@@ -109,12 +109,14 @@ test('board-manifest: the Work Status section is per project and polls /status',
   });
 });
 
-test('board-manifest: marks, read-only session control and the seven session events are declared', () => {
+test('board-manifest: marks, form answers and the seven session events with content are declared', () => {
   const contributes = raw.openchamber.contributes;
   assert.equal(contributes.marks, true);
-  assert.deepEqual(contributes.sessionControl, {});
+  // S2 of D53: the service may answer a form. `content` is deliberately NOT
+  // declared here: the host builds event content from `sessionEvents.content`
+  // plus the derived `transcript` grant, not from `sessionControl.content`.
+  assert.deepEqual(contributes.sessionControl, { answers: true });
   assert.equal(Object.prototype.hasOwnProperty.call(contributes.sessionControl, 'content'), false);
-  assert.equal(Object.prototype.hasOwnProperty.call(contributes.sessionControl, 'answers'), false);
   assert.deepEqual(contributes.sessionEvents, {
     events: [
       'turn-started',
@@ -125,7 +127,17 @@ test('board-manifest: marks, read-only session control and the seven session eve
       'session-archived',
       'session-deleted',
     ],
+    content: true,
   });
+});
+
+test('board-manifest: the derived capabilities stay out of contributes.capabilities', () => {
+  // `transcript`, `sessionAnswers` and `opencode` are derived by the host from
+  // `sessionEvents.content`, `sessionControl.answers` and `service.provides`.
+  // Listing one here would be a second declaration the host never reads.
+  for (const derived of ['transcript', 'sessionAnswers', 'opencode']) {
+    assert.equal(raw.openchamber.contributes.capabilities.includes(derived), false, derived);
+  }
 });
 
 test('board-manifest: instructions, skills and a long-running service are declared', () => {

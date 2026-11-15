@@ -40,6 +40,15 @@ export interface ServiceHostClient {
   setInstructions(directory: string | null, text: string): Promise<void>;
   setMark(target: MarkTarget, mark: MarkPayload | null): Promise<void>;
   sessionStatus(sessionId: string): Promise<SessionStatus>;
+  /** `sessions.answerForm`: the form id is `event.question.id`, values keyed by field `key`, `null` dismisses. */
+  answerForm(
+    sessionId: string,
+    formId: string,
+    values: Record<string, string | number | boolean | string[]> | null,
+    message?: string
+  ): Promise<{ answered: true }>;
+  /** `sessions.send`: plain text into the session, verbatim. */
+  send(sessionId: string, prompt: string): Promise<{ sent: true }>;
 }
 
 type HostEnv = Record<string, string | undefined>;
@@ -86,6 +95,22 @@ export function createHostClient(env: HostEnv): ServiceHostClient {
       const status = result?.status;
       if (status === 'idle' || status === 'busy' || status === 'waiting') return status;
       throw new HostCallError('OpenChamber answered an unknown session status.', 'HOST_UNAVAILABLE', 0);
+    },
+    answerForm: async (sessionId, formId, values, message) => {
+      const input: Record<string, unknown> = { sessionId, formId, values };
+      if (message !== undefined) input.message = message;
+      const result = (await call('sessions.answerForm', input)) as { answered?: unknown } | null;
+      if (result?.answered !== true) {
+        throw new HostCallError('OpenChamber did not take the answer.', 'HOST_UNAVAILABLE', 0);
+      }
+      return { answered: true };
+    },
+    send: async (sessionId, prompt) => {
+      const result = (await call('sessions.send', { sessionId, prompt })) as { sent?: unknown } | null;
+      if (result?.sent !== true) {
+        throw new HostCallError('OpenChamber did not take the message.', 'HOST_UNAVAILABLE', 0);
+      }
+      return { sent: true };
     },
   };
 }

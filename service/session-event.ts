@@ -23,6 +23,21 @@ export const SESSION_EVENT_TYPES = [
 
 export type SessionEventType = (typeof SESSION_EVENT_TYPES)[number];
 
+/**
+ * What the agent said or asked, delivered only with `sessionEvents.content`.
+ *
+ * The SDK validates two things and hands the rest through (`session-events.js`,
+ * `readSessionEventRequest`): it is an object, and its `type` equals the
+ * event's `type`. A bundled service cannot import the SDK, so this mirror does
+ * the same and reads `ask` defensively where it needs it.
+ */
+export interface SessionEventContent {
+  type: string;
+  sessionTitle?: string | null;
+  ask?: unknown;
+  [key: string]: unknown;
+}
+
 export interface SessionEventRequest {
   v: typeof SESSION_EVENTS_WIRE_VERSION;
   requestId: string;
@@ -36,6 +51,7 @@ export interface SessionEventRequest {
     permission?: { requestId: string };
     question?: { kind: 'form' | 'page'; id: string };
   };
+  content?: SessionEventContent;
 }
 
 const isSessionEventType = (value: string): value is SessionEventType =>
@@ -54,7 +70,7 @@ export function readSessionEvent(body: string): SessionEventRequest | null {
     return null;
   }
 
-  const { v, requestId, event } = wire;
+  const { v, requestId, event, content } = wire;
   if (v !== SESSION_EVENTS_WIRE_VERSION) return null;
   if (typeof requestId !== 'string' || requestId.length === 0) return null;
   if (!isObject(event) || event === undefined) return null;
@@ -102,6 +118,14 @@ export function readSessionEvent(body: string): SessionEventRequest | null {
     if (kind !== 'form' && kind !== 'page') return null;
     if (typeof questionId !== 'string' || questionId.length === 0) return null;
     request.event.question = { kind, id: questionId };
+  }
+
+  // `content` is a top-level sibling of `event` (sdk/dist/session-events.d.ts).
+  // Dropping it here would silently defeat `sessionEvents.content: true`, and
+  // every test would still pass (§0.3.4).
+  if (content !== undefined) {
+    if (!isObject(content) || (content as Record<string, unknown>).type !== type) return null;
+    request.content = content as SessionEventContent;
   }
 
   return request;

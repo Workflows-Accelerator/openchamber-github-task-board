@@ -8,6 +8,7 @@ import { SnapshotStore, SNAPSHOT_MAX_BYTES, parseSnapshotBody } from './snapshot
 import { buildStatusView } from './status-view.ts';
 import { SESSION_EVENTS_PATH, readSessionEvent } from './session-event.ts';
 import { SessionMarks } from './session-marks.ts';
+import { DecisionStore } from './decision-store.ts';
 import { createHostClient } from './host-client.ts';
 import { TASK_BOARD_INSTRUCTIONS } from './instructions.ts';
 import type { ClaimResult, CoordinatorConfig, CoordinatorStatus } from './types.js';
@@ -209,6 +210,8 @@ export * from './snapshot.ts';
 export * from './status-view.ts';
 export * from './session-event.ts';
 export * from './session-marks.ts';
+export * from './decision-form.ts';
+export * from './decision-store.ts';
 export * from './host-client.ts';
 export * from './instructions.ts';
 export { LeaseStore, resolveLeaseStorageDir, getDefaultLeasesFilePath } from './lease-store.ts';
@@ -246,6 +249,8 @@ export interface HostServerOptions {
   snapshotStore?: SnapshotStore;
   /** Sidebar marks and the waiting-state poll. Absent means no marks are applied. */
   marks?: SessionMarks;
+  /** Pending decisions and the answer route. Absent means `/decisions` answers an empty store. */
+  decisions?: DecisionStore;
   /** Clock, for tests. */
   now?: () => number;
 }
@@ -329,12 +334,15 @@ export function createCoordinatorHostServer(
 ): http.Server {
   const MAX_BODY_BYTES = 65536;
   const snapshotStore = options.snapshotStore ?? new SnapshotStore();
-  const marks = options.marks;
   const now = options.now ?? Date.now;
+  const marks = options.marks;
+  const decisions = options.decisions ?? new DecisionStore({ now });
 
   const snapshotAttempts = new MinuteWindow(30, now);
   const snapshotWrites = new MinuteWindow(10, now);
   const statusReads = new MinuteWindow(240, now);
+  const decisionReads = new MinuteWindow(120, now);
+  const answerAttempts = new MinuteWindow(30, now);
 
   const server = http.createServer((req, res) => {
     // 15-second idle socket timeout, armed once per socket. A keep-alive socket
@@ -456,7 +464,65 @@ export function createCoordinatorHostServer(
       return;
     }
 
-    // Session events drive the sidebar marks. The answer goes out first.
+    // Pending decisions for the panel (D53). Bearer and Origin rules already
+    // applied above; one request returns every decision, so the panel never
+    // polls per task (§7.1).
+    if (normalizedPath === '/decisions') {
+      if (req.method !== 'GET') {
+        sendJson(res, 405, { error: 'Method Not Allowed' });
+        req.resume();
+        return;
+      }
+      if (!decisionReads.take()) {
+        sendJson(res, 429, { error: 'Too Many Requests' }, JSON_HEADERS, { 'Retry-After': '60' });
+        req.resume();
+        return;
+      }
+      sendJson(res, 200, decisions.list(), STATUS_HEADERS);
+      req.resume();
+      return;
+    }
+
+    // Answer one form. The body names a decision id only; the service resolves
+    // the session, form id and kind from its own store (§7.4).
+    if (normalizedPath === '/decision/answer') {
+      if (req.method !== 'POST') {
+        sendJson(res, 405, { error: 'Method Not Allowed' });
+        req.resume();
+        return;
+      }
+      if (!answerAttempts.take()) {
+        sendJson(res, 429, { error: 'Too Many Requests' }, JSON_HEADERS, { 'Retry-After': '60' });
+        req.resume();
+        return;
+      }
+      const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      if (contentType !== 'application/json') {
+        sendJson(res, 415, { error: 'Unsupported Media Type' });
+        req.resume();
+        return;
+      }
+      readBody(req, res, MAX_BODY_BYTES, (body) => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body);
+        } catch {
+          sendJson(res, 400, { v: 1, code: 'ANSWER_INVALID' });
+          return;
+        }
+        if (Object(parsed) !== parsed || Array.isArray(parsed)) {
+          sendJson(res, 400, { v: 1, code: 'ANSWER_INVALID' });
+          return;
+        }
+        void decisions
+          .answer(parsed as { id?: unknown; values?: unknown; message?: unknown })
+          .then((result) => sendJson(res, result.status, result.body, STATUS_HEADERS))
+          .catch(() => sendJson(res, 502, { v: 1, code: 'UNKNOWN' }, STATUS_HEADERS));
+      });
+      return;
+    }
+
+    // Session events drive the sidebar marks and the decision store. The answer goes out first.
     if (normalizedPath === SESSION_EVENTS_PATH) {
       if (req.method !== 'POST') {
         sendJson(res, 405, { error: 'Method Not Allowed' });
@@ -471,6 +537,7 @@ export function createCoordinatorHostServer(
         }
         sendJson(res, 200, { ok: true });
         marks?.handleEvent(event);
+        decisions.handleEvent(event);
       });
       return;
     }
@@ -515,10 +582,16 @@ export async function startHostServiceServer(): Promise<void> {
   const coordinatorService = new CoordinatorService();
   const snapshotStore = new SnapshotStore();
   const serviceHost = createHostClient(process.env);
-  const marks = new SessionMarks(serviceHost);
+  const decisions = new DecisionStore({ host: serviceHost });
+  const marks = new SessionMarks(serviceHost, {
+    // One poll serves both features: the marks loop already asks for the status
+    // of every waiting session, and the decision store reads the same answer.
+    onStatus: (sessionId, status) => decisions.observeStatus(sessionId, status),
+  });
   const server = createCoordinatorHostServer(token, () => coordinatorService.getStatus(), {
     snapshotStore,
     marks,
+    decisions,
   });
 
   let isShuttingDown = false;

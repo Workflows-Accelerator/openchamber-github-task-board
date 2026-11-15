@@ -47,6 +47,12 @@ export interface SessionMarksOptions {
   changesPerMinute?: number;
   /** Length of that window. One minute in production; short in tests. */
   windowMs?: number;
+  /**
+   * Every positive `sessions.status` answer, for the decision store (§7.1:
+   * one poll serves both features). Never called on a failed poll: a failed
+   * poll is not an observation.
+   */
+  onStatus?: (sessionId: string, status: 'idle' | 'busy' | 'waiting') => void;
 }
 
 interface Entry {
@@ -73,6 +79,7 @@ export class SessionMarks {
   private readonly now: () => number;
   private readonly changesPerMinute: number;
   private readonly windowMs: number;
+  private readonly onStatus: ((sessionId: string, status: 'idle' | 'busy' | 'waiting') => void) | undefined;
   private host: MarkHost;
   /** What the host currently shows per session; absence means no mark. */
   private delivered: Map<string, Delivered> = new Map();
@@ -83,6 +90,7 @@ export class SessionMarks {
     this.now = options.now ?? Date.now;
     this.changesPerMinute = options.changesPerMinute ?? MARK_CHANGES_PER_MINUTE;
     this.windowMs = options.windowMs ?? 60_000;
+    this.onStatus = options.onStatus;
   }
 
   /** Applies one session event. A subagent's row is ignored: its parent's turn is the one to watch. */
@@ -259,6 +267,7 @@ export class SessionMarks {
 
     try {
       const status = await this.host.sessionStatus(sessionId);
+      this.onStatus?.(sessionId, status);
       if (status === 'busy') {
         this.apply(sessionId, 'running');
         return;
