@@ -18,6 +18,9 @@ interface HeldLeaseEntry {
   ownerId: string;
 }
 
+/** Set once on a socket whose idle timeout has already been armed. */
+const SOCKET_TIMEOUT_ARMED = Symbol('socketTimeoutArmed');
+
 export class CoordinatorService {
   private config: CoordinatorConfig;
   private status: CoordinatorStatus = 'stopped';
@@ -334,10 +337,17 @@ export function createCoordinatorHostServer(
   const statusReads = new MinuteWindow(240, now);
 
   const server = http.createServer((req, res) => {
-    // 15-second socket timeout
-    req.socket.setTimeout(15000, () => {
-      req.socket.destroy();
-    });
+    // 15-second idle socket timeout, armed once per socket. A keep-alive socket
+    // serves many requests, and setTimeout(ms, callback) adds a new 'timeout'
+    // listener on every call, so arming it per request trips
+    // MaxListenersExceededWarning after ten requests on one connection.
+    const socket = req.socket as typeof req.socket & { [SOCKET_TIMEOUT_ARMED]?: boolean };
+    if (!socket[SOCKET_TIMEOUT_ARMED]) {
+      socket[SOCKET_TIMEOUT_ARMED] = true;
+      socket.setTimeout(15000, () => {
+        socket.destroy();
+      });
+    }
 
     // Constant-time Bearer authentication: verify first before body buffering or route disclosure
     const authHeader = req.headers.authorization;
