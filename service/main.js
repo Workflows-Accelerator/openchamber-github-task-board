@@ -1140,6 +1140,7 @@ function formIsComplete(fields, values) {
 var DECISIONS_MAX = 50;
 var DECISIONS_BODY_MAX = 64 * 1024;
 var DECISION_STALENESS_MS = 10 * 6e4;
+var DECISION_TOMBSTONES_MAX = 200;
 var DECISION_MESSAGE_MAX = 2e3;
 var DECISION_TITLE_MAX = 200;
 var LINKED_MAX = 8;
@@ -1172,6 +1173,10 @@ var DecisionStore = class {
   maxEntries;
   stalenessMs;
   log;
+  projects = /* @__PURE__ */ new Set();
+  /** A decision removed after the host said it was gone never comes back as live. */
+  removed = /* @__PURE__ */ new Set();
+  removedOrder = [];
   host;
   startedAt;
   constructor(options = {}) {
@@ -1181,11 +1186,40 @@ var DecisionStore = class {
     this.log = options.log ?? (() => {
     });
     this.host = options.host;
+    if (options.projectDirectory) this.registerProject(options.projectDirectory);
     this.startedAt = this.now();
   }
   /** Set once the host client exists, or replaced in a test. */
   setHost(host) {
     this.host = host;
+  }
+  /**
+   * Adds one project directory the board owns. Called from `POST /snapshot`
+   * (the panel's own project) and from the constructor. A worktree under the
+   * project is still the project, so a subdirectory matches.
+   */
+  registerProject(directory) {
+    if (typeof directory !== "string" || directory.length === 0) return;
+    this.projects.add(directory.replace(/\/+$/, ""));
+  }
+  /** True when the store has no project scope, or `directory` is inside it. */
+  inScope(directory) {
+    if (this.projects.size === 0) return true;
+    if (typeof directory !== "string" || directory.length === 0) return false;
+    const normalized = directory.replace(/\/+$/, "");
+    for (const project of this.projects) {
+      if (normalized === project || normalized.startsWith(`${project}/`)) return true;
+    }
+    return false;
+  }
+  rememberRemoved(id) {
+    if (this.removed.has(id)) return;
+    this.removed.add(id);
+    this.removedOrder.push(id);
+    while (this.removedOrder.length > DECISION_TOMBSTONES_MAX) {
+      const oldest = this.removedOrder.shift();
+      if (oldest) this.removed.delete(oldest);
+    }
   }
   size() {
     return this.entries.size;
@@ -1271,6 +1305,11 @@ var DecisionStore = class {
     const entry = this.entries.get(id);
     if (!entry) return { status: 404, body: { v: 1, code: "DECISION_UNKNOWN" } };
     if (entry.state !== "pending") return { status: 409, body: { v: 1, code: "DECISION_NOT_PENDING" } };
+    if (entry.linked.length === 0) return { status: 409, body: { v: 1, code: "DECISION_NOT_LINKED" } };
+    if (!this.inScope(entry.directory)) {
+      return { status: 409, body: { v: 1, code: "DECISION_FOREIGN_PROJECT" } };
+    }
+    if (this.isUnconfirmed(entry)) return { status: 409, body: { v: 1, code: "DECISION_STALE" } };
     if (entry.kind !== "form") {
       return { status: 400, body: { v: 1, code: "ANSWER_INVALID", detail: [] } };
     }
@@ -1326,6 +1365,7 @@ var DecisionStore = class {
     const message = typeof error?.message === "string" ? String(error.message) : void 0;
     if (status === 404) {
       this.entries.delete(entry.id);
+      this.rememberRemoved(entry.id);
       return { status: 404, body: { v: 1, code: "DECISION_GONE" } };
     }
     if (status === 403) {
@@ -1351,6 +1391,7 @@ var DecisionStore = class {
     const id = `${sessionId}:${question.kind}:${askId}`;
     const ask = readAsk(request.content, askId);
     const now = this.now();
+    if (this.removed.has(id)) return;
     const existing = this.entries.get(id);
     if (existing) {
       existing.askedAt = Math.min(existing.askedAt, event.at);
@@ -1360,7 +1401,8 @@ var DecisionStore = class {
       }
       return;
     }
-    if (!sessionId || !event.project.directory && !sessionId) return;
+    if (!sessionId) return;
+    if (!this.inScope(event.project.directory)) return;
     const entry = {
       id,
       kind: question.kind,
@@ -1397,7 +1439,10 @@ var DecisionStore = class {
   }
   removeSession(sessionId) {
     for (const [id, entry] of this.entries) {
-      if (entry.sessionId === sessionId) this.entries.delete(id);
+      if (entry.sessionId === sessionId) {
+        this.entries.delete(id);
+        this.rememberRemoved(id);
+      }
     }
   }
   /** §7.6: at most 50 entries; answered entries are evicted before waiting ones. */
@@ -1408,6 +1453,7 @@ var DecisionStore = class {
       const victim = answered[0] ?? all.sort((a, b) => a.askedAt - b.askedAt)[0];
       if (!victim) return;
       this.entries.delete(victim.id);
+      this.rememberRemoved(victim.id);
       this.log(`[decisions] store at ${this.maxEntries}; dropped ${victim.id}`);
     }
   }
@@ -2135,6 +2181,7 @@ function createCoordinatorHostServer(token, getStatus, options = {}) {
           return;
         }
         snapshotStore.set(parsed.snapshot);
+        decisions.registerProject(parsed.snapshot.directory);
         res.writeHead(204);
         res.end();
       });
@@ -2316,6 +2363,7 @@ export {
   DECISION_MESSAGE_MAX,
   DECISION_STALENESS_MS,
   DECISION_TITLE_MAX,
+  DECISION_TOMBSTONES_MAX,
   DEFAULT_DRY_RUN,
   DEFAULT_HOST_ORIGIN,
   DEFAULT_LEASE_TTL_MS,

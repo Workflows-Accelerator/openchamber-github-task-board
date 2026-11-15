@@ -28,6 +28,14 @@ import {
 
 export type DecisionLanguage = 'en' | 'fr';
 
+/**
+ * Ten minutes, the same window the service enforces in `answer()` (§7.2). The
+ * overlay and the 409 must agree: a decision the panel shows as live but the
+ * service refuses (or the reverse) is a lie either way. `decision-render`
+ * pins the two constants together.
+ */
+export const DECISION_STALENESS_MS = 10 * 60_000;
+
 export interface DecisionLinkedItem {
   id: string;
   number: number | null;
@@ -62,7 +70,13 @@ export type AnswerState =
   | 'failed'
   | 'stale'
   | 'permission-missing'
-  | 'unknown-outcome';
+  | 'unknown-outcome'
+  /** The service said another answer is already in flight (409, entry `answering`). */
+  | 'in-flight'
+  /** The service refused because the observation is past the staleness window (409 DECISION_STALE). */
+  | 'unconfirmed'
+  /** The service refused because the session is not linked to a board task. */
+  | 'not-linked';
 
 export interface DecisionRenderContext {
   language: DecisionLanguage;
@@ -75,7 +89,12 @@ export interface DecisionRenderContext {
   issueNumber?: number | null;
   unbound?: boolean;
   answerState?: AnswerState;
+  /** The host's own sentence for a refusal (§5.1). Agent/host text, sanitized. */
   answerMessage?: string | null;
+  /** The successful answer was a dismissal, so the note says "Dismissal sent". */
+  dismissal?: boolean;
+  /** No successful read yet: nothing was checked, so nothing can be said about waiting. */
+  checking?: boolean;
   onSubmit?: (decision: DecisionView, values: FormValues) => void;
   onDismiss?: (decision: DecisionView, message: string) => void;
   onOpenSession?: (decision: DecisionView) => void;
@@ -86,6 +105,7 @@ const COPY = {
   en: {
     waiting: 'waiting for you',
     answering: 'sending answer',
+    answerInFlight: 'answer in flight',
     confirming: 'answered, confirming',
     unconfirmed: 'not confirmed since {time}',
     answeredSent: 'Answer sent',
@@ -96,6 +116,7 @@ const COPY = {
     permissionMissing: 'The answer permission is missing.',
     credentialWarning: 'The agent wrote this question. Do not type a password, token or key here.',
     notLinked: 'This session is not linked to a task.',
+    checking: 'Checking for decisions.',
     noDecision: 'No decision is waiting. Checked at {time}.',
     serviceDown: 'The board service is not answering. Last attempt at {time}.',
     restart: 'The board service restarted at {time}. Decisions asked before then are not tracked until the session speaks again.',
@@ -128,6 +149,7 @@ const COPY = {
   fr: {
     waiting: 'en attente de vous',
     answering: 'envoi de la réponse',
+    answerInFlight: "réponse en cours d'envoi",
     confirming: 'répondu, confirmation',
     unconfirmed: 'non confirmé depuis {time}',
     answeredSent: 'Réponse envoyée',
@@ -138,6 +160,7 @@ const COPY = {
     permissionMissing: "L'autorisation de répondre est absente.",
     credentialWarning: "L'agent a écrit cette question. Ne saisissez pas de mot de passe, de jeton ou de clé ici.",
     notLinked: 'Cette session ne correspond à aucune tâche.',
+    checking: 'Vérification des décisions.',
     noDecision: 'Aucune décision en attente. Vérifié à {time}.',
     serviceDown: 'Le service du tableau ne répond pas. Dernière tentative à {time}.',
     restart: "Le service du tableau a redémarré à {time}. Les décisions demandées avant ne sont pas suivies tant que la session ne parle pas de nouveau.",
@@ -535,14 +558,19 @@ export function renderDecisionBlock(decision: DecisionView, context: DecisionRen
   block.setAttribute('data-decision-kind', decision.kind);
 
   const confirming = decision.state === 'answered-unconfirmed';
+  const answeringElsewhere = decision.state === 'answering';
   const answerState = context.answerState ?? 'idle';
-  const stale = typeof context.unconfirmedSince === 'number';
-  const inert = confirming || answerState !== 'idle' || stale;
+  const stale = typeof context.unconfirmedSince === 'number' || answerState === 'unconfirmed';
+  const unconfirmedSince = context.unconfirmedSince ?? decision.confirmedAt;
+  // Every state that is not "waiting for you" is inert: a second tap must not
+  // be invited, and an answer in flight on another device is not waiting.
+  const inert = confirming || answeringElsewhere || answerState !== 'idle' || stale;
 
   const eyebrowText = (() => {
     if (confirming || answerState === 'sent') return copyText(language, 'confirming');
     if (answerState === 'answering') return copyText(language, 'answering');
-    if (stale) return copyText(language, 'unconfirmed', { time: formatClock(context.unconfirmedSince!, language) });
+    if (answeringElsewhere || answerState === 'in-flight') return copyText(language, 'answerInFlight');
+    if (stale) return copyText(language, 'unconfirmed', { time: formatClock(unconfirmedSince, language) });
     return copyText(language, 'waiting');
   })();
   const eyebrow = textNode('div', eyebrowText, 'decision-eyebrow');
@@ -590,12 +618,15 @@ export function renderDecisionBlock(decision: DecisionView, context: DecisionRen
   bodySlot.appendChild(body);
 
   if (!answerable) {
-    const reason = !formIsAnswerable(fields)
-      ? copyText(language, 'external')
-      : context.canAnswer
-      ? copyText(language, 'readonly')
-      : copyText(language, 'readonly');
-    bodySlot.appendChild(textNode('div', reason, 'decision-readonly-reason'));
+    // The reason must be the real one. "Not allowed to answer" is a permission
+    // claim, so it is only printed when the permission is what blocks; an
+    // answered, failed, in-flight or unconfirmed block says its own state.
+    let reason: string | null = null;
+    if (!formIsAnswerable(fields)) reason = copyText(language, 'external');
+    else if (context.unbound) reason = copyText(language, 'notLinked');
+    else if (answerState === 'permission-missing') reason = copyText(language, 'readonly');
+    else if (!inert && !context.canAnswer && !context.checking) reason = copyText(language, 'readonly');
+    if (reason) bodySlot.appendChild(textNode('div', reason, 'decision-readonly-reason'));
   }
 
   if ((decision.droppedFields ?? 0) > 0) {
@@ -645,18 +676,34 @@ export function renderDecisionBlock(decision: DecisionView, context: DecisionRen
     context.onDismiss?.(decision, message);
   });
 
-  if (context.canAnswer && formIsAnswerable(fields)) {
+  if (context.canAnswer && formIsAnswerable(fields) && !context.unbound) {
     actions.appendChild(submit);
     actions.appendChild(dismiss);
     actions.appendChild(dismissBox);
   }
+  if (stale) {
+    // §7.2: every control is disabled except Recheck, which asks the service
+    // once more instead of leaving the owner with a dead block.
+    const recheck = button(copyText(language, 'recheck'), 'btn btn-sm decision-recheck');
+    recheck.addEventListener('click', () => context.onRecheck?.(decision));
+    actions.appendChild(recheck);
+  }
   actions.appendChild(openSession);
 
-  if (answerState === 'sent') stateNote.textContent = copyText(language, 'answeredSent');
-  else if (answerState === 'failed') stateNote.textContent = copyText(language, 'failed');
+  if (answerState === 'sent') {
+    stateNote.textContent = copyText(language, context.dismissal ? 'dismissalSent' : 'answeredSent');
+  } else if (answerState === 'failed') stateNote.textContent = copyText(language, 'failed');
   else if (answerState === 'unknown-outcome') stateNote.textContent = copyText(language, 'unknownOutcome');
   else if (answerState === 'stale') stateNote.textContent = copyText(language, 'gone');
   else if (answerState === 'permission-missing') stateNote.textContent = copyText(language, 'permissionMissing');
+  else if (answerState === 'not-linked') stateNote.textContent = copyText(language, 'notLinked');
+
+  const answerMessage = typeof context.answerMessage === 'string'
+    ? sanitizeAgentText(context.answerMessage).trim()
+    : '';
+  if (answerMessage.length > 0) {
+    block.appendChild(textNode('div', answerMessage, 'decision-answer-message'));
+  }
 
   update();
   return block;
@@ -671,6 +718,8 @@ export function renderDecisionBadge(
   const badge = element('span', 'decision-badge');
   const label = decision.state === 'answered-unconfirmed'
     ? copyText(language, 'confirming')
+    : decision.state === 'answering'
+    ? copyText(language, 'answerInFlight')
     : copyText(language, 'waiting');
   badge.appendChild(textNode('span', label, 'decision-badge-label'));
   if (decision.title) {
@@ -684,7 +733,7 @@ export function renderDecisionBadge(
 
 /** `NO_DECISIONS`, `SERVICE_DOWN` and the restart note (§8.5). */
 export function renderDecisionStatusNote(
-  kind: 'no-decisions' | 'service-down' | 'restarted',
+  kind: 'no-decisions' | 'service-down' | 'restarted' | 'checking',
   language: DecisionLanguage,
   at: number
 ): HTMLElement {
@@ -692,6 +741,7 @@ export function renderDecisionStatusNote(
   const time = formatClock(at, language);
   if (kind === 'no-decisions') node.textContent = copyText(language, 'noDecision', { time });
   else if (kind === 'service-down') node.textContent = copyText(language, 'serviceDown', { time });
+  else if (kind === 'checking') node.textContent = copyText(language, 'checking');
   else node.textContent = copyText(language, 'restart', { time });
   return node;
 }

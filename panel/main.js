@@ -5396,10 +5396,12 @@ ${placeholder}
   }
 
   // panel/decisions.ts
+  var DECISION_STALENESS_MS = 10 * 6e4;
   var COPY = {
     en: {
       waiting: "waiting for you",
       answering: "sending answer",
+      answerInFlight: "answer in flight",
       confirming: "answered, confirming",
       unconfirmed: "not confirmed since {time}",
       answeredSent: "Answer sent",
@@ -5410,6 +5412,7 @@ ${placeholder}
       permissionMissing: "The answer permission is missing.",
       credentialWarning: "The agent wrote this question. Do not type a password, token or key here.",
       notLinked: "This session is not linked to a task.",
+      checking: "Checking for decisions.",
       noDecision: "No decision is waiting. Checked at {time}.",
       serviceDown: "The board service is not answering. Last attempt at {time}.",
       restart: "The board service restarted at {time}. Decisions asked before then are not tracked until the session speaks again.",
@@ -5442,6 +5445,7 @@ ${placeholder}
     fr: {
       waiting: "en attente de vous",
       answering: "envoi de la r\xE9ponse",
+      answerInFlight: "r\xE9ponse en cours d'envoi",
       confirming: "r\xE9pondu, confirmation",
       unconfirmed: "non confirm\xE9 depuis {time}",
       answeredSent: "R\xE9ponse envoy\xE9e",
@@ -5452,6 +5456,7 @@ ${placeholder}
       permissionMissing: "L'autorisation de r\xE9pondre est absente.",
       credentialWarning: "L'agent a \xE9crit cette question. Ne saisissez pas de mot de passe, de jeton ou de cl\xE9 ici.",
       notLinked: "Cette session ne correspond \xE0 aucune t\xE2che.",
+      checking: "V\xE9rification des d\xE9cisions.",
       noDecision: "Aucune d\xE9cision en attente. V\xE9rifi\xE9 \xE0 {time}.",
       serviceDown: "Le service du tableau ne r\xE9pond pas. Derni\xE8re tentative \xE0 {time}.",
       restart: "Le service du tableau a red\xE9marr\xE9 \xE0 {time}. Les d\xE9cisions demand\xE9es avant ne sont pas suivies tant que la session ne parle pas de nouveau.",
@@ -5760,13 +5765,16 @@ ${placeholder}
     block.setAttribute("data-decision-id", decision.id);
     block.setAttribute("data-decision-kind", decision.kind);
     const confirming = decision.state === "answered-unconfirmed";
+    const answeringElsewhere = decision.state === "answering";
     const answerState = context.answerState ?? "idle";
-    const stale = typeof context.unconfirmedSince === "number";
-    const inert = confirming || answerState !== "idle" || stale;
+    const stale = typeof context.unconfirmedSince === "number" || answerState === "unconfirmed";
+    const unconfirmedSince = context.unconfirmedSince ?? decision.confirmedAt;
+    const inert = confirming || answeringElsewhere || answerState !== "idle" || stale;
     const eyebrowText = (() => {
       if (confirming || answerState === "sent") return copyText(language, "confirming");
       if (answerState === "answering") return copyText(language, "answering");
-      if (stale) return copyText(language, "unconfirmed", { time: formatClock(context.unconfirmedSince, language) });
+      if (answeringElsewhere || answerState === "in-flight") return copyText(language, "answerInFlight");
+      if (stale) return copyText(language, "unconfirmed", { time: formatClock(unconfirmedSince, language) });
       return copyText(language, "waiting");
     })();
     const eyebrow = textNode("div", eyebrowText, "decision-eyebrow");
@@ -5802,8 +5810,12 @@ ${placeholder}
     });
     bodySlot.appendChild(body);
     if (!answerable) {
-      const reason = !formIsAnswerable(fields) ? copyText(language, "external") : context.canAnswer ? copyText(language, "readonly") : copyText(language, "readonly");
-      bodySlot.appendChild(textNode("div", reason, "decision-readonly-reason"));
+      let reason = null;
+      if (!formIsAnswerable(fields)) reason = copyText(language, "external");
+      else if (context.unbound) reason = copyText(language, "notLinked");
+      else if (answerState === "permission-missing") reason = copyText(language, "readonly");
+      else if (!inert && !context.canAnswer && !context.checking) reason = copyText(language, "readonly");
+      if (reason) bodySlot.appendChild(textNode("div", reason, "decision-readonly-reason"));
     }
     if ((decision.droppedFields ?? 0) > 0) {
       bodySlot.appendChild(textNode("div", copyText(language, "fieldsNotShown", { n: decision.droppedFields ?? 0 }), "decision-clamp-note"));
@@ -5847,23 +5859,34 @@ ${placeholder}
       if (message.length === 0 || message.length > 2e3) return;
       context.onDismiss?.(decision, message);
     });
-    if (context.canAnswer && formIsAnswerable(fields)) {
+    if (context.canAnswer && formIsAnswerable(fields) && !context.unbound) {
       actions2.appendChild(submit);
       actions2.appendChild(dismiss);
       actions2.appendChild(dismissBox);
     }
+    if (stale) {
+      const recheck = button2(copyText(language, "recheck"), "btn btn-sm decision-recheck");
+      recheck.addEventListener("click", () => context.onRecheck?.(decision));
+      actions2.appendChild(recheck);
+    }
     actions2.appendChild(openSession);
-    if (answerState === "sent") stateNote.textContent = copyText(language, "answeredSent");
-    else if (answerState === "failed") stateNote.textContent = copyText(language, "failed");
+    if (answerState === "sent") {
+      stateNote.textContent = copyText(language, context.dismissal ? "dismissalSent" : "answeredSent");
+    } else if (answerState === "failed") stateNote.textContent = copyText(language, "failed");
     else if (answerState === "unknown-outcome") stateNote.textContent = copyText(language, "unknownOutcome");
     else if (answerState === "stale") stateNote.textContent = copyText(language, "gone");
     else if (answerState === "permission-missing") stateNote.textContent = copyText(language, "permissionMissing");
+    else if (answerState === "not-linked") stateNote.textContent = copyText(language, "notLinked");
+    const answerMessage = typeof context.answerMessage === "string" ? sanitizeAgentText(context.answerMessage).trim() : "";
+    if (answerMessage.length > 0) {
+      block.appendChild(textNode("div", answerMessage, "decision-answer-message"));
+    }
     update();
     return block;
   }
   function renderDecisionBadge(decision, language, extraCount = 0) {
     const badge = element("span", "decision-badge");
-    const label = decision.state === "answered-unconfirmed" ? copyText(language, "confirming") : copyText(language, "waiting");
+    const label = decision.state === "answered-unconfirmed" ? copyText(language, "confirming") : decision.state === "answering" ? copyText(language, "answerInFlight") : copyText(language, "waiting");
     badge.appendChild(textNode("span", label, "decision-badge-label"));
     if (decision.title) {
       badge.appendChild(textNode("span", cutForDisplay(sanitizeAgentText(decision.title), 80), "decision-badge-title"));
@@ -5878,6 +5901,7 @@ ${placeholder}
     const time = formatClock(at, language);
     if (kind === "no-decisions") node.textContent = copyText(language, "noDecision", { time });
     else if (kind === "service-down") node.textContent = copyText(language, "serviceDown", { time });
+    else if (kind === "checking") node.textContent = copyText(language, "checking");
     else node.textContent = copyText(language, "restart", { time });
     return node;
   }
@@ -10251,7 +10275,7 @@ Blocked by ${blockerRef}`;
         if (activeIssue) renderDrawer(activeIssue);
         if (!decisionFeedStarted) {
           seedDecisionFeed();
-        } else if (decisionFeed.decisions.length > 0 || viewState.view === "pending" || activeIssue) {
+        } else {
           void refreshDecisions();
         }
         statusReconciler.schedule(issues);
@@ -13902,11 +13926,11 @@ Blocked by ${blockerRef}`;
   var panelLocale = "en";
   var decisionFeedStarted = false;
   var decisionRefreshInFlight = false;
-  var lastDecisionSignature = "";
   var decisionFeed = {
     status: "unknown",
     at: 0,
     startedAt: 0,
+    restartedAt: null,
     decisions: [],
     lastAttemptAt: 0
   };
@@ -13948,6 +13972,7 @@ Blocked by ${blockerRef}`;
     decisionRefreshInFlight = true;
     const previousSignature = decisionSignature();
     const previousStatus = decisionFeed.status;
+    const previousRestartedAt = decisionFeed.restartedAt;
     try {
       const res = await host.serviceRequest({ method: "GET", path: "/decisions" });
       const now = Date.now();
@@ -13957,10 +13982,13 @@ Blocked by ${blockerRef}`;
         if (!parsed || !Array.isArray(parsed.decisions)) {
           decisionFeed = { ...decisionFeed, status: "down", lastAttemptAt: now };
         } else {
+          const startedAt = typeof parsed.startedAt === "number" ? parsed.startedAt : decisionFeed.startedAt;
+          const restartedAt = decisionFeed.startedAt > 0 && startedAt !== decisionFeed.startedAt ? now : decisionFeed.restartedAt;
           decisionFeed = {
             status: "ok",
             at: typeof parsed.at === "number" ? parsed.at : now,
-            startedAt: typeof parsed.startedAt === "number" ? parsed.startedAt : decisionFeed.startedAt,
+            startedAt,
+            restartedAt,
             decisions: parsed.decisions,
             lastAttemptAt: now
           };
@@ -13977,7 +14005,7 @@ Blocked by ${blockerRef}`;
     } finally {
       decisionRefreshInFlight = false;
     }
-    if (decisionSignature() !== previousSignature) {
+    if (decisionSignature() !== previousSignature || decisionFeed.restartedAt !== previousRestartedAt) {
       renderDecisionSurfaces();
     } else if (decisionFeed.status !== previousStatus && viewState.view === "pending") {
       renderViews();
@@ -13995,19 +14023,45 @@ Blocked by ${blockerRef}`;
   function renderDecisionAnswerStateNote(decisionId) {
     return decisionAnswerState.get(decisionId) ?? { state: "idle" };
   }
+  function decisionErrorBody(res) {
+    const parsed = safeJsonParse(res && res.body);
+    return {
+      code: parsed && typeof parsed.code === "string" ? parsed.code : "",
+      message: parsed && typeof parsed.message === "string" ? parsed.message : null
+    };
+  }
+  function decisionAnswerStateFromResponse(status, code, message) {
+    if (status === 200) return { state: "sent" };
+    if (status === 404) return { state: "stale" };
+    if (status === 409) {
+      if (code === "DECISION_STALE") return { state: "unconfirmed" };
+      if (code === "DECISION_NOT_LINKED") return { state: "not-linked" };
+      if (code === "DECISION_NOT_PENDING") return { state: "in-flight" };
+      return { state: "failed" };
+    }
+    if (status === 403) return { state: "permission-missing", message };
+    if (status === 502) return { state: "unknown-outcome", message };
+    return { state: "failed", message };
+  }
   function decisionBlockContext(decision, issueNumber, unbound) {
     const answer = renderDecisionAnswerStateNote(decision.id);
+    const now = Date.now();
+    const staleByObservation = decision.confirmedAt > 0 && now - decision.confirmedAt > DECISION_STALENESS_MS;
+    const unconfirmedSince = decisionFeed.status === "down" ? decisionFeed.lastAttemptAt || now : staleByObservation ? decision.confirmedAt : null;
     return {
       language: decisionLanguage(),
-      now: Date.now(),
-      // Answer controls exist only when the service feed answered. A refusal at
-      // call time still maps to a named state; nothing assumes the grant exists.
-      canAnswer: decisionFeed.status === "ok",
+      now,
+      // Answer controls exist only when the service feed answered, the
+      // observation is fresh, and the decision belongs to a board task. A
+      // refusal at call time still maps to a named state.
+      canAnswer: decisionFeed.status === "ok" && !staleByObservation && !unbound,
+      checking: decisionFeed.status === "unknown",
       unbound,
       issueNumber,
       answerState: answer.state,
       answerMessage: answer.message ?? null,
-      unconfirmedSince: decisionFeed.status === "down" ? decisionFeed.lastAttemptAt : null,
+      dismissal: answer.dismissal === true,
+      unconfirmedSince,
       onSubmit: (target, values) => {
         void submitDecisionAnswer(target, values);
       },
@@ -14033,19 +14087,8 @@ Blocked by ${blockerRef}`;
         body: JSON.stringify({ v: 1, id: decision.id, values })
       });
       const status = res && typeof res.status === "number" ? res.status : 0;
-      if (status === 200) {
-        decisionAnswerState.set(decision.id, { state: "sent" });
-      } else if (status === 404) {
-        decisionAnswerState.set(decision.id, { state: "stale" });
-      } else if (status === 409) {
-        decisionAnswerState.set(decision.id, { state: "stale" });
-      } else if (status === 403) {
-        decisionAnswerState.set(decision.id, { state: "permission-missing" });
-      } else if (status === 502) {
-        decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
-      } else {
-        decisionAnswerState.set(decision.id, { state: "failed" });
-      }
+      const { code, message } = decisionErrorBody(res);
+      decisionAnswerState.set(decision.id, decisionAnswerStateFromResponse(status, code, message));
     } catch {
       decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
     } finally {
@@ -14064,11 +14107,9 @@ Blocked by ${blockerRef}`;
         body: JSON.stringify({ v: 1, id: decision.id, values: null, message })
       });
       const status = res && typeof res.status === "number" ? res.status : 0;
-      if (status === 200) decisionAnswerState.set(decision.id, { state: "sent" });
-      else if (status === 404 || status === 409) decisionAnswerState.set(decision.id, { state: "stale" });
-      else if (status === 403) decisionAnswerState.set(decision.id, { state: "permission-missing" });
-      else if (status === 502) decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
-      else decisionAnswerState.set(decision.id, { state: "failed" });
+      const { code, message: errorMessage } = decisionErrorBody(res);
+      const next = decisionAnswerStateFromResponse(status, code, errorMessage);
+      decisionAnswerState.set(decision.id, next.state === "sent" ? { state: "sent", dismissal: true } : next);
     } catch {
       decisionAnswerState.set(decision.id, { state: "unknown-outcome" });
     } finally {
@@ -14081,7 +14122,23 @@ Blocked by ${blockerRef}`;
     elDrawerDecisionSlot.innerHTML = "";
     const list = decisionsForIssue(issue);
     if (list.length === 0) {
-      elDrawerDecisionSlot.style.display = "none";
+      const language = decisionLanguage();
+      if (decisionFeed.status === "down") {
+        elDrawerDecisionSlot.style.display = "";
+        elDrawerDecisionSlot.appendChild(
+          renderDecisionStatusNote("service-down", language, decisionFeed.lastAttemptAt || Date.now())
+        );
+      } else if (decisionFeed.status === "unknown") {
+        elDrawerDecisionSlot.style.display = "";
+        elDrawerDecisionSlot.appendChild(renderDecisionStatusNote("checking", language, Date.now()));
+      } else if (decisionFeed.restartedAt) {
+        elDrawerDecisionSlot.style.display = "";
+        elDrawerDecisionSlot.appendChild(
+          renderDecisionStatusNote("restarted", language, decisionFeed.restartedAt)
+        );
+      } else {
+        elDrawerDecisionSlot.style.display = "none";
+      }
       return;
     }
     elDrawerDecisionSlot.style.display = "";
@@ -14129,7 +14186,11 @@ Blocked by ${blockerRef}`;
     renderGroup(copyText(language, "inboxConfirming"), bound.filter((entry) => entry.state !== "pending"), false);
     renderGroup(copyText(language, "inboxUnbound"), unbound, true);
     if (decisionFeed.status === "down") {
-      section.appendChild(renderDecisionStatusNote("service-down", language, decisionFeed.lastAttemptAt));
+      section.appendChild(renderDecisionStatusNote("service-down", language, decisionFeed.lastAttemptAt || Date.now()));
+    } else if (decisionFeed.status === "unknown") {
+      section.appendChild(renderDecisionStatusNote("checking", language, Date.now()));
+    } else if (decisionFeed.restartedAt) {
+      section.appendChild(renderDecisionStatusNote("restarted", language, decisionFeed.restartedAt));
     } else if (decisionFeed.decisions.length === 0) {
       section.appendChild(renderDecisionStatusNote("no-decisions", language, decisionFeed.at || Date.now()));
     }
@@ -14172,6 +14233,7 @@ Blocked by ${blockerRef}`;
     });
     if (humanIssues.length === 0) {
       if (decisionCount > 0) return;
+      if (decisionFeed.status !== "ok" || decisionFeed.restartedAt) return;
       if (isLoading && issues.length === 0) {
         elHumanViewContainer.innerHTML = `
         <div class="empty-box">
@@ -17968,6 +18030,7 @@ Blocked by ${blockerRef}`;
         flushScratchpadSave();
       } else if (boardWasHidden && !isLoading && currentRepo && !isAllProjectsMode) {
         void fetchIssues();
+        if (decisionFeedStarted) void refreshDecisions();
       }
       boardWasHidden = document.hidden;
     });

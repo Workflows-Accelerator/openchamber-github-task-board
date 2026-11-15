@@ -21,6 +21,8 @@ import type { SessionEventRequest } from './session-event.ts';
 export const DECISIONS_MAX = 50;
 export const DECISIONS_BODY_MAX = 64 * 1024;
 export const DECISION_STALENESS_MS = 10 * 60_000;
+/** Ids removed after the host said they were gone; bounded like the store itself. */
+export const DECISION_TOMBSTONES_MAX = 200;
 export const DECISION_MESSAGE_MAX = 2000;
 export const DECISION_TITLE_MAX = 200;
 export const LINKED_MAX = 8;
@@ -77,6 +79,13 @@ export interface DecisionStoreOptions {
   host?: DecisionAnswerHost;
   maxEntries?: number;
   stalenessMs?: number;
+  /**
+   * The board's project directory. When set, an event from another directory is
+   * not stored, and an entry outside the scope is never answered. The panel
+   * registers its project through `POST /snapshot`; until then the store cannot
+   * tell projects apart and accepts what the host sends.
+   */
+  projectDirectory?: string | null;
   log?: (line: string) => void;
 }
 
@@ -134,6 +143,10 @@ export class DecisionStore {
   private readonly maxEntries: number;
   private readonly stalenessMs: number;
   private readonly log: (line: string) => void;
+  private readonly projects: Set<string> = new Set();
+  /** A decision removed after the host said it was gone never comes back as live. */
+  private readonly removed: Set<string> = new Set();
+  private readonly removedOrder: string[] = [];
   private host: DecisionAnswerHost | undefined;
   public readonly startedAt: number;
 
@@ -143,12 +156,44 @@ export class DecisionStore {
     this.stalenessMs = options.stalenessMs ?? DECISION_STALENESS_MS;
     this.log = options.log ?? (() => {});
     this.host = options.host;
+    if (options.projectDirectory) this.registerProject(options.projectDirectory);
     this.startedAt = this.now();
   }
 
   /** Set once the host client exists, or replaced in a test. */
   public setHost(host: DecisionAnswerHost | undefined): void {
     this.host = host;
+  }
+
+  /**
+   * Adds one project directory the board owns. Called from `POST /snapshot`
+   * (the panel's own project) and from the constructor. A worktree under the
+   * project is still the project, so a subdirectory matches.
+   */
+  public registerProject(directory: string | null | undefined): void {
+    if (typeof directory !== 'string' || directory.length === 0) return;
+    this.projects.add(directory.replace(/\/+$/, ''));
+  }
+
+  /** True when the store has no project scope, or `directory` is inside it. */
+  private inScope(directory: string | null): boolean {
+    if (this.projects.size === 0) return true;
+    if (typeof directory !== 'string' || directory.length === 0) return false;
+    const normalized = directory.replace(/\/+$/, '');
+    for (const project of this.projects) {
+      if (normalized === project || normalized.startsWith(`${project}/`)) return true;
+    }
+    return false;
+  }
+
+  private rememberRemoved(id: string): void {
+    if (this.removed.has(id)) return;
+    this.removed.add(id);
+    this.removedOrder.push(id);
+    while (this.removedOrder.length > DECISION_TOMBSTONES_MAX) {
+      const oldest = this.removedOrder.shift();
+      if (oldest) this.removed.delete(oldest);
+    }
   }
 
   public size(): number {
@@ -242,6 +287,15 @@ export class DecisionStore {
     const entry = this.entries.get(id);
     if (!entry) return { status: 404, body: { v: 1, code: 'DECISION_UNKNOWN' } };
     if (entry.state !== 'pending') return { status: 409, body: { v: 1, code: 'DECISION_NOT_PENDING' } };
+    // A decision the host linked to nothing is shown as UNBOUND and answered in
+    // the session, never through the board: the board cannot prove it owns it.
+    if (entry.linked.length === 0) return { status: 409, body: { v: 1, code: 'DECISION_NOT_LINKED' } };
+    if (!this.inScope(entry.directory)) {
+      return { status: 409, body: { v: 1, code: 'DECISION_FOREIGN_PROJECT' } };
+    }
+    // §5.1 step 2: past the staleness window is a refusal, not an answer. The
+    // entry stays `pending`; only an observation deletes it (§7.2).
+    if (this.isUnconfirmed(entry)) return { status: 409, body: { v: 1, code: 'DECISION_STALE' } };
     if (entry.kind !== 'form') {
       // S2 answers forms only. A page is answered by a message, which S3 ships.
       return { status: 400, body: { v: 1, code: 'ANSWER_INVALID', detail: [] } };
@@ -313,8 +367,10 @@ export class DecisionStore {
       : undefined;
 
     if (status === 404) {
-      // Already closed in the session, by the chat or by another device.
+      // Already closed in the session, by the chat or by another device. The
+      // tombstone stops a duplicate delivery from resurrecting it as live.
       this.entries.delete(entry.id);
+      this.rememberRemoved(entry.id);
       return { status: 404, body: { v: 1, code: 'DECISION_GONE' } };
     }
     if (status === 403) {
@@ -344,6 +400,10 @@ export class DecisionStore {
     const ask = readAsk(request.content, askId);
     const now = this.now();
 
+    // The host said this decision was gone. A retried delivery is not a new
+    // question, and re-creating it would make it answerable again.
+    if (this.removed.has(id)) return;
+
     const existing = this.entries.get(id);
     if (existing) {
       // A duplicate delivery is a confirmation, not a second entry (§3.4).
@@ -355,7 +415,8 @@ export class DecisionStore {
       return;
     }
 
-    if (!sessionId || (!event.project.directory && !sessionId)) return;
+    if (!sessionId) return;
+    if (!this.inScope(event.project.directory)) return;
 
     const entry: DecisionEntry = {
       id,
@@ -395,7 +456,10 @@ export class DecisionStore {
 
   private removeSession(sessionId: string): void {
     for (const [id, entry] of this.entries) {
-      if (entry.sessionId === sessionId) this.entries.delete(id);
+      if (entry.sessionId === sessionId) {
+        this.entries.delete(id);
+        this.rememberRemoved(id);
+      }
     }
   }
 
@@ -409,6 +473,7 @@ export class DecisionStore {
       const victim = answered[0] ?? all.sort((a, b) => a.askedAt - b.askedAt)[0];
       if (!victim) return;
       this.entries.delete(victim.id);
+      this.rememberRemoved(victim.id);
       this.log(`[decisions] store at ${this.maxEntries}; dropped ${victim.id}`);
     }
   }

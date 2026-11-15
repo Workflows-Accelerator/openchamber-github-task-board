@@ -89,8 +89,6 @@ export function formatHumanTodoSourceBadge(source) {
       return { label: 'Human Task', className: 'badge-human-task' };
     case 'open-question':
       return { label: 'Open Question', className: 'badge-open-question' };
-    case 'session-waiting':
-      return { label: 'Agent Waiting', className: 'badge-session-waiting' };
     default:
       return { label: 'Task', className: 'badge-human-task' };
   }

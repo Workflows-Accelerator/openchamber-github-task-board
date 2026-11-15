@@ -5,6 +5,7 @@ import { escapeHtml, slugify, sanitizeHexColor, addLog, logEntries } from './uti
 import { renderMarkdown, getIssueDescriptionPreview } from './markdown.js';
 import {
   isFrenchLocale,
+  DECISION_STALENESS_MS,
   decisionRepoKeys,
   renderDecisionBadge,
   renderDecisionBlock,
@@ -651,12 +652,12 @@ async function watchActiveProject(projectId: string): Promise<void> {
       sessionIndexByRepo = buildSessionIndexByRepo(sessions);
       renderViews();
       if (activeIssue) renderDrawer(activeIssue);
-      // The first snapshot seeds the feed; later ones refresh only when a
-      // decision is visible or the Pending view is open, so an idle board stays
-      // quiet (D11: no timer polling).
+      // The first snapshot seeds the feed; every later one refreshes it. A
+      // snapshot is an event, not a timer (D11), and a decision that arrives
+      // while the feed is empty must reach the card badge and the inbox.
       if (!decisionFeedStarted) {
         seedDecisionFeed();
-      } else if (decisionFeed.decisions.length > 0 || viewState.view === 'pending' || activeIssue) {
+      } else {
         void refreshDecisions();
       }
       statusReconciler.schedule(issues);
@@ -4999,12 +5000,13 @@ type DecisionFormValues = Record<string, string | number | boolean | string[]>;
 let panelLocale: DecisionLanguage = 'en';
 let decisionFeedStarted = false;
 let decisionRefreshInFlight = false;
-let lastDecisionSignature = '';
 
 interface DecisionFeed {
   status: 'unknown' | 'ok' | 'down';
   at: number;
   startedAt: number;
+  /** Set when a successful read saw a different `startedAt` than the previous one. */
+  restartedAt: number | null;
   decisions: DecisionView[];
   lastAttemptAt: number;
 }
@@ -5013,11 +5015,12 @@ let decisionFeed: DecisionFeed = {
   status: 'unknown',
   at: 0,
   startedAt: 0,
+  restartedAt: null,
   decisions: [],
   lastAttemptAt: 0,
 };
 
-const decisionAnswerState = new Map<string, { state: AnswerState; message?: string | null }>();
+const decisionAnswerState = new Map<string, { state: AnswerState; message?: string | null; dismissal?: boolean }>();
 
 function decisionLanguage(): DecisionLanguage {
   return panelLocale;
@@ -5071,6 +5074,7 @@ async function refreshDecisions(): Promise<void> {
   decisionRefreshInFlight = true;
   const previousSignature = decisionSignature();
   const previousStatus = decisionFeed.status;
+  const previousRestartedAt = decisionFeed.restartedAt;
   try {
     const res = await (host as any).serviceRequest({ method: 'GET', path: '/decisions' });
     const now = Date.now();
@@ -5080,10 +5084,18 @@ async function refreshDecisions(): Promise<void> {
       if (!parsed || !Array.isArray(parsed.decisions)) {
         decisionFeed = { ...decisionFeed, status: 'down', lastAttemptAt: now };
       } else {
+        const startedAt = typeof parsed.startedAt === 'number' ? parsed.startedAt : decisionFeed.startedAt;
+        // A changed `startedAt` is a restart: the in-memory store is empty and
+        // decisions asked before it are not tracked. Say so, never "nothing is
+        // waiting" (§7.5).
+        const restartedAt = decisionFeed.startedAt > 0 && startedAt !== decisionFeed.startedAt
+          ? now
+          : decisionFeed.restartedAt;
         decisionFeed = {
           status: 'ok',
           at: typeof parsed.at === 'number' ? parsed.at : now,
-          startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : decisionFeed.startedAt,
+          startedAt,
+          restartedAt,
           decisions: parsed.decisions as DecisionView[],
           lastAttemptAt: now,
         };
@@ -5102,7 +5114,7 @@ async function refreshDecisions(): Promise<void> {
   } finally {
     decisionRefreshInFlight = false;
   }
-  if (decisionSignature() !== previousSignature) {
+  if (decisionSignature() !== previousSignature || decisionFeed.restartedAt !== previousRestartedAt) {
     renderDecisionSurfaces();
   } else if (decisionFeed.status !== previousStatus && viewState.view === 'pending') {
     renderViews();
@@ -5124,23 +5136,68 @@ function seedDecisionFeed(): void {
   void refreshDecisions();
 }
 
-function renderDecisionAnswerStateNote(decisionId: string): { state: AnswerState; message?: string | null } {
+function renderDecisionAnswerStateNote(decisionId: string): { state: AnswerState; message?: string | null; dismissal?: boolean } {
   return decisionAnswerState.get(decisionId) ?? { state: 'idle' };
+}
+
+/** The service's code and host sentence, read defensively from one answer. */
+function decisionErrorBody(res: any): { code: string; message: string | null } {
+  const parsed = safeJsonParse(res && res.body);
+  return {
+    code: parsed && typeof parsed.code === 'string' ? parsed.code : '',
+    message: parsed && typeof parsed.message === 'string' ? parsed.message : null,
+  };
+}
+
+/**
+ * Maps one answer response to a state that is literally true. A 409 is not
+ * always "already closed": it can be an answer in flight, a stale observation
+ * or an unlinked session, and each says something different to the owner.
+ */
+function decisionAnswerStateFromResponse(
+  status: number,
+  code: string,
+  message: string | null
+): { state: AnswerState; message?: string | null } {
+  if (status === 200) return { state: 'sent' };
+  if (status === 404) return { state: 'stale' };
+  if (status === 409) {
+    if (code === 'DECISION_STALE') return { state: 'unconfirmed' };
+    if (code === 'DECISION_NOT_LINKED') return { state: 'not-linked' };
+    if (code === 'DECISION_NOT_PENDING') return { state: 'in-flight' };
+    return { state: 'failed' };
+  }
+  if (status === 403) return { state: 'permission-missing', message };
+  if (status === 502) return { state: 'unknown-outcome', message };
+  return { state: 'failed', message };
 }
 
 function decisionBlockContext(decision: DecisionView, issueNumber: number | null, unbound: boolean) {
   const answer = renderDecisionAnswerStateNote(decision.id);
+  const now = Date.now();
+  // The observation is stale when the last positive confirmation is older than
+  // the service's window, or when the feed itself did not answer. Both are
+  // "not confirmed", never "waiting for you".
+  const staleByObservation = decision.confirmedAt > 0 && now - decision.confirmedAt > DECISION_STALENESS_MS;
+  const unconfirmedSince = decisionFeed.status === 'down'
+    ? decisionFeed.lastAttemptAt || now
+    : staleByObservation
+    ? decision.confirmedAt
+    : null;
   return {
     language: decisionLanguage(),
-    now: Date.now(),
-    // Answer controls exist only when the service feed answered. A refusal at
-    // call time still maps to a named state; nothing assumes the grant exists.
-    canAnswer: decisionFeed.status === 'ok',
+    now,
+    // Answer controls exist only when the service feed answered, the
+    // observation is fresh, and the decision belongs to a board task. A
+    // refusal at call time still maps to a named state.
+    canAnswer: decisionFeed.status === 'ok' && !staleByObservation && !unbound,
+    checking: decisionFeed.status === 'unknown',
     unbound,
     issueNumber,
     answerState: answer.state,
     answerMessage: answer.message ?? null,
-    unconfirmedSince: decisionFeed.status === 'down' ? decisionFeed.lastAttemptAt : null,
+    dismissal: answer.dismissal === true,
+    unconfirmedSince,
     onSubmit: (target: DecisionView, values: DecisionFormValues) => { void submitDecisionAnswer(target, values); },
     onDismiss: (target: DecisionView, message: string) => { void dismissDecision(target, message); },
     onOpenSession: (target: DecisionView) => { void host.openSession(target.sessionId); },
@@ -5164,19 +5221,8 @@ async function submitDecisionAnswer(decision: DecisionView, values: DecisionForm
       body: JSON.stringify({ v: 1, id: decision.id, values }),
     });
     const status = res && typeof res.status === 'number' ? res.status : 0;
-    if (status === 200) {
-      decisionAnswerState.set(decision.id, { state: 'sent' });
-    } else if (status === 404) {
-      decisionAnswerState.set(decision.id, { state: 'stale' });
-    } else if (status === 409) {
-      decisionAnswerState.set(decision.id, { state: 'stale' });
-    } else if (status === 403) {
-      decisionAnswerState.set(decision.id, { state: 'permission-missing' });
-    } else if (status === 502) {
-      decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
-    } else {
-      decisionAnswerState.set(decision.id, { state: 'failed' });
-    }
+    const { code, message } = decisionErrorBody(res);
+    decisionAnswerState.set(decision.id, decisionAnswerStateFromResponse(status, code, message));
   } catch {
     // The request may have reached the service; do not claim it failed cleanly.
     decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
@@ -5198,11 +5244,9 @@ async function dismissDecision(decision: DecisionView, message: string): Promise
       body: JSON.stringify({ v: 1, id: decision.id, values: null, message }),
     });
     const status = res && typeof res.status === 'number' ? res.status : 0;
-    if (status === 200) decisionAnswerState.set(decision.id, { state: 'sent' });
-    else if (status === 404 || status === 409) decisionAnswerState.set(decision.id, { state: 'stale' });
-    else if (status === 403) decisionAnswerState.set(decision.id, { state: 'permission-missing' });
-    else if (status === 502) decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
-    else decisionAnswerState.set(decision.id, { state: 'failed' });
+    const { code, message: errorMessage } = decisionErrorBody(res);
+    const next = decisionAnswerStateFromResponse(status, code, errorMessage);
+    decisionAnswerState.set(decision.id, next.state === 'sent' ? { state: 'sent', dismissal: true } : next);
   } catch {
     decisionAnswerState.set(decision.id, { state: 'unknown-outcome' });
   } finally {
@@ -5217,7 +5261,25 @@ function renderDrawerDecision(issue: Issue): void {
   elDrawerDecisionSlot.innerHTML = '';
   const list = decisionsForIssue(issue);
   if (list.length === 0) {
-    elDrawerDecisionSlot.style.display = 'none';
+    // The block area still has to tell the truth when it cannot ask: service
+    // down, not checked yet, or restarted (§8.5).
+    const language = decisionLanguage();
+    if (decisionFeed.status === 'down') {
+      elDrawerDecisionSlot.style.display = '';
+      elDrawerDecisionSlot.appendChild(
+        renderDecisionStatusNote('service-down', language, decisionFeed.lastAttemptAt || Date.now())
+      );
+    } else if (decisionFeed.status === 'unknown') {
+      elDrawerDecisionSlot.style.display = '';
+      elDrawerDecisionSlot.appendChild(renderDecisionStatusNote('checking', language, Date.now()));
+    } else if (decisionFeed.restartedAt) {
+      elDrawerDecisionSlot.style.display = '';
+      elDrawerDecisionSlot.appendChild(
+        renderDecisionStatusNote('restarted', language, decisionFeed.restartedAt)
+      );
+    } else {
+      elDrawerDecisionSlot.style.display = 'none';
+    }
     return;
   }
   elDrawerDecisionSlot.style.display = '';
@@ -5276,8 +5338,14 @@ function renderDecisionInbox(): number {
   renderGroup(copyText(language, 'inboxConfirming'), bound.filter((entry) => entry.state !== 'pending'), false);
   renderGroup(copyText(language, 'inboxUnbound'), unbound, true);
 
+  // Each unavailable state says its own truth. "Nothing is waiting" is only
+  // printed after a successful read that returned nothing (§2.2, §8.5).
   if (decisionFeed.status === 'down') {
-    section.appendChild(renderDecisionStatusNote('service-down', language, decisionFeed.lastAttemptAt));
+    section.appendChild(renderDecisionStatusNote('service-down', language, decisionFeed.lastAttemptAt || Date.now()));
+  } else if (decisionFeed.status === 'unknown') {
+    section.appendChild(renderDecisionStatusNote('checking', language, Date.now()));
+  } else if (decisionFeed.restartedAt) {
+    section.appendChild(renderDecisionStatusNote('restarted', language, decisionFeed.restartedAt));
   } else if (decisionFeed.decisions.length === 0) {
     section.appendChild(renderDecisionStatusNote('no-decisions', language, decisionFeed.at || Date.now()));
   }
@@ -5331,6 +5399,9 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
   if (humanIssues.length === 0) {
     if (decisionCount > 0) return;
+    // Unreachable or unchecked is not empty: the inbox above already said
+    // which, and this box would contradict it.
+    if (decisionFeed.status !== 'ok' || decisionFeed.restartedAt) return;
     if (isLoading && issues.length === 0) {
       elHumanViewContainer.innerHTML = `
         <div class="empty-box">
@@ -9853,6 +9924,9 @@ function initEvents(): void {
       flushScratchpadSave();
     } else if (boardWasHidden && !isLoading && currentRepo && !isAllProjectsMode) {
       void fetchIssues();
+      // Coming back to the board is when an answer sent elsewhere and a
+      // decision asked while hidden become visible (§7.1).
+      if (decisionFeedStarted) void refreshDecisions();
     }
     boardWasHidden = document.hidden;
   });

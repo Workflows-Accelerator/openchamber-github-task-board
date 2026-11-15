@@ -220,6 +220,97 @@ test('decision-store: an unknown or foreign decision id is 404 and never reaches
   assert.equal(host.calls.length, 0);
 });
 
+test('decision-store: a known ask id under a foreign session is 404 and never reaches the host', async () => {
+  // The foreign-id test above only uses an unknown ask id, so it cannot see a
+  // lookup that resolves by askId suffix and ignores the session prefix. This
+  // one uses the ask id of a real entry with another session: an exact lookup
+  // is 404, a suffix lookup would find `ses_1` and call the host.
+  const host = stubHost();
+  const { store: decisions } = store(host);
+  decisions.handleEvent(event({}, formContent()));
+  const result = await decisions.answer({ id: 'ses_other:form:q_1', values: { layout: 'split' } });
+  assert.equal(result.status, 404);
+  assert.equal(result.body.code, 'DECISION_UNKNOWN');
+  assert.equal(host.calls.length, 0, 'a foreign session prefix never reaches the host');
+});
+
+test('decision-store: a decision unconfirmed past the staleness window is 409 and never reaches the host', async () => {
+  const host = stubHost();
+  const { store: decisions, advance } = store(host);
+  decisions.handleEvent(event({}, formContent()));
+  advance(3 * 60 * 60_000);
+  const result = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  assert.equal(result.status, 409);
+  assert.equal(result.body.code, 'DECISION_STALE');
+  assert.equal(host.calls.length, 0, 'a stale decision is never sent to the host');
+  assert.equal(decisions.get('ses_1:form:q_1').state, 'pending', 'staleness never deletes a waiting entry');
+});
+
+test('decision-store: a fresh confirmation re-arms a decision that had gone stale', async () => {
+  const host = stubHost();
+  const { store: decisions, advance } = store(host);
+  decisions.handleEvent(event({}, formContent()));
+  advance(11 * 60_000);
+  assert.equal((await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } })).status, 409);
+  decisions.observeStatus('ses_1', 'waiting');
+  const result = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  assert.equal(result.status, 200);
+  assert.equal(host.calls.length, 1);
+});
+
+test('decision-store: a decision the host said was gone does not come back on redelivery', async () => {
+  let calls = 0;
+  const host = stubHost(async () => {
+    calls += 1;
+    throw new HostCallError('This request is no longer waiting for an answer', 'NOT_FOUND', 404);
+  });
+  const { store: decisions } = store(host);
+  decisions.handleEvent(event({}, formContent()));
+  assert.equal((await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } })).status, 404);
+  assert.equal(decisions.list().decisions.length, 0);
+
+  // A duplicate delivery of the same question must not resurrect the entry.
+  decisions.handleEvent(event({ at: NOW, id: 'evt-duplicate' }, formContent()));
+  assert.equal(decisions.list().decisions.length, 0, 'a gone decision is never resurrected');
+  const again = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  assert.equal(again.status, 404);
+  assert.equal(calls, 1, 'the host is not asked again for a decision it said was gone');
+});
+
+test('decision-store: a project-scoped store ignores another project\'s decision', async () => {
+  const host = stubHost();
+  const { store: decisions } = store(host, { projectDirectory: '/workspace/code/x' });
+  decisions.handleEvent(event({ project: { directory: '/workspace/code/other' } }, formContent()));
+  assert.equal(decisions.list().decisions.length, 0, 'a foreign project never enters the store');
+  const result = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  assert.equal(result.status, 404);
+  assert.equal(host.calls.length, 0);
+});
+
+test('decision-store: a project scope registered after the event refuses to answer it', async () => {
+  const host = stubHost();
+  const { store: decisions } = store(host);
+  decisions.handleEvent(event({ project: { directory: '/workspace/code/other' } }, formContent()));
+  assert.equal(decisions.list().decisions.length, 1);
+  decisions.registerProject('/workspace/code/x');
+  const result = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  assert.equal(result.status, 409);
+  assert.equal(result.body.code, 'DECISION_FOREIGN_PROJECT');
+  assert.equal(host.calls.length, 0, 'the board never acts in a project it does not own');
+});
+
+test('decision-store: a decision with no task link is listed but never answerable', async () => {
+  const host = stubHost();
+  const { store: decisions } = store(host);
+  decisions.handleEvent(event({ linked: [] }, formContent()));
+  assert.equal(decisions.list().decisions.length, 1, 'an unlinked decision is still shown');
+  const result = await decisions.answer({ id: 'ses_1:form:q_1', values: { layout: 'split' } });
+  assert.equal(result.status, 409);
+  assert.equal(result.body.code, 'DECISION_NOT_LINKED');
+  assert.equal(host.calls.length, 0);
+  assert.equal(decisions.get('ses_1:form:q_1').state, 'pending');
+});
+
 test('decision-store: an answer for a form the session no longer waits on is 404 DECISION_GONE', async () => {
   const host = stubHost(async () => {
     throw new HostCallError('This request is no longer waiting for an answer', 'NOT_FOUND', 404);

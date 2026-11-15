@@ -278,9 +278,9 @@ test('decision-render: EN and FR produce identical structure', () => {
 test('decision-render: no fixed string carries an emoji or an exclamation mark', () => {
   const emoji = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{1F1E0}-\u{1F1FF}]/u;
   const keys = [
-    'waiting', 'answering', 'confirming', 'unconfirmed', 'answeredSent', 'dismissalSent',
+    'waiting', 'answering', 'answerInFlight', 'confirming', 'unconfirmed', 'answeredSent', 'dismissalSent',
     'blindWait', 'pageUnavailable', 'readonly', 'permissionMissing', 'credentialWarning',
-    'notLinked', 'noDecision', 'serviceDown', 'restart', 'gone', 'failed', 'unknownOutcome',
+    'notLinked', 'checking', 'noDecision', 'serviceDown', 'restart', 'gone', 'failed', 'unknownOutcome',
     'openSession', 'sendAnswer', 'dismiss', 'sendDismissal', 'dismissReason', 'recheck',
     'fieldsNotShown', 'optionsNotShown', 'external', 'notAnswered', 'yes', 'other',
     'subagentOf', 'unlinkedProvenance', 'waitingSince', 'older', 'moreInAnother',
@@ -306,6 +306,92 @@ test('decision-render: the provenance line always names the session and the proj
   assert.match(unbound, /not linked to a task/);
   const child = provenanceLine(decision({ parentId: 'ses_parent' }), context());
   assert.match(child, /subagent of ses_parent/);
+});
+
+test('decision-render: an answered block with real fields is inert and never claims a permission problem', () => {
+  const block = renderDecisionBlock(decision({ state: 'answered-unconfirmed', fields: basicFields }), context());
+  const text = collectText(block).join(' ');
+  assert.match(text, /answered, confirming/);
+  assert.equal(text.includes('not allowed to answer'), false, 'an answered block is not a permission problem');
+  assert.equal(text.includes('Answer sent'), false);
+  const submit = block.querySelector('.decision-submit');
+  assert.notEqual(submit, null, 'the confirming block still shows the answered form');
+  assert.equal(submit.disabled, true, 'a confirming block is inert');
+});
+
+test('decision-render: a failed answer says it failed and never claims a permission problem', () => {
+  const block = renderDecisionBlock(decision({ fields: basicFields }), context({ answerState: 'failed' }));
+  const text = collectText(block).join(' ');
+  assert.match(text, /was not sent/);
+  assert.equal(text.includes('not allowed to answer'), false);
+  assert.equal(block.querySelector('.decision-submit').disabled, true);
+});
+
+test('decision-render: a server-side answer in flight is inert and is not "waiting for you"', () => {
+  const block = renderDecisionBlock(decision({ state: 'answering', fields: basicFields }), context());
+  const text = collectText(block).join(' ');
+  assert.match(text, /answer in flight/i);
+  assert.equal(text.includes('waiting for you'), false);
+  assert.equal(block.querySelector('.decision-submit').disabled, true, 'a second tap cannot be invited');
+});
+
+test('decision-render: an unconfirmed block says so, disables the form and offers Recheck', () => {
+  let rechecked = 0;
+  const block = renderDecisionBlock(
+    decision({ fields: basicFields }),
+    context({ unconfirmedSince: NOW - 60_000, onRecheck: () => { rechecked += 1; } })
+  );
+  const text = collectText(block).join(' ');
+  assert.match(text, /not confirmed since/);
+  assert.equal(text.includes('waiting for you'), false);
+  assert.equal(block.querySelector('.decision-submit').disabled, true);
+  const recheck = block.querySelector('.decision-recheck');
+  assert.notEqual(recheck, null);
+  assert.equal(recheck.disabled, false, 'Recheck is the one enabled control');
+  recheck.dispatch('click');
+  assert.equal(rechecked, 1);
+});
+
+test('decision-render: a permission-missing answer shows the host sentence, not a bare claim', () => {
+  const block = renderDecisionBlock(
+    decision({ fields: basicFields }),
+    context({ answerState: 'permission-missing', answerMessage: 'This call needs the "sessionAnswers" approval.' })
+  );
+  const text = collectText(block).join(' ');
+  assert.match(text, /not allowed to answer/);
+  assert.match(text, /sessionAnswers/);
+});
+
+test('decision-render: a dismissal says "Dismissal sent", never "Answer sent"', () => {
+  const block = renderDecisionBlock(
+    decision({ fields: basicFields }),
+    context({ answerState: 'sent', dismissal: true })
+  );
+  const text = collectText(block).join(' ');
+  assert.match(text, /Dismissal sent/);
+  assert.equal(text.includes('Answer sent'), false);
+});
+
+test('decision-render: an unlinked decision offers Open session only', () => {
+  const block = renderDecisionBlock(decision({ fields: basicFields }), context({ unbound: true, issueNumber: null }));
+  const text = collectText(block).join(' ');
+  assert.match(text, /not linked to a task/);
+  assert.equal(block.querySelector('.decision-submit'), null);
+  assert.notEqual(block.querySelector('.decision-open-session'), null);
+});
+
+test('decision-render: a badge for an in-flight answer never says "waiting for you"', () => {
+  const badge = renderDecisionBadge(decision({ state: 'answering' }), 'en');
+  const text = collectText(badge).join(' ');
+  assert.match(text, /answer in flight/i);
+  assert.equal(text.includes('waiting for you'), false);
+});
+
+test('decision-render: the panel and the service share one staleness threshold', async () => {
+  const { DECISION_STALENESS_MS: serviceMs } = await import('../service/decision-store.ts');
+  const { DECISION_STALENESS_MS: panelMs } = await import('../panel/decisions.ts');
+  assert.equal(panelMs, serviceMs, 'the overlay and the 409 must agree on ten minutes');
+  assert.equal(panelMs, 10 * 60_000);
 });
 
 test('decision-render: a confirming block never shows answer controls and never says answered', () => {

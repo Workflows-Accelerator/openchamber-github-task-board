@@ -458,6 +458,9 @@ export function createCoordinatorHostServer(
           return;
         }
         snapshotStore.set(parsed.snapshot);
+        // The panel just named the project it shows; decisions from another
+        // project are not this board's to act in (D53 §7.4, D7).
+        decisions.registerProject(parsed.snapshot.directory);
         res.writeHead(204);
         res.end();
       });
