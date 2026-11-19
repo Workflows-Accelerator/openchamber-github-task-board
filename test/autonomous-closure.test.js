@@ -116,7 +116,7 @@ test('4. Human actions preserve legitimate closure: updateIssueStatus with isHum
     labels: [{ name: 'status:in-progress' }],
   };
 
-  await app.updateIssueStatus(issue, 'done', { isHumanGesture: true });
+  await app.updateIssueStatus(issue, 'done', { isHumanGesture: true, confirmedStateChange: true });
   assert.equal(patches.length, 1, 'Human gesture must produce a PATCH request');
   const patch = JSON.parse(patches[0].body);
   assert.equal(patch.state, 'closed', 'PATCH payload must set state: closed');

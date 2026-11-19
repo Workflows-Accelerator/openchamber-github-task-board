@@ -5505,7 +5505,12 @@ ${placeholder}
       ambiguousTask: "This task number exists in more than one repository. Open the task and use its own action.",
       dependencyUnavailable: "This dependency cannot be removed safely from here. Open the task and edit its body.",
       taskOutcome: "Task outcome",
-      visibility: "Visibility"
+      visibility: "Visibility",
+      archiveIssue: "Archive issue",
+      unarchiveIssue: "Unarchive issue",
+      archiveClosesIssue: "closes the GitHub issue",
+      archiveReopensIssue: "reopens the GitHub issue",
+      confirmArchiveTransition: "{action} {task} in {repo}? This {effect}."
     },
     fr: {
       waiting: "en attente de vous",
@@ -5573,7 +5578,12 @@ ${placeholder}
       ambiguousTask: "Ce num\xE9ro de t\xE2che existe dans plusieurs d\xE9p\xF4ts. Ouvrez la t\xE2che et utilisez son action.",
       dependencyUnavailable: "Cette d\xE9pendance ne peut pas \xEAtre retir\xE9e en toute s\xE9curit\xE9 ici. Ouvrez la t\xE2che et modifiez son corps.",
       taskOutcome: "R\xE9sultat de la t\xE2che",
-      visibility: "Visibilit\xE9"
+      visibility: "Visibilit\xE9",
+      archiveIssue: "Archiver la t\xE2che",
+      unarchiveIssue: "D\xE9sarchiver la t\xE2che",
+      archiveClosesIssue: "ferme la t\xE2che sur GitHub",
+      archiveReopensIssue: "rouvre la t\xE2che sur GitHub",
+      confirmArchiveTransition: "{action} {task} dans {repo} ? Cela {effect}."
     }
   };
   function copyText(language, key, values = {}) {
@@ -12280,6 +12290,16 @@ Blocked by ${blockerRef}`;
       inFlightQuestions.delete(inFlightKey);
     }
   }
+  async function writeIssueState(repo, issue, nextState, labels, options) {
+    const observed = String(options.previousState ?? issue.state ?? "").toLowerCase();
+    if (nextState !== observed && !options.confirmed) {
+      throw new Error(`Refused unconfirmed state change of #${issue.number} to ${nextState}`);
+    }
+    await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+      state: nextState,
+      labels
+    });
+  }
   async function updateIssueStatus(issue, targetColumn, options) {
     const repo = repoForIssue(issue);
     if (!issue || !repo) {
@@ -12325,9 +12345,9 @@ Blocked by ${blockerRef}`;
       renderDrawer(issue, true);
     }
     try {
-      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
-        state: newState,
-        labels: filteredLabels
+      await writeIssueState(repo, issue, newState, filteredLabels, {
+        confirmed: Boolean(options?.confirmedStateChange),
+        previousState: prevState
       });
       finishWrite(true);
       await host.toast({ kind: "success", message: `Moved #${issue.number} to ${targetColumn}` });
@@ -12473,7 +12493,7 @@ Blocked by ${blockerRef}`;
         if (repoForIssue(fresh).toLowerCase() !== repo.toLowerCase()) return;
         if (options.requireDrawer !== false && (!isDrawerIssue(fresh) || issueIdentityKey(fresh) !== key)) return;
         if (isActuallyClosed(fresh) !== isClosed) return;
-        void updateIssueStatus(fresh, isClosed ? "todo" : "done", { isHumanGesture: true });
+        void updateIssueStatus(fresh, isClosed ? "todo" : "done", { isHumanGesture: true, confirmedStateChange: true });
       }
     });
   }
@@ -12542,15 +12562,13 @@ Blocked by ${blockerRef}`;
         return { label: "Next", target: "todo", icon: "\u2192" };
     }
   }
-  async function toggleArchiveIssue(issue) {
+  function computeArchiveEffect(issue) {
     const isArch = isIssueArchived(issue);
-    const prevLabels = [...issue.labels];
-    const prevState = issue.state;
     const currentNames = issue.labels.map((l) => typeof l === "string" ? l : l.name || "");
     const clean = currentNames.filter(
       (n) => !["archived", "archive", "status:archived"].includes(n.toLowerCase())
     );
-    let newState = issue.state;
+    let nextState = isActuallyClosed(issue) ? "closed" : "open";
     let targetCategory = "todo";
     if (!isArch) {
       const currentCategory = resolveIssueColumn3(issue) || "todo";
@@ -12558,7 +12576,7 @@ Blocked by ${blockerRef}`;
         clean.push(`status:${currentCategory}`);
       }
       clean.push("archived");
-      newState = "closed";
+      nextState = "closed";
       targetCategory = currentCategory;
     } else {
       const statusLabel = clean.find((n) => n.startsWith("status:"));
@@ -12568,10 +12586,11 @@ Blocked by ${blockerRef}`;
         targetCategory = "todo";
         clean.push("status:todo");
       }
-      newState = targetCategory === "done" ? "closed" : "open";
+      nextState = targetCategory === "done" ? "closed" : "open";
     }
-    issue.state = newState;
-    issue.labels = clean.map((name) => ({ name }));
+    return { nextState, labels: clean, targetCategory };
+  }
+  async function applyArchiveToggle(issue, effect, options) {
     const archiveRepo = repoForIssue(issue);
     if (!archiveRepo) {
       addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
@@ -12580,24 +12599,34 @@ Blocked by ${blockerRef}`;
       }
       return;
     }
+    const wasArchived = isIssueArchived(issue);
+    const prevLabels = [...issue.labels];
+    const prevState = issue.state;
+    issue.state = effect.nextState;
+    issue.labels = effect.labels.map((name) => ({ name }));
     issueCache.delete(archiveRepo);
     renderViews();
     if (isDrawerIssue(issue)) {
       renderDrawer(issue, true);
     }
     try {
-      await githubRequestWithRetry("PATCH", `/repos/${archiveRepo}/issues/${issue.number}`, {
-        state: newState,
-        labels: clean
+      await writeIssueState(archiveRepo, issue, effect.nextState, effect.labels, {
+        confirmed: options.confirmed,
+        previousState: prevState
       });
       await host.toast({
-        kind: isArch ? "info" : "success",
-        message: isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`
+        kind: wasArchived ? "success" : "info",
+        message: wasArchived ? `Unarchived #${issue.number} back to ${effect.targetCategory}` : `Archived #${issue.number}`
       });
-      addLog(isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`, "succ");
+      addLog(
+        wasArchived ? `Unarchived #${issue.number} back to ${effect.targetCategory}` : `Archived #${issue.number}`,
+        "succ"
+      );
     } catch (err) {
-      issue.state = prevState;
-      issue.labels = prevLabels;
+      for (const target of /* @__PURE__ */ new Set([issue, findIssueRecord(archiveRepo, issue)])) {
+        target.state = prevState;
+        target.labels = prevLabels;
+      }
       renderViews();
       if (isDrawerIssue(issue)) {
         renderDrawer(issue, true);
@@ -12605,6 +12634,46 @@ Blocked by ${blockerRef}`;
       addLog(`Failed to update archive state: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to archive #${issue.number}: ${err.message}` });
     }
+  }
+  async function toggleArchiveIssue(issue) {
+    const archiveRepo = repoForIssue(issue);
+    if (!archiveRepo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
+    const effect = computeArchiveEffect(issue);
+    const previousState = String(issue.state || "").toLowerCase();
+    if (effect.nextState === previousState) {
+      await applyArchiveToggle(issue, effect, { confirmed: false });
+      return;
+    }
+    const wasArchived = isIssueArchived(issue);
+    const key = issueIdentityKey(issue);
+    const language = decisionLanguage();
+    const action = copyText(language, wasArchived ? "unarchiveIssue" : "archiveIssue");
+    showConfirmDialog({
+      title: action,
+      message: copyText(language, "confirmArchiveTransition", {
+        action,
+        task: `#${issue.number} ${issue.title}`,
+        repo: archiveRepo,
+        effect: copyText(language, effect.nextState === "closed" ? "archiveClosesIssue" : "archiveReopensIssue")
+      }),
+      confirmLabel: action,
+      onConfirm: () => {
+        const fresh = findIssueByKey(key);
+        if (!fresh) return;
+        if (repoForIssue(fresh).toLowerCase() !== archiveRepo.toLowerCase()) return;
+        if (isIssueArchived(fresh) !== wasArchived) return;
+        if (String(fresh.state || "").toLowerCase() !== previousState) return;
+        const freshEffect = computeArchiveEffect(fresh);
+        if (freshEffect.nextState === previousState) return;
+        void applyArchiveToggle(fresh, freshEffect, { confirmed: true });
+      }
+    });
   }
   function groupIssuesBy2(issuesList, groupBy) {
     if (groupBy === "priority") {
@@ -13048,7 +13117,7 @@ Blocked by ${blockerRef}`;
       if (showArchivedOnly ? !isIssueArchived(issue) : isIssueArchived(issue)) return false;
       return !q || issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) || (issue.labels || []).some((label) => (typeof label === "string" ? label : label.name || "").toLowerCase().includes(q));
     });
-    const visible = viewState.view === "simple" && !showClosedIssues ? searched.filter((issue) => !isActuallyClosed(issue)) : searched;
+    const visible = viewState.view === "simple" && !showClosedIssues && !showArchivedOnly ? searched.filter((issue) => !isActuallyClosed(issue)) : searched;
     const attention = groupIssuesByAttention(visible, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
     const filtered = applyFilters(visible, viewState.filters, {
       stageOf: (issue) => resolveIssueColumn3(issue) || "todo",
@@ -13851,7 +13920,7 @@ Blocked by ${blockerRef}`;
     const questionsBadgeHtml = questionBadgeInfo.html;
     const descPreview = getIssueDescriptionPreview(issue.body);
     const descHtml = descPreview ? `<div class="card-desc" title="${escapeHtml(descPreview)}">${escapeHtml(descPreview)}</div>` : "";
-    const nextStageButtonHtml = !inKanban && !showArchivedOnly ? `
+    const nextStageButtonHtml = !inKanban && !showArchivedOnly && !(col === "done" && !isActuallyClosed(issue)) ? `
       <button class="card-btn-next" data-issue="${issue.number}" data-target="${nextAction.target}" title="Move to ${nextAction.label}">
         <span>${nextAction.icon}</span>
         <span>${nextAction.label}</span>

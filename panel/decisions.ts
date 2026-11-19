@@ -189,6 +189,11 @@ const COPY = {
     dependencyUnavailable: 'This dependency cannot be removed safely from here. Open the task and edit its body.',
     taskOutcome: 'Task outcome',
     visibility: 'Visibility',
+    archiveIssue: 'Archive issue',
+    unarchiveIssue: 'Unarchive issue',
+    archiveClosesIssue: 'closes the GitHub issue',
+    archiveReopensIssue: 'reopens the GitHub issue',
+    confirmArchiveTransition: '{action} {task} in {repo}? This {effect}.',
   },
   fr: {
     waiting: 'en attente de vous',
@@ -257,6 +262,11 @@ const COPY = {
     dependencyUnavailable: "Cette dépendance ne peut pas être retirée en toute sécurité ici. Ouvrez la tâche et modifiez son corps.",
     taskOutcome: 'Résultat de la tâche',
     visibility: 'Visibilité',
+    archiveIssue: 'Archiver la tâche',
+    unarchiveIssue: 'Désarchiver la tâche',
+    archiveClosesIssue: 'ferme la tâche sur GitHub',
+    archiveReopensIssue: 'rouvre la tâche sur GitHub',
+    confirmArchiveTransition: '{action} {task} dans {repo} ? Cela {effect}.',
   },
 } as const;
 

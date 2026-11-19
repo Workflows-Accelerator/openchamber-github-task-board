@@ -2889,10 +2889,31 @@ async function answerQuestion(
   }
 }
 
+// The single writer for a GitHub issue's open/closed state. A transition away
+// from the state the caller observed is only sent when that caller carries the
+// confirmed signal produced by the in-panel dialog. Every other PATCH here is a
+// label, title or body write and cannot change state.
+async function writeIssueState(
+  repo: string,
+  issue: Issue,
+  nextState: 'open' | 'closed',
+  labels: string[],
+  options: { confirmed: boolean; previousState?: string }
+): Promise<void> {
+  const observed = String(options.previousState ?? issue.state ?? '').toLowerCase();
+  if (nextState !== observed && !options.confirmed) {
+    throw new Error(`Refused unconfirmed state change of #${issue.number} to ${nextState}`);
+  }
+  await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
+    state: nextState,
+    labels,
+  });
+}
+
 async function updateIssueStatus(
   issue: Issue,
   targetColumn: ColumnId,
-  options?: { newPriorityGroup?: string; isHumanGesture?: boolean }
+  options?: { newPriorityGroup?: string; isHumanGesture?: boolean; confirmedStateChange?: boolean }
 ): Promise<void> {
   const repo = repoForIssue(issue);
   if (!issue || !repo) {
@@ -2948,9 +2969,9 @@ async function updateIssueStatus(
   }
 
   try {
-    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
-      state: newState,
-      labels: filteredLabels,
+    await writeIssueState(repo, issue, newState, filteredLabels, {
+      confirmed: Boolean(options?.confirmedStateChange),
+      previousState: prevState,
     });
     finishWrite(true);
     await host.toast({ kind: 'success', message: `Moved #${issue.number} to ${targetColumn}` });
@@ -3131,7 +3152,7 @@ function requestDoneToggle(
       if (repoForIssue(fresh).toLowerCase() !== repo.toLowerCase()) return;
       if (options.requireDrawer !== false && (!isDrawerIssue(fresh) || issueIdentityKey(fresh) !== key)) return;
       if (isActuallyClosed(fresh) !== isClosed) return;
-      void updateIssueStatus(fresh, isClosed ? 'todo' : 'done', { isHumanGesture: true });
+      void updateIssueStatus(fresh, isClosed ? 'todo' : 'done', { isHumanGesture: true, confirmedStateChange: true });
     },
   });
 }
@@ -3219,17 +3240,20 @@ export function getNextColumnAction(current: ColumnId): { label: string; target:
   }
 }
 
-async function toggleArchiveIssue(issue: Issue): Promise<void> {
-  const isArch = isIssueArchived(issue);
-  const prevLabels = [...issue.labels];
-  const prevState = issue.state;
+type ArchiveEffect = {
+  nextState: 'open' | 'closed';
+  labels: string[];
+  targetCategory: ColumnId;
+};
 
+function computeArchiveEffect(issue: Issue): ArchiveEffect {
+  const isArch = isIssueArchived(issue);
   const currentNames = issue.labels.map((l) => (typeof l === 'string' ? l : l.name || ''));
   const clean = currentNames.filter(
     (n) => !['archived', 'archive', 'status:archived'].includes(n.toLowerCase())
   );
 
-  let newState: 'open' | 'closed' = issue.state;
+  let nextState: 'open' | 'closed' = isActuallyClosed(issue) ? 'closed' : 'open';
   let targetCategory: ColumnId = 'todo';
 
   if (!isArch) {
@@ -3239,7 +3263,7 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
       clean.push(`status:${currentCategory}`);
     }
     clean.push('archived');
-    newState = 'closed';
+    nextState = 'closed';
     targetCategory = currentCategory;
   } else {
     // Unarchiving: inspect preserved status:<cat> tag to bring it back to its original category!
@@ -3250,11 +3274,17 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
       targetCategory = 'todo';
       clean.push('status:todo');
     }
-    newState = targetCategory === 'done' ? 'closed' : 'open';
+    nextState = targetCategory === 'done' ? 'closed' : 'open';
   }
 
-  issue.state = newState;
-  issue.labels = clean.map((name) => ({ name }));
+  return { nextState, labels: clean, targetCategory };
+}
+
+async function applyArchiveToggle(
+  issue: Issue,
+  effect: ArchiveEffect,
+  options: { confirmed: boolean }
+): Promise<void> {
   const archiveRepo = repoForIssue(issue);
   if (!archiveRepo) {
     addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
@@ -3263,6 +3293,12 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
     }
     return;
   }
+  const wasArchived = isIssueArchived(issue);
+  const prevLabels = [...issue.labels];
+  const prevState = issue.state;
+
+  issue.state = effect.nextState;
+  issue.labels = effect.labels.map((name) => ({ name }));
   issueCache.delete(archiveRepo);
   renderViews();
   if (isDrawerIssue(issue)) {
@@ -3270,18 +3306,27 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
   }
 
   try {
-    await githubRequestWithRetry('PATCH', `/repos/${archiveRepo}/issues/${issue.number}`, {
-      state: newState,
-      labels: clean,
+    await writeIssueState(archiveRepo, issue, effect.nextState, effect.labels, {
+      confirmed: options.confirmed,
+      previousState: prevState,
     });
     await host.toast({
-      kind: isArch ? 'info' : 'success',
-      message: isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`,
+      kind: wasArchived ? 'success' : 'info',
+      message: wasArchived
+        ? `Unarchived #${issue.number} back to ${effect.targetCategory}`
+        : `Archived #${issue.number}`,
     });
-    addLog(isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`, 'succ');
+    addLog(
+      wasArchived ? `Unarchived #${issue.number} back to ${effect.targetCategory}` : `Archived #${issue.number}`,
+      'succ'
+    );
   } catch (err: any) {
-    issue.state = prevState;
-    issue.labels = prevLabels;
+    // A concurrent refresh may already have published a newer record for this
+    // issue, so revert that object too instead of leaving it falsely archived.
+    for (const target of new Set([issue, findIssueRecord(archiveRepo, issue)])) {
+      target.state = prevState;
+      target.labels = prevLabels;
+    }
     renderViews();
     if (isDrawerIssue(issue)) {
       renderDrawer(issue, true);
@@ -3289,6 +3334,54 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
     addLog(`Failed to update archive state: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to archive #${issue.number}: ${err.message}` });
   }
+}
+
+async function toggleArchiveIssue(issue: Issue): Promise<void> {
+  const archiveRepo = repoForIssue(issue);
+  if (!archiveRepo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
+  }
+
+  const effect = computeArchiveEffect(issue);
+  const previousState = String(issue.state || '').toLowerCase();
+  if (effect.nextState === previousState) {
+    await applyArchiveToggle(issue, effect, { confirmed: false });
+    return;
+  }
+
+  // Archiving or unarchiving that closes/reopens the GitHub issue is a state
+  // transition, so it needs the same explicit confirmation as Done/Reopen.
+  const wasArchived = isIssueArchived(issue);
+  const key = issueIdentityKey(issue);
+  const language = decisionLanguage();
+  const action = copyText(language, wasArchived ? 'unarchiveIssue' : 'archiveIssue');
+  showConfirmDialog({
+    title: action,
+    message: copyText(language, 'confirmArchiveTransition', {
+      action,
+      task: `#${issue.number} ${issue.title}`,
+      repo: archiveRepo,
+      effect: copyText(language, effect.nextState === 'closed' ? 'archiveClosesIssue' : 'archiveReopensIssue'),
+    }),
+    confirmLabel: action,
+    onConfirm: () => {
+      // The dialog may outlive a refresh or a navigation. Re-resolve the exact
+      // task and recompute the effect from its current state and archive
+      // metadata; a changed target or a vanished transition writes nothing.
+      const fresh = findIssueByKey(key);
+      if (!fresh) return;
+      if (repoForIssue(fresh).toLowerCase() !== archiveRepo.toLowerCase()) return;
+      if (isIssueArchived(fresh) !== wasArchived) return;
+      if (String(fresh.state || '').toLowerCase() !== previousState) return;
+      const freshEffect = computeArchiveEffect(fresh);
+      if (freshEffect.nextState === previousState) return;
+      void applyArchiveToggle(fresh, freshEffect, { confirmed: true });
+    },
+  });
 }
 
 // ==========================================
@@ -3846,7 +3939,10 @@ function renderViews(): void {
     return !q || issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) ||
       (issue.labels || []).some((label) => (typeof label === 'string' ? label : label.name || '').toLowerCase().includes(q));
   });
-  const visible = viewState.view === 'simple' && !showClosedIssues
+  // The explicit Archive view is the way back to archived issues, and archiving
+  // closes them. Keep them reachable even when the default simple list hides
+  // closed issues.
+  const visible = viewState.view === 'simple' && !showClosedIssues && !showArchivedOnly
     ? searched.filter((issue) => !isActuallyClosed(issue))
     : searched;
   const attention = groupIssuesByAttention(visible, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
@@ -4717,7 +4813,10 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
     ? `<div class="card-desc" title="${escapeHtml(descPreview)}">${escapeHtml(descPreview)}</div>`
     : '';
 
-  const nextStageButtonHtml = !inKanban && !showArchivedOnly
+  // An open issue can sit in Done only because of its status:done label. Its
+  // next action would be a label edit, not a GitHub Reopen, so it gets no
+  // shortcut. A genuinely closed issue keeps the confirmed Reopen action.
+  const nextStageButtonHtml = !inKanban && !showArchivedOnly && !(col === 'done' && !isActuallyClosed(issue))
     ? `
       <button class="card-btn-next" data-issue="${issue.number}" data-target="${nextAction.target}" title="Move to ${nextAction.label}">
         <span>${nextAction.icon}</span>
