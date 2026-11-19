@@ -2473,6 +2473,30 @@
       gap: 8px;
     }
 
+    /* In-panel confirmation: window.confirm is inert in sandbox=allow-scripts. */
+    .confirm-backdrop {
+      z-index: 260;
+    }
+    .confirm-modal {
+      width: 420px;
+      max-width: 100%;
+    }
+    .confirm-message {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--fg);
+      word-break: break-word;
+    }
+    .confirm-modal .modal-foot {
+      flex-wrap: wrap;
+    }
+    .confirm-modal .modal-foot .btn {
+      white-space: normal;
+      height: auto;
+      min-height: 26px;
+    }
+
     /* Mode 4: Human Tasks View */
     .human-view {
       flex: 1;
@@ -3942,7 +3966,7 @@
 
       <!-- Done / Reopen: a GitHub write, kept apart from dismissing the drawer -->
       <div class="drawer-done-action">
-        <div class="section-label">Task outcome</div>
+        <div class="section-label" id="drawerTaskOutcomeLabel">Task outcome</div>
         <button class="btn drawer-done-btn" id="btnDrawerToggleClose" type="button">Mark done and close issue</button>
       </div>
 

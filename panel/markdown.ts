@@ -326,6 +326,9 @@ export function stripFriendlyTitleSection(body: string | null | undefined): stri
     }
     if (removeValueLine) {
       if (!line.trim()) {
+        // A blank line means the Friendly Title had no value line. Stop
+        // stripping here so a following "### Overview" heading survives.
+        removeValueLine = false;
         kept.push(line);
         continue;
       }

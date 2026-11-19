@@ -430,6 +430,7 @@ const elDrawerIssueNumber = document.getElementById('drawerIssueNumber') as HTML
 const elDrawerIssueAuthor = document.getElementById('drawerIssueAuthor') as HTMLSpanElement;
 const elDrawerGithubLink = document.getElementById('drawerGithubLink') as HTMLAnchorElement;
 const elBtnDrawerToggleClose = document.getElementById('btnDrawerToggleClose') as HTMLButtonElement | null;
+const elDrawerTaskOutcomeLabel = document.getElementById('drawerTaskOutcomeLabel') as HTMLElement | null;
 const elBtnDrawerBack = document.getElementById('btnDrawerBack') as HTMLButtonElement | null;
 const elDrawerIssueTitle = document.getElementById('drawerIssueTitle') as HTMLHeadingElement;
 const elDrawerIssueSubtitle = document.getElementById('drawerIssueSubtitle') as HTMLDivElement | null;
@@ -2344,6 +2345,7 @@ function findIssueElementByKey(key: string): HTMLElement | null {
 }
 
 function invalidateDrawerForScopeChange(): void {
+  dismissConfirmDialog();
   drawerGeneration++;
   activeIssue = null;
   drawerOpenerKey = null;
@@ -2908,6 +2910,13 @@ async function updateIssueStatus(
     return;
   }
 
+  // Reopening a closed issue is also a real state transition. Only the explicit
+  // confirmed Reopen action may pass the human-gesture signal.
+  if (targetColumn !== 'done' && isActuallyClosed(issue) && !options?.isHumanGesture) {
+    addLog(`Blocked automatic reopen of #${issue.number}: reopening requires human gesture`, 'warn');
+    return;
+  }
+
   const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
@@ -2966,18 +2975,167 @@ async function updateIssueStatus(
   }
 }
 
-function requestDoneToggle(issue: Issue, isClosed: boolean): void {
+// In-panel confirmation. The host renders this panel inside an iframe with
+// sandbox="allow-scripts", where window.confirm is inert. Every destructive
+// slice action must go through this dialog; it is the only confirmation gate.
+type ConfirmDialogOptions = {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  onConfirm: () => void;
+};
+
+let confirmDialogBackdrop: HTMLElement | null = null;
+let confirmDialogCancelButton: HTMLButtonElement | null = null;
+let confirmDialogConfirmButton: HTMLButtonElement | null = null;
+let confirmDialogSettled = true;
+let confirmDialogReturnFocus: HTMLElement | null = null;
+
+function dismissConfirmDialog(): void {
+  if (!confirmDialogBackdrop) return;
+  confirmDialogSettled = true;
+  document.removeEventListener('keydown', onConfirmDialogKeydown, true);
+  const backdrop = confirmDialogBackdrop;
+  confirmDialogBackdrop = null;
+  confirmDialogCancelButton = null;
+  confirmDialogConfirmButton = null;
+  if (typeof (backdrop as any).remove === 'function') {
+    (backdrop as any).remove();
+  } else {
+    (backdrop.parentElement as any)?.removeChild?.(backdrop);
+  }
+  const returnTo = confirmDialogReturnFocus;
+  confirmDialogReturnFocus = null;
+  if (returnTo && (returnTo as any).isConnected !== false) {
+    const focusOpener = () => returnTo.focus?.();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(focusOpener);
+    else focusOpener();
+  }
+}
+
+function onConfirmDialogKeydown(event: KeyboardEvent): void {
+  if (!confirmDialogBackdrop) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    dismissConfirmDialog();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const cancel = confirmDialogCancelButton;
+  const confirm = confirmDialogConfirmButton;
+  if (!cancel || !confirm) return;
+  const active = document.activeElement as HTMLElement | null;
+  if (event.shiftKey) {
+    if (active === cancel || active !== confirm) {
+      event.preventDefault();
+      confirm.focus();
+    }
+  } else if (active === confirm) {
+    event.preventDefault();
+    cancel.focus();
+  }
+}
+
+function showConfirmDialog(options: ConfirmDialogOptions): void {
+  dismissConfirmDialog();
+  const language = decisionLanguage();
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop confirm-backdrop active';
+  backdrop.id = 'confirmDialogBackdrop';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-labelledby', 'confirmDialogTitle');
+  backdrop.setAttribute('aria-describedby', 'confirmDialogMessage');
+
+  const modal = document.createElement('div');
+  modal.className = 'modal confirm-modal';
+
+  const head = document.createElement('div');
+  head.className = 'modal-head';
+  const title = document.createElement('span');
+  title.id = 'confirmDialogTitle';
+  title.textContent = options.title;
+  head.appendChild(title);
+
+  const body = document.createElement('div');
+  body.className = 'modal-body';
+  const message = document.createElement('p');
+  message.id = 'confirmDialogMessage';
+  message.className = 'confirm-message';
+  message.textContent = options.message;
+  body.appendChild(message);
+
+  const foot = document.createElement('div');
+  foot.className = 'modal-foot';
+
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'btn confirm-cancel';
+  cancel.textContent = options.cancelLabel || copyText(language, 'cancel');
+
+  const confirm = document.createElement('button');
+  confirm.type = 'button';
+  confirm.className = 'btn btn-primary confirm-confirm';
+  confirm.textContent = options.confirmLabel;
+
+  foot.appendChild(cancel);
+  foot.appendChild(confirm);
+  modal.appendChild(head);
+  modal.appendChild(body);
+  modal.appendChild(foot);
+  backdrop.appendChild(modal);
+
+  const previouslyFocused = (document.activeElement as HTMLElement | null) || null;
+  confirmDialogReturnFocus = previouslyFocused && previouslyFocused !== document.body ? previouslyFocused : null;
+
+  cancel.addEventListener('click', () => dismissConfirmDialog());
+  confirm.addEventListener('click', () => {
+    if (confirmDialogSettled) return;
+    confirmDialogSettled = true;
+    dismissConfirmDialog();
+    options.onConfirm();
+  });
+
+  confirmDialogBackdrop = backdrop;
+  confirmDialogCancelButton = cancel;
+  confirmDialogConfirmButton = confirm;
+  confirmDialogSettled = false;
+  document.body.appendChild(backdrop);
+  document.addEventListener('keydown', onConfirmDialogKeydown, true);
+  cancel.focus();
+}
+
+function requestDoneToggle(
+  issue: Issue,
+  isClosed: boolean,
+  options: { requireDrawer?: boolean } = {}
+): void {
   const repo = repoForIssue(issue);
   if (!repo) return;
+  // A drawer action that survived a scope change must not even prompt.
+  if (options.requireDrawer !== false && !isDrawerIssue(issue)) return;
   const key = issueIdentityKey(issue);
+  const language = decisionLanguage();
   const task = `#${issue.number} ${issue.title}`;
-  const message = copyText(decisionLanguage(), isClosed ? 'confirmReopen' : 'confirmMarkDone', { task });
-  const confirmFn = typeof window.confirm === 'function' ? window.confirm.bind(window) : null;
-  if (!confirmFn || !confirmFn(message)) return;
-  // The confirmation must still describe the issue the drawer holds now.
-  if (!isDrawerIssue(issue) || issueIdentityKey(issue) !== key) return;
-  void updateIssueStatus(issue, isClosed ? 'todo' : 'done', { isHumanGesture: true });
+  showConfirmDialog({
+    title: copyText(language, isClosed ? 'reopenIssue' : 'markDoneClose'),
+    message: copyText(language, isClosed ? 'confirmReopen' : 'confirmMarkDone', { task, repo }),
+    confirmLabel: copyText(language, isClosed ? 'reopenIssue' : 'markDoneClose'),
+    onConfirm: () => {
+      // The dialog may outlive a refresh or a navigation. Re-resolve the exact
+      // task before writing, and never write if it vanished or changed state.
+      const fresh = findIssueByKey(key);
+      if (!fresh) return;
+      if (repoForIssue(fresh).toLowerCase() !== repo.toLowerCase()) return;
+      if (options.requireDrawer !== false && (!isDrawerIssue(fresh) || issueIdentityKey(fresh) !== key)) return;
+      if (isActuallyClosed(fresh) !== isClosed) return;
+      void updateIssueStatus(fresh, isClosed ? 'todo' : 'done', { isHumanGesture: true });
+    },
+  });
 }
+
 
 // ==========================================
 // Quick Composer Chip & Status Helpers
@@ -3628,7 +3786,7 @@ function renderFilterControls(): void {
     visibility.className = 'filter-group';
     const visibilityTitle = document.createElement('div');
     visibilityTitle.className = 'filter-group-title';
-    visibilityTitle.textContent = 'Visibility';
+    visibilityTitle.textContent = copyText(decisionLanguage(), 'visibility');
     visibility.appendChild(visibilityTitle);
     const closedChip = document.createElement('button');
     closedChip.type = 'button';
@@ -4672,7 +4830,13 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
       e.preventDefault();
       const target = btnNext.getAttribute('data-target') as ColumnId;
       if (target) {
-        await updateIssueStatus(issue, target, { isHumanGesture: true });
+        if (target === 'done' && !isActuallyClosed(issue)) {
+          requestDoneToggle(issue, false, { requireDrawer: false });
+        } else if (target !== 'done' && isActuallyClosed(issue)) {
+          requestDoneToggle(issue, true, { requireDrawer: false });
+        } else {
+          await updateIssueStatus(issue, target, { isHumanGesture: true });
+        }
       }
     });
   }
@@ -4882,8 +5046,16 @@ function renderKanbanView(filteredIssues: Issue[]): void {
       cardsContainer.classList.remove('drag-over');
       const issueNum = draggedIssueNumber || Number(e.dataTransfer?.getData('text/plain'));
       if (!issueNum) return;
-      const issue = issues.find((i) => i.number === issueNum);
-      if (!issue) return;
+      const candidates = issues.filter((i) => i.number === issueNum);
+      if (candidates.length !== 1) {
+        // The drag payload carries only the number. A same-number task in two
+        // repositories cannot be resolved safely, so do not write.
+        if (host?.toast) {
+          void host.toast({ kind: 'error', message: copyText(decisionLanguage(), 'ambiguousTask') });
+        }
+        return;
+      }
+      const issue = candidates[0];
 
       const subEl = (e.target as HTMLElement)?.closest?.('.kanban-subgroup') as HTMLElement | null;
       const subgroupId = subEl?.dataset?.subgroupId;
@@ -4892,7 +5064,23 @@ function renderKanbanView(filteredIssues: Issue[]): void {
         ? subgroupId
         : undefined;
 
-      await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
+      if (col.id === 'done') {
+        if (!isActuallyClosed(issue)) {
+          requestDoneToggle(issue, false, { requireDrawer: false });
+        } else {
+          await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
+        }
+      } else if (isActuallyClosed(issue)) {
+        // Moving a closed issue would reopen it without the explicit action.
+        if (host?.toast) {
+          void host.toast({
+            kind: 'info',
+            message: copyText(decisionLanguage(), 'reopenBeforeMoving', { task: `#${issue.number}` }),
+          });
+        }
+      } else {
+        await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
+      }
     });
 
     let displayIssues = colIssues;
@@ -6606,17 +6794,33 @@ function requestDependencyRemoval(targetKey: string, blockerKey: string): void {
   const targetRepo = repoForIssue(target);
   if (!targetRepo) return;
   const blocker = findIssueByKey(blockerKey);
-  const blockerNumber = blocker?.number || Number(String(blockerKey).split('#').pop());
-  if (!blockerNumber) return;
-  const message = copyText(decisionLanguage(), 'confirmRemoveDependency', {
-    blocker: issueLabelForKey(blockerKey, blockerNumber),
-    target: issueLabelForKey(targetKey, target.number),
+  const language = decisionLanguage();
+  // The body grammar stores a bare issue number. A cross-repository or unknown
+  // blocker cannot be represented safely, so the action stays disabled rather
+  // than removing a same-number issue from another repository.
+  if (!blocker || repoForIssue(blocker).toLowerCase() !== targetRepo.toLowerCase()) {
+    if (host?.toast) {
+      void host.toast({ kind: 'info', message: copyText(language, 'dependencyUnavailable') });
+    }
+    return;
+  }
+  showConfirmDialog({
+    title: copyText(language, 'removeDependency'),
+    message: copyText(language, 'confirmRemoveDependency', {
+      blocker: `#${blocker.number} ${blocker.title}`,
+      target: `#${target.number} ${target.title}`,
+      repo: targetRepo,
+    }),
+    confirmLabel: copyText(language, 'removeDependency'),
+    onConfirm: () => {
+      const freshTarget = findIssueByKey(targetKey);
+      const freshBlocker = findIssueByKey(blockerKey);
+      if (!freshTarget || !freshBlocker) return;
+      if (repoForIssue(freshTarget).toLowerCase() !== targetRepo.toLowerCase()) return;
+      if (repoForIssue(freshBlocker).toLowerCase() !== targetRepo.toLowerCase()) return;
+      void handleRemoveDependency(freshTarget.number, freshBlocker.number, targetRepo);
+    },
   });
-  const confirmFn = typeof window.confirm === 'function' ? window.confirm.bind(window) : null;
-  if (!confirmFn || !confirmFn(message)) return;
-  const freshTarget = findIssueByKey(targetKey);
-  if (!freshTarget || repoForIssue(freshTarget).toLowerCase() !== targetRepo.toLowerCase()) return;
-  void handleRemoveDependency(freshTarget.number, blockerNumber, targetRepo);
 }
 
 function removeInspectorElement(element: Element | null): void {
@@ -6639,9 +6843,11 @@ function openDependencyInspector(edge: { from: number; to: number; fromKey?: str
 
   const text = document.createElement('div');
   text.className = 'dep-inspect-text';
+  const targetIssue = findIssueByKey(targetKey);
   text.textContent = copyText(decisionLanguage(), 'dependencyBlocks', {
     blocker: issueLabelForKey(blockerKey, edge.from),
     target: issueLabelForKey(targetKey, edge.to),
+    repo: targetIssue ? repoForIssue(targetIssue) : '',
   });
   popover.appendChild(text);
 
@@ -6676,8 +6882,17 @@ function openDependencyInspector(edge: { from: number; to: number; fromKey?: str
   cancelButton.addEventListener('click', () => removeInspectorElement(popover));
   actions.appendChild(cancelButton);
 
+  popover.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      removeInspectorElement(popover);
+    }
+  });
+
   popover.appendChild(actions);
   document.body.appendChild(popover);
+  openButton.focus();
 }
 
 document.addEventListener('click', (e) => {
@@ -6883,7 +7098,7 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
     </div>
     <div class="graph-card-head">
-      <input type="checkbox" class="graph-card-check" ${node.isDone ? 'checked' : ''} title="Mark done / todo" />
+      <input type="checkbox" class="graph-card-check" ${isActuallyClosed(node.issue) ? 'checked' : ''} title="Mark done / todo" />
       <span class="graph-card-num">#${node.issue.number}</span>
       <span class="graph-card-theme" title="${escapeHtml(node.theme)}">${escapeHtml(node.theme)}</span>
       ${isAllProjectsMode ? `<span class="status-pill project-pill" title="${escapeHtml(repoForIssue(node.issue))}">${escapeHtml(displayProjectName(repoForIssue(node.issue)))}</span>` : ''}
@@ -6905,7 +7120,10 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
   if (chk) {
     chk.addEventListener('click', (e) => {
       e.stopPropagation();
-      void updateIssueStatus(node.issue, chk.checked ? 'done' : 'todo', { isHumanGesture: true });
+      const wantClosed = chk.checked;
+      // Reset the visual state until the confirmed write succeeds.
+      chk.checked = isActuallyClosed(node.issue);
+      requestDoneToggle(node.issue, wantClosed ? false : true, { requireDrawer: false });
     });
   }
 
@@ -7204,8 +7422,13 @@ function renderDrawerDependencies(issue: Issue): void {
     if (blockers.length === 0) {
       elDrawerBlockedByList.innerHTML = '<span style="color: var(--fg-faint); font-size: 11px;">None</span>';
     } else {
+      const issueRepo = repoForIssue(issue).toLowerCase();
       blockers.forEach((bNum) => {
-        const blockerIssue = issues.find((i) => i.number === bNum);
+        // The body grammar is number-only. Resolve the blocker in the same
+        // repository; an ambiguous same-number task elsewhere cannot be removed.
+        const blockerIssue = issues.find(
+          (i) => i.number === bNum && repoForIssue(i).toLowerCase() === issueRepo
+        );
         const pill = document.createElement('div');
         pill.className = 'badge';
         pill.style.display = 'inline-flex';
@@ -7214,14 +7437,19 @@ function renderDrawerDependencies(issue: Issue): void {
         pill.style.cursor = 'pointer';
         const isClosed = blockerIssue ? isIssueClosed(blockerIssue) : false;
         if (isClosed) pill.style.opacity = '0.6';
+        const removeControl = blockerIssue
+          ? '<span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">×</span>'
+          : '';
         pill.innerHTML = `
           <span>#${bNum} ${escapeHtml(blockerIssue?.title || '')}</span>
-          <span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">×</span>
+          ${removeControl}
         `;
         pill.addEventListener('click', (e) => {
           if ((e.target as HTMLElement)?.classList.contains('badge-remove-btn')) {
             e.stopPropagation();
-            void handleRemoveDependency(issue.number, bNum);
+            if (blockerIssue) {
+              requestDependencyRemoval(issueIdentityKey(issue), issueIdentityKey(blockerIssue));
+            }
           } else if (blockerIssue) {
             openDrawer(blockerIssue);
           }
@@ -7267,6 +7495,7 @@ function renderDrawerDependencies(issue: Issue): void {
 // ==========================================
 
 function openDrawer(issue: Issue): void {
+  dismissConfirmDialog();
   drawerGeneration++;
   const openerKey = closestIssueKey(document.activeElement as Element | null);
   drawerOpenerKey = openerKey && openerKey === issueIdentityKey(issue) ? openerKey : issueIdentityKey(issue);
@@ -7285,6 +7514,7 @@ function openDrawer(issue: Issue): void {
 }
 
 function closeDrawer(): void {
+  dismissConfirmDialog();
   drawerGeneration++;
   activeIssue = null;
   const openerKey = drawerOpenerKey;
@@ -7486,10 +7716,14 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   }
 
   if (elBtnDrawerToggleClose) {
-    const isClosed = isIssueClosed(issue);
+    const isClosed = isActuallyClosed(issue);
+    if (elDrawerTaskOutcomeLabel) {
+      elDrawerTaskOutcomeLabel.textContent = copyText(decisionLanguage(), 'taskOutcome');
+    }
     elBtnDrawerToggleClose.textContent = copyText(decisionLanguage(), isClosed ? 'reopenIssue' : 'markDoneClose');
     elBtnDrawerToggleClose.title = copyText(decisionLanguage(), isClosed ? 'confirmReopen' : 'confirmMarkDone')
-      .replace('{task}', `#${issue.number}`);
+      .replace('{task}', `#${issue.number}`)
+      .replace('{repo}', repoForIssue(issue) || '');
     elBtnDrawerToggleClose.onclick = () => {
       requestDoneToggle(issue, isClosed);
     };
@@ -10335,6 +10569,25 @@ function initEvents(): void {
         });
       } else {
         const targetCol = val as ColumnId;
+        if (targetCol === 'done') {
+          // Closing is a real state transition. The label dropdown must not be a
+          // second, unconfirmed close path.
+          requestDoneToggle(activeIssue, false);
+          elDrawerStatusSelect.value = resolveIssueColumn(activeIssue) || 'none';
+          return;
+        }
+        if (isActuallyClosed(activeIssue)) {
+          // Moving a closed issue to another column would reopen it. Require the
+          // explicit Reopen action instead of a silent state transition.
+          elDrawerStatusSelect.value = resolveIssueColumn(activeIssue) || 'none';
+          if (host?.toast) {
+            void host.toast({
+              kind: 'info',
+              message: copyText(decisionLanguage(), 'reopenBeforeMoving', { task: `#${activeIssue.number}` }),
+            });
+          }
+          return;
+        }
         void updateIssueStatus(activeIssue, targetCol, { isHumanGesture: true });
       }
     }

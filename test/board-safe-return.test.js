@@ -9,7 +9,7 @@ import { getIssueDescriptionPreview, stripFriendlyTitleSection } from '../panel/
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const wait = (ms = 40) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait = (ms = 60) => new Promise((resolve) => setTimeout(resolve, ms));
 const response = (body, status = 200) => ({ status, body: JSON.stringify(body) });
 
 const issue = (over = {}) => normalizeGithubIssues([{
@@ -35,6 +35,29 @@ const patchCalls = (hostCalls) => hostCalls.filter(
   (call) => call.type === 'request' && call.payload.method === 'PATCH'
 );
 
+const confirmDialog = (mockDoc) => mockDoc.body.querySelectorAll('.confirm-backdrop')[0] || null;
+
+const clickCancel = (mockDoc) => {
+  const dialog = confirmDialog(mockDoc);
+  assert.ok(dialog, 'the confirmation dialog is present');
+  dialog.querySelector('.confirm-cancel').click();
+};
+
+const clickConfirm = (mockDoc) => {
+  const dialog = confirmDialog(mockDoc);
+  assert.ok(dialog, 'the confirmation dialog is present');
+  dialog.querySelector('.confirm-confirm').click();
+};
+
+const pressEscape = (mockDoc) => {
+  mockDoc.dispatchEvent({
+    type: 'keydown',
+    key: 'Escape',
+    preventDefault: () => {},
+    stopPropagation: () => {},
+  });
+};
+
 test('Friendly Title preview never returns the metadata label and keeps the first overview line', () => {
   const inline = '### Friendly Title: Ship the narrow drawer\n\n### Overview\nFirst substantive description.';
   assert.equal(getIssueDescriptionPreview(inline), 'First substantive description.');
@@ -47,6 +70,12 @@ test('Friendly Title preview never returns the metadata label and keeps the firs
 
   const fallback = '### Overview\nFirst substantive description.';
   assert.equal(getIssueDescriptionPreview(fallback), 'First substantive description.');
+});
+
+test('an empty Friendly Title keeps the following Overview heading', () => {
+  const body = '### Friendly Title:\n\n### Overview\nFirst substantive description.';
+  assert.equal(stripFriendlyTitleSection(body), '### Overview\nFirst substantive description.');
+  assert.equal(getIssueDescriptionPreview(body), 'First substantive description.');
 });
 
 test('simple list hides actually closed issues by default and an explicit control reveals them', async () => {
@@ -69,7 +98,7 @@ test('simple list hides actually closed issues by default and an explicit contro
 
 test('a scope change invalidates an open drawer and its stale actions', async () => {
   const openIssue = issue({ number: 1, title: 'Original task' });
-  const { app, elements, hostCalls, mockWindow } = await setup({
+  const { app, elements, hostCalls, mockDoc } = await setup({
     onRequest: async () => response({}),
   });
   app.setState({ issues: [openIssue] });
@@ -77,7 +106,6 @@ test('a scope change invalidates an open drawer and its stale actions', async ()
   const drawer = elements.get('taskDrawer');
   assert.ok(drawer.classList.contains('active'));
 
-  mockWindow.confirm = () => true;
   app.setRepository('acme/b', 'test-switch');
   assert.equal(app.getState().activeIssue, null, 'the old task is no longer active');
   assert.equal(drawer.classList.contains('active'), false, 'the old drawer is dismissed');
@@ -85,6 +113,7 @@ test('a scope change invalidates an open drawer and its stale actions', async ()
   const doneButton = elements.get('btnDrawerToggleClose');
   doneButton.onclick?.();
   await wait();
+  assert.equal(confirmDialog(mockDoc), null, 'a stale action does not open a confirmation');
   assert.equal(patchCalls(hostCalls).length, 0, 'a stale drawer action cannot write');
 });
 
@@ -106,9 +135,9 @@ test('closing the task drawer restores list scroll and returns focus to the open
   assert.equal(mockDoc.activeElement, row, 'focus returns to the opener when it is still present');
 });
 
-test('Done keeps its human effect but needs confirmation, applies once, and cancel is inert', async () => {
+test('Done opens an in-panel confirmation, cancel is inert, confirm applies once', async () => {
   const openIssue = issue({ number: 7, title: 'Confirm me' });
-  const { app, elements, hostCalls, mockWindow } = await setup({
+  const { app, elements, hostCalls, mockDoc } = await setup({
     onRequest: async () => response({}),
   });
   app.setState({ issues: [openIssue] });
@@ -116,13 +145,26 @@ test('Done keeps its human effect but needs confirmation, applies once, and canc
 
   const doneButton = elements.get('btnDrawerToggleClose');
   assert.equal(doneButton.textContent, 'Mark done and close issue');
-  mockWindow.confirm = () => false;
+  doneButton.focus();
   doneButton.onclick?.();
   await wait();
-  assert.equal(patchCalls(hostCalls).length, 0, 'cancel writes nothing');
 
-  mockWindow.confirm = () => true;
+  const dialog = confirmDialog(mockDoc);
+  assert.ok(dialog, 'the in-panel confirmation is shown');
+  assert.ok(dialog.textContent.includes('#7'), 'the dialog names the task');
+  assert.ok(dialog.textContent.includes('acme/a'), 'the dialog names the repository');
+  assert.equal(mockDoc.activeElement, dialog.querySelector('.confirm-cancel'), 'focus defaults to the safe control');
+  assert.equal(patchCalls(hostCalls).length, 0, 'opening the dialog writes nothing');
+
+  clickCancel(mockDoc);
+  await wait();
+  assert.equal(confirmDialog(mockDoc), null, 'cancel dismisses the dialog');
+  assert.equal(patchCalls(hostCalls).length, 0, 'cancel writes nothing');
+  assert.equal(mockDoc.activeElement, doneButton, 'focus returns to the action that opened the dialog');
+
   doneButton.onclick?.();
+  await wait();
+  clickConfirm(mockDoc);
   await wait();
   const patches = patchCalls(hostCalls);
   assert.equal(patches.length, 1, 'confirm performs exactly one write');
@@ -132,20 +174,233 @@ test('Done keeps its human effect but needs confirmation, applies once, and canc
   assert.ok(payload.labels.includes('status:done'));
 });
 
+test('Escape dismisses the confirmation and writes nothing', async () => {
+  const openIssue = issue({ number: 7, title: 'Escape me' });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [openIssue] });
+  app.openDrawer(openIssue);
+  elements.get('btnDrawerToggleClose').onclick?.();
+  await wait();
+  assert.ok(confirmDialog(mockDoc), 'the confirmation is shown');
+  pressEscape(mockDoc);
+  await wait();
+  assert.equal(confirmDialog(mockDoc), null, 'Escape dismisses the dialog');
+  assert.equal(patchCalls(hostCalls).length, 0, 'Escape writes nothing');
+});
+
+test('a repeated confirm writes at most once', async () => {
+  const openIssue = issue({ number: 7, title: 'Double click' });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [openIssue] });
+  app.openDrawer(openIssue);
+  elements.get('btnDrawerToggleClose').onclick?.();
+  await wait();
+  const confirm = confirmDialog(mockDoc).querySelector('.confirm-confirm');
+  confirm.click();
+  confirm.click();
+  await wait();
+  assert.equal(patchCalls(hostCalls).length, 1, 'a repeated confirm writes once');
+});
+
 test('Done targets the original repository when two repositories share an issue number', async () => {
   const first = issue({ number: 3, title: 'First repo task', repo: 'acme/a' });
   const second = issue({ number: 3, title: 'Second repo task', repo: 'acme/b' });
-  const { app, elements, hostCalls, mockWindow } = await setup({
+  const { app, elements, hostCalls, mockDoc } = await setup({
     onRequest: async () => response({}),
   });
   app.setState({ issues: [first, second], isAllProjectsMode: true });
   app.openDrawer(first);
-  mockWindow.confirm = () => true;
   elements.get('btnDrawerToggleClose').onclick?.();
+  await wait();
+  const dialog = confirmDialog(mockDoc);
+  assert.ok(dialog, 'the confirmation is shown');
+  assert.ok(dialog.textContent.includes('acme/a'), 'the dialog names the original repository');
+  clickConfirm(mockDoc);
   await wait();
   const patches = patchCalls(hostCalls);
   assert.equal(patches.length, 1);
   assert.equal(patches[0].payload.path, '/repos/acme/a/issues/3');
+});
+
+test('an open issue carrying status:done is not offered as Reopen', async () => {
+  const openWithDoneLabel = issue({ number: 8, title: 'Label only', state: 'open', labels: [{ name: 'status:done' }] });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [openWithDoneLabel] });
+  app.openDrawer(openWithDoneLabel);
+  const doneButton = elements.get('btnDrawerToggleClose');
+  assert.equal(doneButton.textContent, 'Mark done and close issue', 'real state wins over the label');
+  doneButton.onclick?.();
+  await wait();
+  const dialog = confirmDialog(mockDoc);
+  assert.ok(dialog.textContent.toLowerCase().includes('close'), 'the action offers close, not reopen');
+  clickConfirm(mockDoc);
+  await wait();
+  const payload = JSON.parse(patchCalls(hostCalls)[0].payload.body);
+  assert.equal(payload.state, 'closed');
+});
+
+test('a genuinely closed issue offers Reopen and reopens only after confirmation', async () => {
+  const closed = issue({ number: 9, title: 'Closed task', state: 'closed', labels: [{ name: 'status:done' }] });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [closed] });
+  app.openDrawer(closed);
+  const doneButton = elements.get('btnDrawerToggleClose');
+  assert.equal(doneButton.textContent, 'Reopen issue');
+  doneButton.onclick?.();
+  await wait();
+  assert.ok(confirmDialog(mockDoc), 'the reopen confirmation is shown');
+  clickConfirm(mockDoc);
+  await wait();
+  const payload = JSON.parse(patchCalls(hostCalls)[0].payload.body);
+  assert.equal(payload.state, 'open');
+  assert.ok(payload.labels.includes('status:todo'));
+});
+
+test('the drawer status dropdown routes Done through the same confirmation', async () => {
+  const openIssue = issue({ number: 12, title: 'Dropdown task' });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [openIssue] });
+  app.openDrawer(openIssue);
+
+  const select = elements.get('drawerStatusSelect');
+  select.value = 'done';
+  select.dispatchEvent({ type: 'change' });
+  await wait();
+  assert.ok(confirmDialog(mockDoc), 'selecting Done opens the confirmation');
+  assert.equal(patchCalls(hostCalls).length, 0, 'selecting Done writes nothing before confirmation');
+  clickCancel(mockDoc);
+  await wait();
+  assert.equal(patchCalls(hostCalls).length, 0, 'cancelling the dropdown confirmation writes nothing');
+
+  select.value = 'done';
+  select.dispatchEvent({ type: 'change' });
+  await wait();
+  clickConfirm(mockDoc);
+  await wait();
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1, 'confirming the dropdown performs exactly one write');
+  assert.equal(JSON.parse(patches[0].payload.body).state, 'closed');
+});
+
+test('a non-state status change writes directly without a confirmation', async () => {
+  const openIssue = issue({ number: 13, title: 'Move me' });
+  const { app, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [openIssue] });
+  await app.updateIssueStatus(openIssue, 'in-progress');
+  await wait();
+  assert.equal(confirmDialog(mockDoc), null, 'a non-state change does not prompt');
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1);
+  assert.equal(JSON.parse(patches[0].payload.body).state, 'open');
+  assert.ok(JSON.parse(patches[0].payload.body).labels.includes('status:in-progress'));
+});
+
+test('background reconciliation cannot close an issue', async () => {
+  const openIssue = issue({ number: 14, title: 'No background close' });
+  const { app, hostCalls } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [openIssue] });
+  await app.updateIssueStatus(openIssue, 'done');
+  await wait();
+  assert.equal(patchCalls(hostCalls).length, 0, 'automatic closure is still blocked');
+});
+
+test('a background status move cannot reopen a closed issue', async () => {
+  const closedIssue = issue({ number: 30, title: 'No background reopen', state: 'closed', labels: [{ name: 'status:done' }] });
+  const { app, hostCalls } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [closedIssue] });
+  await app.updateIssueStatus(closedIssue, 'in-progress');
+  await wait();
+  assert.equal(patchCalls(hostCalls).length, 0, 'automatic reopening is blocked');
+});
+
+test('the drawer status dropdown cannot reopen a closed issue without the explicit action', async () => {
+  const closedIssue = issue({ number: 31, title: 'Dropdown closed', state: 'closed', labels: [{ name: 'status:done' }] });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [closedIssue] });
+  app.openDrawer(closedIssue);
+
+  const select = elements.get('drawerStatusSelect');
+  select.value = 'in-progress';
+  select.dispatchEvent({ type: 'change' });
+  await wait();
+  assert.equal(confirmDialog(mockDoc), null, 'the dropdown does not open a close/reopen dialog');
+  assert.equal(patchCalls(hostCalls).length, 0, 'the dropdown cannot reopen a closed issue');
+});
+
+test('the card next-stage button routes Done through the same confirmation', async () => {
+  const inReview = issue({ number: 40, title: 'Card close', labels: [{ name: 'status:in-review' }] });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [inReview], viewState: { view: 'cards', filters: [], sort: 'priority' } });
+  app.renderViews();
+
+  const card = elements.get('listViewContainer').querySelectorAll('.card')[0];
+  assert.ok(card, 'the card view rendered the issue');
+  const next = card.querySelector('.card-btn-next');
+  assert.ok(next, 'the card has a next-stage control');
+  assert.equal(next.getAttribute('data-target'), 'done');
+  next.click();
+  await wait();
+  assert.ok(confirmDialog(mockDoc), 'the next-stage close opens the confirmation');
+  assert.equal(patchCalls(hostCalls).length, 0, 'the next-stage control writes nothing before confirmation');
+
+  clickConfirm(mockDoc);
+  await wait();
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1, 'confirming the next-stage performs exactly one write');
+  assert.equal(JSON.parse(patches[0].payload.body).state, 'closed');
+});
+
+test('a scope change while the confirmation is open dismisses it and writes nothing', async () => {
+  const openIssue = issue({ number: 15, title: 'Scope change' });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [openIssue] });
+  app.openDrawer(openIssue);
+  elements.get('btnDrawerToggleClose').onclick?.();
+  await wait();
+  assert.ok(confirmDialog(mockDoc), 'the confirmation is shown');
+  app.setRepository('acme/b', 'switch');
+  await wait();
+  assert.equal(confirmDialog(mockDoc), null, 'the scope change dismisses the confirmation');
+  assert.equal(patchCalls(hostCalls).length, 0, 'the scope change writes nothing');
+});
+
+test('opening another task while the confirmation is open dismisses it and writes nothing', async () => {
+  const first = issue({ number: 16, title: 'First' });
+  const second = issue({ number: 17, title: 'Second' });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [first, second] });
+  app.openDrawer(first);
+  elements.get('btnDrawerToggleClose').onclick?.();
+  await wait();
+  assert.ok(confirmDialog(mockDoc), 'the confirmation is shown');
+  app.openDrawer(second);
+  await wait();
+  assert.equal(confirmDialog(mockDoc), null, 'the competing drawer dismisses the confirmation');
+  assert.equal(patchCalls(hostCalls).length, 0, 'the competing drawer writes nothing');
 });
 
 test('a late drawer callback cannot render over a drawer that was already replaced', async () => {
@@ -194,27 +449,68 @@ test('confirmed dependency removal names both tasks and writes only the target r
     title: 'Blocked task',
     body: '### Overview\nBlocked task.\n\nBlocked by #302',
   });
-  const { app, hostCalls, mockWindow } = await setup({
+  const { app, hostCalls, mockDoc } = await setup({
     onRequest: async () => response({}),
   });
   app.setState({ issues: [blocker, target] });
 
-  mockWindow.confirm = (message) => {
-    assert.ok(message.includes('#302'), 'the confirmation names the blocker');
-    assert.ok(message.includes('#301'), 'the confirmation names the target');
-    return false;
-  };
   app.requestDependencyRemoval('acme/a#301', 'acme/a#302');
+  await wait();
+  const dialog = confirmDialog(mockDoc);
+  assert.ok(dialog, 'removal opens the in-panel confirmation');
+  assert.ok(dialog.textContent.includes('#302'), 'the confirmation names the blocker');
+  assert.ok(dialog.textContent.includes('#301'), 'the confirmation names the target');
+  assert.ok(dialog.textContent.includes('acme/a'), 'the confirmation names the repository');
+  clickCancel(mockDoc);
   await wait();
   assert.equal(patchCalls(hostCalls).length, 0, 'cancel writes nothing');
 
-  mockWindow.confirm = () => true;
   app.requestDependencyRemoval('acme/a#301', 'acme/a#302');
+  await wait();
+  clickConfirm(mockDoc);
   await wait();
   const patches = patchCalls(hostCalls);
   assert.equal(patches.length, 1);
   assert.equal(patches[0].payload.path, '/repos/acme/a/issues/301');
   assert.ok(!JSON.parse(patches[0].payload.body).body.includes('#302'), 'the removed blocker is gone from the body');
+});
+
+test('the drawer dependency chip removes only through the confirmation', async () => {
+  const blocker = issue({ number: 302, title: 'Blocker task', body: '### Overview\nBlocks another task.' });
+  const target = issue({
+    number: 301,
+    title: 'Blocked task',
+    body: '### Overview\nBlocked task.\n\nBlocked by #302',
+  });
+  const { app, elements, hostCalls, mockDoc } = await setup({
+    onRequest: async () => response({}),
+  });
+  app.setState({ issues: [blocker, target] });
+  app.openDrawer(target);
+
+  const list = elements.get('drawerBlockedByList');
+  const pill = list.querySelectorAll('.badge')[0];
+  assert.ok(pill, 'the drawer shows the blocker chip');
+  const remove = pill.querySelector('.badge-remove-btn');
+  assert.ok(remove, 'the blocker chip has a remove control');
+  pill.dispatchEvent({ type: 'click', target: remove, stopPropagation: () => {} });
+  await wait();
+  const dialog = confirmDialog(mockDoc);
+  assert.ok(dialog, 'the chip opens the in-panel confirmation');
+  assert.ok(dialog.textContent.includes('#302') && dialog.textContent.includes('#301'));
+  assert.ok(dialog.textContent.includes('acme/a'));
+  clickCancel(mockDoc);
+  await wait();
+  assert.equal(patchCalls(hostCalls).length, 0, 'cancelling the chip confirmation writes nothing');
+
+  pill.dispatchEvent({ type: 'click', target: remove, stopPropagation: () => {} });
+  await wait();
+  clickConfirm(mockDoc);
+  await wait();
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1);
+  assert.equal(patches[0].payload.path, '/repos/acme/a/issues/301');
+  assert.ok(!JSON.parse(patches[0].payload.body).body.includes('#302'));
 });
 
 test('stripFriendlyTitleSection drops the metadata block from the view only', () => {
@@ -244,7 +540,8 @@ test('Done is separated from dismissing the drawer and every new copy exists in 
   for (const key of [
     'backToBoard', 'showClosedIssues', 'hideClosedIssues', 'markDoneClose', 'reopenIssue',
     'confirmMarkDone', 'confirmReopen', 'inspectDependency', 'dependencyBlocks', 'openTask',
-    'removeDependency', 'cancel', 'confirmRemoveDependency',
+    'removeDependency', 'cancel', 'confirmRemoveDependency', 'reopenBeforeMoving', 'ambiguousTask',
+    'dependencyUnavailable', 'taskOutcome', 'visibility',
   ]) {
     const occurrences = decisions.split(`${key}:`).length - 1;
     assert.ok(occurrences >= 2, `${key} must be defined for both English and French`);

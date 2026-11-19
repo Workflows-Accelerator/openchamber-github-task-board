@@ -5190,6 +5190,7 @@ ${placeholder}
       }
       if (removeValueLine) {
         if (!line.trim()) {
+          removeValueLine = false;
           kept.push(line);
           continue;
         }
@@ -5492,14 +5493,19 @@ ${placeholder}
       hideClosedIssues: "Hide closed issues",
       markDoneClose: "Mark done and close issue",
       reopenIssue: "Reopen issue",
-      confirmMarkDone: "Mark {task} done and close it on GitHub?",
-      confirmReopen: "Reopen {task} on GitHub?",
+      confirmMarkDone: "Mark {task} in {repo} done and close it on GitHub?",
+      confirmReopen: "Reopen {task} in {repo} on GitHub?",
       inspectDependency: "Dependency",
-      dependencyBlocks: "{blocker} blocks {target}",
+      dependencyBlocks: "{blocker} blocks {target} in {repo}",
       openTask: "Open task",
       removeDependency: "Remove dependency",
       cancel: "Cancel",
-      confirmRemoveDependency: "Remove the dependency: {blocker} blocks {target}?"
+      confirmRemoveDependency: "Remove the dependency: {blocker} blocks {target} in {repo}?",
+      reopenBeforeMoving: "Reopen {task} before moving it to another column.",
+      ambiguousTask: "This task number exists in more than one repository. Open the task and use its own action.",
+      dependencyUnavailable: "This dependency cannot be removed safely from here. Open the task and edit its body.",
+      taskOutcome: "Task outcome",
+      visibility: "Visibility"
     },
     fr: {
       waiting: "en attente de vous",
@@ -5555,14 +5561,19 @@ ${placeholder}
       hideClosedIssues: "Masquer les t\xE2ches ferm\xE9es",
       markDoneClose: "Marquer termin\xE9 et fermer la t\xE2che",
       reopenIssue: "Rouvrir la t\xE2che",
-      confirmMarkDone: "Marquer {task} termin\xE9 et la fermer sur GitHub ?",
-      confirmReopen: "Rouvrir {task} sur GitHub ?",
+      confirmMarkDone: "Marquer {task} dans {repo} termin\xE9 et la fermer sur GitHub ?",
+      confirmReopen: "Rouvrir {task} dans {repo} sur GitHub ?",
       inspectDependency: "D\xE9pendance",
-      dependencyBlocks: "{blocker} bloque {target}",
+      dependencyBlocks: "{blocker} bloque {target} dans {repo}",
       openTask: "Ouvrir la t\xE2che",
       removeDependency: "Retirer la d\xE9pendance",
       cancel: "Annuler",
-      confirmRemoveDependency: "Retirer la d\xE9pendance : {blocker} bloque {target} ?"
+      confirmRemoveDependency: "Retirer la d\xE9pendance : {blocker} bloque {target} dans {repo} ?",
+      reopenBeforeMoving: "Rouvrez {task} avant de la d\xE9placer vers une autre colonne.",
+      ambiguousTask: "Ce num\xE9ro de t\xE2che existe dans plusieurs d\xE9p\xF4ts. Ouvrez la t\xE2che et utilisez son action.",
+      dependencyUnavailable: "Cette d\xE9pendance ne peut pas \xEAtre retir\xE9e en toute s\xE9curit\xE9 ici. Ouvrez la t\xE2che et modifiez son corps.",
+      taskOutcome: "R\xE9sultat de la t\xE2che",
+      visibility: "Visibilit\xE9"
     }
   };
   function copyText(language, key, values = {}) {
@@ -10286,6 +10297,7 @@ Blocked by ${blockerRef}`;
   var elDrawerIssueAuthor = document.getElementById("drawerIssueAuthor");
   var elDrawerGithubLink = document.getElementById("drawerGithubLink");
   var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
+  var elDrawerTaskOutcomeLabel = document.getElementById("drawerTaskOutcomeLabel");
   var elBtnDrawerBack = document.getElementById("btnDrawerBack");
   var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
   var elDrawerIssueSubtitle = document.getElementById("drawerIssueSubtitle");
@@ -11831,6 +11843,7 @@ Blocked by ${blockerRef}`;
     return elements.find((element2) => String(element2.getAttribute("data-issue-key") || "").toLowerCase() === target) || null;
   }
   function invalidateDrawerForScopeChange() {
+    dismissConfirmDialog();
     drawerGeneration++;
     activeIssue = null;
     drawerOpenerKey = null;
@@ -12282,6 +12295,10 @@ Blocked by ${blockerRef}`;
       addLog(`Blocked automatic closure of #${issue.number}: closing requires human gesture`, "warn");
       return;
     }
+    if (targetColumn !== "done" && isActuallyClosed(issue) && !options?.isHumanGesture) {
+      addLog(`Blocked automatic reopen of #${issue.number}: reopening requires human gesture`, "warn");
+      return;
+    }
     const prevLabels = [...issue.labels || []];
     const prevState = issue.state;
     const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
@@ -12332,16 +12349,133 @@ Blocked by ${blockerRef}`;
       await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
     }
   }
-  function requestDoneToggle(issue, isClosed) {
+  var confirmDialogBackdrop = null;
+  var confirmDialogCancelButton = null;
+  var confirmDialogConfirmButton = null;
+  var confirmDialogSettled = true;
+  var confirmDialogReturnFocus = null;
+  function dismissConfirmDialog() {
+    if (!confirmDialogBackdrop) return;
+    confirmDialogSettled = true;
+    document.removeEventListener("keydown", onConfirmDialogKeydown, true);
+    const backdrop = confirmDialogBackdrop;
+    confirmDialogBackdrop = null;
+    confirmDialogCancelButton = null;
+    confirmDialogConfirmButton = null;
+    if (typeof backdrop.remove === "function") {
+      backdrop.remove();
+    } else {
+      backdrop.parentElement?.removeChild?.(backdrop);
+    }
+    const returnTo = confirmDialogReturnFocus;
+    confirmDialogReturnFocus = null;
+    if (returnTo && returnTo.isConnected !== false) {
+      const focusOpener = () => returnTo.focus?.();
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(focusOpener);
+      else focusOpener();
+    }
+  }
+  function onConfirmDialogKeydown(event) {
+    if (!confirmDialogBackdrop) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      dismissConfirmDialog();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const cancel = confirmDialogCancelButton;
+    const confirm = confirmDialogConfirmButton;
+    if (!cancel || !confirm) return;
+    const active2 = document.activeElement;
+    if (event.shiftKey) {
+      if (active2 === cancel || active2 !== confirm) {
+        event.preventDefault();
+        confirm.focus();
+      }
+    } else if (active2 === confirm) {
+      event.preventDefault();
+      cancel.focus();
+    }
+  }
+  function showConfirmDialog(options) {
+    dismissConfirmDialog();
+    const language = decisionLanguage();
+    const backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop confirm-backdrop active";
+    backdrop.id = "confirmDialogBackdrop";
+    backdrop.setAttribute("role", "dialog");
+    backdrop.setAttribute("aria-modal", "true");
+    backdrop.setAttribute("aria-labelledby", "confirmDialogTitle");
+    backdrop.setAttribute("aria-describedby", "confirmDialogMessage");
+    const modal = document.createElement("div");
+    modal.className = "modal confirm-modal";
+    const head = document.createElement("div");
+    head.className = "modal-head";
+    const title = document.createElement("span");
+    title.id = "confirmDialogTitle";
+    title.textContent = options.title;
+    head.appendChild(title);
+    const body = document.createElement("div");
+    body.className = "modal-body";
+    const message = document.createElement("p");
+    message.id = "confirmDialogMessage";
+    message.className = "confirm-message";
+    message.textContent = options.message;
+    body.appendChild(message);
+    const foot = document.createElement("div");
+    foot.className = "modal-foot";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "btn confirm-cancel";
+    cancel.textContent = options.cancelLabel || copyText(language, "cancel");
+    const confirm = document.createElement("button");
+    confirm.type = "button";
+    confirm.className = "btn btn-primary confirm-confirm";
+    confirm.textContent = options.confirmLabel;
+    foot.appendChild(cancel);
+    foot.appendChild(confirm);
+    modal.appendChild(head);
+    modal.appendChild(body);
+    modal.appendChild(foot);
+    backdrop.appendChild(modal);
+    const previouslyFocused = document.activeElement || null;
+    confirmDialogReturnFocus = previouslyFocused && previouslyFocused !== document.body ? previouslyFocused : null;
+    cancel.addEventListener("click", () => dismissConfirmDialog());
+    confirm.addEventListener("click", () => {
+      if (confirmDialogSettled) return;
+      confirmDialogSettled = true;
+      dismissConfirmDialog();
+      options.onConfirm();
+    });
+    confirmDialogBackdrop = backdrop;
+    confirmDialogCancelButton = cancel;
+    confirmDialogConfirmButton = confirm;
+    confirmDialogSettled = false;
+    document.body.appendChild(backdrop);
+    document.addEventListener("keydown", onConfirmDialogKeydown, true);
+    cancel.focus();
+  }
+  function requestDoneToggle(issue, isClosed, options = {}) {
     const repo = repoForIssue(issue);
     if (!repo) return;
+    if (options.requireDrawer !== false && !isDrawerIssue(issue)) return;
     const key = issueIdentityKey(issue);
+    const language = decisionLanguage();
     const task = `#${issue.number} ${issue.title}`;
-    const message = copyText(decisionLanguage(), isClosed ? "confirmReopen" : "confirmMarkDone", { task });
-    const confirmFn = typeof window.confirm === "function" ? window.confirm.bind(window) : null;
-    if (!confirmFn || !confirmFn(message)) return;
-    if (!isDrawerIssue(issue) || issueIdentityKey(issue) !== key) return;
-    void updateIssueStatus(issue, isClosed ? "todo" : "done", { isHumanGesture: true });
+    showConfirmDialog({
+      title: copyText(language, isClosed ? "reopenIssue" : "markDoneClose"),
+      message: copyText(language, isClosed ? "confirmReopen" : "confirmMarkDone", { task, repo }),
+      confirmLabel: copyText(language, isClosed ? "reopenIssue" : "markDoneClose"),
+      onConfirm: () => {
+        const fresh = findIssueByKey(key);
+        if (!fresh) return;
+        if (repoForIssue(fresh).toLowerCase() !== repo.toLowerCase()) return;
+        if (options.requireDrawer !== false && (!isDrawerIssue(fresh) || issueIdentityKey(fresh) !== key)) return;
+        if (isActuallyClosed(fresh) !== isClosed) return;
+        void updateIssueStatus(fresh, isClosed ? "todo" : "done", { isHumanGesture: true });
+      }
+    });
   }
   function isIssueClosed3(issue) {
     if (!issue) return false;
@@ -12857,7 +12991,7 @@ Blocked by ${blockerRef}`;
       visibility.className = "filter-group";
       const visibilityTitle = document.createElement("div");
       visibilityTitle.className = "filter-group-title";
-      visibilityTitle.textContent = "Visibility";
+      visibilityTitle.textContent = copyText(decisionLanguage(), "visibility");
       visibility.appendChild(visibilityTitle);
       const closedChip = document.createElement("button");
       closedChip.type = "button";
@@ -13811,7 +13945,13 @@ Blocked by ${blockerRef}`;
         e.preventDefault();
         const target = btnNext.getAttribute("data-target");
         if (target) {
-          await updateIssueStatus(issue, target, { isHumanGesture: true });
+          if (target === "done" && !isActuallyClosed(issue)) {
+            requestDoneToggle(issue, false, { requireDrawer: false });
+          } else if (target !== "done" && isActuallyClosed(issue)) {
+            requestDoneToggle(issue, true, { requireDrawer: false });
+          } else {
+            await updateIssueStatus(issue, target, { isHumanGesture: true });
+          }
         }
       });
     }
@@ -13996,12 +14136,33 @@ Blocked by ${blockerRef}`;
         cardsContainer.classList.remove("drag-over");
         const issueNum = draggedIssueNumber || Number(e.dataTransfer?.getData("text/plain"));
         if (!issueNum) return;
-        const issue = issues.find((i) => i.number === issueNum);
-        if (!issue) return;
+        const candidates = issues.filter((i) => i.number === issueNum);
+        if (candidates.length !== 1) {
+          if (host?.toast) {
+            void host.toast({ kind: "error", message: copyText(decisionLanguage(), "ambiguousTask") });
+          }
+          return;
+        }
+        const issue = candidates[0];
         const subEl = e.target?.closest?.(".kanban-subgroup");
         const subgroupId = subEl?.dataset?.subgroupId;
         const newPriorityGroup = currentGroupBy === "priority" && subgroupId ? subgroupId : void 0;
-        await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
+        if (col.id === "done") {
+          if (!isActuallyClosed(issue)) {
+            requestDoneToggle(issue, false, { requireDrawer: false });
+          } else {
+            await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
+          }
+        } else if (isActuallyClosed(issue)) {
+          if (host?.toast) {
+            void host.toast({
+              kind: "info",
+              message: copyText(decisionLanguage(), "reopenBeforeMoving", { task: `#${issue.number}` })
+            });
+          }
+        } else {
+          await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
+        }
       });
       let displayIssues = colIssues;
       let doneRemaining = 0;
@@ -15411,17 +15572,30 @@ Blocked by ${blockerRef}`;
     const targetRepo = repoForIssue(target);
     if (!targetRepo) return;
     const blocker = findIssueByKey(blockerKey);
-    const blockerNumber = blocker?.number || Number(String(blockerKey).split("#").pop());
-    if (!blockerNumber) return;
-    const message = copyText(decisionLanguage(), "confirmRemoveDependency", {
-      blocker: issueLabelForKey(blockerKey, blockerNumber),
-      target: issueLabelForKey(targetKey, target.number)
+    const language = decisionLanguage();
+    if (!blocker || repoForIssue(blocker).toLowerCase() !== targetRepo.toLowerCase()) {
+      if (host?.toast) {
+        void host.toast({ kind: "info", message: copyText(language, "dependencyUnavailable") });
+      }
+      return;
+    }
+    showConfirmDialog({
+      title: copyText(language, "removeDependency"),
+      message: copyText(language, "confirmRemoveDependency", {
+        blocker: `#${blocker.number} ${blocker.title}`,
+        target: `#${target.number} ${target.title}`,
+        repo: targetRepo
+      }),
+      confirmLabel: copyText(language, "removeDependency"),
+      onConfirm: () => {
+        const freshTarget = findIssueByKey(targetKey);
+        const freshBlocker = findIssueByKey(blockerKey);
+        if (!freshTarget || !freshBlocker) return;
+        if (repoForIssue(freshTarget).toLowerCase() !== targetRepo.toLowerCase()) return;
+        if (repoForIssue(freshBlocker).toLowerCase() !== targetRepo.toLowerCase()) return;
+        void handleRemoveDependency(freshTarget.number, freshBlocker.number, targetRepo);
+      }
     });
-    const confirmFn = typeof window.confirm === "function" ? window.confirm.bind(window) : null;
-    if (!confirmFn || !confirmFn(message)) return;
-    const freshTarget = findIssueByKey(targetKey);
-    if (!freshTarget || repoForIssue(freshTarget).toLowerCase() !== targetRepo.toLowerCase()) return;
-    void handleRemoveDependency(freshTarget.number, blockerNumber, targetRepo);
   }
   function removeInspectorElement(element2) {
     if (!element2) return;
@@ -15441,9 +15615,11 @@ Blocked by ${blockerRef}`;
     popover.setAttribute("aria-label", copyText(decisionLanguage(), "inspectDependency"));
     const text = document.createElement("div");
     text.className = "dep-inspect-text";
+    const targetIssue = findIssueByKey(targetKey);
     text.textContent = copyText(decisionLanguage(), "dependencyBlocks", {
       blocker: issueLabelForKey(blockerKey, edge.from),
-      target: issueLabelForKey(targetKey, edge.to)
+      target: issueLabelForKey(targetKey, edge.to),
+      repo: targetIssue ? repoForIssue(targetIssue) : ""
     });
     popover.appendChild(text);
     const actions2 = document.createElement("div");
@@ -15473,8 +15649,16 @@ Blocked by ${blockerRef}`;
     cancelButton.textContent = copyText(decisionLanguage(), "cancel");
     cancelButton.addEventListener("click", () => removeInspectorElement(popover));
     actions2.appendChild(cancelButton);
+    popover.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        removeInspectorElement(popover);
+      }
+    });
     popover.appendChild(actions2);
     document.body.appendChild(popover);
+    openButton.focus();
   }
   document.addEventListener("click", (e) => {
     const btn = e.target?.closest(".btn-remove-blocker");
@@ -15644,7 +15828,7 @@ Blocked by ${blockerRef}`;
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
     </div>
     <div class="graph-card-head">
-      <input type="checkbox" class="graph-card-check" ${node.isDone ? "checked" : ""} title="Mark done / todo" />
+      <input type="checkbox" class="graph-card-check" ${isActuallyClosed(node.issue) ? "checked" : ""} title="Mark done / todo" />
       <span class="graph-card-num">#${node.issue.number}</span>
       <span class="graph-card-theme" title="${escapeHtml(node.theme)}">${escapeHtml(node.theme)}</span>
       ${isAllProjectsMode ? `<span class="status-pill project-pill" title="${escapeHtml(repoForIssue(node.issue))}">${escapeHtml(displayProjectName(repoForIssue(node.issue)))}</span>` : ""}
@@ -15665,7 +15849,9 @@ Blocked by ${blockerRef}`;
     if (chk) {
       chk.addEventListener("click", (e) => {
         e.stopPropagation();
-        void updateIssueStatus(node.issue, chk.checked ? "done" : "todo", { isHumanGesture: true });
+        const wantClosed = chk.checked;
+        chk.checked = isActuallyClosed(node.issue);
+        requestDoneToggle(node.issue, wantClosed ? false : true, { requireDrawer: false });
       });
     }
     const addBtn = card.querySelector(".graph-card-add-dep-btn");
@@ -15901,8 +16087,11 @@ Blocked by ${blockerRef}`;
       if (blockers.length === 0) {
         elDrawerBlockedByList.innerHTML = '<span style="color: var(--fg-faint); font-size: 11px;">None</span>';
       } else {
+        const issueRepo = repoForIssue(issue).toLowerCase();
         blockers.forEach((bNum) => {
-          const blockerIssue = issues.find((i) => i.number === bNum);
+          const blockerIssue = issues.find(
+            (i) => i.number === bNum && repoForIssue(i).toLowerCase() === issueRepo
+          );
           const pill = document.createElement("div");
           pill.className = "badge";
           pill.style.display = "inline-flex";
@@ -15911,14 +16100,17 @@ Blocked by ${blockerRef}`;
           pill.style.cursor = "pointer";
           const isClosed = blockerIssue ? isIssueClosed3(blockerIssue) : false;
           if (isClosed) pill.style.opacity = "0.6";
+          const removeControl = blockerIssue ? '<span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">\xD7</span>' : "";
           pill.innerHTML = `
           <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
-          <span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">\xD7</span>
+          ${removeControl}
         `;
           pill.addEventListener("click", (e) => {
             if (e.target?.classList.contains("badge-remove-btn")) {
               e.stopPropagation();
-              void handleRemoveDependency(issue.number, bNum);
+              if (blockerIssue) {
+                requestDependencyRemoval(issueIdentityKey(issue), issueIdentityKey(blockerIssue));
+              }
             } else if (blockerIssue) {
               openDrawer(blockerIssue);
             }
@@ -15954,6 +16146,7 @@ Blocked by ${blockerRef}`;
     }
   }
   function openDrawer(issue) {
+    dismissConfirmDialog();
     drawerGeneration++;
     const openerKey = closestIssueKey(document.activeElement);
     drawerOpenerKey = openerKey && openerKey === issueIdentityKey(issue) ? openerKey : issueIdentityKey(issue);
@@ -15970,6 +16163,7 @@ Blocked by ${blockerRef}`;
     }
   }
   function closeDrawer() {
+    dismissConfirmDialog();
     drawerGeneration++;
     activeIssue = null;
     const openerKey = drawerOpenerKey;
@@ -16143,9 +16337,12 @@ Blocked by ${blockerRef}`;
       };
     }
     if (elBtnDrawerToggleClose) {
-      const isClosed = isIssueClosed3(issue);
+      const isClosed = isActuallyClosed(issue);
+      if (elDrawerTaskOutcomeLabel) {
+        elDrawerTaskOutcomeLabel.textContent = copyText(decisionLanguage(), "taskOutcome");
+      }
       elBtnDrawerToggleClose.textContent = copyText(decisionLanguage(), isClosed ? "reopenIssue" : "markDoneClose");
-      elBtnDrawerToggleClose.title = copyText(decisionLanguage(), isClosed ? "confirmReopen" : "confirmMarkDone").replace("{task}", `#${issue.number}`);
+      elBtnDrawerToggleClose.title = copyText(decisionLanguage(), isClosed ? "confirmReopen" : "confirmMarkDone").replace("{task}", `#${issue.number}`).replace("{repo}", repoForIssue(issue) || "");
       elBtnDrawerToggleClose.onclick = () => {
         requestDoneToggle(issue, isClosed);
       };
@@ -18578,6 +18775,21 @@ Blocked by ${blockerRef}`;
           });
         } else {
           const targetCol = val;
+          if (targetCol === "done") {
+            requestDoneToggle(activeIssue, false);
+            elDrawerStatusSelect.value = resolveIssueColumn3(activeIssue) || "none";
+            return;
+          }
+          if (isActuallyClosed(activeIssue)) {
+            elDrawerStatusSelect.value = resolveIssueColumn3(activeIssue) || "none";
+            if (host?.toast) {
+              void host.toast({
+                kind: "info",
+                message: copyText(decisionLanguage(), "reopenBeforeMoving", { task: `#${activeIssue.number}` })
+              });
+            }
+            return;
+          }
           void updateIssueStatus(activeIssue, targetCol, { isHumanGesture: true });
         }
       }
