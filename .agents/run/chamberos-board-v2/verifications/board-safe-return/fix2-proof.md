@@ -1,5 +1,7 @@
 # Board safe return — second blocker fix proof
 
+> **Superseded in part (fix3).** The §1/§3.1 claim that "all state writes now go through one writer that refuses an unconfirmed transition" was true only against the panel cache. Label-only status moves and the two "no transition" archive paths still transmitted `state`, so a stale cache could close or reopen a GitHub issue. `fix3-proof.md` (`79d4b35`) fixes the payload at the transport boundary. The rest of this proof is preserved unchanged.
+
 Status: both delta-review blockers are closed in the isolated candidate worktree. Committed locally only. Not pushed, merged, installed, released or promoted. No live GitHub write, no installed-host check, no physical-phone check and no user acceptance claimed.
 
 Worktree: `/workspace/code/openchamber-github-task-board/.worktrees/workflows-accelerator-agent-dev-board-safe-return`
