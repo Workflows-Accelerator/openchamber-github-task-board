@@ -37,6 +37,30 @@ const patchCalls = (hostCalls) => hostCalls.filter(
 
 const confirmDialog = (mockDoc) => mockDoc.body.querySelectorAll('.confirm-backdrop')[0] || null;
 
+const hasState = (body) => Object.prototype.hasOwnProperty.call(body, 'state');
+
+// A fake GitHub that keeps its own issue state, independent of the panel cache.
+// It records only PATCH bodies that carry `state`, so a label-only write cannot
+// move the fake server.
+const fakeServer = (initialStates = {}) => {
+  const states = { ...initialStates };
+  const transitions = [];
+  const onRequest = async (payload) => {
+    if (payload.method !== 'PATCH') return response({});
+    let body = {};
+    try { body = JSON.parse(payload.body || '{}'); } catch { body = {}; }
+    const match = String(payload.path || '').match(/\/repos\/([^/]+\/[^/]+)\/issues\/(\d+)$/);
+    if (match && hasState(body)) {
+      const key = `${match[1]}#${match[2]}`;
+      const before = states[key];
+      transitions.push({ key, before, after: body.state, changed: before !== body.state });
+      states[key] = body.state;
+    }
+    return response({ ok: true });
+  };
+  return { states, transitions, onRequest };
+};
+
 const clickCancel = (mockDoc) => {
   const dialog = confirmDialog(mockDoc);
   assert.ok(dialog, 'the confirmation dialog is present');
@@ -303,8 +327,9 @@ test('a non-state status change writes directly without a confirmation', async (
   assert.equal(confirmDialog(mockDoc), null, 'a non-state change does not prompt');
   const patches = patchCalls(hostCalls);
   assert.equal(patches.length, 1);
-  assert.equal(JSON.parse(patches[0].payload.body).state, 'open');
-  assert.ok(JSON.parse(patches[0].payload.body).labels.includes('status:in-progress'));
+  const payload = JSON.parse(patches[0].payload.body);
+  assert.equal(Object.prototype.hasOwnProperty.call(payload, 'state'), false, 'a label-only move omits state');
+  assert.ok(payload.labels.includes('status:in-progress'));
 });
 
 test('background reconciliation cannot close an issue', async () => {
@@ -603,8 +628,9 @@ test('archiving an already closed issue keeps it closed without a state confirma
   assert.equal(confirmDialog(mockDoc), null, 'no state transition means no confirmation');
   const patches = patchCalls(hostCalls);
   assert.equal(patches.length, 1, 'the archive metadata write still happens directly');
-  assert.equal(JSON.parse(patches[0].payload.body).state, 'closed');
-  assert.ok(JSON.parse(patches[0].payload.body).labels.includes('archived'));
+  const payload = JSON.parse(patches[0].payload.body);
+  assert.equal(Object.prototype.hasOwnProperty.call(payload, 'state'), false, 'a no-transition archive omits state');
+  assert.ok(payload.labels.includes('archived'));
 });
 
 test('unarchiving a closed done issue stays closed without a state confirmation', async () => {
@@ -626,7 +652,7 @@ test('unarchiving a closed done issue stays closed without a state confirmation'
   const patches = patchCalls(hostCalls);
   assert.equal(patches.length, 1);
   const payload = JSON.parse(patches[0].payload.body);
-  assert.equal(payload.state, 'closed');
+  assert.equal(Object.prototype.hasOwnProperty.call(payload, 'state'), false, 'a no-transition unarchive omits state');
   assert.ok(!payload.labels.includes('archived'));
   assert.ok(payload.labels.includes('status:done'));
 });
@@ -769,4 +795,161 @@ test('Done is separated from dismissing the drawer and every new copy exists in 
     const occurrences = decisions.split(`${key}:`).length - 1;
     assert.ok(occurrences >= 2, `${key} must be defined for both English and French`);
   }
+});
+
+// The transport boundary: a workflow label update must not be able to close or
+// reopen a GitHub issue, even when the board cache disagrees with the server.
+// These tests use a fake server whose state is independent of the cache.
+
+test('a label-only status move omits state and cannot reopen a server-closed issue', async () => {
+  const server = fakeServer({ 'acme/a#70': 'closed' });
+  const cacheIssue = issue({ number: 70, title: 'Cache open', state: 'open', labels: [{ name: 'status:todo' }] });
+  const { app, hostCalls, mockDoc } = await setup({ onRequest: server.onRequest });
+  app.setState({ issues: [cacheIssue] });
+
+  await app.updateIssueStatus(cacheIssue, 'in-progress');
+  await wait();
+
+  assert.equal(confirmDialog(mockDoc), null, 'a label move does not prompt');
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1, 'the label move writes once');
+  const body = JSON.parse(patches[0].payload.body);
+  assert.equal(hasState(body), false, 'the label-only PATCH omits state entirely');
+  assert.ok(body.labels.includes('status:in-progress'), 'the intended label is sent');
+  assert.equal(server.states['acme/a#70'], 'closed', 'the server issue stays closed');
+  assert.equal(server.transitions.length, 0, 'no server state transition occurred');
+});
+
+test('background reconciliation omits state and cannot reopen a server-closed issue', async () => {
+  const server = fakeServer({ 'acme/a#71': 'closed' });
+  const cacheIssue = issue({ number: 71, title: 'Reconcile me', state: 'open', labels: [{ name: 'status:todo' }] });
+  const { app, hostCalls } = await setup({ onRequest: server.onRequest });
+  app.setState({ issues: [cacheIssue] });
+  app.statusReconciler.getSession = () => ({ activity: 'running', id: 'session-71' });
+
+  const reconciled = await app.statusReconciler.reconcile([cacheIssue]);
+  await wait();
+
+  assert.equal(reconciled.length, 1, 'the reconciler still requests the label move');
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1, 'the reconciler writes once');
+  const body = JSON.parse(patches[0].payload.body);
+  assert.equal(hasState(body), false, 'the background write omits state entirely');
+  assert.ok(body.labels.includes('status:in-progress'));
+  assert.equal(server.states['acme/a#71'], 'closed', 'the server issue stays closed');
+  assert.equal(server.transitions.length, 0, 'background reconciliation cannot reopen');
+});
+
+test('archiving a cached-closed issue omits state and cannot close it on the server', async () => {
+  const server = fakeServer({ 'acme/a#72': 'open' });
+  const cacheIssue = issue({ number: 72, title: 'Cache closed', state: 'closed', labels: [{ name: 'status:todo' }] });
+  const { app, elements, hostCalls, mockDoc } = await setup({ onRequest: server.onRequest });
+  app.setState({ issues: [cacheIssue] });
+  app.openDrawer(cacheIssue);
+
+  elements.get('btnDrawerArchive').onclick?.();
+  await wait();
+
+  assert.equal(confirmDialog(mockDoc), null, 'the panel sees no transition, so it does not prompt');
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1, 'the archive metadata write happens');
+  const body = JSON.parse(patches[0].payload.body);
+  assert.equal(hasState(body), false, 'the no-transition archive omits state entirely');
+  assert.ok(body.labels.includes('archived'));
+  assert.equal(server.states['acme/a#72'], 'open', 'the server issue stays open');
+  assert.equal(server.transitions.length, 0, 'archiving cannot close a server-open issue');
+});
+
+test('unarchiving a cached-open issue omits state and cannot reopen it on the server', async () => {
+  const server = fakeServer({ 'acme/a#73': 'closed' });
+  const cacheIssue = issue({
+    number: 73,
+    title: 'Cache archived open',
+    state: 'open',
+    labels: [{ name: 'status:todo' }, { name: 'archived' }],
+  });
+  const { app, elements, hostCalls, mockDoc } = await setup({ onRequest: server.onRequest });
+  app.setState({ issues: [cacheIssue] });
+  app.openDrawer(cacheIssue);
+
+  elements.get('btnDrawerArchive').onclick?.();
+  await wait();
+
+  assert.equal(confirmDialog(mockDoc), null, 'the panel sees no transition, so it does not prompt');
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1);
+  const body = JSON.parse(patches[0].payload.body);
+  assert.equal(hasState(body), false, 'the no-transition unarchive omits state entirely');
+  assert.ok(!body.labels.includes('archived'));
+  assert.equal(server.states['acme/a#73'], 'closed', 'the server issue stays closed');
+  assert.equal(server.transitions.length, 0, 'unarchiving cannot reopen a server-closed issue');
+});
+
+test('unarchiving a cached-closed done issue omits state and cannot close it on the server', async () => {
+  const server = fakeServer({ 'acme/a#74': 'open' });
+  const cacheIssue = issue({
+    number: 74,
+    title: 'Cache archived done',
+    state: 'closed',
+    labels: [{ name: 'status:done' }, { name: 'archived' }],
+  });
+  const { app, elements, hostCalls, mockDoc } = await setup({ onRequest: server.onRequest });
+  app.setState({ issues: [cacheIssue] });
+  app.openDrawer(cacheIssue);
+
+  elements.get('btnDrawerArchive').onclick?.();
+  await wait();
+
+  assert.equal(confirmDialog(mockDoc), null, 'the panel sees no transition, so it does not prompt');
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1);
+  const body = JSON.parse(patches[0].payload.body);
+  assert.equal(hasState(body), false, 'the no-transition unarchive omits state entirely');
+  assert.ok(body.labels.includes('status:done'));
+  assert.equal(server.states['acme/a#74'], 'open', 'the server issue stays open');
+  assert.equal(server.transitions.length, 0, 'unarchiving cannot close a server-open issue');
+});
+
+test('a confirmed close sends the intended state exactly once and the server closes', async () => {
+  const server = fakeServer({ 'acme/a#75': 'open' });
+  const cacheIssue = issue({ number: 75, title: 'Confirm close', state: 'open', labels: [{ name: 'status:todo' }] });
+  const { app, elements, hostCalls, mockDoc } = await setup({ onRequest: server.onRequest });
+  app.setState({ issues: [cacheIssue] });
+  app.openDrawer(cacheIssue);
+
+  elements.get('btnDrawerToggleClose').onclick?.();
+  await wait();
+  assert.ok(confirmDialog(mockDoc), 'the confirmation is shown');
+  clickConfirm(mockDoc);
+  await wait();
+
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1, 'confirm writes exactly once');
+  const body = JSON.parse(patches[0].payload.body);
+  assert.equal(body.state, 'closed', 'the confirmed payload carries the intended state');
+  assert.ok(body.labels.includes('status:done'));
+  assert.equal(server.states['acme/a#75'], 'closed', 'the server issue closes');
+  assert.equal(server.transitions.length, 1);
+  assert.equal(server.transitions[0].changed, true);
+});
+
+test('an ordinary priority label edit still sends the intended labels and no state', async () => {
+  const server = fakeServer({ 'acme/a#76': 'open' });
+  const cacheIssue = issue({ number: 76, title: 'Priority edit', state: 'open', labels: [{ name: 'status:todo' }] });
+  const { app, elements, hostCalls } = await setup({ onRequest: server.onRequest });
+  app.setState({ issues: [cacheIssue] });
+  app.openDrawer(cacheIssue);
+
+  const select = elements.get('drawerPrioritySelect');
+  select.value = 'important';
+  select.dispatchEvent({ type: 'change' });
+  await wait();
+
+  const patches = patchCalls(hostCalls);
+  assert.equal(patches.length, 1, 'the priority edit writes once');
+  const body = JSON.parse(patches[0].payload.body);
+  assert.equal(hasState(body), false, 'an ordinary label edit never carries state');
+  assert.ok(body.labels.includes('priority:important'), 'the intended label is sent');
+  assert.equal(server.states['acme/a#76'], 'open');
+  assert.equal(server.transitions.length, 0);
 });

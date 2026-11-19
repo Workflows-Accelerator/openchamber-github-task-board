@@ -2889,10 +2889,11 @@ async function answerQuestion(
   }
 }
 
-// The single writer for a GitHub issue's open/closed state. A transition away
-// from the state the caller observed is only sent when that caller carries the
-// confirmed signal produced by the in-panel dialog. Every other PATCH here is a
-// label, title or body write and cannot change state.
+// The single writer for a GitHub issue's open/closed state. A `state` key is
+// sent only for an intended transition away from the state the caller observed,
+// and only when that caller carries the confirmed signal produced by the
+// in-panel dialog. Every other call is a label-only write: it omits `state`
+// entirely, so a stale cache can never close or reopen a GitHub issue.
 async function writeIssueState(
   repo: string,
   issue: Issue,
@@ -2901,13 +2902,15 @@ async function writeIssueState(
   options: { confirmed: boolean; previousState?: string }
 ): Promise<void> {
   const observed = String(options.previousState ?? issue.state ?? '').toLowerCase();
-  if (nextState !== observed && !options.confirmed) {
+  const stateChanges = nextState !== observed;
+  if (stateChanges && !options.confirmed) {
     throw new Error(`Refused unconfirmed state change of #${issue.number} to ${nextState}`);
   }
-  await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
-    state: nextState,
-    labels,
-  });
+  await githubRequestWithRetry(
+    'PATCH',
+    `/repos/${repo}/issues/${issue.number}`,
+    stateChanges ? { state: nextState, labels } : { labels }
+  );
 }
 
 async function updateIssueStatus(

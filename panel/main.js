@@ -12292,13 +12292,15 @@ Blocked by ${blockerRef}`;
   }
   async function writeIssueState(repo, issue, nextState, labels, options) {
     const observed = String(options.previousState ?? issue.state ?? "").toLowerCase();
-    if (nextState !== observed && !options.confirmed) {
+    const stateChanges = nextState !== observed;
+    if (stateChanges && !options.confirmed) {
       throw new Error(`Refused unconfirmed state change of #${issue.number} to ${nextState}`);
     }
-    await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
-      state: nextState,
-      labels
-    });
+    await githubRequestWithRetry(
+      "PATCH",
+      `/repos/${repo}/issues/${issue.number}`,
+      stateChanges ? { state: nextState, labels } : { labels }
+    );
   }
   async function updateIssueStatus(issue, targetColumn, options) {
     const repo = repoForIssue(issue);
