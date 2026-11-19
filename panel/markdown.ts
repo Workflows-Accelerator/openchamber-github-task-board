@@ -305,14 +305,56 @@ export function renderMarkdown(input: string): string {
   return result;
 }
 
+const FRIENDLY_TITLE_LINE = /^(?:#{1,6}\s*)?(?:\*\*|__)?Friendly Title:?(?:\*\*|__)?:?\s*(.*)$/i;
+
+function matchFriendlyTitleLine(line: string): { matched: boolean; value: string } {
+  const match = FRIENDLY_TITLE_LINE.exec(line.trim());
+  return match ? { matched: true, value: (match[1] || '').trim() } : { matched: false, value: '' };
+}
+
+/** Drop the Friendly Title metadata block from rendered copy, never from the raw body. */
+export function stripFriendlyTitleSection(body: string | null | undefined): string {
+  if (!body || typeof body !== 'string') return '';
+  const lines = body.split(/\r?\n/);
+  const kept: string[] = [];
+  let removeValueLine = false;
+  for (const line of lines) {
+    const friendly = matchFriendlyTitleLine(line);
+    if (friendly.matched) {
+      removeValueLine = !friendly.value;
+      continue;
+    }
+    if (removeValueLine) {
+      if (!line.trim()) {
+        kept.push(line);
+        continue;
+      }
+      removeValueLine = false;
+      continue;
+    }
+    kept.push(line);
+  }
+  return kept.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 export function getIssueDescriptionPreview(body: string | null | undefined): string {
   if (!body || typeof body !== 'string') return '';
   const lines = stripOrderMarker(body).split(/\r?\n/);
   const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
   let fallback = '';
+  let skipFriendlyValue = false;
   for (let rawLine of lines) {
     let line = rawLine.trim();
     if (!line) continue;
+    const friendly = matchFriendlyTitleLine(line);
+    if (friendly.matched) {
+      skipFriendlyValue = !friendly.value;
+      continue;
+    }
+    if (skipFriendlyValue) {
+      skipFriendlyValue = false;
+      continue;
+    }
     if (line.startsWith('```') || line.startsWith('~~~')) continue;
     const isHeading = line.startsWith('#');
     line = line.replace(/^#+\s*/, '');

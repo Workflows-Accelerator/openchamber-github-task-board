@@ -614,6 +614,10 @@ export function createTestApp(options = {}) {
       answerQuestion,
       handleAddDependency,
       handleRemoveDependency,
+      requestDependencyRemoval,
+      openDependencyInspector,
+      requestDoneToggle,
+      isDrawerIssue,
       submitNewIssue,
       setRepository,
       renderEmptyState,
@@ -665,6 +669,7 @@ export function createTestApp(options = {}) {
         commentsCache,
         drawerGeneration,
         activeIssue,
+        showClosedIssues,
         activeStreamEpoch,
         isIdleSyncing,
         pendingIdleRefresh,
@@ -689,6 +694,7 @@ export function createTestApp(options = {}) {
         if (updates.allProjectsRepoRefs !== undefined) allProjectsRepoRefs = updates.allProjectsRepoRefs;
         if (updates.activeIssue !== undefined) activeIssue = updates.activeIssue;
         if (updates.drawerGeneration !== undefined) drawerGeneration = updates.drawerGeneration;
+        if (updates.showClosedIssues !== undefined) showClosedIssues = updates.showClosedIssues;
         if (updates.activeStreamEpoch !== undefined) activeStreamEpoch = updates.activeStreamEpoch;
       }
     };

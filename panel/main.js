@@ -5172,14 +5172,52 @@ ${placeholder}
     result = result.replace(/%%MD_CODE_BLOCK_(\d+)%%/g, (_, idx) => codeBlocks[Number(idx)]);
     return result;
   }
+  var FRIENDLY_TITLE_LINE = /^(?:#{1,6}\s*)?(?:\*\*|__)?Friendly Title:?(?:\*\*|__)?:?\s*(.*)$/i;
+  function matchFriendlyTitleLine(line) {
+    const match = FRIENDLY_TITLE_LINE.exec(line.trim());
+    return match ? { matched: true, value: (match[1] || "").trim() } : { matched: false, value: "" };
+  }
+  function stripFriendlyTitleSection(body) {
+    if (!body || typeof body !== "string") return "";
+    const lines = body.split(/\r?\n/);
+    const kept = [];
+    let removeValueLine = false;
+    for (const line of lines) {
+      const friendly = matchFriendlyTitleLine(line);
+      if (friendly.matched) {
+        removeValueLine = !friendly.value;
+        continue;
+      }
+      if (removeValueLine) {
+        if (!line.trim()) {
+          kept.push(line);
+          continue;
+        }
+        removeValueLine = false;
+        continue;
+      }
+      kept.push(line);
+    }
+    return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
   function getIssueDescriptionPreview(body) {
     if (!body || typeof body !== "string") return "";
     const lines = stripOrderMarker(body).split(/\r?\n/);
     const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
     let fallback = "";
+    let skipFriendlyValue = false;
     for (let rawLine of lines) {
       let line = rawLine.trim();
       if (!line) continue;
+      const friendly = matchFriendlyTitleLine(line);
+      if (friendly.matched) {
+        skipFriendlyValue = !friendly.value;
+        continue;
+      }
+      if (skipFriendlyValue) {
+        skipFriendlyValue = false;
+        continue;
+      }
       if (line.startsWith("```") || line.startsWith("~~~")) continue;
       const isHeading = line.startsWith("#");
       line = line.replace(/^#+\s*/, "");
@@ -5448,7 +5486,20 @@ ${placeholder}
       inboxConfirming: "Confirming",
       inboxUnbound: "Not linked to a task",
       inboxHuman: "Human tasks in issue bodies",
-      noHuman: "No unchecked human task in an issue body."
+      noHuman: "No unchecked human task in an issue body.",
+      backToBoard: "Back to board",
+      showClosedIssues: "Show closed issues",
+      hideClosedIssues: "Hide closed issues",
+      markDoneClose: "Mark done and close issue",
+      reopenIssue: "Reopen issue",
+      confirmMarkDone: "Mark {task} done and close it on GitHub?",
+      confirmReopen: "Reopen {task} on GitHub?",
+      inspectDependency: "Dependency",
+      dependencyBlocks: "{blocker} blocks {target}",
+      openTask: "Open task",
+      removeDependency: "Remove dependency",
+      cancel: "Cancel",
+      confirmRemoveDependency: "Remove the dependency: {blocker} blocks {target}?"
     },
     fr: {
       waiting: "en attente de vous",
@@ -5498,7 +5549,20 @@ ${placeholder}
       inboxConfirming: "Confirmation",
       inboxUnbound: "Li\xE9 \xE0 aucune t\xE2che",
       inboxHuman: "T\xE2ches humaines dans les corps de t\xE2che",
-      noHuman: "Aucune t\xE2che humaine non coch\xE9e dans un corps de t\xE2che."
+      noHuman: "Aucune t\xE2che humaine non coch\xE9e dans un corps de t\xE2che.",
+      backToBoard: "Retour au tableau",
+      showClosedIssues: "Afficher les t\xE2ches ferm\xE9es",
+      hideClosedIssues: "Masquer les t\xE2ches ferm\xE9es",
+      markDoneClose: "Marquer termin\xE9 et fermer la t\xE2che",
+      reopenIssue: "Rouvrir la t\xE2che",
+      confirmMarkDone: "Marquer {task} termin\xE9 et la fermer sur GitHub ?",
+      confirmReopen: "Rouvrir {task} sur GitHub ?",
+      inspectDependency: "D\xE9pendance",
+      dependencyBlocks: "{blocker} bloque {target}",
+      openTask: "Ouvrir la t\xE2che",
+      removeDependency: "Retirer la d\xE9pendance",
+      cancel: "Annuler",
+      confirmRemoveDependency: "Retirer la d\xE9pendance : {blocker} bloque {target} ?"
     }
   };
   function copyText(language, key, values = {}) {
@@ -10110,6 +10174,7 @@ Blocked by ${blockerRef}`;
   var searchQuery = "";
   var showArchivedOnly = false;
   var showAllDoneIssues = false;
+  var showClosedIssues = false;
   var viewState = defaultViewState();
   var projectNameOverrides = {};
   var deviceStorageSupported = false;
@@ -10221,7 +10286,9 @@ Blocked by ${blockerRef}`;
   var elDrawerIssueAuthor = document.getElementById("drawerIssueAuthor");
   var elDrawerGithubLink = document.getElementById("drawerGithubLink");
   var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
+  var elBtnDrawerBack = document.getElementById("btnDrawerBack");
   var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
+  var elDrawerIssueSubtitle = document.getElementById("drawerIssueSubtitle");
   var elDrawerDecisionSlot = document.getElementById("drawerDecisionSlot");
   var elDrawerPrioritySelect = document.getElementById("drawerPrioritySelect");
   var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
@@ -10351,6 +10418,8 @@ Blocked by ${blockerRef}`;
   var DRAWER_COMMENTS_CACHE_TTL_MS = 6e4;
   var commentsCache = /* @__PURE__ */ new Map();
   var drawerGeneration = 0;
+  var drawerOpenerKey = null;
+  var drawerScrollRestore = null;
   var unsubSessions = null;
   var unsubWorktrees = null;
   var activeWatchedProjectId = null;
@@ -10652,7 +10721,7 @@ Blocked by ${blockerRef}`;
       return;
     }
     flushScratchpadSave();
-    drawerGeneration++;
+    invalidateDrawerForScopeChange();
     commentsCache.clear();
     isAllProjectsMode = false;
     allProjectsRepoRefs = [];
@@ -10808,6 +10877,7 @@ Blocked by ${blockerRef}`;
       return;
     }
     flushScratchpadSave();
+    invalidateDrawerForScopeChange();
     isAllProjectsMode = true;
     allProjectsRepoRefs = refs;
     currentRepo = ALL_PROJECTS_CACHE_KEY;
@@ -11730,6 +11800,45 @@ Blocked by ${blockerRef}`;
     if (isAllProjectsMode) return "";
     return currentRepo;
   }
+  function issueIdentityKey(issue) {
+    return issue ? issueWriteKey(repoForIssue(issue), issue).toLowerCase() : "";
+  }
+  function isDrawerIssue(issue) {
+    return Boolean(activeIssue && issue && issueIdentityKey(activeIssue) === issueIdentityKey(issue));
+  }
+  function isActuallyClosed(issue) {
+    return String(issue?.state || "").toLowerCase() === "closed";
+  }
+  function activeViewScrollElement() {
+    if (viewState.view === "cards") return elListViewContainer;
+    if (viewState.view === "kanban") return elKanbanViewContainer;
+    if (viewState.view === "graph") return elGraphCanvasContainer;
+    if (viewState.view === "pending") return elHumanViewContainer;
+    return elSimpleListViewContainer;
+  }
+  function closestIssueKey(element2) {
+    let node = element2;
+    while (node) {
+      const key = node.getAttribute?.("data-issue-key");
+      if (key) return String(key).toLowerCase();
+      node = node.parentElement || node.parentNode || null;
+    }
+    return "";
+  }
+  function findIssueElementByKey(key) {
+    const target = key.toLowerCase();
+    const elements = Array.from(document.querySelectorAll("[data-issue-key]"));
+    return elements.find((element2) => String(element2.getAttribute("data-issue-key") || "").toLowerCase() === target) || null;
+  }
+  function invalidateDrawerForScopeChange() {
+    drawerGeneration++;
+    activeIssue = null;
+    drawerOpenerKey = null;
+    drawerScrollRestore = null;
+    elDrawerScrim.classList.remove("active");
+    elTaskDrawer.classList.remove("active");
+    document.body.classList.remove("drawer-open");
+  }
   async function notifyAgentOnHumanTasksComplete(issue, repo) {
     const session = sessionIndex.get(issue.number) || (repo ? sessionIndexByRepo.get(`${repo}#${issue.number}`) : void 0);
     const promptText = buildHumanTaskResumePrompt(issue.number);
@@ -11916,7 +12025,7 @@ Blocked by ${blockerRef}`;
           onDiscard();
         } else {
           renderViews();
-          if (activeIssue && activeIssue.number === issue.number) {
+          if (isDrawerIssue(issue)) {
             renderDrawer(issue, true);
           }
         }
@@ -12007,7 +12116,7 @@ Blocked by ${blockerRef}`;
     issue.v2Metadata = resolveV2Metadata(issue, session);
     issueCache.delete(repo);
     renderViews();
-    if (activeIssue && activeIssue.number === issue.number) {
+    if (isDrawerIssue(issue)) {
       renderDrawer(issue, true);
     }
     let patchResponse = null;
@@ -12035,7 +12144,7 @@ Blocked by ${blockerRef}`;
       if (isExplicitHttpRejection) {
         delete issue.unconfirmed;
         renderViews();
-        if (activeIssue && activeIssue.number === issue.number) {
+        if (isDrawerIssue(issue)) {
           renderDrawer(issue, true);
         }
         addLog(`Failed to sync body for #${issue.number}: ${err.message}`, "error");
@@ -12045,7 +12154,7 @@ Blocked by ${blockerRef}`;
       } else {
         issue.unconfirmed = true;
         renderViews();
-        if (activeIssue && activeIssue.number === issue.number) {
+        if (isDrawerIssue(issue)) {
           renderDrawer(issue, true);
         }
         addLog(`Ambiguous outcome syncing body for #${issue.number}: ${err.message}`, "warn");
@@ -12106,7 +12215,7 @@ Blocked by ${blockerRef}`;
       if (!result.found) {
         saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
         renderViews();
-        if (activeIssue && activeIssue.number === issue.number) {
+        if (isDrawerIssue(issue)) {
           renderDrawer(issue, true);
         }
         if (result.reason === "already-answered") {
@@ -12147,7 +12256,7 @@ Blocked by ${blockerRef}`;
       });
       if (ok) {
         clearQuestionDraft(issue, cleanQuestion);
-        if (activeIssue && activeIssue.number === issue.number) {
+        if (isDrawerIssue(issue)) {
           renderDrawer(issue, true);
         }
       } else {
@@ -12195,7 +12304,7 @@ Blocked by ${blockerRef}`;
     const finishWrite = trackIssueWrite(repo, issue, ["state", "labels"]);
     issueCache.delete(repo);
     renderViews();
-    if (activeIssue && activeIssue.number === issue.number) {
+    if (isDrawerIssue(issue)) {
       renderDrawer(issue, true);
     }
     try {
@@ -12216,12 +12325,23 @@ Blocked by ${blockerRef}`;
         target.v2Metadata = resolveV2Metadata(target, targetSession);
       }
       renderViews();
-      if (activeIssue && activeIssue.number === issue.number) {
+      if (isDrawerIssue(issue)) {
         renderDrawer(issue, true);
       }
       addLog(`Failed to move #${issue.number}: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
     }
+  }
+  function requestDoneToggle(issue, isClosed) {
+    const repo = repoForIssue(issue);
+    if (!repo) return;
+    const key = issueIdentityKey(issue);
+    const task = `#${issue.number} ${issue.title}`;
+    const message = copyText(decisionLanguage(), isClosed ? "confirmReopen" : "confirmMarkDone", { task });
+    const confirmFn = typeof window.confirm === "function" ? window.confirm.bind(window) : null;
+    if (!confirmFn || !confirmFn(message)) return;
+    if (!isDrawerIssue(issue) || issueIdentityKey(issue) !== key) return;
+    void updateIssueStatus(issue, isClosed ? "todo" : "done", { isHumanGesture: true });
   }
   function isIssueClosed3(issue) {
     if (!issue) return false;
@@ -12328,7 +12448,7 @@ Blocked by ${blockerRef}`;
     }
     issueCache.delete(archiveRepo);
     renderViews();
-    if (activeIssue && activeIssue.number === issue.number) {
+    if (isDrawerIssue(issue)) {
       renderDrawer(issue, true);
     }
     try {
@@ -12345,7 +12465,7 @@ Blocked by ${blockerRef}`;
       issue.state = prevState;
       issue.labels = prevLabels;
       renderViews();
-      if (activeIssue && activeIssue.number === issue.number) {
+      if (isDrawerIssue(issue)) {
         renderDrawer(issue, true);
       }
       addLog(`Failed to update archive state: ${err.message}`, "error");
@@ -12732,6 +12852,28 @@ Blocked by ${blockerRef}`;
       }
       elFilterPopover.appendChild(section);
     }
+    if (viewState.view === "simple") {
+      const visibility = document.createElement("div");
+      visibility.className = "filter-group";
+      const visibilityTitle = document.createElement("div");
+      visibilityTitle.className = "filter-group-title";
+      visibilityTitle.textContent = "Visibility";
+      visibility.appendChild(visibilityTitle);
+      const closedChip = document.createElement("button");
+      closedChip.type = "button";
+      closedChip.className = "filter-chip";
+      closedChip.textContent = copyText(decisionLanguage(), showClosedIssues ? "hideClosedIssues" : "showClosedIssues");
+      closedChip.title = closedChip.textContent;
+      closedChip.setAttribute("data-filter", "closed");
+      closedChip.setAttribute("aria-pressed", String(showClosedIssues));
+      closedChip.addEventListener("click", (event) => {
+        event.stopPropagation();
+        showClosedIssues = !showClosedIssues;
+        renderViews();
+      });
+      visibility.appendChild(closedChip);
+      elFilterPopover.appendChild(visibility);
+    }
     elActiveFilters.innerHTML = "";
     elActiveFilters.style.display = viewState.filters.length ? "flex" : "none";
     for (const token of viewState.filters) {
@@ -12772,8 +12914,9 @@ Blocked by ${blockerRef}`;
       if (showArchivedOnly ? !isIssueArchived(issue) : isIssueArchived(issue)) return false;
       return !q || issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) || (issue.labels || []).some((label) => (typeof label === "string" ? label : label.name || "").toLowerCase().includes(q));
     });
-    const attention = groupIssuesByAttention(searched, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
-    const filtered = applyFilters(searched, viewState.filters, {
+    const visible = viewState.view === "simple" && !showClosedIssues ? searched.filter((issue) => !isActuallyClosed(issue)) : searched;
+    const attention = groupIssuesByAttention(visible, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
+    const filtered = applyFilters(visible, viewState.filters, {
       stageOf: (issue) => resolveIssueColumn3(issue) || "todo",
       repoOf: repoForIssue,
       needsMe: (issue) => needsMeOf(issue, attention, getIssueSession(issue)),
@@ -12939,6 +13082,7 @@ Blocked by ${blockerRef}`;
       if (unconfirmed) row.classList.add("simple-row-unconfirmed");
       row.setAttribute("tabindex", "0");
       row.setAttribute("data-draft-key", key);
+      row.setAttribute("data-issue-key", key);
       row.setAttribute("aria-label", `${issue.title}. ${STATUS_METADATA[stage].label}${unconfirmed ? ". Outcome unconfirmed; refresh required." : editable ? ". Alt+Up or Alt+Down to reorder." : ""}`);
       row.setAttribute("aria-busy", String(draftMutations.has(key) || draftTitleMutations.has(key) || issue.number < 0));
       const dot = document.createElement("span");
@@ -13038,12 +13182,19 @@ Blocked by ${blockerRef}`;
         });
         content.appendChild(description);
       } else {
+        const titles = resolveSimplifiedViewTitle(issue);
         const title = document.createElement("button");
         title.className = "simple-title";
-        title.textContent = issue.title || `Issue #${issue.number}`;
+        title.textContent = titles.displayTitle || issue.title || `Issue #${issue.number}`;
         title.disabled = bodyBusy;
         title.addEventListener("click", () => openDrawer(issue));
         content.appendChild(title);
+        if (titles.displaySubtitle) {
+          const subtitle = document.createElement("div");
+          subtitle.className = "simple-subtitle";
+          subtitle.textContent = titles.displaySubtitle;
+          content.appendChild(subtitle);
+        }
         const preview = getIssueDescriptionPreview(issue.body);
         if (preview) {
           const description = document.createElement("div");
@@ -13493,6 +13644,7 @@ Blocked by ${blockerRef}`;
     card.className = `card ${isSelected ? "is-selected" : ""}`;
     card.draggable = inKanban;
     card.dataset.issueNumber = String(issue.number);
+    card.dataset.issueKey = issueWriteKey(repoForIssue(issue), issue);
     const totalSubtasks = issue.subtasks.length;
     const completedSubtasks = issue.subtasks.filter((s) => s.completed).length;
     const pct = totalSubtasks > 0 ? Math.round(completedSubtasks / totalSubtasks * 100) : 0;
@@ -15231,8 +15383,10 @@ Blocked by ${blockerRef}`;
       }
     }
   }
-  async function handleRemoveDependency(targetNum, blockerNum) {
-    const targetIssue = issues.find((i) => i.number === targetNum);
+  async function handleRemoveDependency(targetNum, blockerNum, targetRepo) {
+    const targetIssue = issues.find(
+      (issue) => issue.number === targetNum && (!targetRepo || repoForIssue(issue).toLowerCase() === targetRepo.toLowerCase())
+    );
     if (!targetIssue) return;
     const newBody = removeDependencyFromMarkdown(targetIssue.body, blockerNum);
     if (newBody !== targetIssue.body) {
@@ -15242,16 +15396,94 @@ Blocked by ${blockerRef}`;
       }
     }
   }
+  function findIssueByKey(key) {
+    const target = String(key || "").toLowerCase();
+    if (!target) return void 0;
+    return issues.find((issue) => issueIdentityKey(issue) === target);
+  }
+  function issueLabelForKey(key, fallbackNumber) {
+    const found = findIssueByKey(key);
+    return found ? `#${found.number} ${found.title}` : `#${fallbackNumber}`;
+  }
+  function requestDependencyRemoval(targetKey, blockerKey) {
+    const target = findIssueByKey(targetKey);
+    if (!target) return;
+    const targetRepo = repoForIssue(target);
+    if (!targetRepo) return;
+    const blocker = findIssueByKey(blockerKey);
+    const blockerNumber = blocker?.number || Number(String(blockerKey).split("#").pop());
+    if (!blockerNumber) return;
+    const message = copyText(decisionLanguage(), "confirmRemoveDependency", {
+      blocker: issueLabelForKey(blockerKey, blockerNumber),
+      target: issueLabelForKey(targetKey, target.number)
+    });
+    const confirmFn = typeof window.confirm === "function" ? window.confirm.bind(window) : null;
+    if (!confirmFn || !confirmFn(message)) return;
+    const freshTarget = findIssueByKey(targetKey);
+    if (!freshTarget || repoForIssue(freshTarget).toLowerCase() !== targetRepo.toLowerCase()) return;
+    void handleRemoveDependency(freshTarget.number, blockerNumber, targetRepo);
+  }
+  function removeInspectorElement(element2) {
+    if (!element2) return;
+    if (typeof element2.remove === "function") {
+      element2.remove();
+      return;
+    }
+    element2.parentElement?.removeChild?.(element2);
+  }
+  function openDependencyInspector(edge) {
+    document.querySelectorAll(".dep-inspect-popover").forEach((element2) => removeInspectorElement(element2));
+    const blockerKey = edge.fromKey || String(edge.from);
+    const targetKey = edge.toKey || String(edge.to);
+    const popover = document.createElement("div");
+    popover.className = "popover dep-inspect-popover active";
+    popover.setAttribute("role", "dialog");
+    popover.setAttribute("aria-label", copyText(decisionLanguage(), "inspectDependency"));
+    const text = document.createElement("div");
+    text.className = "dep-inspect-text";
+    text.textContent = copyText(decisionLanguage(), "dependencyBlocks", {
+      blocker: issueLabelForKey(blockerKey, edge.from),
+      target: issueLabelForKey(targetKey, edge.to)
+    });
+    popover.appendChild(text);
+    const actions2 = document.createElement("div");
+    actions2.className = "dep-inspect-actions";
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.className = "btn btn-sm dep-inspect-open";
+    openButton.textContent = copyText(decisionLanguage(), "openTask");
+    openButton.addEventListener("click", () => {
+      const target = findIssueByKey(targetKey);
+      removeInspectorElement(popover);
+      if (target) openDrawer(target);
+    });
+    actions2.appendChild(openButton);
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "btn btn-sm dep-inspect-remove";
+    removeButton.textContent = copyText(decisionLanguage(), "removeDependency");
+    removeButton.addEventListener("click", () => {
+      removeInspectorElement(popover);
+      requestDependencyRemoval(targetKey, blockerKey);
+    });
+    actions2.appendChild(removeButton);
+    const cancelButton = document.createElement("button");
+    cancelButton.type = "button";
+    cancelButton.className = "btn btn-sm dep-inspect-cancel";
+    cancelButton.textContent = copyText(decisionLanguage(), "cancel");
+    cancelButton.addEventListener("click", () => removeInspectorElement(popover));
+    actions2.appendChild(cancelButton);
+    popover.appendChild(actions2);
+    document.body.appendChild(popover);
+  }
   document.addEventListener("click", (e) => {
     const btn = e.target?.closest(".btn-remove-blocker");
     if (btn) {
       e.stopPropagation();
       e.preventDefault();
-      const target = parseInt(btn.dataset.target || "0", 10);
-      const blocker = parseInt(btn.dataset.blocker || "0", 10);
-      if (target > 0 && blocker > 0) {
-        void handleRemoveDependency(target, blocker);
-      }
+      const targetKey = btn.dataset.targetKey;
+      const blockerKey = btn.dataset.blockerKey;
+      if (targetKey && blockerKey) requestDependencyRemoval(targetKey, blockerKey);
     }
   });
   function showQuickBlockerPicker(targetIssue, triggerEl) {
@@ -15443,14 +15675,17 @@ Blocked by ${blockerRef}`;
         showQuickBlockerPicker(node.issue, addBtn);
       });
     }
-    card.querySelectorAll(".btn-remove-blocker").forEach((btn) => {
+    const targetKey = node.key || issueWriteKey(repoForIssue(node.issue), node.issue);
+    card.querySelectorAll(".btn-remove-blocker").forEach((btn, index) => {
+      const blockerNumber = parseInt(btn.dataset.blocker || "0", 10);
+      const blockerKey = node.openBlockerKeys?.[index] || (blockerNumber > 0 ? `${repoForIssue(node.issue)}#${blockerNumber}` : "");
+      if (blockerKey) btn.dataset.blockerKey = blockerKey;
+      btn.dataset.targetKey = targetKey;
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        const target = parseInt(btn.dataset.target || "0", 10);
-        const blocker = parseInt(btn.dataset.blocker || "0", 10);
-        if (target > 0 && blocker > 0) {
-          void handleRemoveDependency(target, blocker);
+        if (btn.dataset.targetKey && btn.dataset.blockerKey) {
+          requestDependencyRemoval(btn.dataset.targetKey, btn.dataset.blockerKey);
         }
       });
     });
@@ -15535,10 +15770,10 @@ Blocked by ${blockerRef}`;
       path.setAttribute("marker-end", `url(#${markerId})`);
       path.addEventListener("click", (e) => {
         e.stopPropagation();
-        void handleRemoveDependency(edge.to, edge.from);
+        openDependencyInspector(edge);
       });
       const titleEl = document.createElementNS("http://www.w3.org/2000/svg", "title");
-      titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
+      titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to inspect dependency)`;
       path.appendChild(titleEl);
       edgeGroup.appendChild(path);
       const midX = Math.round((pathData.x1 + pathData.x2) / 2);
@@ -15549,7 +15784,7 @@ Blocked by ${blockerRef}`;
       badgeGroup.setAttribute("data-from", String(edge.from));
       badgeGroup.setAttribute("data-to", String(edge.to));
       badgeGroup.setAttribute("role", "button");
-      badgeGroup.setAttribute("aria-label", `Remove dependency: #${edge.from} blocks #${edge.to}`);
+      badgeGroup.setAttribute("aria-label", `Inspect dependency: #${edge.from} blocks #${edge.to}`);
       badgeGroup.style.cursor = "pointer";
       const hitCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       hitCircle.setAttribute("r", "12");
@@ -15563,15 +15798,15 @@ Blocked by ${blockerRef}`;
       textEl.setAttribute("class", "graph-edge-delete-text");
       textEl.setAttribute("text-anchor", "middle");
       textEl.setAttribute("dominant-baseline", "central");
-      textEl.textContent = "\xD7";
+      textEl.textContent = "i";
       badgeGroup.appendChild(textEl);
       const badgeTitle = document.createElementNS("http://www.w3.org/2000/svg", "title");
-      badgeTitle.textContent = `Remove dependency: #${edge.from} blocks #${edge.to}`;
+      badgeTitle.textContent = `Inspect dependency: #${edge.from} blocks #${edge.to}`;
       badgeGroup.appendChild(badgeTitle);
       badgeGroup.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        void handleRemoveDependency(edge.to, edge.from);
+        openDependencyInspector(edge);
       });
       edgeGroup.appendChild(badgeGroup);
       edgeFragment.appendChild(edgeGroup);
@@ -15720,6 +15955,10 @@ Blocked by ${blockerRef}`;
   }
   function openDrawer(issue) {
     drawerGeneration++;
+    const openerKey = closestIssueKey(document.activeElement);
+    drawerOpenerKey = openerKey && openerKey === issueIdentityKey(issue) ? openerKey : issueIdentityKey(issue);
+    const scroller = activeViewScrollElement();
+    drawerScrollRestore = scroller ? { element: scroller, top: scroller.scrollTop } : null;
     activeIssue = issue;
     maybeRefreshDecisions("drawer");
     renderDrawer(issue, false, drawerGeneration, true);
@@ -15733,9 +15972,22 @@ Blocked by ${blockerRef}`;
   function closeDrawer() {
     drawerGeneration++;
     activeIssue = null;
+    const openerKey = drawerOpenerKey;
+    const restore = drawerScrollRestore;
+    drawerOpenerKey = null;
+    drawerScrollRestore = null;
     elDrawerScrim.classList.remove("active");
     elTaskDrawer.classList.remove("active");
     document.body.classList.remove("drawer-open");
+    if (restore?.element) restore.element.scrollTop = restore.top;
+    if (openerKey) {
+      const opener = findIssueElementByKey(openerKey);
+      if (opener && opener.isConnected !== false) {
+        const focusOpener = () => opener.focus?.();
+        if (typeof requestAnimationFrame === "function") requestAnimationFrame(focusOpener);
+        else focusOpener();
+      }
+    }
     if (document.body.getAttribute("data-layout") === "graph" && typeof requestAnimationFrame === "function") {
       requestAnimationFrame(() => drawCurrentGraphEdges());
     }
@@ -15841,6 +16093,7 @@ Blocked by ${blockerRef}`;
     }
   }
   function renderDrawer(issue, skipComments = false, gen = drawerGeneration, forceFreshComments = false) {
+    if (gen !== drawerGeneration) return;
     elDrawerIssueNumber.textContent = `#${issue.number}`;
     let elUnconfirmedBadge = elDrawerIssueNumber?.parentElement?.querySelector(".badge-drawer-unconfirmed");
     if (issue.unconfirmed) {
@@ -15859,7 +16112,16 @@ Blocked by ${blockerRef}`;
     }
     elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
     elDrawerGithubLink.href = issue.html_url;
-    elDrawerIssueTitle.textContent = issue.title;
+    const titles = parseFriendlyTitle(issue.body, issue.title);
+    elDrawerIssueTitle.textContent = titles.title || issue.title;
+    if (elDrawerIssueSubtitle) {
+      elDrawerIssueSubtitle.textContent = titles.subtitle || "";
+      elDrawerIssueSubtitle.style.display = titles.subtitle ? "" : "none";
+    }
+    if (elBtnDrawerBack) {
+      elBtnDrawerBack.textContent = copyText(decisionLanguage(), "backToBoard");
+      elBtnDrawerBack.title = copyText(decisionLanguage(), "backToBoard");
+    }
     const col = resolveIssueColumn3(issue);
     elDrawerStatusSelect.value = col || "none";
     if (elDrawerPrioritySelect) {
@@ -15882,9 +16144,10 @@ Blocked by ${blockerRef}`;
     }
     if (elBtnDrawerToggleClose) {
       const isClosed = isIssueClosed3(issue);
-      elBtnDrawerToggleClose.textContent = isClosed ? "Reopen Issue" : "Close Issue";
+      elBtnDrawerToggleClose.textContent = copyText(decisionLanguage(), isClosed ? "reopenIssue" : "markDoneClose");
+      elBtnDrawerToggleClose.title = copyText(decisionLanguage(), isClosed ? "confirmReopen" : "confirmMarkDone").replace("{task}", `#${issue.number}`);
       elBtnDrawerToggleClose.onclick = () => {
-        void updateIssueStatus(issue, isClosed ? "todo" : "done", { isHumanGesture: true });
+        requestDoneToggle(issue, isClosed);
       };
     }
     renderDrawerLabels(issue);
@@ -15926,7 +16189,7 @@ Blocked by ${blockerRef}`;
     renderDrawerAcceptanceCriteria(issue);
     renderQuestions(issue);
     renderTestPlans(issue);
-    elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
+    elDrawerDescriptionContent.innerHTML = renderMarkdown(stripFriendlyTitleSection(issue.body));
     elDrawerDescriptionViewBox.style.display = "block";
     elDrawerDescriptionEditBox.style.display = "none";
     const scheduleFrame = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb) => setTimeout(cb, 0);
@@ -16325,7 +16588,7 @@ Blocked by ${blockerRef}`;
         return;
       }
     }
-    if (drawerGeneration !== expectedGen || !activeIssue || activeIssue.number !== issueNumber) {
+    if (drawerGeneration !== expectedGen || !activeIssue || activeIssue.number !== issueNumber || repoForIssue(activeIssue) !== repo) {
       return;
     }
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
@@ -18237,6 +18500,7 @@ Blocked by ${blockerRef}`;
       void host.toast({ kind: "info", message: "Copied logs to clipboard" });
     });
     elBtnDrawerClose.addEventListener("click", closeDrawer);
+    elBtnDrawerBack?.addEventListener("click", closeDrawer);
     elDrawerScrim.addEventListener("click", closeDrawer);
     elTaskDrawer.addEventListener("transitionend", () => {
       if (document.body.getAttribute("data-layout") === "graph") {

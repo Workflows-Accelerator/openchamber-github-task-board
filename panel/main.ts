@@ -2,7 +2,7 @@ import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
 import { setupCustomDropdown, initAllCustomDropdowns } from './dropdown.js';
 import { escapeHtml, slugify, sanitizeHexColor, addLog, logEntries } from './utils.js';
-import { renderMarkdown, getIssueDescriptionPreview } from './markdown.js';
+import { renderMarkdown, getIssueDescriptionPreview, stripFriendlyTitleSection } from './markdown.js';
 import {
   isFrenchLocale,
   decisionAnswerStateFromResponse,
@@ -298,6 +298,7 @@ let activeIssue: Issue | null = null;
 let searchQuery: string = '';
 let showArchivedOnly: boolean = false;
 let showAllDoneIssues: boolean = false;
+let showClosedIssues: boolean = false;
 let viewState: ViewState = defaultViewState();
 let projectNameOverrides: Record<string, string> = {};
 let deviceStorageSupported = false;
@@ -429,7 +430,9 @@ const elDrawerIssueNumber = document.getElementById('drawerIssueNumber') as HTML
 const elDrawerIssueAuthor = document.getElementById('drawerIssueAuthor') as HTMLSpanElement;
 const elDrawerGithubLink = document.getElementById('drawerGithubLink') as HTMLAnchorElement;
 const elBtnDrawerToggleClose = document.getElementById('btnDrawerToggleClose') as HTMLButtonElement | null;
+const elBtnDrawerBack = document.getElementById('btnDrawerBack') as HTMLButtonElement | null;
 const elDrawerIssueTitle = document.getElementById('drawerIssueTitle') as HTMLHeadingElement;
+const elDrawerIssueSubtitle = document.getElementById('drawerIssueSubtitle') as HTMLDivElement | null;
 const elDrawerDecisionSlot = document.getElementById('drawerDecisionSlot') as HTMLElement | null;
 const elDrawerPrioritySelect = document.getElementById('drawerPrioritySelect') as HTMLSelectElement | null;
 const elDrawerStatusSelect = document.getElementById('drawerStatusSelect') as HTMLSelectElement;
@@ -630,6 +633,8 @@ interface CachedComments {
 }
 const commentsCache = new Map<string, CachedComments>();
 let drawerGeneration = 0;
+let drawerOpenerKey: string | null = null;
+let drawerScrollRestore: { element: HTMLElement | null; top: number } | null = null;
 
 // Subscription manager: watch only the active project (avoids 32 limit)
 let unsubSessions: (() => void) | null = null;
@@ -995,7 +1000,7 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   // Flush pending scratchpad save for previous active repository before switching
   flushScratchpadSave();
 
-  drawerGeneration++;
+  invalidateDrawerForScopeChange();
   commentsCache.clear();
   isAllProjectsMode = false;
   allProjectsRepoRefs = [];
@@ -1188,6 +1193,7 @@ async function selectAllProjects(): Promise<void> {
   // Flush pending scratchpad save for previous active repository before switching
   flushScratchpadSave();
 
+  invalidateDrawerForScopeChange();
   isAllProjectsMode = true;
   allProjectsRepoRefs = refs;
   currentRepo = ALL_PROJECTS_CACHE_KEY;
@@ -2301,6 +2307,52 @@ function repoForIssue(issue: Issue | null | undefined): string {
   return currentRepo;
 }
 
+function issueIdentityKey(issue: Issue | null | undefined): string {
+  return issue ? issueWriteKey(repoForIssue(issue), issue).toLowerCase() : '';
+}
+
+function isDrawerIssue(issue: Issue | null | undefined): boolean {
+  return Boolean(activeIssue && issue && issueIdentityKey(activeIssue) === issueIdentityKey(issue));
+}
+
+function isActuallyClosed(issue: Issue | null | undefined): boolean {
+  return String(issue?.state || '').toLowerCase() === 'closed';
+}
+
+function activeViewScrollElement(): HTMLElement | null {
+  if (viewState.view === 'cards') return elListViewContainer;
+  if (viewState.view === 'kanban') return elKanbanViewContainer;
+  if (viewState.view === 'graph') return elGraphCanvasContainer;
+  if (viewState.view === 'pending') return elHumanViewContainer;
+  return elSimpleListViewContainer;
+}
+
+function closestIssueKey(element: Element | null): string {
+  let node: any = element;
+  while (node) {
+    const key = node.getAttribute?.('data-issue-key');
+    if (key) return String(key).toLowerCase();
+    node = node.parentElement || node.parentNode || null;
+  }
+  return '';
+}
+
+function findIssueElementByKey(key: string): HTMLElement | null {
+  const target = key.toLowerCase();
+  const elements = Array.from(document.querySelectorAll('[data-issue-key]')) as HTMLElement[];
+  return elements.find((element) => String(element.getAttribute('data-issue-key') || '').toLowerCase() === target) || null;
+}
+
+function invalidateDrawerForScopeChange(): void {
+  drawerGeneration++;
+  activeIssue = null;
+  drawerOpenerKey = null;
+  drawerScrollRestore = null;
+  elDrawerScrim.classList.remove('active');
+  elTaskDrawer.classList.remove('active');
+  document.body.classList.remove('drawer-open');
+}
+
 async function notifyAgentOnHumanTasksComplete(issue: Issue, repo: string): Promise<boolean> {
   const session = sessionIndex.get(issue.number)
     || (repo ? sessionIndexByRepo.get(`${repo}#${issue.number}`) : undefined);
@@ -2558,7 +2610,7 @@ function renderRecoverableDraftsElement(
         onDiscard();
       } else {
         renderViews();
-        if (activeIssue && activeIssue.number === issue.number) {
+        if (isDrawerIssue(issue)) {
           renderDrawer(issue, true);
         }
       }
@@ -2664,7 +2716,7 @@ async function updateIssueBody(
   issue.v2Metadata = resolveV2Metadata(issue, session);
   issueCache.delete(repo);
   renderViews();
-  if (activeIssue && activeIssue.number === issue.number) {
+  if (isDrawerIssue(issue)) {
     renderDrawer(issue, true);
   }
 
@@ -2695,7 +2747,7 @@ async function updateIssueBody(
     if (isExplicitHttpRejection) {
       delete (issue as any).unconfirmed;
       renderViews();
-      if (activeIssue && activeIssue.number === issue.number) {
+      if (isDrawerIssue(issue)) {
         renderDrawer(issue, true);
       }
       addLog(`Failed to sync body for #${issue.number}: ${err.message}`, 'error');
@@ -2705,7 +2757,7 @@ async function updateIssueBody(
     } else {
       (issue as any).unconfirmed = true;
       renderViews();
-      if (activeIssue && activeIssue.number === issue.number) {
+      if (isDrawerIssue(issue)) {
         renderDrawer(issue, true);
       }
       addLog(`Ambiguous outcome syncing body for #${issue.number}: ${err.message}`, 'warn');
@@ -2780,7 +2832,7 @@ async function answerQuestion(
     if (!result.found) {
       saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
       renderViews();
-      if (activeIssue && activeIssue.number === issue.number) {
+      if (isDrawerIssue(issue)) {
         renderDrawer(issue, true);
       }
 
@@ -2823,7 +2875,7 @@ async function answerQuestion(
     });
     if (ok) {
       clearQuestionDraft(issue, cleanQuestion);
-      if (activeIssue && activeIssue.number === issue.number) {
+      if (isDrawerIssue(issue)) {
         renderDrawer(issue, true);
       }
     } else {
@@ -2882,7 +2934,7 @@ async function updateIssueStatus(
   const finishWrite = trackIssueWrite(repo, issue, ['state', 'labels']);
   issueCache.delete(repo);
   renderViews();
-  if (activeIssue && activeIssue.number === issue.number) {
+  if (isDrawerIssue(issue)) {
     renderDrawer(issue, true);
   }
 
@@ -2906,12 +2958,25 @@ async function updateIssueStatus(
       target.v2Metadata = resolveV2Metadata(target, targetSession);
     }
     renderViews();
-    if (activeIssue && activeIssue.number === issue.number) {
+    if (isDrawerIssue(issue)) {
       renderDrawer(issue, true);
     }
     addLog(`Failed to move #${issue.number}: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to move #${issue.number}` });
   }
+}
+
+function requestDoneToggle(issue: Issue, isClosed: boolean): void {
+  const repo = repoForIssue(issue);
+  if (!repo) return;
+  const key = issueIdentityKey(issue);
+  const task = `#${issue.number} ${issue.title}`;
+  const message = copyText(decisionLanguage(), isClosed ? 'confirmReopen' : 'confirmMarkDone', { task });
+  const confirmFn = typeof window.confirm === 'function' ? window.confirm.bind(window) : null;
+  if (!confirmFn || !confirmFn(message)) return;
+  // The confirmation must still describe the issue the drawer holds now.
+  if (!isDrawerIssue(issue) || issueIdentityKey(issue) !== key) return;
+  void updateIssueStatus(issue, isClosed ? 'todo' : 'done', { isHumanGesture: true });
 }
 
 // ==========================================
@@ -3042,7 +3107,7 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
   }
   issueCache.delete(archiveRepo);
   renderViews();
-  if (activeIssue && activeIssue.number === issue.number) {
+  if (isDrawerIssue(issue)) {
     renderDrawer(issue, true);
   }
 
@@ -3060,7 +3125,7 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
     issue.state = prevState;
     issue.labels = prevLabels;
     renderViews();
-    if (activeIssue && activeIssue.number === issue.number) {
+    if (isDrawerIssue(issue)) {
       renderDrawer(issue, true);
     }
     addLog(`Failed to update archive state: ${err.message}`, 'error');
@@ -3556,6 +3621,30 @@ function renderFilterControls(): void {
     }
     elFilterPopover.appendChild(section);
   }
+  // Closed visibility only changes the simple list, so the control appears
+  // only there and never pretends to affect another view.
+  if (viewState.view === 'simple') {
+    const visibility = document.createElement('div');
+    visibility.className = 'filter-group';
+    const visibilityTitle = document.createElement('div');
+    visibilityTitle.className = 'filter-group-title';
+    visibilityTitle.textContent = 'Visibility';
+    visibility.appendChild(visibilityTitle);
+    const closedChip = document.createElement('button');
+    closedChip.type = 'button';
+    closedChip.className = 'filter-chip';
+    closedChip.textContent = copyText(decisionLanguage(), showClosedIssues ? 'hideClosedIssues' : 'showClosedIssues');
+    closedChip.title = closedChip.textContent;
+    closedChip.setAttribute('data-filter', 'closed');
+    closedChip.setAttribute('aria-pressed', String(showClosedIssues));
+    closedChip.addEventListener('click', (event) => {
+      event.stopPropagation();
+      showClosedIssues = !showClosedIssues;
+      renderViews();
+    });
+    visibility.appendChild(closedChip);
+    elFilterPopover.appendChild(visibility);
+  }
   elActiveFilters.innerHTML = '';
   elActiveFilters.style.display = viewState.filters.length ? 'flex' : 'none';
   for (const token of viewState.filters) {
@@ -3599,8 +3688,11 @@ function renderViews(): void {
     return !q || issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) ||
       (issue.labels || []).some((label) => (typeof label === 'string' ? label : label.name || '').toLowerCase().includes(q));
   });
-  const attention = groupIssuesByAttention(searched, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
-  const filtered = applyFilters(searched, viewState.filters, {
+  const visible = viewState.view === 'simple' && !showClosedIssues
+    ? searched.filter((issue) => !isActuallyClosed(issue))
+    : searched;
+  const attention = groupIssuesByAttention(visible, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
+  const filtered = applyFilters(visible, viewState.filters, {
     stageOf: (issue) => resolveIssueColumn(issue) || 'todo',
     repoOf: repoForIssue,
     needsMe: (issue) => needsMeOf(issue, attention, getIssueSession(issue)),
@@ -3791,6 +3883,7 @@ function renderSimpleListView(sorted: Issue[]): void {
     if (unconfirmed) row.classList.add('simple-row-unconfirmed');
     row.setAttribute('tabindex', '0');
     row.setAttribute('data-draft-key', key);
+    row.setAttribute('data-issue-key', key);
     row.setAttribute('aria-label', `${issue.title}. ${STATUS_METADATA[stage].label}${unconfirmed ? '. Outcome unconfirmed; refresh required.' : editable ? '. Alt+Up or Alt+Down to reorder.' : ''}`);
     row.setAttribute('aria-busy', String(draftMutations.has(key) || draftTitleMutations.has(key) || issue.number < 0));
     const dot = document.createElement('span');
@@ -3884,12 +3977,19 @@ function renderSimpleListView(sorted: Issue[]): void {
       });
       content.appendChild(description);
     } else {
+      const titles = resolveSimplifiedViewTitle(issue);
       const title = document.createElement('button');
       title.className = 'simple-title';
-      title.textContent = issue.title || `Issue #${issue.number}`;
+      title.textContent = titles.displayTitle || issue.title || `Issue #${issue.number}`;
       title.disabled = bodyBusy;
       title.addEventListener('click', () => openDrawer(issue));
       content.appendChild(title);
+      if (titles.displaySubtitle) {
+        const subtitle = document.createElement('div');
+        subtitle.className = 'simple-subtitle';
+        subtitle.textContent = titles.displaySubtitle;
+        content.appendChild(subtitle);
+      }
       const preview = getIssueDescriptionPreview(issue.body);
       if (preview) {
         const description = document.createElement('div');
@@ -4353,6 +4453,7 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
   card.className = `card ${isSelected ? 'is-selected' : ''}`;
   card.draggable = inKanban;
   card.dataset.issueNumber = String(issue.number);
+  card.dataset.issueKey = issueWriteKey(repoForIssue(issue), issue);
 
   const totalSubtasks = issue.subtasks.length;
   const completedSubtasks = issue.subtasks.filter((s) => s.completed).length;
@@ -6474,8 +6575,10 @@ async function handleAddDependency(targetNum: number, blockerNum: number): Promi
   }
 }
 
-async function handleRemoveDependency(targetNum: number, blockerNum: number): Promise<void> {
-  const targetIssue = issues.find((i) => i.number === targetNum);
+async function handleRemoveDependency(targetNum: number, blockerNum: number, targetRepo?: string): Promise<void> {
+  const targetIssue = issues.find(
+    (issue) => issue.number === targetNum && (!targetRepo || repoForIssue(issue).toLowerCase() === targetRepo.toLowerCase())
+  );
   if (!targetIssue) return;
   const newBody = removeDependencyFromMarkdown(targetIssue.body, blockerNum);
   if (newBody !== targetIssue.body) {
@@ -6486,16 +6589,105 @@ async function handleRemoveDependency(targetNum: number, blockerNum: number): Pr
   }
 }
 
+function findIssueByKey(key: string | null | undefined): Issue | undefined {
+  const target = String(key || '').toLowerCase();
+  if (!target) return undefined;
+  return issues.find((issue) => issueIdentityKey(issue) === target);
+}
+
+function issueLabelForKey(key: string | null | undefined, fallbackNumber: number): string {
+  const found = findIssueByKey(key);
+  return found ? `#${found.number} ${found.title}` : `#${fallbackNumber}`;
+}
+
+function requestDependencyRemoval(targetKey: string, blockerKey: string): void {
+  const target = findIssueByKey(targetKey);
+  if (!target) return;
+  const targetRepo = repoForIssue(target);
+  if (!targetRepo) return;
+  const blocker = findIssueByKey(blockerKey);
+  const blockerNumber = blocker?.number || Number(String(blockerKey).split('#').pop());
+  if (!blockerNumber) return;
+  const message = copyText(decisionLanguage(), 'confirmRemoveDependency', {
+    blocker: issueLabelForKey(blockerKey, blockerNumber),
+    target: issueLabelForKey(targetKey, target.number),
+  });
+  const confirmFn = typeof window.confirm === 'function' ? window.confirm.bind(window) : null;
+  if (!confirmFn || !confirmFn(message)) return;
+  const freshTarget = findIssueByKey(targetKey);
+  if (!freshTarget || repoForIssue(freshTarget).toLowerCase() !== targetRepo.toLowerCase()) return;
+  void handleRemoveDependency(freshTarget.number, blockerNumber, targetRepo);
+}
+
+function removeInspectorElement(element: Element | null): void {
+  if (!element) return;
+  if (typeof (element as any).remove === 'function') {
+    (element as any).remove();
+    return;
+  }
+  (element.parentElement as any)?.removeChild?.(element);
+}
+
+function openDependencyInspector(edge: { from: number; to: number; fromKey?: string; toKey?: string }): void {
+  document.querySelectorAll('.dep-inspect-popover').forEach((element) => removeInspectorElement(element));
+  const blockerKey = edge.fromKey || String(edge.from);
+  const targetKey = edge.toKey || String(edge.to);
+  const popover = document.createElement('div');
+  popover.className = 'popover dep-inspect-popover active';
+  popover.setAttribute('role', 'dialog');
+  popover.setAttribute('aria-label', copyText(decisionLanguage(), 'inspectDependency'));
+
+  const text = document.createElement('div');
+  text.className = 'dep-inspect-text';
+  text.textContent = copyText(decisionLanguage(), 'dependencyBlocks', {
+    blocker: issueLabelForKey(blockerKey, edge.from),
+    target: issueLabelForKey(targetKey, edge.to),
+  });
+  popover.appendChild(text);
+
+  const actions = document.createElement('div');
+  actions.className = 'dep-inspect-actions';
+
+  const openButton = document.createElement('button');
+  openButton.type = 'button';
+  openButton.className = 'btn btn-sm dep-inspect-open';
+  openButton.textContent = copyText(decisionLanguage(), 'openTask');
+  openButton.addEventListener('click', () => {
+    const target = findIssueByKey(targetKey);
+    removeInspectorElement(popover);
+    if (target) openDrawer(target);
+  });
+  actions.appendChild(openButton);
+
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'btn btn-sm dep-inspect-remove';
+  removeButton.textContent = copyText(decisionLanguage(), 'removeDependency');
+  removeButton.addEventListener('click', () => {
+    removeInspectorElement(popover);
+    requestDependencyRemoval(targetKey, blockerKey);
+  });
+  actions.appendChild(removeButton);
+
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'btn btn-sm dep-inspect-cancel';
+  cancelButton.textContent = copyText(decisionLanguage(), 'cancel');
+  cancelButton.addEventListener('click', () => removeInspectorElement(popover));
+  actions.appendChild(cancelButton);
+
+  popover.appendChild(actions);
+  document.body.appendChild(popover);
+}
+
 document.addEventListener('click', (e) => {
   const btn = (e.target as HTMLElement)?.closest<HTMLButtonElement>('.btn-remove-blocker');
   if (btn) {
     e.stopPropagation();
     e.preventDefault();
-    const target = parseInt(btn.dataset.target || '0', 10);
-    const blocker = parseInt(btn.dataset.blocker || '0', 10);
-    if (target > 0 && blocker > 0) {
-      void handleRemoveDependency(target, blocker);
-    }
+    const targetKey = btn.dataset.targetKey;
+    const blockerKey = btn.dataset.blockerKey;
+    if (targetKey && blockerKey) requestDependencyRemoval(targetKey, blockerKey);
   }
 });
 
@@ -6725,14 +6917,18 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
     });
   }
 
-  card.querySelectorAll<HTMLButtonElement>('.btn-remove-blocker').forEach((btn) => {
+  const targetKey = node.key || issueWriteKey(repoForIssue(node.issue), node.issue);
+  card.querySelectorAll<HTMLButtonElement>('.btn-remove-blocker').forEach((btn, index) => {
+    const blockerNumber = parseInt(btn.dataset.blocker || '0', 10);
+    const blockerKey = node.openBlockerKeys?.[index]
+      || (blockerNumber > 0 ? `${repoForIssue(node.issue)}#${blockerNumber}` : '');
+    if (blockerKey) btn.dataset.blockerKey = blockerKey;
+    btn.dataset.targetKey = targetKey;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      const target = parseInt(btn.dataset.target || '0', 10);
-      const blocker = parseInt(btn.dataset.blocker || '0', 10);
-      if (target > 0 && blocker > 0) {
-        void handleRemoveDependency(target, blocker);
+      if (btn.dataset.targetKey && btn.dataset.blockerKey) {
+        requestDependencyRemoval(btn.dataset.targetKey, btn.dataset.blockerKey);
       }
     });
   });
@@ -6835,11 +7031,11 @@ function drawGraphEdges(graph: DependencyGraph): void {
 
     path.addEventListener('click', (e) => {
       e.stopPropagation();
-      void handleRemoveDependency(edge.to, edge.from);
+      openDependencyInspector(edge);
     });
 
     const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
+    titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to inspect dependency)`;
     path.appendChild(titleEl);
 
     edgeGroup.appendChild(path);
@@ -6854,7 +7050,7 @@ function drawGraphEdges(graph: DependencyGraph): void {
     badgeGroup.setAttribute('data-from', String(edge.from));
     badgeGroup.setAttribute('data-to', String(edge.to));
     badgeGroup.setAttribute('role', 'button');
-    badgeGroup.setAttribute('aria-label', `Remove dependency: #${edge.from} blocks #${edge.to}`);
+    badgeGroup.setAttribute('aria-label', `Inspect dependency: #${edge.from} blocks #${edge.to}`);
     badgeGroup.style.cursor = 'pointer';
 
     // 24px clickable target (circle with r=12)
@@ -6874,17 +7070,17 @@ function drawGraphEdges(graph: DependencyGraph): void {
     textEl.setAttribute('class', 'graph-edge-delete-text');
     textEl.setAttribute('text-anchor', 'middle');
     textEl.setAttribute('dominant-baseline', 'central');
-    textEl.textContent = '×';
+    textEl.textContent = 'i';
     badgeGroup.appendChild(textEl);
 
     const badgeTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    badgeTitle.textContent = `Remove dependency: #${edge.from} blocks #${edge.to}`;
+    badgeTitle.textContent = `Inspect dependency: #${edge.from} blocks #${edge.to}`;
     badgeGroup.appendChild(badgeTitle);
 
     badgeGroup.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      void handleRemoveDependency(edge.to, edge.from);
+      openDependencyInspector(edge);
     });
 
     edgeGroup.appendChild(badgeGroup);
@@ -7072,6 +7268,10 @@ function renderDrawerDependencies(issue: Issue): void {
 
 function openDrawer(issue: Issue): void {
   drawerGeneration++;
+  const openerKey = closestIssueKey(document.activeElement as Element | null);
+  drawerOpenerKey = openerKey && openerKey === issueIdentityKey(issue) ? openerKey : issueIdentityKey(issue);
+  const scroller = activeViewScrollElement();
+  drawerScrollRestore = scroller ? { element: scroller, top: scroller.scrollTop } : null;
   activeIssue = issue;
   // The drawer's decision block must not show a stale question.
   maybeRefreshDecisions('drawer');
@@ -7087,9 +7287,22 @@ function openDrawer(issue: Issue): void {
 function closeDrawer(): void {
   drawerGeneration++;
   activeIssue = null;
+  const openerKey = drawerOpenerKey;
+  const restore = drawerScrollRestore;
+  drawerOpenerKey = null;
+  drawerScrollRestore = null;
   elDrawerScrim.classList.remove('active');
   elTaskDrawer.classList.remove('active');
   document.body.classList.remove('drawer-open');
+  if (restore?.element) restore.element.scrollTop = restore.top;
+  if (openerKey) {
+    const opener = findIssueElementByKey(openerKey);
+    if (opener && (opener as any).isConnected !== false) {
+      const focusOpener = () => opener.focus?.();
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(focusOpener);
+      else focusOpener();
+    }
+  }
   if (document.body.getAttribute('data-layout') === 'graph' && typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(() => drawCurrentGraphEdges());
   }
@@ -7217,6 +7430,7 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
 }
 
 function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number = drawerGeneration, forceFreshComments: boolean = false): void {
+  if (gen !== drawerGeneration) return;
   elDrawerIssueNumber.textContent = `#${issue.number}`;
   let elUnconfirmedBadge = elDrawerIssueNumber?.parentElement?.querySelector<HTMLElement>('.badge-drawer-unconfirmed');
   if ((issue as any).unconfirmed) {
@@ -7235,7 +7449,16 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   }
   elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : '';
   elDrawerGithubLink.href = issue.html_url;
-  elDrawerIssueTitle.textContent = issue.title;
+  const titles = parseFriendlyTitle(issue.body, issue.title);
+  elDrawerIssueTitle.textContent = titles.title || issue.title;
+  if (elDrawerIssueSubtitle) {
+    elDrawerIssueSubtitle.textContent = titles.subtitle || '';
+    elDrawerIssueSubtitle.style.display = titles.subtitle ? '' : 'none';
+  }
+  if (elBtnDrawerBack) {
+    elBtnDrawerBack.textContent = copyText(decisionLanguage(), 'backToBoard');
+    elBtnDrawerBack.title = copyText(decisionLanguage(), 'backToBoard');
+  }
 
   const col = resolveIssueColumn(issue);
   elDrawerStatusSelect.value = col || 'none';
@@ -7264,9 +7487,11 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
 
   if (elBtnDrawerToggleClose) {
     const isClosed = isIssueClosed(issue);
-    elBtnDrawerToggleClose.textContent = isClosed ? 'Reopen Issue' : 'Close Issue';
+    elBtnDrawerToggleClose.textContent = copyText(decisionLanguage(), isClosed ? 'reopenIssue' : 'markDoneClose');
+    elBtnDrawerToggleClose.title = copyText(decisionLanguage(), isClosed ? 'confirmReopen' : 'confirmMarkDone')
+      .replace('{task}', `#${issue.number}`);
     elBtnDrawerToggleClose.onclick = () => {
-      void updateIssueStatus(issue, isClosed ? 'todo' : 'done', { isHumanGesture: true });
+      requestDoneToggle(issue, isClosed);
     };
   }
 
@@ -7324,8 +7549,9 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   // Render test plan checklists
   renderTestPlans(issue);
 
-  // Render Markdown Description (View Mode)
-  elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
+  // Render Markdown Description (View Mode). The raw body stays untouched for
+  // writes, parsers and the editor; only this view drops the metadata block.
+  elDrawerDescriptionContent.innerHTML = renderMarkdown(stripFriendlyTitleSection(issue.body));
   elDrawerDescriptionViewBox.style.display = 'block';
   elDrawerDescriptionEditBox.style.display = 'none';
 
@@ -7816,7 +8042,7 @@ async function loadComments(
     }
   }
 
-  if (drawerGeneration !== expectedGen || !activeIssue || activeIssue.number !== issueNumber) {
+  if (drawerGeneration !== expectedGen || !activeIssue || activeIssue.number !== issueNumber || repoForIssue(activeIssue) !== repo) {
     return;
   }
 
@@ -10026,6 +10252,7 @@ function initEvents(): void {
 
   // Drawer events
   elBtnDrawerClose.addEventListener('click', closeDrawer);
+  elBtnDrawerBack?.addEventListener('click', closeDrawer);
   elDrawerScrim.addEventListener('click', closeDrawer);
   elTaskDrawer.addEventListener('transitionend', () => {
     if (document.body.getAttribute('data-layout') === 'graph') {
