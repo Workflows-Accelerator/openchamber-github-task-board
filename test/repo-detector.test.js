@@ -1,13 +1,116 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { createTestApp } from './test-app-harness.js';
 import {
   parseGitdirContent,
   extractParentRepoRootFromGitdir,
   resolveParentRemoteFromGitdir,
+  normalizeFileSystemPath,
+  isAbsoluteFileSystemPath,
+  joinFileSystemPath,
+  resolveGitdirPath,
+  resolveCommonGitDir,
 } from '../panel/git.ts';
+import {
+  isSafeGitDirectory,
+  sanitizeRemoteUrl,
+  parseGitHubRemote,
+  resolveGitRemote,
+} from '../service/git-remote.ts';
 
-export { parseGitdirContent, extractParentRepoRootFromGitdir, resolveParentRemoteFromGitdir };
+export {
+  parseGitdirContent,
+  extractParentRepoRootFromGitdir,
+  resolveParentRemoteFromGitdir,
+  normalizeFileSystemPath,
+  isAbsoluteFileSystemPath,
+  joinFileSystemPath,
+  resolveGitdirPath,
+  resolveCommonGitDir,
+};
+
+const CREDENTIAL_TOKEN = 'ghp_SUPERSECRET123';
+const REMOTE_URL_WITH_TOKEN = `https://x-access-token:${CREDENTIAL_TOKEN}@github.com/Workflows-Accelerator/sample.git`;
+
+function createTempGitFixture(prefix = 'board-git-remote-') {
+  const baseDir = fs.existsSync('/tmp/opencode') ? '/tmp/opencode' : os.tmpdir();
+  const root = fs.mkdtempSync(path.join(baseDir, prefix));
+  const repo = path.join(root, 'repo');
+  fs.mkdirSync(repo, { recursive: true });
+  const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: 'ignore' });
+  git('init', '-q');
+  git('config', 'user.email', 'test@example.com');
+  git('config', 'user.name', 'Board Test');
+  fs.writeFileSync(path.join(repo, 'README.md'), '# sample\n');
+  fs.appendFileSync(
+    path.join(repo, '.git', 'config'),
+    `[remote "origin"]\n\turl = ${REMOTE_URL_WITH_TOKEN}\n`
+  );
+  git('add', '.');
+  git('commit', '-qm', 'init');
+  const worktree = path.join(root, 'worktree');
+  git('worktree', 'add', '-q', worktree, '-b', 'board-test-worktree');
+  return { root, repo, worktree };
+}
+
+function cleanupFixture(root) {
+  try {
+    fs.rmSync(root, { recursive: true, force: true });
+  } catch {}
+}
+
+async function waitForCondition(predicate, timeoutMs = 3000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (predicate()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer();
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      server.close((err) => (err ? reject(err) : resolve(address.port)));
+    });
+    server.on('error', reject);
+  });
+}
+
+function postJson(port, requestPath, body, token) {
+  return new Promise((resolve, reject) => {
+    const payload = body === undefined ? '' : JSON.stringify(body);
+    const req = http.request(
+      {
+        hostname: '127.0.0.1',
+        port,
+        path: requestPath,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      },
+      (res) => {
+        let raw = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { raw += chunk; });
+        res.on('end', () => resolve({ statusCode: res.statusCode, body: raw }));
+      }
+    );
+    req.on('error', reject);
+    req.end(payload);
+  });
+}
+
 
 export function parseGitHubRemoteUrl(raw) {
   if (!raw || typeof raw !== 'string') return null;
@@ -183,5 +286,239 @@ test('fallback repository resolution discovers repo from currentDirectory when w
   }
 });
 
+test('windows drive and UNC worktree gitdir paths resolve the parent common dir', () => {
+  const forward = 'gitdir: C:/Users/dev/repo/.git/worktrees/wt\r\n';
+  const parsed = parseGitdirContent(forward);
+  assert.equal(parsed, 'C:/Users/dev/repo/.git/worktrees/wt');
+  assert.equal(extractParentRepoRootFromGitdir(parsed), 'C:/Users/dev/repo');
+  assert.equal(resolveCommonGitDir(parsed), 'C:/Users/dev/repo/.git');
+  assert.equal(
+    joinFileSystemPath(resolveCommonGitDir(parsed), 'config'),
+    'C:/Users/dev/repo/.git/config'
+  );
+
+  assert.equal(
+    normalizeFileSystemPath('C:\\Users\\dev\\repo\\.git\\worktrees\\wt'),
+    'C:/Users/dev/repo/.git/worktrees/wt'
+  );
+  assert.equal(
+    resolveGitdirPath('gitdir: C:\\Users\\dev\\repo\\.git\\worktrees\\wt', 'C:/Users/dev/elsewhere'),
+    'C:/Users/dev/repo/.git/worktrees/wt'
+  );
+  assert.equal(resolveCommonGitDir(parsed, '../..'), 'C:/Users/dev/repo/.git');
+
+  assert.equal(
+    extractParentRepoRootFromGitdir('//server/share/repo/.git/worktrees/wt'),
+    '//server/share/repo'
+  );
+  assert.equal(
+    resolveCommonGitDir('//server/share/repo/.git/worktrees/wt'),
+    '//server/share/repo/.git'
+  );
+  assert.equal(
+    extractParentRepoRootFromGitdir('\\\\server\\share\\repo\\.git\\worktrees\\wt'),
+    '//server/share/repo'
+  );
+
+  const reads = [];
+  const remote = resolveParentRemoteFromGitdir(forward, (filePath) => {
+    reads.push(filePath);
+    return filePath === 'C:/Users/dev/repo/.git/config'
+      ? '[remote "origin"]\n\turl = git@github.com:Windows-Owner/windows-repo.git\n'
+      : null;
+  });
+  assert.deepEqual(remote, { owner: 'Windows-Owner', repo: 'windows-repo' });
+  assert.ok(reads.includes('C:/Users/dev/repo/.git/config'));
+  assert.ok(
+    reads.every((filePath) => !filePath.startsWith('C:/Users/dev/repo/.git/worktrees/wt/')),
+    'the worktree directory must never be prepended to the parent config path'
+  );
+});
+
+test('sanitizeRemoteUrl removes embedded credentials and keeps GitHub remotes usable', () => {
+  const sanitized = sanitizeRemoteUrl(REMOTE_URL_WITH_TOKEN);
+  assert.equal(sanitized, 'https://github.com/Workflows-Accelerator/sample.git');
+  assert.ok(!sanitized.includes(CREDENTIAL_TOKEN));
+  assert.ok(!sanitized.includes('x-access-token'));
+
+  assert.equal(
+    sanitizeRemoteUrl(`https://${CREDENTIAL_TOKEN}@github.com/Workflows-Accelerator/sample.git`),
+    'https://github.com/Workflows-Accelerator/sample.git'
+  );
+  assert.equal(
+    sanitizeRemoteUrl('git@github.com:Workflows-Accelerator/sample.git'),
+    'git@github.com:Workflows-Accelerator/sample.git'
+  );
+  assert.equal(sanitizeRemoteUrl('https://user:pass@github.com/o/r.git'), 'https://github.com/o/r.git');
+  assert.equal(sanitizeRemoteUrl(`x-access-token:${CREDENTIAL_TOKEN}@github.com:o/r.git`), null);
+  assert.deepEqual(parseGitHubRemote(sanitized), { owner: 'Workflows-Accelerator', repo: 'sample' });
+});
+
+test('isSafeGitDirectory accepts absolute paths only and refuses option-like values', () => {
+  assert.equal(isSafeGitDirectory('/workspace/repo'), true);
+  assert.equal(isSafeGitDirectory('C:/Users/dev/repo'), true);
+  assert.equal(isSafeGitDirectory('C:\\Users\\dev\\repo'), true);
+  assert.equal(isSafeGitDirectory('//server/share/repo'), true);
+  assert.equal(isSafeGitDirectory('\\\\server\\share\\repo'), true);
+  assert.equal(isSafeGitDirectory('relative/repo'), false);
+  assert.equal(isSafeGitDirectory('-C'), false);
+  assert.equal(isSafeGitDirectory('/tmp/bad\0dir'), false);
+  assert.equal(isSafeGitDirectory(''), false);
+  assert.equal(isSafeGitDirectory(null), false);
+});
+
+test('resolveGitRemote resolves a real linked worktree and never returns credentials', async () => {
+  const fixture = createTempGitFixture();
+  try {
+    const fromRepo = await resolveGitRemote(fixture.repo);
+    assert.equal(fromRepo.status, 'ok');
+    assert.equal(fromRepo.hasGit, true);
+    assert.deepEqual(
+      { owner: fromRepo.remote.owner, repo: fromRepo.remote.repo, remoteUrl: fromRepo.remote.remoteUrl },
+      {
+        owner: 'Workflows-Accelerator',
+        repo: 'sample',
+        remoteUrl: 'https://github.com/Workflows-Accelerator/sample.git',
+      }
+    );
+
+    const fromWorktree = await resolveGitRemote(fixture.worktree);
+    assert.equal(fromWorktree.status, 'ok');
+    assert.deepEqual(fromWorktree.remote, fromRepo.remote);
+    const serialized = JSON.stringify(fromWorktree);
+    assert.ok(!serialized.includes(CREDENTIAL_TOKEN));
+    assert.ok(!serialized.includes('x-access-token'));
+
+    const notGitDir = path.join(fixture.root, 'plain');
+    fs.mkdirSync(notGitDir, { recursive: true });
+    const notGit = await resolveGitRemote(notGitDir);
+    assert.equal(notGit.status, 'not_git');
+    assert.equal(notGit.hasGit, false);
+
+    const invalid = await resolveGitRemote('-C');
+    assert.equal(invalid.status, 'error');
+    assert.equal(invalid.reason, 'invalid_path');
+  } finally {
+    cleanupFixture(fixture.root);
+  }
+});
+
+test('POST /git-remote returns a sanitized lookup and refuses unsafe directories', async () => {
+  const fixture = createTempGitFixture();
+  const imported = await import('../service/main.ts');
+  const server = imported.createCoordinatorHostServer('git-remote-test-token');
+  const port = await getFreePort();
+  await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
+
+  try {
+    const res = await postJson(port, '/git-remote', { directory: fixture.worktree }, 'git-remote-test-token');
+    assert.equal(res.statusCode, 200);
+    assert.ok(!res.body.includes(CREDENTIAL_TOKEN), 'response must not leak the token');
+    assert.ok(!res.body.includes('x-access-token'), 'response must not leak userinfo');
+    const payload = JSON.parse(res.body);
+    assert.equal(payload.status, 'ok');
+    assert.equal(payload.hasGit, true);
+    assert.deepEqual(payload.remote, {
+      owner: 'Workflows-Accelerator',
+      repo: 'sample',
+      remoteUrl: 'https://github.com/Workflows-Accelerator/sample.git',
+    });
+
+    const unauthorized = await postJson(port, '/git-remote', { directory: fixture.worktree });
+    assert.equal(unauthorized.statusCode, 401);
+
+    const relative = await postJson(port, '/git-remote', { directory: 'relative/repo' }, 'git-remote-test-token');
+    assert.equal(relative.statusCode, 400);
+    assert.equal(JSON.parse(relative.body).reason, 'invalid_path');
+
+    const optionLike = await postJson(port, '/git-remote', { directory: '-C' }, 'git-remote-test-token');
+    assert.equal(optionLike.statusCode, 400);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    cleanupFixture(fixture.root);
+  }
+});
+
+test('worktree outside the open project resolves its repo through the host service when readFile is refused', async () => {
+  const fixture = createTempGitFixture('board-git-fallback-');
+  const origFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    json: async () => [],
+    text: async () => '[]',
+  });
+
+  try {
+    const { app, emitDirectory } = createTestApp({
+      onRequest: async (payload) => {
+        if (payload && payload.path === '/git-remote') {
+          const directory = JSON.parse(payload.body).directory;
+          return { status: 200, body: JSON.stringify(await resolveGitRemote(directory)) };
+        }
+        if (payload && payload.path) {
+          throw new Error('400 BAD_PATH: File path leaves the open project');
+        }
+        if (payload && payload.kind === 'projects') {
+          throw new Error('The user has not allowed this capability for the extension.');
+        }
+        return { status: 200, body: '[]' };
+      },
+    });
+    app.fetchIssues = async () => {};
+
+    await emitDirectory(fixture.worktree);
+    const resolved = await waitForCondition(
+      () => app.getState().currentRepo === 'Workflows-Accelerator/sample'
+    );
+
+    assert.equal(resolved, true, 'worktree repo must resolve through the host service');
+    assert.equal(app.getState().currentRepo, 'Workflows-Accelerator/sample');
+  } finally {
+    global.fetch = origFetch;
+    cleanupFixture(fixture.root);
+  }
+});
+
+test('a refused or unreachable service lookup is not cached in dirGitCache', async () => {
+  const fixture = createTempGitFixture('board-git-cache-');
+  let worktreeServiceCalls = 0;
+
+  try {
+    const { app } = createTestApp({
+      onRequest: async (payload) => {
+        if (payload && payload.path === '/git-remote') {
+          const directory = JSON.parse(payload.body).directory;
+          if (directory === fixture.worktree) {
+            worktreeServiceCalls += 1;
+            if (worktreeServiceCalls === 1) {
+              throw new Error('NO_SERVICE');
+            }
+          }
+          return { status: 200, body: JSON.stringify(await resolveGitRemote(directory)) };
+        }
+        if (payload && payload.path) {
+          throw new Error('400 BAD_PATH: File path leaves the open project');
+        }
+        return { status: 200, body: '[]' };
+      },
+    });
+
+    const first = await app.inspectGitConfigInDir(fixture.worktree);
+    assert.equal(first, null, 'an unavailable service must not resolve a repo');
+    assert.equal(app.__getDirGitCache().has(fixture.worktree), false, 'a refused read must not be cached');
+
+    const second = await app.inspectGitConfigInDir(fixture.worktree);
+    assert.deepEqual(second, { owner: 'Workflows-Accelerator', repo: 'sample' });
+    assert.equal(worktreeServiceCalls, 2, 'the second call must retry the service');
+    assert.deepEqual(app.__getDirGitCache().get(fixture.worktree), {
+      owner: 'Workflows-Accelerator',
+      repo: 'sample',
+    });
+  } finally {
+    cleanupFixture(fixture.root);
+  }
+});
 
 
