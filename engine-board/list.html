@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engine board — everything</title>
+<style>
+:root {
+  --paper: #f3f5f3;
+  --surface: #ffffff;
+  --ink: #1b2521;
+  --muted: #5c6862;
+  --faint: #8a958f;
+  --line: #dae1dc;
+  --line-strong: #c2cdc6;
+  --accent: #1f5c4a;
+  --accent-soft: #e5efe9;
+  --warning: #8a5200;
+  --warning-soft: #f7eede;
+  --sans: -apple-system, "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Source Serif 4", Georgia, serif;
+  --mono: "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #111714;
+    --surface: #18211c;
+    --ink: #e7ede8;
+    --muted: #a1ada6;
+    --faint: #7d8982;
+    --line: #29352f;
+    --line-strong: #3a4840;
+    --accent: #8acbb0;
+    --accent-soft: #1c3028;
+    --warning: #e2aa52;
+    --warning-soft: #332616;
+  }
+}
+[data-state="draft"] { --state: var(--faint); }
+[data-state="ready"] { --state: var(--accent); }
+[data-state="waiting"] { --state: var(--warning); }
+[data-state="blocked"] { --state: var(--warning); }
+[data-state="done"] { --state: var(--ink); }
+[data-state="failed"] { --state: var(--warning); }
+[data-state="cancelled"] { --state: var(--faint); }
+[data-state="skipped"] { --state: var(--faint); }
+[data-state="unknown"] { --state: var(--faint); }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--paper); }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p, ul, dl, dd, figure { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The page is its own stacking context. Some engines paint the text of an
+   element that has no stacking context above later overlays; naming the page
+   as one layer keeps the sheet above everything it covers. */
+.page {
+  position: relative; z-index: 0; isolation: isolate;
+  max-width: 78rem; margin: 0 auto; padding: 30px 28px 56px;
+}
+.top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px;
+}
+.brand { font-family: var(--serif); font-size: 1.02rem; color: var(--muted); }
+.views {
+  display: inline-flex; gap: 2px; padding: 3px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+}
+.views a {
+  padding: 5px 12px; border-radius: 999px; color: var(--muted);
+  font-size: 0.8rem; text-decoration: none; white-space: nowrap;
+}
+.views a.is-on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.progress { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.progress-line {
+  color: var(--muted); font-size: 0.85rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.progress-line strong { color: var(--ink); font-weight: 700; }
+.progress-track {
+  flex: 1 1 8rem; height: 4px; border-radius: 999px;
+  background: var(--line); overflow: hidden;
+}
+.progress-fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.crumbs {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  min-width: 0; font-size: 0.84rem; color: var(--muted);
+}
+.crumbs a { text-decoration: none; border-bottom: 1px solid transparent; }
+.crumbs a:hover, .crumbs a:focus-visible { color: var(--accent); border-color: currentColor; }
+.crumbs .sep { color: var(--faint); }
+.crumbs [aria-current="page"] { color: var(--ink); }
+.scope-view { padding-top: 22px; }
+.scope-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 14px 24px; flex-wrap: wrap; margin-top: 8px;
+  padding-bottom: 20px; border-bottom: 1px solid var(--line);
+}
+.scope-main h1 {
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem); line-height: 1.08;
+  letter-spacing: -0.015em; overflow-wrap: anywhere;
+}
+.scope-state {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-top: 8px; color: var(--muted); font-size: 0.9rem;
+}
+.scope-side { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; padding: 3px 10px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
+  color: var(--muted); font-size: 0.78rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.details {
+  padding: 3px 0; border: 0; border-bottom: 1px solid var(--line-strong);
+  background: none; color: var(--muted); font: inherit; font-size: 0.8rem; cursor: pointer;
+}
+.details:hover, .details:focus-visible { color: var(--accent); border-color: currentColor; }
+.dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  display: inline-block; background: var(--state, var(--faint));
+}
+[data-state="draft"] .dot { background: transparent; border: 1.5px solid var(--faint); }
+.level {
+  margin: 20px 0 12px; color: var(--muted); font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+.level strong { color: var(--ink); font-weight: 700; }
+.lanes { display: flex; align-items: flex-start; gap: 18px; }
+.lane { flex: 1 1 0; min-width: 0; }
+.lane-head {
+  display: flex; align-items: center; gap: 7px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--line); font-size: 0.86rem; font-weight: 700; line-height: 1.3;
+}
+.lane-name { min-width: 0; }
+.lane-count {
+  margin-left: auto; color: var(--faint); font-size: 0.78rem;
+  font-weight: 400; font-variant-numeric: tabular-nums;
+}
+.lane-cards { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; }
+.card {
+  padding: 12px 13px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px;
+}
+.card-title { font-size: 0.94rem; font-weight: 700; line-height: 1.32; }
+.card-title .enter {
+  display: inline; padding: 0; border: 0; background: none; color: inherit;
+  font: inherit; text-align: left; text-decoration: none;
+  overflow-wrap: anywhere; cursor: pointer;
+}
+.card-title .enter:hover, .card-title .enter:focus-visible {
+  color: var(--accent); text-decoration: underline; text-underline-offset: 0.16em;
+}
+.card-state {
+  display: none; align-items: center; gap: 6px; margin-top: 5px;
+  color: var(--muted); font-size: 0.78rem;
+}
+.card-count {
+  margin-top: 5px; color: var(--faint); font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.card-wait {
+  margin-top: 5px; color: var(--muted); font-size: 0.76rem;
+  line-height: 1.4; overflow-wrap: anywhere;
+}
+.card-defect {
+  margin-top: 7px; padding: 5px 8px; border-left: 2px solid var(--warning);
+  background: var(--warning-soft); color: var(--warning);
+  font-size: 0.75rem; line-height: 1.4;
+}
+.defect-kind { font-weight: 700; }
+.defects {
+  margin: 22px 0 0; padding: 12px 14px; border-left: 3px solid var(--warning);
+  background: var(--warning-soft); color: var(--warning);
+}
+.defects h2 { font-size: 0.8rem; letter-spacing: 0.02em; text-transform: uppercase; }
+.defects ul { margin: 6px 0 0; padding-left: 1.1rem; font-size: 0.8rem; line-height: 1.5; }
+.defect-line { margin-top: 6px; font-size: 0.8rem; }
+.tree { margin-top: 6px; }
+.tree ul { list-style: none; margin: 0; padding: 0; }
+.tree li { list-style: none; }
+.node-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; }
+.node-main { flex: 1 1 auto; min-width: 0; }
+.node-main .enter {
+  display: block; width: 100%;
+  padding: 0; border: 0; background: none; color: inherit; font: inherit;
+  font-size: 1rem; font-weight: 700; line-height: 1.35; text-align: left;
+  text-decoration: none; overflow-wrap: anywhere; cursor: pointer;
+}
+.node-main .enter:hover, .node-main .enter:focus-visible {
+  color: var(--accent); text-decoration: underline; text-underline-offset: 0.16em;
+}
+.node-row.is-leaf .enter { font-weight: 400; font-size: 0.96rem; }
+.here-tag {
+  display: inline-flex; padding: 1px 7px;
+  border: 1px solid currentColor; border-radius: 999px; color: var(--accent);
+  font-size: 0.68rem; font-weight: 400; vertical-align: 2px; white-space: nowrap;
+}
+.row-count {
+  display: block; margin-top: 3px; color: var(--muted);
+  font-size: 0.78rem; font-variant-numeric: tabular-nums;
+}
+.row-state {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  margin-top: 3px; color: var(--muted); font-size: 0.84rem; white-space: nowrap;
+}
+.tree ul.children { margin-left: 6px; padding-left: 22px; border-left: 1px solid var(--line); }
+.list-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 8px 18px; flex-wrap: wrap; margin-top: 22px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.list-head h1 {
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.1;
+}
+.list-bar {
+  display: flex; align-items: baseline; gap: 8px 14px; flex-wrap: wrap;
+  margin-top: 6px; color: var(--muted); font-size: 0.84rem;
+}
+.list-bar strong { color: var(--ink); font-weight: 700; }
+.foot {
+  margin-top: 48px; padding-top: 14px; border-top: 1px solid var(--line);
+  color: var(--muted); font-size: 0.76rem; line-height: 1.6;
+}
+.foot .mono, .defect-line .mono { font-family: var(--mono); }
+/* The dimming layer is an element, not a backdrop pseudo-element: not every
+   engine paints that pseudo-element, and a missing backdrop leaves the sheet
+   floating on an undimmed page. The dialog sits in the top layer, above this. */
+.scrim {
+  position: fixed; inset: 0; z-index: 10;
+  background: rgba(12, 18, 15, 0.45);
+}
+.sheet {
+  position: fixed;
+  top: 1rem; bottom: 1rem; left: 0; right: 0;
+  z-index: 20;
+  margin: 0 auto;
+  display: flex; flex-direction: column;
+  width: min(34rem, calc(100vw - 2rem));
+  padding: 0; border: 1px solid var(--line-strong); border-radius: 14px;
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+.sheet:not([open]) { display: none; }
+.sheet::backdrop { background: transparent; }
+.sheet-inner {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  background: var(--surface); border-radius: inherit; padding: 20px 22px 24px;
+}
+.sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.sheet-head h2 {
+  font-family: var(--serif); font-weight: 400; font-size: 1.35rem;
+  line-height: 1.2; overflow-wrap: anywhere;
+}
+.sheet-close {
+  flex: none; padding: 3px 0; border: 0; border-bottom: 1px solid var(--line-strong);
+  background: none; color: var(--muted); font: inherit; font-size: 0.8rem; cursor: pointer;
+}
+.sheet-close:hover, .sheet-close:focus-visible { color: var(--accent); border-color: currentColor; }
+.sheet-state {
+  display: flex; align-items: center; gap: 7px; margin-top: 8px;
+  color: var(--muted); font-size: 0.86rem;
+}
+.sheet-state .mono { font-family: var(--mono); font-size: 0.78rem; }
+.facts { display: grid; gap: 0; margin-top: 16px; border-top: 1px solid var(--line); }
+.fact {
+  display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line);
+  font-size: 0.8rem; line-height: 1.45;
+}
+.fact dt { flex: 0 0 7rem; color: var(--muted); }
+.fact dd { flex: 1 1 0; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.fact .mono { font-family: var(--mono); font-size: 0.76rem; }
+.raw { margin-top: 18px; }
+.raw h3 {
+  margin: 14px 0 6px; color: var(--muted); font-size: 0.72rem;
+  font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
+}
+.raw pre {
+  margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--paper); color: var(--ink); font-family: var(--mono);
+  font-size: 0.72rem; line-height: 1.5; overflow-x: auto;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.sheet-source { margin-top: 18px; color: var(--faint); font-size: 0.72rem; line-height: 1.5; }
+@media (max-width: 900px) {
+  .lanes { flex-wrap: wrap; }
+  .lane { flex: 1 1 46%; }
+}
+@media (max-width: 640px) {
+  .page { padding: 20px 18px 44px; }
+  .top { margin-bottom: 18px; }
+  .scope-head { align-items: flex-start; }
+  .scope-side { width: 100%; }
+  .lanes { display: block; }
+  .lane { margin-bottom: 6px; }
+  .lane-head { display: none; }
+  .card-state { display: flex; }
+  .node-row { flex-wrap: wrap; }
+  .row-state { flex: 0 0 100%; margin-left: 0; margin-top: 2px; }
+  .fact dt { flex-basis: 6rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+.pct-14 { width: 14%; }
+.scope-view { display: block; }
+html.js .scope-view { display: none; }
+html.js .scope-view.is-current { display: block; }
+</style>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body data-page="list">
+<main class="page">
+  <header class="top">
+    <p class="brand">Engine board</p>
+    <nav class="views" aria-label="View">
+      <a class="view" href="index.html#board/build" data-view-link="board">Board</a>
+      <a class="view is-on" href="list.html#list/build" data-view-link="list" aria-current="page">List</a>
+    </nav>
+  </header>
+  <section class="progress" aria-label="Progress">
+    <p class="progress-line"><strong>1 of 7</strong> finished</p>
+    <span class="progress-track" aria-hidden="true"><span class="progress-fill pct-14"></span></span>
+  </section>
+  
+  <header class="list-head">
+    <div>
+      <h1>Everything, unfolded</h1>
+      <p class="list-bar"><strong>Showing everything</strong><span>·</span><span>7 tasks, 3 levels</span><span>·</span><span>1 done</span></p>
+    </div>
+  </header>
+  <ul class="tree"><li>
+    <div class="node-row" data-state="ready">
+      <div class="node-main">
+        <button class="enter" type="button" data-dialog="d-tsk_e4421d64b2344bc4a139d414d3769480">Build the engine-backed board slice</button>
+        <span class="row-count">6 inside · 1 done</span>
+        
+        
+      </div>
+      <span class="row-state"><span class="here-tag" data-here="build" hidden>Here</span><span class="dot" aria-hidden="true"></span>Ready to start</span>
+    </div>
+    <ul class="children"><li>
+    <div class="node-row is-leaf" data-state="draft">
+      <div class="node-main">
+        <button class="enter" type="button" data-dialog="d-tsk_aa9449eabd214d498f5b16ac36a32cf4">Freeze the fixture shapes</button>
+        
+        
+        
+      </div>
+      <span class="row-state"><span class="here-tag" data-here="build/spec" hidden>Here</span><span class="dot" aria-hidden="true"></span>Draft</span>
+    </div>
+    
+  </li><li>
+    <div class="node-row is-leaf" data-state="done">
+      <div class="node-main">
+        <button class="enter" type="button" data-dialog="d-tsk_70403fe4538b4fe0b1a7e866b85a25e9">Fold graph and status into one tree</button>
+        
+        
+        
+      </div>
+      <span class="row-state"><span class="here-tag" data-here="build/read-model" hidden>Here</span><span class="dot" aria-hidden="true"></span>Done</span>
+    </div>
+    
+  </li><li>
+    <div class="node-row" data-state="ready">
+      <div class="node-main">
+        <button class="enter" type="button" data-dialog="d-tsk_d026ad2841384f7fa930ef28efba4596">Render the tree read-only</button>
+        <span class="row-count">1 inside · 0 done</span>
+        
+        
+      </div>
+      <span class="row-state"><span class="here-tag" data-here="build/render" hidden>Here</span><span class="dot" aria-hidden="true"></span>Ready to start</span>
+    </div>
+    <ul class="children"><li>
+    <div class="node-row is-leaf" data-state="draft">
+      <div class="node-main">
+        <button class="enter" type="button" data-dialog="d-tsk_cbe8c0538630444191150e5d9f1598ce">Explain every state word</button>
+        
+        
+        
+      </div>
+      <span class="row-state"><span class="here-tag" data-here="build/render/legend" hidden>Here</span><span class="dot" aria-hidden="true"></span>Draft</span>
+    </div>
+    
+  </li></ul>
+  </li><li>
+    <div class="node-row is-leaf" data-state="waiting">
+      <div class="node-main">
+        <button class="enter" type="button" data-dialog="d-tsk_b3ab42799d4b48e49486b87bf778ec9a">Prove the frozen fixture matches the engine</button>
+        
+        
+        
+      </div>
+      <span class="row-state"><span class="here-tag" data-here="build/verify" hidden>Here</span><span class="dot" aria-hidden="true"></span>Waiting on review</span>
+    </div>
+    
+  </li><li>
+    <div class="node-row is-leaf" data-state="blocked">
+      <div class="node-main">
+        <button class="enter" type="button" data-dialog="d-tsk_1a3ff4501c8843189c3f0e7a4e549e37">Wire the read model to the live engine</button>
+        
+        <p class="card-wait">Waiting for Prove the frozen fixture matches the engine</p>
+        
+      </div>
+      <span class="row-state"><span class="here-tag" data-here="build/integration" hidden>Here</span><span class="dot" aria-hidden="true"></span>Can&#39;t start yet</span>
+    </div>
+    
+  </li></ul>
+  </li></ul>
+  <footer class="foot">
+    <p>Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+    <p>Reads: task graph --project engine-board --tree tsk_7c7cdda9a8d347ee9a7557b95c6ebccd --json, task status &lt;every tree task id&gt; --json, task project show --project engine-board --json, task store check --json</p>
+    <p>The board renders the engine's words. It computes no state; counts are the rollup over children.</p>
+  </footer>
+</main>
+<dialog class="sheet" id="d-tsk_e4421d64b2344bc4a139d414d3769480" aria-labelledby="t-d-tsk_e4421d64b2344bc4a139d414d3769480">
+      <div class="sheet-inner">
+        <header class="sheet-head">
+          <h2 id="t-d-tsk_e4421d64b2344bc4a139d414d3769480">Build the engine-backed board slice</h2>
+          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
+        </header>
+        <p class="sheet-state" data-state="ready"><span class="dot" aria-hidden="true"></span>Ready to start</p>
+        <dl class="facts"><div class="fact"><dt>State</dt><dd>Ready to start (ready)</dd></div><div class="fact"><dt>Node key</dt><dd class="mono">build</dd></div><div class="fact"><dt>Task id</dt><dd class="mono">tsk_e4421d64b2344bc4a139d414d3769480</dd></div><div class="fact"><dt>Inside</dt><dd>6 inside · 1 done</dd></div><div class="fact"><dt>Phase</dt><dd>none</dd></div><div class="fact"><dt>Slot</dt><dd>none</dd></div><div class="fact"><dt>Runner</dt><dd>none</dd></div><div class="fact"><dt>Created</dt><dd>2026-11-25T13:17:48.845101Z</dd></div><div class="fact"><dt>Updated</dt><dd>2026-11-25T13:17:48.845101Z</dd></div><div class="fact"><dt>Attempt id</dt><dd class="mono">not reported</dd></div><div class="fact"><dt>Attempts</dt><dd>0; last none readable</dd></div><div class="fact"><dt>Blocked by</dt><dd>nothing</dd></div><div class="fact"><dt>Starts after</dt><dd>nothing</dd></div></dl>
+        
+        <p class="sheet-source">Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+      </div>
+    </dialog>
+<dialog class="sheet" id="d-tsk_aa9449eabd214d498f5b16ac36a32cf4" aria-labelledby="t-d-tsk_aa9449eabd214d498f5b16ac36a32cf4">
+      <div class="sheet-inner">
+        <header class="sheet-head">
+          <h2 id="t-d-tsk_aa9449eabd214d498f5b16ac36a32cf4">Freeze the fixture shapes</h2>
+          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
+        </header>
+        <p class="sheet-state" data-state="draft"><span class="dot" aria-hidden="true"></span>Draft</p>
+        <dl class="facts"><div class="fact"><dt>State</dt><dd>Draft (draft)</dd></div><div class="fact"><dt>Node key</dt><dd class="mono">build/spec</dd></div><div class="fact"><dt>Task id</dt><dd class="mono">tsk_aa9449eabd214d498f5b16ac36a32cf4</dd></div><div class="fact"><dt>Inside</dt><dd>0 inside · 0 done</dd></div><div class="fact"><dt>Phase</dt><dd>none</dd></div><div class="fact"><dt>Slot</dt><dd>none</dd></div><div class="fact"><dt>Runner</dt><dd>none</dd></div><div class="fact"><dt>Created</dt><dd>2026-11-25T13:17:49.019044Z</dd></div><div class="fact"><dt>Updated</dt><dd>2026-11-25T13:17:49.019044Z</dd></div><div class="fact"><dt>Attempt id</dt><dd class="mono">not reported</dd></div><div class="fact"><dt>Attempts</dt><dd>0; last none readable</dd></div><div class="fact"><dt>Blocked by</dt><dd>nothing</dd></div><div class="fact"><dt>Starts after</dt><dd>nothing</dd></div></dl>
+        
+        <p class="sheet-source">Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+      </div>
+    </dialog>
+<dialog class="sheet" id="d-tsk_70403fe4538b4fe0b1a7e866b85a25e9" aria-labelledby="t-d-tsk_70403fe4538b4fe0b1a7e866b85a25e9">
+      <div class="sheet-inner">
+        <header class="sheet-head">
+          <h2 id="t-d-tsk_70403fe4538b4fe0b1a7e866b85a25e9">Fold graph and status into one tree</h2>
+          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
+        </header>
+        <p class="sheet-state" data-state="done"><span class="dot" aria-hidden="true"></span>Done</p>
+        <dl class="facts"><div class="fact"><dt>State</dt><dd>Done (done)</dd></div><div class="fact"><dt>Node key</dt><dd class="mono">build/read-model</dd></div><div class="fact"><dt>Task id</dt><dd class="mono">tsk_70403fe4538b4fe0b1a7e866b85a25e9</dd></div><div class="fact"><dt>Inside</dt><dd>0 inside · 0 done</dd></div><div class="fact"><dt>Phase</dt><dd>ended</dd></div><div class="fact"><dt>Slot</dt><dd>0 of 2</dd></div><div class="fact"><dt>Runner</dt><dd>rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)</dd></div><div class="fact"><dt>Created</dt><dd>2026-11-25T13:17:49.152901Z</dd></div><div class="fact"><dt>Updated</dt><dd>2026-11-25T13:17:49.979966Z</dd></div><div class="fact"><dt>Attempt id</dt><dd class="mono">att_5ddcd771ee894f3e8c724248ca74ace8</dd></div><div class="fact"><dt>Attempts</dt><dd>1; last ended, ok</dd></div><div class="fact"><dt>Blocked by</dt><dd>nothing</dd></div><div class="fact"><dt>Starts after</dt><dd>nothing</dd></div></dl>
+        
+        <p class="sheet-source">Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+      </div>
+    </dialog>
+<dialog class="sheet" id="d-tsk_d026ad2841384f7fa930ef28efba4596" aria-labelledby="t-d-tsk_d026ad2841384f7fa930ef28efba4596">
+      <div class="sheet-inner">
+        <header class="sheet-head">
+          <h2 id="t-d-tsk_d026ad2841384f7fa930ef28efba4596">Render the tree read-only</h2>
+          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
+        </header>
+        <p class="sheet-state" data-state="ready"><span class="dot" aria-hidden="true"></span>Ready to start</p>
+        <dl class="facts"><div class="fact"><dt>State</dt><dd>Ready to start (ready)</dd></div><div class="fact"><dt>Node key</dt><dd class="mono">build/render</dd></div><div class="fact"><dt>Task id</dt><dd class="mono">tsk_d026ad2841384f7fa930ef28efba4596</dd></div><div class="fact"><dt>Inside</dt><dd>1 inside · 0 done</dd></div><div class="fact"><dt>Phase</dt><dd>live</dd></div><div class="fact"><dt>Slot</dt><dd>0 of 2</dd></div><div class="fact"><dt>Runner</dt><dd>rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)</dd></div><div class="fact"><dt>Created</dt><dd>2026-11-25T13:17:49.335023Z</dd></div><div class="fact"><dt>Updated</dt><dd>2026-11-25T13:17:49.335023Z</dd></div><div class="fact"><dt>Attempt id</dt><dd class="mono">att_1a3c1caae79c4144807ec9f150b967f0</dd></div><div class="fact"><dt>Attempts</dt><dd>1; last live</dd></div><div class="fact"><dt>Blocked by</dt><dd>nothing</dd></div><div class="fact"><dt>Starts after</dt><dd>nothing</dd></div></dl>
+        
+        <p class="sheet-source">Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+      </div>
+    </dialog>
+<dialog class="sheet" id="d-tsk_cbe8c0538630444191150e5d9f1598ce" aria-labelledby="t-d-tsk_cbe8c0538630444191150e5d9f1598ce">
+      <div class="sheet-inner">
+        <header class="sheet-head">
+          <h2 id="t-d-tsk_cbe8c0538630444191150e5d9f1598ce">Explain every state word</h2>
+          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
+        </header>
+        <p class="sheet-state" data-state="draft"><span class="dot" aria-hidden="true"></span>Draft</p>
+        <dl class="facts"><div class="fact"><dt>State</dt><dd>Draft (draft)</dd></div><div class="fact"><dt>Node key</dt><dd class="mono">build/render/legend</dd></div><div class="fact"><dt>Task id</dt><dd class="mono">tsk_cbe8c0538630444191150e5d9f1598ce</dd></div><div class="fact"><dt>Inside</dt><dd>0 inside · 0 done</dd></div><div class="fact"><dt>Phase</dt><dd>none</dd></div><div class="fact"><dt>Slot</dt><dd>none</dd></div><div class="fact"><dt>Runner</dt><dd>none</dd></div><div class="fact"><dt>Created</dt><dd>2026-11-25T13:17:49.445329Z</dd></div><div class="fact"><dt>Updated</dt><dd>2026-11-25T13:17:49.445329Z</dd></div><div class="fact"><dt>Attempt id</dt><dd class="mono">not reported</dd></div><div class="fact"><dt>Attempts</dt><dd>0; last none readable</dd></div><div class="fact"><dt>Blocked by</dt><dd>nothing</dd></div><div class="fact"><dt>Starts after</dt><dd>nothing</dd></div></dl>
+        
+        <p class="sheet-source">Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+      </div>
+    </dialog>
+<dialog class="sheet" id="d-tsk_b3ab42799d4b48e49486b87bf778ec9a" aria-labelledby="t-d-tsk_b3ab42799d4b48e49486b87bf778ec9a">
+      <div class="sheet-inner">
+        <header class="sheet-head">
+          <h2 id="t-d-tsk_b3ab42799d4b48e49486b87bf778ec9a">Prove the frozen fixture matches the engine</h2>
+          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
+        </header>
+        <p class="sheet-state" data-state="waiting"><span class="dot" aria-hidden="true"></span>Waiting on review</p>
+        <dl class="facts"><div class="fact"><dt>State</dt><dd>Waiting on review (waiting)</dd></div><div class="fact"><dt>Node key</dt><dd class="mono">build/verify</dd></div><div class="fact"><dt>Task id</dt><dd class="mono">tsk_b3ab42799d4b48e49486b87bf778ec9a</dd></div><div class="fact"><dt>Inside</dt><dd>0 inside · 0 done</dd></div><div class="fact"><dt>Phase</dt><dd>ended</dd></div><div class="fact"><dt>Slot</dt><dd>0 of 2</dd></div><div class="fact"><dt>Runner</dt><dd>rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)</dd></div><div class="fact"><dt>Created</dt><dd>2026-11-25T13:17:49.565023Z</dd></div><div class="fact"><dt>Updated</dt><dd>2026-11-25T13:17:50.155621Z</dd></div><div class="fact"><dt>Attempt id</dt><dd class="mono">att_c45adfaf3f3842798492a707ba415472</dd></div><div class="fact"><dt>Attempts</dt><dd>1; last ended, ok</dd></div><div class="fact"><dt>Blocked by</dt><dd>nothing</dd></div><div class="fact"><dt>Starts after</dt><dd>nothing</dd></div><div class="fact"><dt>Wait reason</dt><dd class="mono">rejected:condition:check:unit</dd></div><div class="fact"><dt>Wait cause</dt><dd class="mono">settle_rejected</dd></div><div class="fact"><dt>Wait owner</dt><dd class="mono">person:local</dd></div><div class="fact"><dt>Wait opened</dt><dd>2026-11-25T13:17:50.155518Z</dd></div></dl>
+        <section class="raw">
+        <h3>Raw wait</h3><pre>{
+  &quot;cause&quot;: &quot;settle_rejected&quot;,
+  &quot;ended_by&quot;: null,
+  &quot;escalation_level&quot;: 0,
+  &quot;expires_at&quot;: &quot;2026-11-26T13:17:50.155539Z&quot;,
+  &quot;opened_at&quot;: &quot;2026-11-25T13:17:50.155518Z&quot;,
+  &quot;opened_by_attempt&quot;: &quot;att_c45adfaf3f3842798492a707ba415472&quot;,
+  &quot;owner&quot;: &quot;person:local&quot;,
+  &quot;reason&quot;: &quot;rejected:condition:check:unit&quot;,
+  &quot;resume_at&quot;: null
+}</pre>
+        
+      </section>
+        <p class="sheet-source">Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+      </div>
+    </dialog>
+<dialog class="sheet" id="d-tsk_1a3ff4501c8843189c3f0e7a4e549e37" aria-labelledby="t-d-tsk_1a3ff4501c8843189c3f0e7a4e549e37">
+      <div class="sheet-inner">
+        <header class="sheet-head">
+          <h2 id="t-d-tsk_1a3ff4501c8843189c3f0e7a4e549e37">Wire the read model to the live engine</h2>
+          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
+        </header>
+        <p class="sheet-state" data-state="blocked"><span class="dot" aria-hidden="true"></span>Can&#39;t start yet</p>
+        <dl class="facts"><div class="fact"><dt>State</dt><dd>Can&#39;t start yet (blocked)</dd></div><div class="fact"><dt>Node key</dt><dd class="mono">build/integration</dd></div><div class="fact"><dt>Task id</dt><dd class="mono">tsk_1a3ff4501c8843189c3f0e7a4e549e37</dd></div><div class="fact"><dt>Inside</dt><dd>0 inside · 0 done</dd></div><div class="fact"><dt>Phase</dt><dd>none</dd></div><div class="fact"><dt>Slot</dt><dd>none</dd></div><div class="fact"><dt>Runner</dt><dd>none</dd></div><div class="fact"><dt>Created</dt><dd>2026-11-25T13:17:50.235731Z</dd></div><div class="fact"><dt>Updated</dt><dd>2026-11-25T13:17:50.235731Z</dd></div><div class="fact"><dt>Attempt id</dt><dd class="mono">not reported</dd></div><div class="fact"><dt>Attempts</dt><dd>0; last none readable</dd></div><div class="fact"><dt>Blocked by</dt><dd>Prove the frozen fixture matches the engine</dd></div><div class="fact"><dt>Starts after</dt><dd>Render the tree read-only</dd></div></dl>
+        
+        <p class="sheet-source">Live read · read at 2026-11-25T15:44:56.488Z · task-engine@4b7e4d6 · schema 7</p>
+      </div>
+    </dialog>
+<div class="scrim" id="scrim" hidden></div>
+<script>(function () {
+  var FILES = { board: 'index.html', list: 'list.html' };
+
+  function current() {
+    var raw = location.hash.replace(/^#/, '');
+    var parts = raw.split('/');
+    var view = parts[0] === 'board' || parts[0] === 'list' ? parts[0] : null;
+    var rest = parts.slice(1).filter(function (part) { return part !== ''; });
+    var key = null;
+    if (rest.length > 0) {
+      try {
+        key = rest.map(decodeURIComponent).join('/');
+      } catch (error) {
+        key = null;
+      }
+    }
+    return { view: view, key: key };
+  }
+
+  function encodeKey(key) {
+    if (!key) return '';
+    return '/' + key.split('/').map(encodeURIComponent).join('/');
+  }
+
+  function showScope(key) {
+    var sections = Array.prototype.slice.call(document.querySelectorAll('.scope-view'));
+    if (sections.length === 0) return;
+    var fallback = null;
+    var target = null;
+    sections.forEach(function (section) {
+      if (section.hasAttribute('data-default')) fallback = section;
+      if (section.getAttribute('data-scope') === (key || '')) target = section;
+    });
+    target = target || fallback;
+    sections.forEach(function (section) {
+      section.classList.toggle('is-current', section === target);
+    });
+  }
+
+  function markHere(key) {
+    var tags = document.querySelectorAll('.here-tag');
+    Array.prototype.forEach.call(tags, function (tag) {
+      tag.hidden = tag.getAttribute('data-here') !== (key || '');
+    });
+  }
+
+  function syncViews(key) {
+    var links = document.querySelectorAll('[data-view-link]');
+    Array.prototype.forEach.call(links, function (link) {
+      var view = link.getAttribute('data-view-link');
+      link.setAttribute('href', FILES[view] + '#' + view + encodeKey(key));
+    });
+  }
+
+  function apply() {
+    var here = current();
+    showScope(here.key);
+    markHere(here.key);
+    syncViews(here.key);
+  }
+
+  function showScrim() {
+    var scrim = document.getElementById('scrim');
+    if (scrim) scrim.hidden = false;
+  }
+
+  function hideScrim() {
+    var scrim = document.getElementById('scrim');
+    if (scrim) scrim.hidden = true;
+  }
+
+  window.addEventListener('hashchange', apply);
+  apply();
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-dialog]'), function (button) {
+    button.addEventListener('click', function () {
+      var sheet = document.getElementById(button.getAttribute('data-dialog'));
+      if (!sheet) return;
+      if (typeof sheet.showModal === 'function') {
+        sheet.showModal();
+      } else {
+        sheet.setAttribute('open', '');
+      }
+      showScrim();
+      var close = sheet.querySelector('.sheet-close');
+      if (close) close.focus();
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('dialog.sheet'), function (sheet) {
+    sheet.addEventListener('close', hideScrim);
+    sheet.addEventListener('click', function (event) {
+      if (event.target === sheet) sheet.close();
+    });
+    sheet.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        sheet.close();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      var items = Array.prototype.filter.call(
+        sheet.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+        function (item) { return !item.disabled; },
+      );
+      if (items.length === 0) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    var close = sheet.querySelector('.sheet-close');
+    if (close) {
+      close.addEventListener('click', function () {
+        sheet.close();
+      });
+    }
+  });
+})();</script>
+</body>
+</html>

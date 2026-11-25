@@ -8,6 +8,35 @@ The model does not fill these with guesses. Where a value is unavailable it is
 `null` with an explicit capability flag; the page states the limit where it
 affects a row or a count.
 
+## Revision note — live board read at 4b7e4d6
+
+The board is now built from a live read, not the capture. Re-checked against
+`task-engine@4b7e4d6`, schema revision 7, with `engine-board`'s demo store.
+
+What the read surface gained since the `33651ee` pin, and what that closes:
+
+| Fact | Where it now appears | Effect |
+|---|---|---|
+| `tree_key` | every `graph` node, including `$root` | G1 is closed for the graph read: the live source checks the root's key against the request and refuses a mismatch. |
+| `title` | `graph` nodes and `status` | The model no longer falls back to `node_key` for a named task; the panel and cards carry the engine's title. |
+| `created_at`, `updated_at` | `graph` nodes and `status` | Both render in the panel. |
+| `max_concurrency` | `project show`, and `status` | The panel's slot reads `N of <limit>`; `slot_limit` on `status` wins over the project value. |
+| `slot_limit`, `runner_id`, `runner_slot`, `attempts`, `ended_attempt` | `status` | The panel's slot, runner and attempt rows have a real source; `runners_available` stays false because `task runner list` is still not read. |
+| `next_cursor` | `graph` | New paging field. `null` for this tree; the live source does not follow a cursor, so a non-null value would be an unhandled truncation. Recorded as a seam, not a defect. |
+
+Edge shape changed: `graph` prints `{blocker_task_id, blocked_task_id, input_name,
+kind, required, satisfied_by, edge_id}`; the fixture's `{from,to,kind}` is no
+longer the live shape. `live-source.ts` folds both to `{from,to,kind}`. G10a
+(`status` changes shape with its argument count) still holds and is handled.
+
+`graph --tree` without `--depth` returned all eight nodes; the old G2a depth trap
+is not reproducible at this revision for this tree, but neither read asks for a
+depth, so a future default would show up as a short tree, not an error.
+
+The fixture remains pinned at `33651ee` and is now payload-different from the
+engine: it has no `title`, no `max_concurrency`, and `slot`/`phase` are `null`
+where the live store has values. It stays only as test coverage.
+
 ## Revision note — reviewed at 33651ee
 
 The fixture was recaptured four times: `87247d1` → `41b2170` (the tree and

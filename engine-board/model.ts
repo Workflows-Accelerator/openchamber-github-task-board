@@ -86,6 +86,21 @@ export interface StatusPayload {
   [field: string]: unknown;
 }
 
+// One attempt row as `task status` prints it. Only the fields the board shows;
+// everything else stays in the payload for a later panel.
+export interface AttemptRecord {
+  attempt_id: string | null;
+  phase: AttemptPhase | null;
+  runner_id: string | null;
+  runner_slot: number | null;
+  slot: number | null;
+  launched_at: string | null;
+  ended_at: string | null;
+  end_reason: string | null;
+  outcome: string | null;
+  launch_count: number | null;
+}
+
 export interface RunnerRow {
   runner_id: string;
   project_id: string;
@@ -172,12 +187,22 @@ export interface RerootedInfo {
 export interface TreeRow {
   task_id: string;
   node_key: string;
+  // The engine's own title. null when the read did not print one; the board
+  // then falls back to node_key rather than inventing a name.
+  title: string | null;
   rest_state: RestState;
   // False when the engine's string is outside the frozen enum. The row still
   // shows the engine's word, but it is not counted as a known state.
   rest_state_known: boolean;
   phase: AttemptPhase | null;
   slot: number | null;
+  // The attempt's slot limit as the status row prints it (R-1), not the
+  // project's configured ceiling.
+  slot_limit: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+  // Attempt history, newest last. Empty when the read printed none.
+  attempts: AttemptRecord[];
   // Null means "no value"; `*_reported` says whether the field was present at
   // all. null with reported false is "unreadable", not "no runner".
   runner_slot: number | null;
@@ -319,6 +344,44 @@ function stringField(
 ): string | null {
   const value = record[field];
   return typeof value === 'string' ? value : null;
+}
+
+function isAttemptPhase(value: unknown): value is AttemptPhase {
+  return (
+    typeof value === 'string' &&
+    (ATTEMPT_PHASES as readonly string[]).includes(value)
+  );
+}
+
+// An attempt row that is missing or malformed yields null, never a crash: the
+// panel says "not reported" for what the payload did not carry.
+function parseAttempt(value: unknown): AttemptRecord | null {
+  if (value === null || typeof value !== 'object') {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const phase = record.phase;
+  return {
+    attempt_id: stringField(record, 'attempt_id'),
+    phase: isAttemptPhase(phase) ? phase : null,
+    runner_id: stringField(record, 'runner_id'),
+    runner_slot: numberField(record, 'runner_slot'),
+    slot: numberField(record, 'slot'),
+    launched_at: stringField(record, 'launched_at'),
+    ended_at: stringField(record, 'ended_at'),
+    end_reason: stringField(record, 'end_reason'),
+    outcome: stringField(record, 'outcome'),
+    launch_count: numberField(record, 'launch_count'),
+  };
+}
+
+function parseAttempts(value: unknown): AttemptRecord[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map(parseAttempt)
+    .filter((attempt): attempt is AttemptRecord => attempt !== null);
 }
 
 function edgeRefs(
@@ -499,10 +562,17 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
     return {
       task_id: node.task_id,
       node_key: node.node_key,
+      title: stringField(statusRecord, 'title') ?? stringField(node, 'title'),
       rest_state: restState,
       rest_state_known: restStateKnown,
       phase: status ? status.phase : null,
       slot: status ? status.slot : null,
+      slot_limit: numberField(statusRecord, 'slot_limit'),
+      created_at:
+        stringField(statusRecord, 'created_at') ?? stringField(node, 'created_at'),
+      updated_at:
+        stringField(statusRecord, 'updated_at') ?? stringField(node, 'updated_at'),
+      attempts: parseAttempts(statusRecord.attempts),
       runner_slot: numberField(statusRecord, 'runner_slot'),
       runner_slot_reported: reports([statusRecord], 'runner_slot'),
       runner_id: stringField(statusRecord, 'runner_id'),
