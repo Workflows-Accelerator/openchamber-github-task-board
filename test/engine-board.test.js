@@ -2004,7 +2004,9 @@ test('a body is plain paragraphs, and empty is a sentence', () => {
       ],
       statuses: [
         statusOf('full', 'ready', {
-          body: 'The first paragraph is a sentence someone wrote.\nIt continues on the next line.\n\nA second paragraph says why it matters.',
+          // Two blank lines do not make an empty paragraph; one newline does
+          // not make a new paragraph.
+          body: 'The first paragraph is a sentence someone wrote.\nIt continues on the next line.\n\n\nA second paragraph says why it matters.',
         }),
         statusOf('blank', 'ready', { body: '' }),
         statusOf('missing', 'ready', {}),
@@ -2027,6 +2029,57 @@ test('a body is plain paragraphs, and empty is a sentence', () => {
   const html = renderBoardPage(model);
   assert.ok(html.includes("textNode('sheet-empty', 'No description yet')"));
   assert.equal(html.includes('marked'), false);
+});
+
+test('a body is text, never markup', () => {
+  const longWord = 'x'.repeat(160);
+  const body =
+    'A <b>bold</b> claim and a </script> end.\n\nThen one word: ' + longWord + '.';
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('root', '$root', 'ready', null),
+        node('html', 'html', 'ready', 'root', { title: 'Has brackets' }),
+      ],
+      statuses: [statusOf('html', 'ready', { body })],
+    }),
+  );
+  const data = boardData(model);
+  assert.deepEqual(data.rows.html.body.paragraphs, [
+    'A <b>bold</b> claim and a </script> end.',
+    'Then one word: ' + longWord + '.',
+  ]);
+  const page = renderBoardPage(model);
+  // The data block escapes every `<`, so a body can never close the script
+  // element it is carried in.
+  assert.ok(page.includes('\\u003c'), 'the data block escapes <');
+  assert.equal(page.includes('</b>'), false, 'no raw tag reaches the document');
+  assert.ok(
+    page.includes("textNode('sheet-paragraph', text)"),
+    'a paragraph is a text node, not markup',
+  );
+});
+
+test('an after edge keeps its sentence on the card the line would leave', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('root', '$root', 'ready', null),
+        node('a', 'a', 'skipped', 'root', { title: 'Try the optional provider' }),
+        node('b', 'b', 'ready', 'root', { title: 'Adopt it when it lands' }),
+      ],
+      edges: [{ from: 'a', to: 'b', kind: 'after' }],
+      statuses: [statusOf('a', 'skipped'), statusOf('b', 'ready')],
+    }),
+  );
+  // The line is only drawn above 640 px. The list body is what the card
+  // clones, so the sentence has to be there for the layer to be droppable.
+  const list = renderListPage(model);
+  assert.ok(list.includes('card-after'), 'the card carries the after sentence');
+  assert.ok(
+    list.includes('Starts after Try the optional provider'),
+    'the sentence names the task it follows',
+  );
 });
 
 test('each contract condition kind reads in plain words', () => {
@@ -2055,8 +2108,14 @@ test('each contract condition kind reads in plain words', () => {
     'An answer is recorded for ok (true)',
     'All of its child tasks are done',
     'Evidence is attached: signed-build',
-    'A condition this page cannot describe (mystery)',
+    // An unknown kind is named as undescribable rather than hidden. The kind
+    // itself is an engine word, so it stays behind More.
+    'A condition this page cannot describe',
   ]);
+  const more = detailSections(model.roots[0], model).more;
+  const raw = more.find((field) => field.label === 'Contract conditions');
+  assert.ok(raw, 'More carries the raw condition kinds');
+  assert.ok(raw.value.includes('mystery'), raw.value);
 });
 
 test('an unreadable contract says so instead of showing an empty list', () => {
@@ -2109,10 +2168,15 @@ test('the history says how many attempts and how the last one ended', () => {
   assert.deepEqual(historyLines(model.roots[0]), [
     'Attempted twice.',
     'The last attempt failed.',
-    'The engine recorded: exit 1: the lock was still held.',
+    // The engine's `exit 1:` prefix is a machine shape; the reason is the
+    // fact a reader needs, and the raw string stays in More.
+    'It stopped with an error: the lock was still held.',
     'The last attempt was attested by person:local.',
     'It was approved by person:lead.',
   ]);
+  const more = detailSections(model.roots[0], model).more;
+  const raw = more.find((field) => field.label === 'End evidence');
+  assert.equal(raw.value, 'exit 1: the lock was still held');
   const render = renderBoardPage(model);
   assert.ok(render.includes("sectionNode('What has happened', 'sheet-history')"));
   // The machine enums are folded into More, not the history sentence.

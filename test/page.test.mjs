@@ -71,7 +71,9 @@ function snapshot() {
         slot: 0,
         title: 'Alpha',
         body:
-          'Alpha opens with a sentence someone wrote.\n\nAlpha closes with a second paragraph.',
+          'Alpha opens with a sentence someone wrote.\n\nAlpha closes with a second paragraph.\n\nA <b>bold</b> claim, a </script> tag, and one long word: ' +
+          'x'.repeat(160) +
+          '.',
         conditions: [
           { kind: 'check', name: 'alpha-check' },
           { kind: 'verdict' },
@@ -317,7 +319,11 @@ test(
         home: (function () {
           var link = document.querySelector('a.brand');
           return link
-            ? { text: link.textContent, href: link.getAttribute('href') }
+            ? {
+                text: link.textContent,
+                href: link.getAttribute('href'),
+                underline: getComputedStyle(link).borderBottomWidth,
+              }
             : null;
         })(),
         title: document.title,
@@ -330,7 +336,7 @@ test(
     assert.equal(loaded.progress, '1 of 5 done · 1 skipped · 4 archived');
     // Slice 8: the top level draws no line, and the word at top left is home.
     assert.equal(loaded.edges, 0, 'no in-level edge at the top');
-    assert.deepEqual(loaded.home, { text: 'Engine board', href: 'index.html#board' });
+    assert.deepEqual(loaded.home, { text: 'Engine board', href: 'index.html#board', underline: '1px' });
     assert.equal(loaded.title, 'All work · Engine board');
 
     // Slice 6: the reading surface is human, the machine record is folded.
@@ -576,6 +582,7 @@ test(
         before: !!(heading && (nav.compareDocumentPosition(heading) & 4)),
         current: current ? current.textContent : null,
         currentWeight: current ? getComputedStyle(current).fontWeight : null,
+        size: nav ? parseFloat(getComputedStyle(nav).fontSize) : null,
         links: links.map(function (link) { return link.textContent; }),
         href: first ? first.getAttribute('href') : null,
         reachable: reachable,
@@ -586,6 +593,7 @@ test(
     assert.equal(crumb.before, true, 'the trail precedes the level title');
     assert.equal(crumb.current, 'Box of work');
     assert.equal(crumb.currentWeight, '400', 'the current level is normal weight');
+    assert.ok(crumb.size >= 14, `the trail is reading size (${crumb.size}px)`);
     assert.deepEqual(crumb.links, ['All work']);
     assert.equal(crumb.href, '#board');
     assert.equal(crumb.reachable, true, 'the ancestor link takes focus');
@@ -639,12 +647,32 @@ test(
         history: texts('.sheet-history .sheet-history-line'),
         conversation: (sheet.querySelector('.sheet-conversation') || {}).textContent || '',
         hasCommentBox: !!sheet.querySelector('textarea, input[type="text"]'),
+        tags: sheet.querySelectorAll('.sheet-description b, .sheet-description script').length,
+        listStyle: (function () {
+          var list = sheet.querySelector('.sheet-conditions .sheet-list');
+          return list ? getComputedStyle(list).listStyleType : null;
+        })(),
+        marker: (function () {
+          var item = sheet.querySelector('.sheet-conditions .sheet-list li');
+          if (!item) return null;
+          var style = getComputedStyle(item, '::before');
+          return { content: style.content, width: style.width };
+        })(),
       };
     })()`);
     assert.deepEqual(reading.paragraphs, [
       'Alpha opens with a sentence someone wrote.',
       'Alpha closes with a second paragraph.',
+      'A <b>bold</b> claim, a </script> tag, and one long word: ' +
+        'x'.repeat(160) +
+        '.',
     ]);
+    assert.equal(reading.tags, 0, 'a body is text, never markup');
+    // A list marker is drawn, not a font glyph: the default disc at 12 px
+    // antialiases into a stray asterisk and reads as markdown on the page.
+    assert.equal(reading.listStyle, 'none', 'no font-glyph list marker');
+    assert.notEqual(reading.marker.content, 'none', 'the condition has a drawn dot');
+    assert.ok(parseFloat(reading.marker.width) > 0, reading.marker.width);
     assert.deepEqual(reading.conditions, [
       'A check passes: alpha-check',
       'A person approves it',
@@ -656,6 +684,45 @@ test(
     assert.ok(reading.history.includes('The last attempt was attested by person:local.'));
     assert.ok(reading.conversation.includes('issue #7'), reading.conversation);
     assert.equal(reading.hasCommentBox, false, 'no comment box is invented');
+
+    // R4: a single unbroken paragraph wraps at phone width rather than
+    // pushing the panel sideways.
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await until(page, 'window.innerWidth === 390', 'the phone viewport applies');
+    const narrow = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var desc = sheet.querySelector('.sheet-description');
+      var rect = sheet.getBoundingClientRect();
+      return {
+        view: window.innerWidth,
+        doc: document.documentElement.scrollWidth,
+        descScroll: desc.scrollWidth,
+        descClient: desc.clientWidth,
+        sheetScroll: sheet.scrollWidth,
+        sheetClient: sheet.clientWidth,
+        sheetRight: rect.right,
+      };
+    })()`);
+    assert.ok(
+      narrow.descScroll <= narrow.descClient + 1,
+      `the long word wraps (${narrow.descScroll} vs ${narrow.descClient})`,
+    );
+    assert.ok(narrow.sheetScroll <= narrow.sheetClient + 1, 'the panel does not scroll sideways');
+    assert.ok(narrow.sheetRight <= narrow.view + 1, 'the panel stays inside the viewport');
+    assert.ok(narrow.doc <= narrow.view + 1, 'the page does not scroll sideways');
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await until(page, 'window.innerWidth === 1280', 'the desktop viewport returns');
+
     await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
     await until(
       page,
@@ -850,13 +917,19 @@ test(
         provenanceOpen: provenance ? provenance.open : null,
         isoText: /\d{4}-\d\d-\d\dT/.test(document.body.innerText),
         focus: focus ? focus.textContent : null,
+        focusSum: focus
+          ? focus.textContent.split(' · ').reduce(function (sum, part) {
+              return sum + Number(part.split(' ')[0]);
+            }, 0)
+          : 0,
       };
     })()`);
     assert.equal(coldSkin.provenanceOpen, false);
     assert.equal(coldSkin.isoText, false);
-    // The box's children are done, skipped and archived; no lane the header
-    // counts holds one, so the header is empty rather than a row of zeroes.
-    assert.equal(coldSkin.focus, '');
+    // The box's children are done and skipped; the header names the two lanes
+    // that hold them so it adds up to the level's live total.
+    assert.equal(coldSkin.focus, '1 done · 1 set aside');
+    assert.equal(coldSkin.focusSum, 2, 'the focus line adds up to the two live rows');
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);
     assert.deepEqual(page.failedRequests, []);
@@ -912,6 +985,12 @@ test(
           return card.querySelector('.row-count') !== null;
         }).length,
         focus: focus ? focus.textContent : null,
+        focusSum: focus
+          ? focus.textContent.split(' · ').reduce(function (sum, part) {
+              return sum + Number(part.split(' ')[0]);
+            }, 0)
+          : 0,
+        live: Number(document.querySelector('#board-root .level strong').textContent),
         counts: focus
           ? {
               canStart: Number(focus.getAttribute('data-can-start')),
@@ -946,7 +1025,8 @@ test(
     assert.equal(board.counts.canStart, 1, 'Build can start now');
     assert.equal(board.counts.inProgress, 0, 'nothing runs at the process level');
     assert.equal(board.counts.waiting, 2, 'Release and Operations wait');
-    assert.equal(board.focus, '1 can start · 2 waiting');
+    assert.equal(board.focus, '1 can start · 2 waiting · 2 not started');
+    assert.equal(board.focusSum, board.live, 'the focus line adds up to the level total');
     assert.equal(board.lanes.canStart, board.counts.canStart);
     assert.equal(board.lanes.inProgress, board.counts.inProgress);
     assert.equal(board.lanes.waiting, board.counts.waiting);
@@ -977,6 +1057,12 @@ test(
       return {
         cards: cards.length,
         focus: focus ? focus.textContent : null,
+        focusSum: focus
+          ? focus.textContent.split(' · ').reduce(function (sum, part) {
+              return sum + Number(part.split(' ')[0]);
+            }, 0)
+          : 0,
+        live: Number(document.querySelector('#board-root .level strong').textContent),
         lanes: {
           canStart: laneCount('can-start'),
           inProgress: laneCount('in-progress'),
@@ -997,6 +1083,35 @@ test(
             var title = card ? card.querySelector('.card-title') : null;
             return title ? title.textContent : null;
           }
+          var geometry = null;
+          if (path) {
+            var wrap = document.querySelector('#board-root .lanes');
+            var box = wrap.getBoundingClientRect();
+            var fromCard = document.querySelector(
+              '#board-root .card[data-task="' + path.getAttribute('data-from') + '"]',
+            );
+            var toCard = document.querySelector(
+              '#board-root .card[data-task="' + path.getAttribute('data-to') + '"]',
+            );
+            var f = fromCard.getBoundingClientRect();
+            var t = toCard.getBoundingClientRect();
+            var dText = path.getAttribute('d');
+            var m = dText.match(/^M ([-\\d.]+) ([-\\d.]+)/);
+            // A routed line ends with a Q then H; a curve ends with C x2 y2.
+            var bus = dText.match(/Q ([-\\d.]+) ([-\\d.]+) ([-\\d.]+) ([-\\d.]+) H ([-\\d.]+)$/);
+            var curve = dText.match(/([-\\d.]+) ([-\\d.]+)$/);
+            geometry = {
+              startX: Number(m[1]),
+              startY: Number(m[2]),
+              endX: bus ? Number(bus[5]) : Number(curve[1]),
+              endY: bus ? Number(bus[4]) : Number(curve[2]),
+              fromRight: f.right - box.left,
+              fromBottom: f.bottom - box.top,
+              toLeft: t.left - box.left,
+              toTop: t.top - box.top,
+              toBottom: t.bottom - box.top,
+            };
+          }
           return {
             count: paths.length,
             from: path ? path.getAttribute('data-from') : null,
@@ -1004,6 +1119,7 @@ test(
             fromTitle: path ? cardTitle(path.getAttribute('data-from')) : null,
             toTitle: path ? cardTitle(path.getAttribute('data-to')) : null,
             d: path ? path.getAttribute('d') : '',
+            geometry: geometry,
             height: layer ? Number(layer.getAttribute('height')) : 0,
             laneHeight: (function () {
               var lane = document.querySelector(
@@ -1032,15 +1148,30 @@ test(
     assert.equal(crowded.lanes.waitingOther, 1);
     assert.equal(crowded.lanes.done, 1);
     assert.equal(crowded.runningInCanStart, 0, 'a running row is never in Can start now');
-    assert.equal(crowded.focus, '12 can start · 2 in progress · 1 waiting');
+    assert.equal(crowded.focus, '12 can start · 2 in progress · 1 waiting · 1 done');
+    assert.equal(crowded.focusSum, crowded.live, 'the focus line adds up to the level total');
     // R3: the line survives the twelve-card lane: it is drawn from the card in
     // that lane to the waiting card, over the lane's full height, with no NaN
     // coordinate from a zero-size measurement.
     assert.equal(crowded.edge.count, 1);
     assert.equal(crowded.edge.fromTitle, 'Render the tree from the read');
     assert.equal(crowded.edge.toTitle, 'Prove it in a real browser');
-    assert.match(crowded.edge.d, /^M [\d.]+ [\d.]+ C /);
     assert.equal(/NaN/.test(crowded.edge.d), false);
+    // The line leaves the blocker's own edge and arrives on the blocked
+    // card's own edge, at a point inside its height.
+    assert.ok(
+      Math.abs(crowded.edge.geometry.startX - crowded.edge.geometry.fromRight) <= 1,
+      `starts on the blocker (${crowded.edge.geometry.startX} vs ${crowded.edge.geometry.fromRight})`,
+    );
+    assert.ok(
+      Math.abs(crowded.edge.geometry.endX - crowded.edge.geometry.toLeft) <= 1,
+      `ends on the blocked card (${crowded.edge.geometry.endX} vs ${crowded.edge.geometry.toLeft})`,
+    );
+    assert.ok(
+      crowded.edge.geometry.endY >= crowded.edge.geometry.toTop - 1 &&
+        crowded.edge.geometry.endY <= crowded.edge.geometry.toBottom + 1,
+      'the end point is inside the blocked card',
+    );
     assert.ok(
       crowded.edge.height >= crowded.edge.laneHeight - 2,
       `the layer spans the twelve-card lane (height ${crowded.edge.height}, lane ${crowded.edge.laneHeight})`,
@@ -1059,6 +1190,58 @@ test(
       "document.getElementById('board-root').getAttribute('data-scope') === 'release'",
       'the Release workstream renders',
     );
+    // The six-way fan: one blocker, six dependents, in adjacent lanes. A
+    // curve between ports 18 px apart reads as a stripe on the lane edge, so
+    // the fan must leave one port, run one trunk, and branch into each card.
+    const fan = await page.evaluate(`(function () {
+      var wrap = document.querySelector('#board-root .lanes');
+      var box = wrap.getBoundingClientRect();
+      var layer = document.querySelector('#board-root .edge-layer');
+      var paths = Array.prototype.slice.call(
+        layer ? layer.querySelectorAll('path') : [],
+      );
+      var groups = {};
+      paths.forEach(function (path) {
+        var from = path.getAttribute('data-from');
+        (groups[from] = groups[from] || []).push(path);
+      });
+      var group = null;
+      Object.keys(groups).forEach(function (key) {
+        if (groups[key].length === 6) group = groups[key];
+      });
+      if (!group) return null;
+      return {
+        count: group.length,
+        starts: group.map(function (path) {
+          return path.getAttribute('d').match(/^M [^ ]+ [^ ]+/)[0];
+        }),
+        routes: group.map(function (path) {
+          var d = path.getAttribute('d');
+          var card = document.querySelector(
+            '#board-root .card[data-task="' + path.getAttribute('data-to') + '"]',
+          );
+          var rect = card.getBoundingClientRect();
+          var end = d.match(/H ([\\d.]+)$/);
+          return {
+            hasH: d.indexOf(' H ') !== -1,
+            hasV: d.indexOf(' V ') !== -1,
+            endX: end ? Number(end[1]) : null,
+            cardLeft: rect.left - box.left,
+          };
+        }),
+      };
+    })()`);
+    assert.ok(fan, 'the six-way fan is drawn');
+    assert.equal(fan.count, 6);
+    assert.equal(new Set(fan.starts).size, 1, 'one blocker leaves from one port');
+    for (const route of fan.routes) {
+      assert.equal(route.hasH && route.hasV, true, 'the narrow gutter is routed');
+      assert.ok(
+        Math.abs(route.endX - route.cardLeft) <= 1,
+        `the branch ends on the card edge (${route.endX} vs ${route.cardLeft})`,
+      );
+    }
+
     await page.evaluate(`(function () {
       var cards = Array.prototype.slice.call(
         document.querySelectorAll('#board-root .card'),
@@ -1117,6 +1300,101 @@ test(
       return facts;
     })()`);
     assert.equal(raw['Engine state'], 'blocked', 'the machine word is still honest');
+
+    await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
+      'the Release panel closes',
+    );
+
+    // The one `after` edge in the demo: dashed above 640 px, dropped below it
+    // with the card carrying the same fact.
+    await page.evaluate(`location.hash = '#board/research'`);
+    await until(
+      page,
+      "document.getElementById('board-root').getAttribute('data-scope') === 'research'",
+      'the Research workstream renders',
+    );
+    const readResearch = `(function () {
+      var layer = document.querySelector('#board-root .edge-layer');
+      var paths = Array.prototype.slice.call(
+        layer ? layer.querySelectorAll('path') : [],
+      );
+      var plan = JSON.parse(
+        document.getElementById('board-data').textContent,
+      ).scopes.research;
+      function sentence(id) {
+        var card = document.querySelector(
+          '#board-root .card[data-task="' + id + '"]',
+        );
+        if (!card) return null;
+        var wait = card.querySelector('.card-wait');
+        var after = card.querySelector('.card-after');
+        return wait ? wait.textContent : after ? after.textContent : null;
+      }
+      return {
+        paths: paths.length,
+        kinds: paths.map(function (path) {
+          return path.getAttribute('data-kind');
+        }),
+        dashed: paths[0] ? getComputedStyle(paths[0]).strokeDasharray : null,
+        sentences: plan.edges.map(function (edge) {
+          return sentence(edge.to);
+        }),
+        focus: document.querySelector('#board-root .focus-line').textContent,
+      };
+    })()`;
+    const research = await page.evaluate(readResearch);
+    assert.equal(research.paths, 1, 'the after edge is drawn at 1280');
+    assert.deepEqual(research.kinds, ['after']);
+    assert.notEqual(research.dashed, 'none', 'an after line is dashed');
+    assert.equal(research.sentences.length, 1);
+    assert.ok(
+      research.sentences[0] && research.sentences[0].includes('Starts after'),
+      research.sentences[0],
+    );
+    assert.equal(research.focus, '1 can start · 1 not started · 1 set aside');
+
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await until(page, 'window.innerWidth === 390', 'the phone viewport applies');
+    // A phone loads the board at this width, so re-render the scope rather
+    // than wait for a resize handler: the layer must never be built here.
+    await page.evaluate(`location.hash = '#board/build'`);
+    await until(
+      page,
+      "document.getElementById('board-root').getAttribute('data-scope') === 'build'",
+      'Build renders at phone width',
+    );
+    await page.evaluate(`location.hash = '#board/research'`);
+    await until(
+      page,
+      "document.getElementById('board-root').getAttribute('data-scope') === 'research'",
+      'Research renders at phone width',
+    );
+    await until(
+      page,
+      "document.querySelectorAll('#board-root .edge-layer path').length === 0",
+      'the line is dropped at phone width',
+    );
+    const phone = await page.evaluate(readResearch);
+    assert.equal(phone.paths, 0, 'no line at phone width');
+    assert.equal(phone.sentences.length, 1);
+    assert.ok(
+      phone.sentences[0] && phone.sentences[0].includes('Starts after'),
+      'the card carries the dependency the layer dropped',
+    );
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
 
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);

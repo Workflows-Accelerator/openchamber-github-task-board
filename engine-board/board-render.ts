@@ -331,7 +331,9 @@ export function conditionText(condition: ContractCondition): string {
         ? 'Evidence is attached'
         : `Evidence is attached: ${condition.evidence_kind}`;
     default:
-      return `A condition this page cannot describe (${condition.kind})`;
+      // The kind is an engine word. The first screen says only that a
+      // condition exists; More prints the raw kinds.
+      return 'A condition this page cannot describe';
   }
 }
 
@@ -387,7 +389,7 @@ export function historyLines(row: TreeRow): string[] {
       lines.push('The last attempt ended for a recorded reason.');
   }
   if (last.end_evidence !== null) {
-    lines.push(`The engine recorded: ${last.end_evidence}.`);
+    lines.push(evidenceSentence(last.end_evidence));
   }
   if (last.outcome !== null && last.outcome !== last.end_reason) {
     lines.push(`Its recorded verdict was ${last.outcome}.`);
@@ -399,6 +401,31 @@ export function historyLines(row: TreeRow): string[] {
     lines.push(`It was approved by ${last.approved_by}.`);
   }
   return lines;
+}
+
+// The engine writes `exit 1: <reason>` and `launch_refused: <reason>` as
+// evidence. Both are machine shapes attached to a human reason. The first
+// screen keeps the reason and drops the prefix; More prints the raw string.
+export function evidenceSentence(evidence: string): string {
+  const ended = /^exit\s+\d+:\s*(.*)$/i.exec(evidence);
+  if (ended !== null) {
+    const reason = ended[1].trim();
+    return reason === ''
+      ? 'It stopped with an error.'
+      : `It stopped with an error: ${endsAsSentence(reason)}`;
+  }
+  const refused = /^launch_refused:\s*(.*)$/i.exec(evidence);
+  if (refused !== null) {
+    const reason = refused[1].trim();
+    return reason === ''
+      ? 'It could not start.'
+      : `It could not start: ${endsAsSentence(reason)}`;
+  }
+  return `The engine recorded: ${endsAsSentence(evidence)}`;
+}
+
+function endsAsSentence(text: string): string {
+  return /[.!?]$/.test(text) ? text : `${text}.`;
 }
 
 // Ruling 7: the engine has no comment store. The panel says where a
@@ -503,6 +530,13 @@ export function detailSections(
   }
   if (row.archived_at !== null) {
     more.push({ label: 'Archived', value: row.archived_at, mono: true });
+  }
+  if (row.conditions_read && row.conditions.length > 0) {
+    more.push({
+      label: 'Contract conditions',
+      value: row.conditions.map((condition) => condition.kind).join(', '),
+      mono: true,
+    });
   }
   if (row.attempts.length > 0) {
     const last = row.attempts[row.attempts.length - 1];
@@ -909,6 +943,15 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
     row.rest_state === 'blocked' && blockers.length > 0
       ? `<p class="card-wait">Waiting for ${esc(joinWords(blockers))}</p>`
       : '';
+  // An `after` edge is drawn as a dashed line at wide widths. At phone width
+  // the line is dropped, so the card has to carry the same fact or the
+  // dependency disappears with the layer.
+  const after =
+    row.after.length > 0
+      ? `<p class="card-after">Starts after ${esc(
+          joinWords(row.after.map((ref) => refLabel(ref, rows))),
+        )}</p>`
+      : '';
   const defectRow = engineDisagreement(row, rows);
   const disagreement =
     defectRow === null
@@ -959,6 +1002,7 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
             )}, ${esc(counts)}">${esc(counts)}</button>`
           : ''}
         ${wait}
+        ${after}
         ${disagreement}
         ${missing}
         ${mismatch}
@@ -1185,7 +1229,7 @@ a { color: inherit; }
   font-variant-numeric: tabular-nums;
 }
 .card .row-count { width: 100%; white-space: normal; }
-.card-wait {
+.card-wait, .card-after {
   margin-top: 5px; color: var(--muted); font-size: 0.76rem;
   line-height: 1.4; overflow-wrap: anywhere;
 }
@@ -1324,16 +1368,30 @@ a { color: inherit; }
 .sheet-description { margin-top: 16px; }
 .sheet-description .sheet-paragraph {
   margin: 0 0 0.7em; color: var(--ink); font-size: 0.95rem; line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .sheet-description .sheet-paragraph:last-child { margin-bottom: 0; }
 .sheet-empty { color: var(--muted); font-size: 0.9rem; }
-.sheet-muted { color: var(--muted); font-size: 0.84rem; line-height: 1.5; }
-.sheet-list { margin: 0; padding-left: 1.15rem; }
+.sheet-muted {
+  color: var(--muted); font-size: 0.84rem; line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.sheet-list { margin: 0; padding: 0; list-style: none; }
 .sheet-list li {
-  margin: 0 0 0.35em; color: var(--ink); font-size: 0.9rem; line-height: 1.5;
+  position: relative; margin: 0 0 0.35em; padding-left: 1.15rem;
+  color: var(--ink); font-size: 0.9rem; line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+/* A drawn dot, not a font glyph: at 12px the default disc antialiases into
+   something that reads like a stray asterisk. */
+.sheet-list li::before {
+  content: ''; position: absolute; left: 0.15rem; top: 0.62em;
+  width: 0.3rem; height: 0.3rem; border-radius: 50%;
+  background: var(--faint);
 }
 .sheet-history p {
   margin: 0 0 0.35em; color: var(--ink); font-size: 0.86rem; line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 .sheet-history p:last-child { margin-bottom: 0; }
 .facts { display: grid; gap: 0; margin-top: 14px; border-top: 1px solid var(--line); }
@@ -1674,12 +1732,25 @@ const SCRIPT = `(function () {
   // double-count a row. The wording reuses the lane vocabulary instead of
   // naming a state the page does not have.
   function focusLine(cards) {
-    var counts = focusCounts(cards.map(function (row) {
+    // Archived rows are named by the level line above; they are not live work
+    // and must not be counted into a live total.
+    var liveRows = cards.filter(function (row) {
+      return row.getAttribute('data-archived-self') !== '1';
+    });
+    var counts = focusCounts(liveRows.map(function (row) {
       return {
         rest_state: row.getAttribute('data-state'),
         phase: row.getAttribute('data-phase') || null,
       };
     }));
+    var tally = {};
+    liveRows.forEach(function (row) {
+      var lane = laneOf(
+        row.getAttribute('data-state'),
+        row.getAttribute('data-phase') || null,
+      );
+      tally[lane] = (tally[lane] || 0) + 1;
+    });
     var line = document.createElement('p');
     line.className = 'focus-line';
     line.setAttribute('data-can-start', String(counts.canStart));
@@ -1691,6 +1762,23 @@ const SCRIPT = `(function () {
     if (counts.canStart > 0) parts.push(counts.canStart + ' can start');
     if (counts.inProgress > 0) parts.push(counts.inProgress + ' in progress');
     if (counts.waiting > 0) parts.push(counts.waiting + ' waiting');
+    // Everything the three clauses leave out is named, so the line adds up to
+    // the level's live total instead of stopping one short of it.
+    var rest = [
+      ['not-started', 'not started'],
+      ['needs-attention', 'failed'],
+      ['done', 'done'],
+      ['set-aside', 'set aside'],
+      ['unknown', 'unknown'],
+    ];
+    var other = liveRows.length - counts.canStart - counts.inProgress - counts.waiting;
+    if (other > 0) {
+      rest.forEach(function (pair) {
+        var count = tally[pair[0]] || 0;
+        if (count > 0) parts.push(count + ' ' + pair[1]);
+      });
+    }
+    line.setAttribute('data-live', String(liveRows.length));
     line.textContent = parts.join(' · ');
     return line;
   }
@@ -1734,6 +1822,7 @@ const SCRIPT = `(function () {
           return (
             part.classList.contains('row-count') ||
             part.classList.contains('card-wait') ||
+            part.classList.contains('card-after') ||
             part.classList.contains('card-defect')
           );
         })
@@ -1851,6 +1940,7 @@ const SCRIPT = `(function () {
       outSeen[edge.from] += 1;
       inSeen[edge.to] += 1;
       var x1, y1, x2, y2, c1x, c1y, c2x, c2y, gap;
+      var d = '';
       if (bLeft >= aRight - 4) {
         // The blocked card is to the right: leave the blocker's right edge
         // and arrive at the blocked card's left edge.
@@ -1858,9 +1948,31 @@ const SCRIPT = `(function () {
         y1 = port(aTop, aBottom, outSlot, outCount[edge.from]);
         x2 = bLeft;
         y2 = port(bTop, bBottom, inSlot, inCount[edge.to]);
-        gap = Math.max(16, Math.min(80, (x2 - x1) / 2));
-        c1x = x1 + gap; c1y = y1;
-        c2x = x2 - gap; c2y = y2;
+        if (x2 - x1 < 64) {
+          // Adjacent lanes leave an 18 px gutter. A curve between two ports
+          // that close together spends hundreds of pixels of travel inside
+          // 18 px of width and reads as a stripe along the lane edge. Route
+          // it as stub, trunk, branch instead, and start every edge from the
+          // same middle port so six edges from one blocker share one trunk
+          // and visibly split, rather than leaving as a comb of six.
+          var trunkY = (aTop + aBottom) / 2;
+          var trunkX = x1 + (x2 - x1) / 2;
+          var dy = y2 - trunkY;
+          var r = Math.min(6, (x2 - x1) / 4, Math.abs(dy) / 2);
+          var down = dy >= 0 ? 1 : -1;
+          d =
+            'M ' + x1 + ' ' + trunkY +
+            ' H ' + (trunkX - r) +
+            ' Q ' + trunkX + ' ' + trunkY + ' ' + trunkX + ' ' + (trunkY + down * r) +
+            ' V ' + (y2 - down * r) +
+            ' Q ' + trunkX + ' ' + y2 + ' ' + (trunkX + r) + ' ' + y2 +
+            ' H ' + x2;
+          y1 = trunkY;
+        } else {
+          gap = Math.max(16, Math.min(80, (x2 - x1) / 2));
+          c1x = x1 + gap; c1y = y1;
+          c2x = x2 - gap; c2y = y2;
+        }
       } else if (bTop >= aBottom - 4) {
         // Same column or to the left and below: go down from the blocker and
         // into the top of the blocked card.
@@ -1886,12 +1998,13 @@ const SCRIPT = `(function () {
         y2 = port(bTop, bBottom, inSlot, inCount[edge.to]);
         c1x = x1; c1y = y1; c2x = x2; c2y = y2;
       }
+      if (d === '') {
+        d =
+          'M ' + x1 + ' ' + y1 + ' C ' + c1x + ' ' + c1y + ', ' +
+          c2x + ' ' + c2y + ', ' + x2 + ' ' + y2;
+      }
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute(
-        'd',
-        'M ' + x1 + ' ' + y1 + ' C ' + c1x + ' ' + c1y + ', ' +
-          c2x + ' ' + c2y + ', ' + x2 + ' ' + y2,
-      );
+      path.setAttribute('d', d);
       path.setAttribute('data-kind', edge.kind);
       path.setAttribute('data-from', edge.from);
       path.setAttribute('data-to', edge.to);
