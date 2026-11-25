@@ -20,6 +20,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { buildTree } from '../engine-board/model.ts';
+import { laneOf } from '../engine-board/rollup.ts';
 import {
   renderBoardPage,
   renderListPage,
@@ -279,13 +280,23 @@ test(
     assert.equal(loaded.progress, '1 of 5 done · 1 skipped · 4 archived');
 
     // Slice 6: the reading surface is human, the machine record is folded.
+    // Slice 7: the lanes and the header speak the reader's vocabulary.
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
     const skin = await page.evaluate(`(function () {
       var provenance = document.querySelector('details.provenance');
       var focus = document.querySelector('#board-root .focus-line');
-      var laneCount = function (state) {
-        var lane = document.querySelector('#board-root .lane[data-state="' + state + '"]');
-        return lane ? lane.querySelectorAll('.card').length : 0;
+      var laneCount = function (lane) {
+        var node = document.querySelector('#board-root .lane[data-lane="' + lane + '"]');
+        return node ? node.querySelectorAll('.card').length : 0;
       };
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
       return {
         provenanceOpen: provenance ? provenance.open : null,
         provenanceSummary: provenance
@@ -301,25 +312,55 @@ test(
             }
           : null,
         lanes: {
-          ready: laneCount('ready'),
-          waiting: laneCount('waiting'),
-          blocked: laneCount('blocked'),
+          canStart: laneCount('can-start'),
+          inProgress: laneCount('in-progress'),
+          waiting:
+            laneCount('waiting-for-someone') + laneCount('waiting-for-other-work'),
+          total: cards.length,
         },
+        cards: cards.map(function (card) {
+          return {
+            state: card.getAttribute('data-state'),
+            phase: card.getAttribute('data-phase') || null,
+            lane: card.getAttribute('data-lane'),
+          };
+        }),
+        cardStatesHidden: cards.every(function (card) {
+          var line = card.querySelector('.card-state');
+          return !line || getComputedStyle(line).display === 'none';
+        }),
       };
     })()`);
     assert.equal(skin.provenanceOpen, false, 'provenance is closed by default');
     assert.equal(skin.provenanceSummary, 'Where this page came from');
     assert.equal(/\d{4}-\d\d-\d\dT/.test(skin.text), false, 'no ISO on the surface');
-    assert.ok(skin.focus.includes('ready to start'), skin.focus);
+    assert.ok(skin.focus.includes('can start'), skin.focus);
+    // Every card sits in the lane its own state maps to, and the map is not
+    // re-implemented in the page.
+    for (const card of skin.cards) {
+      assert.equal(
+        card.lane,
+        laneOf(card.state, card.phase),
+        `${card.state}/${card.phase} maps to ${card.lane}`,
+      );
+    }
+    // At 1280 the lane head names the lane; no card repeats it.
     assert.equal(
-      skin.counts.canStart + skin.counts.inProgress,
-      skin.lanes.ready,
-      'ready lane = can start + running',
+      skin.cardStatesHidden,
+      true,
+      'no card prints its lane word at 1280',
     );
+    assert.equal(skin.counts.canStart, skin.lanes.canStart, 'can-start matches its lane');
     assert.equal(
-      skin.counts.waiting,
-      skin.lanes.waiting + skin.lanes.blocked,
-      'waiting count = waiting + blocked lanes',
+      skin.counts.inProgress,
+      skin.lanes.inProgress,
+      'in-progress matches its lane',
+    );
+    assert.equal(skin.counts.waiting, skin.lanes.waiting, 'waiting matches both wait lanes');
+    assert.equal(
+      skin.counts.canStart + skin.counts.inProgress + skin.counts.waiting,
+      skin.lanes.total,
+      'the header counts sum to the live total in this fixture',
     );
 
     const facts = await page.evaluate(`(function () {
@@ -622,7 +663,9 @@ test(
     })()`);
     assert.equal(coldSkin.provenanceOpen, false);
     assert.equal(coldSkin.isoText, false);
-    assert.ok(coldSkin.focus.includes('ready to start'), coldSkin.focus);
+    // The box's children are done, skipped and archived; no lane the header
+    // counts holds one, so the header is empty rather than a row of zeroes.
+    assert.equal(coldSkin.focus, '');
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);
     assert.deepEqual(page.failedRequests, []);
@@ -657,14 +700,26 @@ test(
     const page = await openPage(browser, pathToFileURL(demoFile).href);
     await page.navigate(pathToFileURL(demoFile).href);
 
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
     const board = await page.evaluate(`(function () {
-      var laneCount = function (state) {
-        var lane = document.querySelector('#board-root .lane[data-state="' + state + '"]');
+      var laneCount = function (id) {
+        var lane = document.querySelector('#board-root .lane[data-lane="' + id + '"]');
         return lane ? lane.querySelectorAll('.card').length : 0;
       };
       var focus = document.querySelector('#board-root .focus-line');
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
       return {
-        cards: document.querySelectorAll('#board-root .card').length,
+        cards: cards.length,
+        containers: cards.filter(function (card) {
+          return card.querySelector('.row-count') !== null;
+        }).length,
         focus: focus ? focus.textContent : null,
         counts: focus
           ? {
@@ -674,52 +729,105 @@ test(
             }
           : null,
         lanes: {
-          ready: laneCount('ready'),
-          waiting: laneCount('waiting'),
-          blocked: laneCount('blocked'),
+          canStart: laneCount('can-start'),
+          inProgress: laneCount('in-progress'),
+          waiting:
+            laneCount('waiting-for-someone') + laneCount('waiting-for-other-work'),
         },
         provenanceOpen: document.querySelector('details.provenance').open,
         isoText: /\d{4}-\d\d-\d\dT/.test(document.body.innerText),
+        cardStatesHidden: cards.every(function (card) {
+          var line = card.querySelector('.card-state');
+          return !line || getComputedStyle(line).display === 'none';
+        }),
+        cardLanes: cards.map(function (card) {
+          return {
+            state: card.getAttribute('data-state'),
+            phase: card.getAttribute('data-phase') || null,
+            lane: card.getAttribute('data-lane'),
+          };
+        }),
       };
     })()`);
-    assert.equal(board.cards, 29, 'the top scope is the demo volume');
-    assert.equal(board.lanes.ready, 10, 'the crowded ready lane');
-    assert.equal(board.counts.canStart, 8, 'eight can start now');
-    assert.equal(board.counts.inProgress, 2, 'two are already moving');
-    assert.equal(board.counts.canStart + board.counts.inProgress, board.lanes.ready);
-    assert.equal(
-      board.counts.waiting,
-      board.lanes.waiting + board.lanes.blocked,
-    );
+    // R5: the top level is the portfolio, not a field of loose tasks.
+    assert.equal(board.cards, 5, 'five processes at the top');
+    assert.equal(board.containers, 5, 'each process carries its own counts');
+    assert.equal(board.counts.canStart, 1, 'Build can start now');
+    assert.equal(board.counts.inProgress, 0, 'nothing runs at the process level');
+    assert.equal(board.counts.waiting, 2, 'Release and Operations wait');
+    assert.equal(board.focus, '1 can start · 2 waiting');
+    assert.equal(board.lanes.canStart, board.counts.canStart);
+    assert.equal(board.lanes.inProgress, board.counts.inProgress);
+    assert.equal(board.lanes.waiting, board.counts.waiting);
     assert.equal(board.provenanceOpen, false);
     assert.equal(board.isoText, false);
+    assert.equal(board.cardStatesHidden, true, 'no card repeats its lane at 1280');
+    for (const card of board.cardLanes) {
+      assert.equal(card.lane, laneOf(card.state, card.phase));
+    }
 
-    // The two rows a worker is on lead the ready lane and say so; every other
-    // card stays quiet, because its lane already names the state.
-    const moving = await page.evaluate(`(function () {
-      var cards = Array.prototype.slice.call(
-        document.querySelectorAll('#board-root .lane[data-state="ready"] .card'),
-      );
-      var words = function (card) {
-        var line = card.querySelector('.card-state');
-        return line && line.offsetParent !== null
-          ? line.textContent.trim()
-          : null;
+    // Enter Build: the crowded workstream, twelve startable cards in one lane
+    // and the two running rows in their own lane instead of in Can start now.
+    await page.evaluate(`location.hash = '#board/build'`);
+    await until(
+      page,
+      "document.getElementById('board-root').getAttribute('data-scope') === 'build'",
+      'the Build workstream renders',
+    );
+    const crowded = await page.evaluate(`(function () {
+      var laneCount = function (id) {
+        var lane = document.querySelector('#board-root .lane[data-lane="' + id + '"]');
+        return lane ? lane.querySelectorAll('.card').length : 0;
       };
+      var focus = document.querySelector('#board-root .focus-line');
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
       return {
-        running: document.querySelectorAll(
-          '#board-root .lane[data-state="ready"] .card[data-running]',
+        cards: cards.length,
+        focus: focus ? focus.textContent : null,
+        lanes: {
+          canStart: laneCount('can-start'),
+          inProgress: laneCount('in-progress'),
+          waitingOther: laneCount('waiting-for-other-work'),
+          done: laneCount('done'),
+        },
+        runningInCanStart: document.querySelectorAll(
+          '#board-root .lane[data-lane="can-start"] .card[data-phase="live"]',
         ).length,
-        head: cards.slice(0, 2).map(words),
-        quiet: words(cards[2]),
+        cardLanes: cards.map(function (card) {
+          return {
+            state: card.getAttribute('data-state'),
+            phase: card.getAttribute('data-phase') || null,
+            lane: card.getAttribute('data-lane'),
+          };
+        }),
+        cardStatesHidden: Array.prototype.every.call(
+          document.querySelectorAll('#board-root .card .card-state'),
+          function (line) { return getComputedStyle(line).display === 'none'; },
+        ),
       };
     })()`);
-    assert.equal(moving.running, 2, 'two cards say a worker is on them');
-    assert.deepEqual(moving.head, ['In progress', 'In progress']);
-    assert.equal(moving.quiet, null, 'the rest trust the lane word');
+    assert.equal(crowded.cards, 16, 'Build holds sixteen cards at this level');
+    assert.equal(crowded.lanes.canStart, 12, 'the crowded lane has twelve cards');
+    assert.equal(crowded.lanes.inProgress, 2, 'the two running rows have their own lane');
+    assert.equal(crowded.lanes.waitingOther, 1);
+    assert.equal(crowded.lanes.done, 1);
+    assert.equal(crowded.runningInCanStart, 0, 'a running row is never in Can start now');
+    assert.equal(crowded.focus, '12 can start · 2 in progress · 1 waiting');
+    assert.equal(crowded.cardStatesHidden, true);
+    for (const card of crowded.cardLanes) {
+      assert.equal(card.lane, laneOf(card.state, card.phase));
+    }
 
-    // Open a blocked row's panel: the chain is named by title on the first
-    // screen, and its ids stay behind More.
+    // Release: open the blocked chain's panel. The first screen names the lane
+    // and the blocker; the raw engine state is one fold down.
+    await page.evaluate(`location.hash = '#board/release'`);
+    await until(
+      page,
+      "document.getElementById('board-root').getAttribute('data-scope') === 'release'",
+      'the Release workstream renders',
+    );
     await page.evaluate(`(function () {
       var cards = Array.prototype.slice.call(
         document.querySelectorAll('#board-root .card'),
@@ -744,13 +852,40 @@ test(
       });
       return {
         title: sheet.querySelector('h2').textContent,
+        lane: sheet.querySelector('.sheet-state').textContent.trim(),
         facts: facts,
         firstText: sheet.querySelector('.facts-primary').innerText,
+        moreOpen: sheet.querySelector('details.sheet-more').open,
       };
     })()`);
     assert.equal(blocked.title, 'Ship the pricing page');
+    assert.equal(blocked.lane, 'Waiting for other work', 'the panel speaks the lane word');
     assert.equal(blocked.facts['Waiting for'], 'Approve the pricing copy');
     assert.equal(/tsk_|rest_state/.test(blocked.firstText), false);
+    assert.equal(blocked.moreOpen, false);
+
+    await page.evaluate(
+      `document.querySelector('dialog.sheet[open] details.sheet-more summary').click()`,
+    );
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open] details.sheet-more').open === true",
+      'More opens',
+    );
+    const raw = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var facts = {};
+      Array.prototype.forEach.call(
+        sheet.querySelectorAll('details.sheet-more dt'),
+        function (dt) {
+          facts[dt.textContent] = dt.nextElementSibling
+            ? dt.nextElementSibling.textContent
+            : null;
+        },
+      );
+      return facts;
+    })()`);
+    assert.equal(raw['Engine state'], 'blocked', 'the machine word is still honest');
 
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);

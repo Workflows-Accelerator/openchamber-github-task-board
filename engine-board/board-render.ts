@@ -20,14 +20,17 @@ import {
 } from './model.ts';
 import {
   LANE_ORDER,
+  LANE_WORDS,
   STATE_WORDS,
   containment,
   engineDisagreement,
   focusCounts,
   laneGroups,
+  laneOf,
   lanePlan,
   progress,
   progressText,
+  type LaneId,
 } from './rollup.ts';
 import { scopeHref, type BoardView } from './scope.ts';
 
@@ -57,6 +60,12 @@ export function stateWord(state: string): string {
   // A state this build does not know is named as unknown, never blank and
   // never silently renamed to a known word.
   return STATE_WORDS[state as RestState] ?? 'Unknown state';
+}
+
+// The reader's word for a lane. A lane this build does not know is named as
+// unknown rather than borrowing a word that means something else.
+export function laneWord(lane: string): string {
+  return LANE_WORDS[lane as LaneId] ?? LANE_WORDS.unknown;
 }
 
 export function viewFile(view: BoardView): string {
@@ -553,7 +562,7 @@ export function sheetFieldsHtml(fields: readonly DetailField[]): string {
 
 export interface BoardScopeData {
   // Only the lanes that hold a task, in LANE_ORDER; an `unknown` lane is last.
-  lanes: { state: string; tasks: string[] }[];
+  lanes: { lane: string; tasks: string[] }[];
   // Vocabulary lanes that hold nothing, stated once under the level.
   empty: number;
   // The row that owns this scope, for its own `Details` control. null for the
@@ -599,7 +608,7 @@ export function boardData(model: TreeModel): BoardData {
     const plan = lanePlan(children);
     scopes[key] = {
       lanes: plan.lanes.map((lane) => ({
-        state: lane.state,
+        lane: lane.lane,
         tasks: lane.cards.map((card) => card.task_id),
       })),
       empty: plan.empty,
@@ -725,10 +734,12 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
         ${mismatch}
         ${unknown}
       </div>
-      <span class="row-state">${archived}<span class="here-tag" data-here="${esc(
+      <span class="row-state" data-lane="${esc(
+        laneOf(row.rest_state, row.phase),
+      )}">${archived}<span class="here-tag" data-here="${esc(
         row.node_key,
       )}" hidden>Here</span><span class="dot" aria-hidden="true"></span>${esc(
-        stateWord(row.rest_state),
+        laneWord(laneOf(row.rest_state, row.phase)),
       )}</span>
     </div>
     ${
@@ -779,15 +790,15 @@ const CSS = `
   --serif: "Iowan Old Style", "Source Serif 4", Georgia, serif;
   --mono: "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
 }
-[data-state="draft"] { --state: var(--faint); }
-[data-state="ready"] { --state: var(--accent); }
-[data-state="waiting"] { --state: var(--warning); }
-[data-state="blocked"] { --state: var(--warning); }
-[data-state="done"] { --state: var(--ink); }
-[data-state="failed"] { --state: var(--warning); }
-[data-state="cancelled"] { --state: var(--faint); }
-[data-state="skipped"] { --state: var(--faint); }
-[data-state="unknown"] { --state: var(--faint); }
+[data-lane="not-started"], [data-state="draft"] { --state: var(--faint); }
+[data-lane="can-start"], [data-state="ready"] { --state: var(--accent); }
+[data-lane="in-progress"] { --state: var(--accent); }
+[data-lane="waiting-for-someone"], [data-state="waiting"] { --state: var(--warning); }
+[data-lane="waiting-for-other-work"], [data-state="blocked"] { --state: var(--warning); }
+[data-lane="needs-attention"], [data-state="failed"] { --state: var(--warning); }
+[data-lane="done"], [data-state="done"] { --state: var(--ink); }
+[data-lane="set-aside"], [data-state="cancelled"], [data-state="skipped"] { --state: var(--faint); }
+[data-lane="unknown"], [data-state="unknown"] { --state: var(--faint); }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { background: var(--paper); }
@@ -872,7 +883,9 @@ a { color: inherit; }
   width: 8px; height: 8px; border-radius: 50%; flex: none;
   display: inline-block; background: var(--state, var(--faint));
 }
-[data-state="draft"] .dot { background: transparent; border: 1.5px solid var(--faint); }
+[data-lane="not-started"] .dot, [data-state="draft"] .dot {
+  background: transparent; border: 1.5px solid var(--faint);
+}
 .level {
   margin: 20px 0 12px; color: var(--muted); font-size: 0.84rem;
   font-variant-numeric: tabular-nums;
@@ -911,11 +924,6 @@ a { color: inherit; }
 .card-state {
   display: none; align-items: center; gap: 6px; margin-top: 5px;
   color: var(--muted); font-size: 0.78rem;
-}
-/* The lane already names the state, except for the row a worker is on: that
-   one says so, because the lane word would read as untouched. */
-.card-state[data-running='1'] {
-  display: flex; color: var(--accent); font-weight: 600;
 }
 .card-count {
   margin-top: 5px; color: var(--faint); font-size: 0.75rem;
@@ -1115,7 +1123,7 @@ a { color: inherit; }
 const SCRIPT = `(function () {
   var FILES = { board: 'index.html', list: 'list.html' };
   var LANES = ${JSON.stringify(LANE_ORDER)};
-  var WORDS = ${JSON.stringify(STATE_WORDS)};
+  var LANE_WORDS = ${JSON.stringify(LANE_WORDS)};
   // A page whose data block is missing or unreadable must not quietly draw an
   // empty board: it keeps the no-JS tree and says why the interactive view
   // could not start.
@@ -1138,6 +1146,8 @@ const SCRIPT = `(function () {
   var SCOPES = (DATA && DATA.scopes) || {};
 
   ${laneGroups.toString()}
+
+  ${laneOf.toString()}
 
   ${sheetFieldsHtml.toString()}
 
@@ -1220,34 +1230,20 @@ const SCRIPT = `(function () {
     }
   }
 
-  function stateWord(state) {
-    if (state === 'unknown') return 'Unknown state';
-    return WORDS[state] || 'Unknown state';
+  function laneWord(lane) {
+    return LANE_WORDS[lane] || LANE_WORDS.unknown;
   }
 
-  function stateLine(state, className, text) {
+  function stateLine(lane, className, text) {
     var line = document.createElement('p');
     line.className = className;
-    line.setAttribute('data-state', state);
+    line.setAttribute('data-lane', lane);
     var dot = document.createElement('span');
     dot.className = 'dot';
     dot.setAttribute('aria-hidden', 'true');
     line.appendChild(dot);
-    line.appendChild(document.createTextNode(text || stateWord(state)));
+    line.appendChild(document.createTextNode(text || laneWord(lane)));
     return line;
-  }
-
-  // A task a worker is on still reads ready in the engine, so its state word
-  // alone would read like work nobody has picked up. The card says the plain
-  // fact instead, and the header counts the same rows.
-  function isRunning(row) {
-    var phase = row.getAttribute('data-phase');
-    return (
-      phase === 'claimed' ||
-      phase === 'launching' ||
-      phase === 'live' ||
-      phase === 'ending'
-    );
   }
 
   function separator() {
@@ -1308,7 +1304,15 @@ const SCRIPT = `(function () {
     }
     main.appendChild(heading);
     if (scope !== null) {
-      main.appendChild(stateLine(scope.getAttribute('data-state'), 'scope-state'));
+      main.appendChild(
+        stateLine(
+          laneOf(
+            scope.getAttribute('data-state'),
+            scope.getAttribute('data-phase') || null,
+          ),
+          'scope-state',
+        ),
+      );
     }
     head.appendChild(main);
 
@@ -1389,19 +1393,24 @@ const SCRIPT = `(function () {
     line.setAttribute('data-can-start', String(counts.canStart));
     line.setAttribute('data-in-progress', String(counts.inProgress));
     line.setAttribute('data-waiting', String(counts.waiting));
-    line.textContent =
-      counts.canStart + ' ' + WORDS.ready.toLowerCase() + ' · ' +
-      counts.waiting + ' ' + WORDS.waiting.toLowerCase() +
-      ' or ' + WORDS.blocked.toLowerCase() + ' · ' +
-      counts.inProgress + ' in progress';
+    // Three clauses, in the order a reader can act on them. A zero clause is
+    // omitted rather than printed as "0 waiting".
+    var parts = [];
+    if (counts.canStart > 0) parts.push(counts.canStart + ' can start');
+    if (counts.inProgress > 0) parts.push(counts.inProgress + ' in progress');
+    if (counts.waiting > 0) parts.push(counts.waiting + ' waiting');
+    line.textContent = parts.join(' · ');
     return line;
   }
 
   function cardFor(row) {
     var state = row.getAttribute('data-state');
+    var lane = laneOf(state, row.getAttribute('data-phase') || null);
     var card = document.createElement('article');
     card.className = 'card';
     card.setAttribute('data-state', state);
+    card.setAttribute('data-lane', lane);
+    card.setAttribute('data-phase', row.getAttribute('data-phase') || '');
 
     var title = document.createElement('h3');
     title.className = 'card-title';
@@ -1420,14 +1429,9 @@ const SCRIPT = `(function () {
     title.appendChild(enter);
     card.appendChild(title);
 
-    var running = isRunning(row);
-    var stateText = running ? 'In progress' : null;
-    var stateLineEl = stateLine(state, 'card-state', stateText);
-    if (running) {
-      card.setAttribute('data-running', '1');
-      stateLineEl.setAttribute('data-running', '1');
-    }
-    card.appendChild(stateLineEl);
+    // The lane already names the state at wide widths; at phone width the lane
+    // head is gone, so the card carries the lane word itself.
+    card.appendChild(stateLine(lane, 'card-state'));
     // Only this row's own facts. A descendant's counts or wait line belongs to
     // the descendant's card, not this container's.
     var ownRow = row.firstElementChild;
@@ -1456,30 +1460,25 @@ const SCRIPT = `(function () {
   function lanesNode(plan, byTask) {
     var wrap = document.createElement('div');
     wrap.className = 'lanes';
-    plan.lanes.forEach(function (lane) {
-      var rows = lane.tasks
+    plan.lanes.forEach(function (group) {
+      var rows = group.tasks
         .map(function (id) { return byTask[id]; })
         .filter(function (row) { return !!row; });
-      // Work already moving leads the lane: it is the answer to "what is
-      // happening now" and it must be visible without scrolling.
-      rows = rows.slice().sort(function (a, b) {
-        return (isRunning(a) ? 0 : 1) - (isRunning(b) ? 0 : 1);
-      });
       if (rows.length === 0) return;
       var section = document.createElement('section');
       section.className = 'lane';
-      section.setAttribute('data-state', lane.state);
-      section.setAttribute('aria-label', stateWord(lane.state));
+      section.setAttribute('data-lane', group.lane);
+      section.setAttribute('aria-label', laneWord(group.lane));
       var head = document.createElement('h2');
       head.className = 'lane-head';
-      head.setAttribute('data-state', lane.state);
+      head.setAttribute('data-lane', group.lane);
       var dot = document.createElement('span');
       dot.className = 'dot';
       dot.setAttribute('aria-hidden', 'true');
       head.appendChild(dot);
       var name = document.createElement('span');
       name.className = 'lane-name';
-      name.textContent = stateWord(lane.state);
+      name.textContent = laneWord(group.lane);
       head.appendChild(name);
       var count = document.createElement('span');
       count.className = 'lane-count';
@@ -1650,7 +1649,17 @@ const SCRIPT = `(function () {
     head.appendChild(close);
     inner.appendChild(head);
 
-    if (row) inner.appendChild(stateLine(row.getAttribute('data-state'), 'sheet-state'));
+    if (row) {
+      inner.appendChild(
+        stateLine(
+          laneOf(
+            row.getAttribute('data-state'),
+            row.getAttribute('data-phase') || null,
+          ),
+          'sheet-state',
+        ),
+      );
+    }
     var facts = document.createElement('dl');
     facts.className = 'facts facts-primary';
     facts.innerHTML = sheetFieldsHtml(data.primary || []);

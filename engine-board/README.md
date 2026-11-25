@@ -2,8 +2,9 @@
 
 A read-only view of one task-engine tree, read live through the engine's own
 CLI. Two pages: `index.html` is the Board, one scope at a time; `list.html` is
-the List, every level at once. The board computes no state: it prints the
-engine's words and rolls up the counts over `children`.
+the List, every level at once. The board computes no state: it maps the
+engine's rest states to the reader's lanes and rolls up the counts over
+`children`. The raw state is still in the data and behind the panel's `More`.
 
 ```sh
 node engine-board/main.ts --db <store> --project <id> --tree-key <key> --root <task id>
@@ -13,7 +14,7 @@ npm run test:page   # real browser over file://, Obscura CDP on PATH
 ```
 
 The committed `engine-board/index.html` and `engine-board/list.html` are the
-demo pages: they render `fixtures/demo`, the generated 48-live-task tree. The
+demo pages: they render `fixtures/demo`, the generated 52-live-task tree. The
 live builder still writes the same two files from a live read:
 
 ```sh
@@ -44,8 +45,8 @@ JSON block, so no inert `<dialog>` is shipped per task.
 | `test/page.test.mjs` | The page itself: a real browser over `file://` (`npm run test:page`). |
 | `engine-board/fixtures/*.json` | Frozen `--json` payloads and capture metadata. |
 | `engine-board/fixtures/capture.sh` | Rebuilds the capture from the pinned engine revision. |
-| `engine-board/fixtures/demo/` | Generated demo tree: 52 placed rows, 48 live. Do not hand-edit. |
-| `engine-board/fixtures/demo-volume/` | Generated ~200-task tree for the volume proof. |
+| `engine-board/fixtures/demo/` | Generated demo tree: 56 placed rows, 52 live, five processes at the top. Do not hand-edit. |
+| `engine-board/fixtures/demo-volume/` | Generated 210-task tree for the volume proof, three failures. |
 | `engine-board/demo/generate.ts` | Rewrites both fixtures and every demo page; deterministic at one engine revision. |
 
 ## The seam
@@ -142,18 +143,30 @@ The model and the page use INTERFACE §2's words, not the board's:
   `Unknown source`. Provenance (source, human read time, engine commit, schema,
   commands) is in one collapsed `Where this page came from` disclosure, closed
   by default; the reading surface prints no ISO timestamp.
+- **The lane map** (slice 7) — eight lanes, mapped from the engine's nine rest
+  states by one declared, tested function. `Not started` (`draft`), `Can start
+  now` (`ready`), `In progress` (an active attempt, whatever the rest state),
+  `Waiting for someone` (`waiting`), `Waiting for other work` (`blocked`),
+  `Needs attention` (`failed`), `Done` (`done`), `Set aside` (`skipped` and
+  `cancelled`). Set aside is the only many-to-one entry. A state the map does
+  not know lands in its own `Unknown state` lane, never in a lane that means
+  something else.
+- **The card does not repeat its lane** (slice 7) — at 1280 the lane head names
+  it; below 640 the lanes stack and the head is gone, so each card carries the
+  lane word once. A card is in the lane its own state maps to; a running row is
+  in `In progress`, never in `Can start now`.
+- **The header line** (slice 7) — above the lanes, in counts only:
+  `12 can start · 2 in progress · 1 waiting`. It is the three lanes a reader can
+  act on, in that order; a zero clause is omitted rather than printed. The
+  unfolded List uses the same lane words, so the whole surface speaks one
+  vocabulary; the raw `rest_state` stays in the data attributes and behind
+  `More`.
 - **A human reading surface** (slice 6) — dates read `4 minutes ago`,
   `yesterday`, `14 Nov`, `20 Nov 2025`; the exact ISO is only in a `title` or
   the folded record. The panel's first screen is state, what it waits for by
   title, who is on it, and when it last changed. Ids, keys, machine states,
   slots and raw wait/hold are behind `More`. Missing facts are one sentence,
   never a column of `not reported` rows.
-- **The header line** (slice 6) — above the lanes, in counts only:
-  `8 ready to start · 12 waiting on a verdict or can't start yet · 2 in progress`.
-  The words are the lane words; the ready count plus the running count is the
-  ready lane, and the waiting count is the waiting and blocked lanes. A card a
-  worker is on says `In progress` and leads its lane, because the lane word
-  alone would read as untouched.
 - **Duplicates are a read defect** — a graph payload that repeats a task id is
   one row, and the first read is kept. The repeat is named under **Read
   defects** with the kept node key; a payload difference the page normalises is
@@ -208,10 +221,11 @@ These are deliberate and visible, not defects waiting to be discovered:
   `/workspace/code/task-engine`; another checkout needs the flag (or
   `ENGINE_*`/`TASK_DB` environment fallbacks, which the usage line does not
   list).
-- **The lane order is hand-kept.** `LANE_ORDER` and `STATE_WORDS` mirror the
-  engine's vocabulary. A new engine state gets its own `Unknown state` lane with
-  the raw string shown, and `N lanes empty` counts only the eight known lanes.
-  It never disappears, but it is not a designed lane until the order is updated.
+- **The lane map is hand-kept.** `laneOf` maps every `REST_STATES` entry to one
+  of the eight lanes, and its test asserts the exact table, so a new engine state
+  fails the test instead of silently borrowing a lane. Until the map is updated,
+  the new state renders in its own `Unknown state` lane with the raw string
+  behind `More`; `N lanes empty` counts only the eight designed lanes.
 - **`task_title` is a capability, and the page says so.** When a payload carries
   no title the row shows its node key with `title not read`; the dialog title
   says the same. A key is never silently shown as if it were a title.

@@ -201,19 +201,23 @@ function realTree(): Fixture {
   // The read's container row; the model removes it from the visible tree.
   fixture.add({ key: '$root', title: 'Engine demo', state: 'ready', parent: null });
 
-  const containers: [string, string][] = [
-    ['discovery', 'Discovery'],
-    ['build', 'Build the engine'],
-    ['release', 'Release'],
-    ['ops', 'Operations'],
-    ['research', 'Research'],
+  // The top level is the portfolio: five processes, each with counts. A loose
+  // leaf task beside them would read as a flat list, not as work with owners.
+  const containers: [string, string, RestState][] = [
+    ['discovery', 'Discovery', 'draft'],
+    ['build', 'Build the engine', 'ready'],
+    ['release', 'Release', 'waiting'],
+    ['ops', 'Operations', 'blocked'],
+    ['research', 'Research', 'draft'],
   ];
-  for (const [key, title] of containers) {
-    fixture.add({ key, title, state: 'draft', parent: null });
+  for (const [key, title, state] of containers) {
+    fixture.add({ key, title, state, parent: null });
   }
 
-  // A crowded lane: eight tasks a reader can start right now.
-  for (let index = 1; index <= 8; index += 1) {
+  // Build is the crowded workstream: twelve tasks a reader can start right
+  // now, plus the two rows a worker is already on. Entering it is the crowding
+  // proof; the top level stays a portfolio.
+  for (let index = 1; index <= 12; index += 1) {
     fixture.add({
       key: `ready-${String(index).padStart(2, '0')}`,
       title: [
@@ -225,38 +229,84 @@ function realTree(): Fixture {
         'Refresh the demo data',
         'Write the weekly note',
         'Check the backup restore',
+        'Triage the new reports',
+        'Reconcile the usage numbers',
+        'Book the design review',
+        'Confirm the migration window',
       ][index - 1],
       state: 'ready',
-      parent: null,
+      parent: 'build',
     });
   }
 
-  // A three-deep blocked chain.
-  fixture.add({ key: 'chain-01', title: 'Ship the pricing page', state: 'blocked', parent: null });
-  fixture.add({ key: 'chain-02', title: 'Approve the pricing copy', state: 'blocked', parent: null });
-  fixture.add({ key: 'chain-03', title: 'Finish the pricing model', state: 'blocked', parent: null });
-  fixture.add({ key: 'chain-04', title: 'Decide the packaging', state: 'waiting', parent: null });
+  // Two tasks already in progress. Their lane is In progress, so the card no
+  // longer sits in Can start now contradicting its own word.
+  fixture.add({
+    key: 'build-engine',
+    title: 'Render the tree from the read',
+    state: 'ready',
+    parent: 'build',
+    phase: 'live',
+    runner: 'rnr_demo_1',
+    runnerSlot: 0,
+    slot: 0,
+    attempts: [attempt(6, 'live', 'ok', '2026-11-25T11:50:00Z')],
+    updatedAt: '2026-11-25T11:56:00Z',
+  });
+  fixture.add({
+    key: 'build-render',
+    title: 'Make the panel read in one screen',
+    state: 'ready',
+    parent: 'build',
+    phase: 'live',
+    runner: 'rnr_demo_2',
+    runnerSlot: 1,
+    slot: 1,
+    attempts: [attempt(7, 'live', 'ok', '2026-11-25T11:52:00Z')],
+  });
+  fixture.add({
+    key: 'build-tests',
+    title: 'Prove it in a real browser',
+    state: 'blocked',
+    parent: 'build',
+  });
+  fixture.edge('build-engine', 'build-tests');
+  fixture.add({ key: 'build-spec', title: 'Write the page contract', state: 'done', parent: 'build', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(8, 'ended', 'ok', '2026-11-22T16:00:00Z')], updatedAt: '2025-11-20T10:00:00Z' });
+  fixture.add({ key: 'build-spec-review', title: 'Review the page contract', state: 'done', parent: 'build-spec', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(9, 'ended', 'ok', '2026-11-22T17:00:00Z')] });
+  fixture.add({ key: 'build-spec-review-check', title: 'Check the contract examples', state: 'done', parent: 'build-spec-review', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(10, 'ended', 'ok', '2026-11-22T18:00:00Z')] });
+  fixture.edge('build-spec', 'build-spec-review', 'after');
+  fixture.edge('build-spec-review', 'build-spec-review-check', 'after');
+
+  // Release: a three-deep blocked chain and one task that blocks six.
+  fixture.add({ key: 'chain-01', title: 'Ship the pricing page', state: 'blocked', parent: 'release' });
+  fixture.add({ key: 'chain-02', title: 'Approve the pricing copy', state: 'blocked', parent: 'release' });
+  fixture.add({ key: 'chain-03', title: 'Finish the pricing model', state: 'blocked', parent: 'release' });
+  fixture.add({ key: 'chain-04', title: 'Decide the packaging', state: 'waiting', parent: 'release' });
   fixture.edge('chain-04', 'chain-03');
   fixture.edge('chain-03', 'chain-02');
   fixture.edge('chain-02', 'chain-01');
 
-  // One task blocks six.
-  fixture.add({ key: 'fan-source', title: 'Publish the shared API', state: 'waiting', parent: null });
+  fixture.add({ key: 'fan-source', title: 'Publish the shared API', state: 'waiting', parent: 'release' });
   for (let index = 1; index <= 6; index += 1) {
     fixture.add({
       key: `fan-0${index}`,
       title: `Connect ${['billing', 'search', 'reports', 'alerts', 'export', 'mobile'][index - 1]} to the API`,
       state: 'blocked',
-      parent: null,
+      parent: 'release',
     });
     fixture.edge('fan-source', `fan-0${index}`);
   }
+  fixture.add({ key: 'release-check', title: 'Check the release notes', state: 'waiting', parent: 'release' });
+  fixture.add({ key: 'release-notes', title: 'Draft the release notes', state: 'draft', parent: 'release' });
+  fixture.add({ key: 'release-stage', title: 'Stage the release', state: 'ready', parent: 'release' });
+  fixture.add({ key: 'release-support', title: 'Tell the support team', state: 'ready', parent: 'release' });
 
+  // Operations: one failure with a retry, and the archived subtree.
   fixture.add({
     key: 'failed-task',
     title: 'Migrate the archive index',
     state: 'failed',
-    parent: null,
+    parent: 'ops',
     phase: 'ended',
     runner: 'rnr_demo_1',
     runnerSlot: 0,
@@ -266,21 +316,16 @@ function realTree(): Fixture {
       attempt(2, 'ended', 'failed', '2026-11-25T11:20:00Z'),
     ],
   });
-
+  fixture.add({ key: 'ops-monitor', title: 'Watch the first hour', state: 'done', parent: 'ops', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(11, 'ended', 'ok', '2026-11-21T09:00:00Z')] });
+  fixture.add({ key: 'ops-runbook', title: 'Write the on-call runbook', state: 'draft', parent: 'ops' });
   fixture.add({
-    key: 'waiting-task',
-    title: 'Approve the colour contrast pass',
-    state: 'waiting',
-    parent: null,
-    phase: 'ended',
-    runner: 'rnr_demo_2',
-    runnerSlot: 1,
-    slot: 2,
-    attempts: [attempt(3, 'ended', 'ok', '2026-11-25T11:30:00Z')],
-    wait: waitPayload('rejected:condition:review:owner'),
+    key: 'ops-alerts',
+    title: 'Tune the alert thresholds',
+    state: 'draft',
+    parent: 'ops',
+    hold: { reason: 'pause', until: '2026-11-26T09:00:00Z' },
   });
-
-  fixture.add({ key: 'archive-old', title: 'Last year’s release', state: 'done', parent: null, archived: true });
+  fixture.add({ key: 'archive-old', title: 'Last year’s release', state: 'done', parent: 'ops', archived: true });
   for (let index = 1; index <= 3; index += 1) {
     fixture.add({
       key: `archive-child-${index}`,
@@ -291,7 +336,14 @@ function realTree(): Fixture {
     });
   }
 
-  // Discovery: a small subtree with a review at the end.
+  // Research: the optional dependency that resolved as skipped.
+  fixture.add({ key: 'research-a', title: 'Try the optional search provider', state: 'skipped', parent: 'research', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(12, 'ended', 'skipped', '2026-11-23T14:00:00Z')] });
+  fixture.add({ key: 'research-b', title: 'Adopt search when it lands', state: 'ready', parent: 'research' });
+  fixture.add({ key: 'research-compare', title: 'Compare two providers', state: 'draft', parent: 'research' });
+  fixture.edge('research-a', 'research-b', 'after', ['done', 'skipped']);
+
+  // Discovery: a small subtree with a review at the end, and a wait for a
+  // person's verdict.
   fixture.add({
     key: 'discovery-interviews',
     title: 'Interview five operators',
@@ -308,69 +360,20 @@ function realTree(): Fixture {
   fixture.add({ key: 'discovery-summary', title: 'Shape the recommendation', state: 'draft', parent: 'discovery' });
   fixture.add({ key: 'discovery-summary-review', title: 'Review the recommendation', state: 'done', parent: 'discovery-summary', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(5, 'ended', 'ok', '2026-11-20T10:00:00Z')], updatedAt: '2026-11-20T10:00:00Z' });
   fixture.edge('discovery-interviews', 'discovery-summary', 'after');
-
-  // Two tasks already in progress, at the top of the tree so the first screen
-  // and the header line both answer "what is running": eight can start, two are
-  // moving. They keep the ready state the engine gave them.
-  fixture.add({
-    key: 'build-engine',
-    title: 'Render the tree from the read',
-    state: 'ready',
-    parent: null,
-    phase: 'live',
-    runner: 'rnr_demo_1',
-    runnerSlot: 0,
-    slot: 0,
-    attempts: [attempt(6, 'live', 'ok', '2026-11-25T11:50:00Z')],
-    updatedAt: '2026-11-25T11:56:00Z',
-  });
-  fixture.add({
-    key: 'build-render',
-    title: 'Make the panel read in one screen',
-    state: 'ready',
-    parent: null,
-    phase: 'live',
-    runner: 'rnr_demo_2',
-    runnerSlot: 1,
-    slot: 1,
-    attempts: [attempt(7, 'live', 'ok', '2026-11-25T11:52:00Z')],
-  });
-  // Build still carries a blocked child and a three-deep finished chain, so
-  // entering the container shows a subtree of real work.
-  fixture.add({
-    key: 'build-tests',
-    title: 'Prove it in a real browser',
-    state: 'blocked',
-    parent: 'build',
-  });
-  fixture.edge('build-engine', 'build-tests');
-  fixture.add({ key: 'build-spec', title: 'Write the page contract', state: 'done', parent: 'build', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(8, 'ended', 'ok', '2026-11-22T16:00:00Z')], updatedAt: '2025-11-20T10:00:00Z' });
-  fixture.add({ key: 'build-spec-review', title: 'Review the page contract', state: 'done', parent: 'build-spec', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(9, 'ended', 'ok', '2026-11-22T17:00:00Z')] });
-  fixture.add({ key: 'build-spec-review-check', title: 'Check the contract examples', state: 'done', parent: 'build-spec-review', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(10, 'ended', 'ok', '2026-11-22T18:00:00Z')] });
-  fixture.edge('build-spec', 'build-spec-review', 'after');
-  fixture.edge('build-spec-review', 'build-spec-review-check', 'after');
-
-  fixture.add({ key: 'release-check', title: 'Check the release notes', state: 'waiting', parent: 'release' });
-  fixture.add({ key: 'release-notes', title: 'Draft the release notes', state: 'draft', parent: 'release' });
-  fixture.add({ key: 'release-stage', title: 'Stage the release', state: 'ready', parent: 'release' });
-  fixture.add({ key: 'release-support', title: 'Tell the support team', state: 'ready', parent: 'release' });
-
-  fixture.add({ key: 'ops-monitor', title: 'Watch the first hour', state: 'done', parent: 'ops', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(11, 'ended', 'ok', '2026-11-21T09:00:00Z')] });
-  fixture.add({ key: 'ops-runbook', title: 'Write the on-call runbook', state: 'draft', parent: 'ops' });
-  fixture.add({
-    key: 'ops-alerts',
-    title: 'Tune the alert thresholds',
-    state: 'draft',
-    parent: 'ops',
-    hold: { reason: 'pause', until: '2026-11-26T09:00:00Z' },
-  });
-
-  fixture.add({ key: 'research-a', title: 'Try the optional search provider', state: 'skipped', parent: 'research', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(12, 'ended', 'skipped', '2026-11-23T14:00:00Z')] });
-  fixture.add({ key: 'research-b', title: 'Adopt search when it lands', state: 'ready', parent: 'research' });
-  fixture.add({ key: 'research-compare', title: 'Compare two providers', state: 'draft', parent: 'research' });
   fixture.add({ key: 'discovery-followup', title: 'Book the follow-up interviews', state: 'draft', parent: 'discovery' });
   fixture.add({ key: 'discovery-themes', title: 'Summarise the themes', state: 'draft', parent: 'discovery' });
-  fixture.edge('research-a', 'research-b', 'after', ['done', 'skipped']);
+  fixture.add({
+    key: 'waiting-task',
+    title: 'Approve the colour contrast pass',
+    state: 'waiting',
+    parent: 'discovery',
+    phase: 'ended',
+    runner: 'rnr_demo_2',
+    runnerSlot: 1,
+    slot: 2,
+    attempts: [attempt(3, 'ended', 'ok', '2026-11-25T11:30:00Z')],
+    wait: waitPayload('rejected:condition:review:owner'),
+  });
 
   return fixture;
 }
@@ -378,7 +381,7 @@ function realTree(): Fixture {
 function volumeTree(): Fixture {
   const fixture = new Fixture();
   fixture.add({ key: '$root', title: 'Volume demo', state: 'ready', parent: null });
-  const states: RestState[] = ['ready', 'draft', 'waiting', 'blocked', 'done', 'done', 'ready', 'failed'];
+  const states: RestState[] = ['ready', 'draft', 'waiting', 'blocked', 'done', 'done', 'ready', 'done'];
   for (let area = 0; area < 10; area += 1) {
     const areaKey = `area-${String(area).padStart(2, '0')}`;
     fixture.add({ key: areaKey, title: `Workstream ${area + 1}`, state: 'draft', parent: null });
@@ -409,7 +412,34 @@ function volumeTree(): Fixture {
   }
   fixture.add({ key: 'volume-running', title: 'Rebuild the shared index', state: 'ready', parent: null, phase: 'live', runner: 'rnr_demo_1', runnerSlot: 0, slot: 0, attempts: [attempt(701, 'live', 'ok', '2026-11-25T11:40:00Z')], updatedAt: '2026-11-25T11:55:00Z' });
   fixture.add({ key: 'volume-blocked', title: 'Publish the quarterly report', state: 'blocked', parent: null });
-  fixture.add({ key: 'volume-failed', title: 'Rotate the signing key', state: 'failed', parent: null, phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(702, 'ended', 'failed', '2026-11-25T09:30:00Z')] });
+  fixture.add({
+    key: 'volume-failed',
+    title: 'Rotate the signing key',
+    state: 'failed',
+    parent: null,
+    phase: 'ended',
+    runner: 'rnr_demo_2',
+    attempts: [
+      attempt(702, 'ended', 'failed', '2026-11-25T09:10:00Z'),
+      attempt(703, 'ended', 'failed', '2026-11-25T09:30:00Z'),
+    ],
+  });
+  // Two more failures, not twenty-four: a broken product is not the volume
+  // proof. One of the three carries a retry.
+  for (const [key, title, parent, index] of [
+    ['volume-failed-1', 'Repair the broken export', 'area-03', 704],
+    ['volume-failed-2', 'Restore the missing index', 'area-06', 705],
+  ] as const) {
+    fixture.add({
+      key,
+      title,
+      state: 'failed',
+      parent,
+      phase: 'ended',
+      runner: 'rnr_demo_2',
+      attempts: [attempt(index, 'ended', 'failed', '2026-11-25T09:40:00Z')],
+    });
+  }
   fixture.edge('volume-ready-1', 'volume-blocked');
   return fixture;
 }

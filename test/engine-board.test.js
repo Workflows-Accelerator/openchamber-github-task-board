@@ -17,6 +17,7 @@ import {
   engineDisagreement,
   focusCounts,
   laneGroups,
+  laneOf,
   lanePlan,
   progress,
   progressText,
@@ -829,7 +830,7 @@ test('an empty lane is not drawn; the rest are counted once', () => {
   );
   const plan = lanePlan(model.roots[0].children);
   assert.equal(plan.lanes.length, 1);
-  assert.equal(plan.lanes[0].state, 'draft');
+  assert.equal(plan.lanes[0].lane, 'not-started');
   assert.equal(plan.empty, LANE_ORDER.length - 1);
 
   const html = renderBoardPage(model);
@@ -857,20 +858,49 @@ test('a genuinely empty scope says it has no subtasks, not "lanes empty"', () =>
   assert.equal((html.match(/lanes empty/g) ?? []).length, 1);
 });
 
-test('the lane vocabulary is the rest-state vocabulary, and unknown has its own lane', () => {
-  assert.deepEqual(new Set(LANE_ORDER), new Set(REST_STATES));
+test('the lane map is total over the engine states and has one many-to-one entry', () => {
+  // The exact table R1 names. A new engine state that is not added here fails
+  // the first assertion; a state that is added to the wrong lane fails the
+  // expected comparison. That is the mutation this test kills.
+  const expected = {
+    draft: 'not-started',
+    ready: 'can-start',
+    waiting: 'waiting-for-someone',
+    blocked: 'waiting-for-other-work',
+    failed: 'needs-attention',
+    done: 'done',
+    skipped: 'set-aside',
+    cancelled: 'set-aside',
+  };
+  for (const state of REST_STATES) {
+    assert.equal(laneOf(state, null), expected[state], `${state} has a lane`);
+    assert.ok(LANE_ORDER.includes(laneOf(state, null)), `${state} is a lane word`);
+  }
+  // Only Set aside takes two engine states. Every other lane is one-to-one.
+  const grouped = new Map();
+  for (const state of REST_STATES) {
+    const lane = laneOf(state, null);
+    grouped.set(lane, [...(grouped.get(lane) ?? []), state]);
+  }
+  const many = [...grouped.entries()]
+    .filter(([, states]) => states.length > 1)
+    .map(([lane, states]) => [lane, states.slice().sort()]);
+  assert.deepEqual(many, [['set-aside', ['cancelled', 'skipped']]]);
 
+  // An active attempt wins over the rest state: the row is in progress.
+  for (const phase of ['claimed', 'launching', 'live', 'ending']) {
+    assert.equal(laneOf('ready', phase), 'in-progress');
+  }
+  assert.equal(laneOf('ready', 'ended'), 'can-start');
+  // A state this build does not know is not allowed to borrow a lane.
+  assert.equal(laneOf('mystery', null), 'unknown');
+});
+
+test('the lane plan groups by the map, and unknown has its own lane', () => {
   // A done child lands in the done lane, not in a lane chosen by document order.
   const done = laneGroups(['done'], LANE_ORDER);
   assert.deepEqual(done.lanes, ['done']);
   assert.equal(done.empty, LANE_ORDER.length - 1);
-
-  // A state this build does not know gets one lane of its own; the eight
-  // vocabulary lanes stay empty and the unknown lane is not counted as one.
-  const bogus = laneGroups(['mystery'], LANE_ORDER);
-  assert.deepEqual(bogus.lanes, ['unknown']);
-  assert.equal(bogus.empty, LANE_ORDER.length);
-  assert.equal(bogus.empty, LANE_ORDER.length + 1 - bogus.lanes.length);
 
   const model = buildTree(
     snapshotOf({
@@ -881,8 +911,14 @@ test('the lane vocabulary is the rest-state vocabulary, and unknown has its own 
     }),
   );
   const plan = lanePlan(model.roots[0].children);
-  assert.deepEqual(plan.lanes.map((lane) => lane.state), ['done']);
+  assert.deepEqual(plan.lanes.map((group) => group.lane), ['done']);
   assert.deepEqual(plan.lanes[0].cards.map((row) => row.node_key), ['root/child']);
+
+  // A state this build does not know gets one lane of its own; the vocabulary
+  // lanes stay empty and the unknown lane is not counted as one.
+  const bogus = laneGroups(['mystery'], LANE_ORDER);
+  assert.deepEqual(bogus.lanes, ['unknown']);
+  assert.equal(bogus.empty, LANE_ORDER.length);
 
   const unknown = buildTree(
     snapshotOf({
@@ -893,7 +929,7 @@ test('the lane vocabulary is the rest-state vocabulary, and unknown has its own 
     }),
   );
   const scopes = boardData(unknown).scopes;
-  assert.deepEqual(scopes.root.lanes, [{ state: 'unknown', tasks: ['c'] }]);
+  assert.deepEqual(scopes.root.lanes, [{ lane: 'unknown', tasks: ['c'] }]);
   assert.equal(scopes.root.empty, LANE_ORDER.length);
 });
 
@@ -975,8 +1011,9 @@ test('a ready card with an unsatisfied blocked_by carries the engine defect noti
   const html = renderBoardPage(model);
   assert.ok(html.includes('Engine defect'));
   assert.ok(html.includes('recorded ready, but Check the unit tests is waiting'));
-  // The engine's word is still what the card shows; the board does not replace it.
-  assert.ok(html.includes('Ready to start'));
+  // The unfolded List uses the reader's lane word too; the engine's word lives
+  // in the data attributes and behind the panel's More.
+  assert.ok(html.includes('Can start now'));
 });
 
 test('a blocker the edge accepts is not a disagreement, whatever its state', () => {

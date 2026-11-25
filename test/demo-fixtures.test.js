@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildTree, flattenTree } from '../engine-board/model.ts';
+import { laneOf, lanePlan } from '../engine-board/rollup.ts';
 import {
   readFixtureMeta,
   loadFixtureSnapshot,
@@ -75,21 +76,21 @@ test('the demo tree is at least 45 live tasks over four levels', () => {
 test('the demo has the dependency shapes the brief names', () => {
   const model = modelFor('demo');
   const row = byKey(model);
-  // The crowded lane: ten ready cards, of which eight can start now and two are
-  // already being worked. The first screen shows both numbers.
-  const readyLane = model.roots.filter(
-    (item) => item.rest_state === 'ready' && item.archived_at === null,
-  );
-  assert.equal(readyLane.length, 10);
+  // The top level is a portfolio: five processes, each with work inside, so a
+  // reader sees a portfolio instead of loose tasks beside containers.
+  assert.equal(model.roots.length, 5, 'five processes at the top');
+  for (const root of model.roots) {
+    assert.ok(root.children.length > 0, `${root.node_key} carries work`);
+  }
+  const build = row.get('build');
+  const buildPlan = lanePlan(build.children);
+  const canStart = buildPlan.lanes.find((group) => group.lane === 'can-start');
+  assert.ok(canStart, 'Build has a can-start lane');
+  assert.equal(canStart.cards.length, 12, 'twelve cards in one crowded lane');
   assert.equal(
-    readyLane.filter((item) => item.phase === null).length,
-    8,
-    'eight can start now',
-  );
-  assert.equal(
-    readyLane.filter((item) => item.phase !== null).length,
-    2,
-    'two are in progress',
+    canStart.cards.every((item) => item.phase === null),
+    true,
+    'the crowded lane is startable work, not running work',
   );
 
   // Three-deep blocked chain: 01 waits for 02, 02 for 03, 03 for 04.
@@ -141,6 +142,18 @@ test('the demo has the dependency shapes the brief names', () => {
   assert.notEqual(archived.archived_at, null);
   assert.equal(archived.children.length, 3);
   assert.ok(archived.children.every((child) => child.archived_at !== null));
+
+  // The header at the top counts processes by the reader's lanes.
+  assert.deepEqual(
+    lanePlan(model.roots).lanes.map((group) => [group.lane, group.cards.length]),
+    [
+      ['not-started', 2],
+      ['can-start', 1],
+      ['waiting-for-someone', 1],
+      ['waiting-for-other-work', 1],
+    ],
+  );
+  assert.equal(laneOf('blocked', null), 'waiting-for-other-work');
 });
 
 test('the volume fixture is the ~200 task proof, not a second small demo', () => {
@@ -150,6 +163,14 @@ test('the volume fixture is the ~200 task proof, not a second small demo', () =>
   assert.equal(model.max_depth + 1, 4);
   assert.equal(model.roots.length, 16, 'ten workstreams and six tasks to act on');
   assert.equal(model.defects.length, 0);
+  const failed = flattenTree(model.roots).filter(
+    (item) => item.rest_state === 'failed',
+  );
+  assert.equal(failed.length, 3, 'three failures, not twenty-four');
+  assert.ok(
+    failed.some((item) => item.attempts.length > 1),
+    'one failure carries a retry',
+  );
   assert.ok(existsSync(join(board, 'demo', 'volume', 'index.html')));
   assert.ok(existsSync(join(board, 'demo', 'volume', 'list.html')));
 });

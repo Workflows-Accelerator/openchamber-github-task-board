@@ -95,20 +95,40 @@ export function progressText(p: Progress): string {
   return line;
 }
 
-// The order the lanes are drawn in: the work moves left to right. `failed`,
-// `cancelled` and `skipped` sit after `done` and are almost always empty, so
-// they cost nothing until the engine produces one.
-export const LANE_ORDER: readonly RestState[] = [
-  'draft',
-  'ready',
-  'waiting',
-  'blocked',
+// The lanes are the reader's answer to "what do I do about this", not the
+// engine's state names. Eight lanes for eight rest states, which is not a
+// coincidence: the only many-to-one entry is Set aside, which takes both
+// `skipped` and `cancelled` because the reader's action on both is "ignore it".
+// `laneOf` is the map, and it is total: a state it does not know lands in its
+// own `unknown` lane rather than silently borrowing one that means something
+// else.
+export const LANE_ORDER = [
+  'not-started',
+  'can-start',
+  'in-progress',
+  'waiting-for-someone',
+  'waiting-for-other-work',
+  'needs-attention',
   'done',
-  'failed',
-  'cancelled',
-  'skipped',
-];
+  'set-aside',
+] as const;
 
+export type Lane = (typeof LANE_ORDER)[number];
+
+export const LANE_WORDS: Record<Lane | 'unknown', string> = {
+  'not-started': 'Not started',
+  'can-start': 'Can start now',
+  'in-progress': 'In progress',
+  'waiting-for-someone': 'Waiting for someone',
+  'waiting-for-other-work': 'Waiting for other work',
+  'needs-attention': 'Needs attention',
+  done: 'Done',
+  'set-aside': 'Set aside',
+  unknown: 'Unknown state',
+};
+
+// The engine's words, kept for the one place they are the subject: a defect
+// notice that quotes what the read actually said.
 export const STATE_WORDS: Record<RestState, string> = {
   draft: 'Draft',
   ready: 'Ready to start',
@@ -120,49 +140,61 @@ export const STATE_WORDS: Record<RestState, string> = {
   skipped: 'Skipped',
 };
 
-// The three counts the Board puts above its lanes. They answer "where do I
-// start" without inventing a state: `canStart` is the ready lane without a
-// running worker, `waiting` is the waiting and blocked lanes together, and
-// `inProgress` is a task with an active attempt, which can sit in any lane.
-// The words beside them reuse STATE_WORDS.
+export function laneOf(state: string, phase: string | null): Lane | 'unknown' {
+  // Both tables live inside the function because the page embeds this
+  // function's own source; a module constant would be a free variable there.
+  const byState: Record<string, Lane> = {
+    draft: 'not-started',
+    ready: 'can-start',
+    waiting: 'waiting-for-someone',
+    blocked: 'waiting-for-other-work',
+    failed: 'needs-attention',
+    done: 'done',
+    skipped: 'set-aside',
+    cancelled: 'set-aside',
+  };
+  const activePhases = ['claimed', 'launching', 'live', 'ending'];
+  if (phase !== null && activePhases.includes(phase)) {
+    return 'in-progress';
+  }
+  return byState[state] ?? 'unknown';
+}
+
+// The three counts the Board puts above its lanes: where to look, in the words
+// a glance can hold. They are lane counts, not a second taxonomy.
 export interface FocusCounts {
   canStart: number;
-  waiting: number;
   inProgress: number;
+  waiting: number;
 }
 
 export function focusCounts(
   rows: readonly { rest_state: string; phase: string | null }[],
 ): FocusCounts {
-  // Kept inside the function because the page embeds `focusCounts.toString()`;
-  // a module constant would be a free variable in the inline script.
-  const activePhases = ['claimed', 'launching', 'live', 'ending'];
   let canStart = 0;
-  let waiting = 0;
   let inProgress = 0;
+  let waiting = 0;
   for (const row of rows) {
-    const running = row.phase !== null && activePhases.includes(row.phase);
-    if (running) {
-      inProgress += 1;
-    } else if (row.rest_state === 'ready') {
-      canStart += 1;
-    } else if (row.rest_state === 'waiting' || row.rest_state === 'blocked') {
+    const lane = laneOf(row.rest_state, row.phase);
+    if (lane === 'can-start') canStart += 1;
+    else if (lane === 'in-progress') inProgress += 1;
+    else if (lane === 'waiting-for-someone' || lane === 'waiting-for-other-work') {
       waiting += 1;
     }
   }
-  return { canStart, waiting, inProgress };
+  return { canStart, inProgress, waiting };
 }
 
-export type LaneState = RestState | 'unknown';
+export type LaneId = Lane | 'unknown';
 
-export interface Lane {
-  state: LaneState;
+export interface LaneGroup {
+  lane: LaneId;
   cards: TreeRow[];
 }
 
 export interface LanePlan {
   // Only lanes that hold a card. An empty lane is never drawn.
-  lanes: Lane[];
+  lanes: LaneGroup[];
   // Lanes that exist in the vocabulary and hold nothing, so the page can say
   // it once.
   empty: number;
@@ -172,34 +204,32 @@ export interface LanePlan {
 // function's own source (`laneGroups.toString()`), so the plan the tests check
 // and the plan the page draws are the same code, not two copies that can drift.
 export function laneGroups(
-  states: readonly string[],
+  lanes: readonly string[],
   order: readonly string[],
-): { lanes: LaneState[]; empty: number } {
-  const lanes: LaneState[] = [];
-  for (const state of order) {
-    if (states.includes(state)) {
-      lanes.push(state as RestState);
+): { lanes: LaneId[]; empty: number } {
+  const present: LaneId[] = [];
+  for (const lane of order) {
+    if (lanes.includes(lane)) {
+      present.push(lane as Lane);
     }
   }
-  // A state this build does not know gets one lane of its own. It is not an
-  // empty vocabulary lane, so it never contributes to `empty`.
-  const unknown = states.some((state) => !order.includes(state));
+  // A lane this build does not know gets one of its own. It is not an empty
+  // vocabulary lane, so it never contributes to `empty`.
+  const unknown = lanes.some((lane) => !order.includes(lane));
   if (unknown) {
-    lanes.push('unknown');
+    present.push('unknown');
   }
-  return { lanes, empty: order.length + (unknown ? 1 : 0) - lanes.length };
+  return { lanes: present, empty: order.length + (unknown ? 1 : 0) - present.length };
 }
 
 export function lanePlan(rows: readonly TreeRow[]): LanePlan {
-  const states = rows.map((row) => row.rest_state);
-  const grouped = laneGroups(states, LANE_ORDER);
+  const lanes = rows.map((row) => laneOf(row.rest_state, row.phase));
+  const grouped = laneGroups(lanes, LANE_ORDER);
   return {
-    lanes: grouped.lanes.map((state) => ({
-      state,
-      cards: rows.filter((row) =>
-        state === 'unknown'
-          ? !(LANE_ORDER as readonly string[]).includes(row.rest_state)
-          : row.rest_state === state,
+    lanes: grouped.lanes.map((lane) => ({
+      lane,
+      cards: rows.filter(
+        (row) => laneOf(row.rest_state, row.phase) === lane,
       ),
     })),
     empty: grouped.empty,

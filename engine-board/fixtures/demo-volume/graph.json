@@ -69,7 +69,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000000c",
       "node_key": "area-00/task-07",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000002"
     },
     {
@@ -117,7 +117,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000014",
       "node_key": "area-00/task-15",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000002"
     },
     {
@@ -183,7 +183,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000001f",
       "node_key": "area-01/task-06",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000018"
     },
     {
@@ -231,7 +231,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000027",
       "node_key": "area-01/task-14",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000018"
     },
     {
@@ -297,7 +297,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000032",
       "node_key": "area-02/task-05",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_0000000000000000000000000000002c"
     },
     {
@@ -345,7 +345,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000003a",
       "node_key": "area-02/task-13",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_0000000000000000000000000000002c"
     },
     {
@@ -411,7 +411,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000045",
       "node_key": "area-03/task-04",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000040"
     },
     {
@@ -459,7 +459,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000004d",
       "node_key": "area-03/task-12",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000040"
     },
     {
@@ -525,7 +525,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000058",
       "node_key": "area-04/task-03",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000054"
     },
     {
@@ -573,7 +573,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000060",
       "node_key": "area-04/task-11",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000054"
     },
     {
@@ -639,7 +639,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000006b",
       "node_key": "area-05/task-02",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000068"
     },
     {
@@ -687,7 +687,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000073",
       "node_key": "area-05/task-10",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000068"
     },
     {
@@ -735,7 +735,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000007b",
       "node_key": "area-05/task-18",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000068"
     },
     {
@@ -753,7 +753,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000007e",
       "node_key": "area-06/task-01",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_0000000000000000000000000000007c"
     },
     {
@@ -801,7 +801,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000086",
       "node_key": "area-06/task-09",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_0000000000000000000000000000007c"
     },
     {
@@ -849,7 +849,7 @@
     {
       "task_id": "tsk_0000000000000000000000000000008e",
       "node_key": "area-06/task-17",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_0000000000000000000000000000007c"
     },
     {
@@ -867,7 +867,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000091",
       "node_key": "area-07/task-00",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000090"
     },
     {
@@ -915,7 +915,7 @@
     {
       "task_id": "tsk_00000000000000000000000000000099",
       "node_key": "area-07/task-08",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000090"
     },
     {
@@ -963,7 +963,7 @@
     {
       "task_id": "tsk_000000000000000000000000000000a1",
       "node_key": "area-07/task-16",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000090"
     },
     {
@@ -1029,7 +1029,7 @@
     {
       "task_id": "tsk_000000000000000000000000000000ac",
       "node_key": "area-08/task-07",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_000000000000000000000000000000a4"
     },
     {
@@ -1077,7 +1077,7 @@
     {
       "task_id": "tsk_000000000000000000000000000000b4",
       "node_key": "area-08/task-15",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_000000000000000000000000000000a4"
     },
     {
@@ -1143,7 +1143,7 @@
     {
       "task_id": "tsk_000000000000000000000000000000bf",
       "node_key": "area-09/task-06",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_000000000000000000000000000000b8"
     },
     {
@@ -1191,7 +1191,7 @@
     {
       "task_id": "tsk_000000000000000000000000000000c7",
       "node_key": "area-09/task-14",
-      "rest_state": "failed",
+      "rest_state": "done",
       "parent_task_id": "tsk_000000000000000000000000000000b8"
     },
     {
@@ -1253,6 +1253,18 @@
       "node_key": "volume-failed",
       "rest_state": "failed",
       "parent_task_id": null
+    },
+    {
+      "task_id": "tsk_000000000000000000000000000000d2",
+      "node_key": "volume-failed-1",
+      "rest_state": "failed",
+      "parent_task_id": "tsk_00000000000000000000000000000040"
+    },
+    {
+      "task_id": "tsk_000000000000000000000000000000d3",
+      "node_key": "volume-failed-2",
+      "rest_state": "failed",
+      "parent_task_id": "tsk_0000000000000000000000000000007c"
     }
   ],
   "edges": [

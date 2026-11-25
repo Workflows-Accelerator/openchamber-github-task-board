@@ -202,7 +202,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000000c",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -338,7 +338,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000014",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -525,7 +525,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000001f",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -661,7 +661,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000027",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -848,7 +848,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000032",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -984,7 +984,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000003a",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -1171,7 +1171,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000045",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -1307,7 +1307,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000004d",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -1494,7 +1494,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000058",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -1630,7 +1630,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000060",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -1817,7 +1817,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000006b",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -1953,7 +1953,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000073",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2089,7 +2089,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000007b",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2140,7 +2140,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000007e",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2276,7 +2276,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000086",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2412,7 +2412,7 @@
     },
     {
       "task_id": "tsk_0000000000000000000000000000008e",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2463,7 +2463,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000091",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2599,7 +2599,7 @@
     },
     {
       "task_id": "tsk_00000000000000000000000000000099",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2735,7 +2735,7 @@
     },
     {
       "task_id": "tsk_000000000000000000000000000000a1",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -2922,7 +2922,7 @@
     },
     {
       "task_id": "tsk_000000000000000000000000000000ac",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -3058,7 +3058,7 @@
     },
     {
       "task_id": "tsk_000000000000000000000000000000b4",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -3245,7 +3245,7 @@
     },
     {
       "task_id": "tsk_000000000000000000000000000000bf",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -3381,7 +3381,7 @@
     },
     {
       "task_id": "tsk_000000000000000000000000000000c7",
-      "rest_state": "failed",
+      "rest_state": "done",
       "phase": null,
       "slot": null,
       "slot_limit": 4,
@@ -3581,8 +3581,80 @@
           "runner_id": "rnr_demo_1",
           "runner_slot": 0,
           "slot": 2,
+          "launched_at": "2026-11-25T08:50:00.000Z",
+          "ended_at": "2026-11-25T09:10:00Z",
+          "end_reason": "failed",
+          "outcome": "failed",
+          "launch_count": 1
+        },
+        {
+          "attempt_id": "att_0703",
+          "phase": "ended",
+          "runner_id": "rnr_demo_1",
+          "runner_slot": 1,
+          "slot": 3,
           "launched_at": "2026-11-25T09:10:00.000Z",
           "ended_at": "2026-11-25T09:30:00Z",
+          "end_reason": "failed",
+          "outcome": "failed",
+          "launch_count": 1
+        }
+      ],
+      "wait": null,
+      "hold": null,
+      "handoff_revision": 1
+    },
+    {
+      "task_id": "tsk_000000000000000000000000000000d2",
+      "rest_state": "failed",
+      "phase": "ended",
+      "slot": null,
+      "slot_limit": 4,
+      "title": "Repair the broken export",
+      "created_at": "2026-11-16T08:00:00.000Z",
+      "updated_at": "2026-11-24T11:23:00.000Z",
+      "archived_at": null,
+      "runner_id": "rnr_demo_2",
+      "runner_slot": null,
+      "attempts": [
+        {
+          "attempt_id": "att_0704",
+          "phase": "ended",
+          "runner_id": "rnr_demo_1",
+          "runner_slot": 0,
+          "slot": 0,
+          "launched_at": "2026-11-25T09:20:00.000Z",
+          "ended_at": "2026-11-25T09:40:00Z",
+          "end_reason": "failed",
+          "outcome": "failed",
+          "launch_count": 1
+        }
+      ],
+      "wait": null,
+      "hold": null,
+      "handoff_revision": 1
+    },
+    {
+      "task_id": "tsk_000000000000000000000000000000d3",
+      "rest_state": "failed",
+      "phase": "ended",
+      "slot": null,
+      "slot_limit": 4,
+      "title": "Restore the missing index",
+      "created_at": "2026-11-16T07:00:00.000Z",
+      "updated_at": "2026-11-24T11:16:00.000Z",
+      "archived_at": null,
+      "runner_id": "rnr_demo_2",
+      "runner_slot": null,
+      "attempts": [
+        {
+          "attempt_id": "att_0705",
+          "phase": "ended",
+          "runner_id": "rnr_demo_1",
+          "runner_slot": 1,
+          "slot": 1,
+          "launched_at": "2026-11-25T09:20:00.000Z",
+          "ended_at": "2026-11-25T09:40:00Z",
           "end_reason": "failed",
           "outcome": "failed",
           "launch_count": 1

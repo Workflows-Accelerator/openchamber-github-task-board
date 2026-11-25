@@ -15,19 +15,19 @@
     {
       "task_id": "tsk_00000000000000000000000000000003",
       "node_key": "build",
-      "rest_state": "draft",
+      "rest_state": "ready",
       "parent_task_id": null
     },
     {
       "task_id": "tsk_00000000000000000000000000000004",
       "node_key": "release",
-      "rest_state": "draft",
+      "rest_state": "waiting",
       "parent_task_id": null
     },
     {
       "task_id": "tsk_00000000000000000000000000000005",
       "node_key": "ops",
-      "rest_state": "draft",
+      "rest_state": "blocked",
       "parent_task_id": null
     },
     {
@@ -40,318 +40,310 @@
       "task_id": "tsk_00000000000000000000000000000007",
       "node_key": "ready-01",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000008",
       "node_key": "ready-02",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000009",
       "node_key": "ready-03",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_0000000000000000000000000000000a",
       "node_key": "ready-04",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_0000000000000000000000000000000b",
       "node_key": "ready-05",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_0000000000000000000000000000000c",
       "node_key": "ready-06",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_0000000000000000000000000000000d",
       "node_key": "ready-07",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_0000000000000000000000000000000e",
       "node_key": "ready-08",
       "rest_state": "ready",
-      "parent_task_id": null
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_0000000000000000000000000000000f",
-      "node_key": "chain-01",
-      "rest_state": "blocked",
-      "parent_task_id": null
+      "node_key": "ready-09",
+      "rest_state": "ready",
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000010",
-      "node_key": "chain-02",
-      "rest_state": "blocked",
-      "parent_task_id": null
+      "node_key": "ready-10",
+      "rest_state": "ready",
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000011",
-      "node_key": "chain-03",
-      "rest_state": "blocked",
-      "parent_task_id": null
+      "node_key": "ready-11",
+      "rest_state": "ready",
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000012",
-      "node_key": "chain-04",
-      "rest_state": "waiting",
-      "parent_task_id": null
+      "node_key": "ready-12",
+      "rest_state": "ready",
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000013",
-      "node_key": "fan-source",
-      "rest_state": "waiting",
-      "parent_task_id": null
+      "node_key": "build-engine",
+      "rest_state": "ready",
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000014",
-      "node_key": "fan-01",
-      "rest_state": "blocked",
-      "parent_task_id": null
+      "node_key": "build-render",
+      "rest_state": "ready",
+      "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
       "task_id": "tsk_00000000000000000000000000000015",
-      "node_key": "fan-02",
-      "rest_state": "blocked",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000016",
-      "node_key": "fan-03",
-      "rest_state": "blocked",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000017",
-      "node_key": "fan-04",
-      "rest_state": "blocked",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000018",
-      "node_key": "fan-05",
-      "rest_state": "blocked",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000019",
-      "node_key": "fan-06",
-      "rest_state": "blocked",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_0000000000000000000000000000001a",
-      "node_key": "failed-task",
-      "rest_state": "failed",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_0000000000000000000000000000001b",
-      "node_key": "waiting-task",
-      "rest_state": "waiting",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_0000000000000000000000000000001c",
-      "node_key": "archive-old",
-      "rest_state": "done",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_0000000000000000000000000000001d",
-      "node_key": "archive-child-1",
-      "rest_state": "done",
-      "parent_task_id": "tsk_0000000000000000000000000000001c"
-    },
-    {
-      "task_id": "tsk_0000000000000000000000000000001e",
-      "node_key": "archive-child-2",
-      "rest_state": "done",
-      "parent_task_id": "tsk_0000000000000000000000000000001c"
-    },
-    {
-      "task_id": "tsk_0000000000000000000000000000001f",
-      "node_key": "archive-child-3",
-      "rest_state": "done",
-      "parent_task_id": "tsk_0000000000000000000000000000001c"
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000020",
-      "node_key": "discovery-interviews",
-      "rest_state": "done",
-      "parent_task_id": "tsk_00000000000000000000000000000002"
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000021",
-      "node_key": "discovery-notes",
-      "rest_state": "draft",
-      "parent_task_id": "tsk_00000000000000000000000000000002"
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000022",
-      "node_key": "discovery-summary",
-      "rest_state": "draft",
-      "parent_task_id": "tsk_00000000000000000000000000000002"
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000023",
-      "node_key": "discovery-summary-review",
-      "rest_state": "done",
-      "parent_task_id": "tsk_00000000000000000000000000000022"
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000024",
-      "node_key": "build-engine",
-      "rest_state": "ready",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000025",
-      "node_key": "build-render",
-      "rest_state": "ready",
-      "parent_task_id": null
-    },
-    {
-      "task_id": "tsk_00000000000000000000000000000026",
       "node_key": "build-tests",
       "rest_state": "blocked",
       "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
-      "task_id": "tsk_00000000000000000000000000000027",
+      "task_id": "tsk_00000000000000000000000000000016",
       "node_key": "build-spec",
       "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000003"
     },
     {
-      "task_id": "tsk_00000000000000000000000000000028",
+      "task_id": "tsk_00000000000000000000000000000017",
       "node_key": "build-spec-review",
       "rest_state": "done",
-      "parent_task_id": "tsk_00000000000000000000000000000027"
+      "parent_task_id": "tsk_00000000000000000000000000000016"
     },
     {
-      "task_id": "tsk_00000000000000000000000000000029",
+      "task_id": "tsk_00000000000000000000000000000018",
       "node_key": "build-spec-review-check",
       "rest_state": "done",
-      "parent_task_id": "tsk_00000000000000000000000000000028"
+      "parent_task_id": "tsk_00000000000000000000000000000017"
     },
     {
-      "task_id": "tsk_0000000000000000000000000000002a",
+      "task_id": "tsk_00000000000000000000000000000019",
+      "node_key": "chain-01",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000001a",
+      "node_key": "chain-02",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000001b",
+      "node_key": "chain-03",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000001c",
+      "node_key": "chain-04",
+      "rest_state": "waiting",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000001d",
+      "node_key": "fan-source",
+      "rest_state": "waiting",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000001e",
+      "node_key": "fan-01",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000001f",
+      "node_key": "fan-02",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000020",
+      "node_key": "fan-03",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000021",
+      "node_key": "fan-04",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000022",
+      "node_key": "fan-05",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000023",
+      "node_key": "fan-06",
+      "rest_state": "blocked",
+      "parent_task_id": "tsk_00000000000000000000000000000004"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000024",
       "node_key": "release-check",
       "rest_state": "waiting",
       "parent_task_id": "tsk_00000000000000000000000000000004"
     },
     {
-      "task_id": "tsk_0000000000000000000000000000002b",
+      "task_id": "tsk_00000000000000000000000000000025",
       "node_key": "release-notes",
       "rest_state": "draft",
       "parent_task_id": "tsk_00000000000000000000000000000004"
     },
     {
-      "task_id": "tsk_0000000000000000000000000000002c",
+      "task_id": "tsk_00000000000000000000000000000026",
       "node_key": "release-stage",
       "rest_state": "ready",
       "parent_task_id": "tsk_00000000000000000000000000000004"
     },
     {
-      "task_id": "tsk_0000000000000000000000000000002d",
+      "task_id": "tsk_00000000000000000000000000000027",
       "node_key": "release-support",
       "rest_state": "ready",
       "parent_task_id": "tsk_00000000000000000000000000000004"
     },
     {
-      "task_id": "tsk_0000000000000000000000000000002e",
+      "task_id": "tsk_00000000000000000000000000000028",
+      "node_key": "failed-task",
+      "rest_state": "failed",
+      "parent_task_id": "tsk_00000000000000000000000000000005"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000029",
       "node_key": "ops-monitor",
       "rest_state": "done",
       "parent_task_id": "tsk_00000000000000000000000000000005"
     },
     {
-      "task_id": "tsk_0000000000000000000000000000002f",
+      "task_id": "tsk_0000000000000000000000000000002a",
       "node_key": "ops-runbook",
       "rest_state": "draft",
       "parent_task_id": "tsk_00000000000000000000000000000005"
     },
     {
-      "task_id": "tsk_00000000000000000000000000000030",
+      "task_id": "tsk_0000000000000000000000000000002b",
       "node_key": "ops-alerts",
       "rest_state": "draft",
       "parent_task_id": "tsk_00000000000000000000000000000005"
     },
     {
-      "task_id": "tsk_00000000000000000000000000000031",
+      "task_id": "tsk_0000000000000000000000000000002c",
+      "node_key": "archive-old",
+      "rest_state": "done",
+      "parent_task_id": "tsk_00000000000000000000000000000005"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000002d",
+      "node_key": "archive-child-1",
+      "rest_state": "done",
+      "parent_task_id": "tsk_0000000000000000000000000000002c"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000002e",
+      "node_key": "archive-child-2",
+      "rest_state": "done",
+      "parent_task_id": "tsk_0000000000000000000000000000002c"
+    },
+    {
+      "task_id": "tsk_0000000000000000000000000000002f",
+      "node_key": "archive-child-3",
+      "rest_state": "done",
+      "parent_task_id": "tsk_0000000000000000000000000000002c"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000030",
       "node_key": "research-a",
       "rest_state": "skipped",
       "parent_task_id": "tsk_00000000000000000000000000000006"
     },
     {
-      "task_id": "tsk_00000000000000000000000000000032",
+      "task_id": "tsk_00000000000000000000000000000031",
       "node_key": "research-b",
       "rest_state": "ready",
       "parent_task_id": "tsk_00000000000000000000000000000006"
     },
     {
-      "task_id": "tsk_00000000000000000000000000000033",
+      "task_id": "tsk_00000000000000000000000000000032",
       "node_key": "research-compare",
       "rest_state": "draft",
       "parent_task_id": "tsk_00000000000000000000000000000006"
     },
     {
+      "task_id": "tsk_00000000000000000000000000000033",
+      "node_key": "discovery-interviews",
+      "rest_state": "done",
+      "parent_task_id": "tsk_00000000000000000000000000000002"
+    },
+    {
       "task_id": "tsk_00000000000000000000000000000034",
-      "node_key": "discovery-followup",
+      "node_key": "discovery-notes",
       "rest_state": "draft",
       "parent_task_id": "tsk_00000000000000000000000000000002"
     },
     {
       "task_id": "tsk_00000000000000000000000000000035",
+      "node_key": "discovery-summary",
+      "rest_state": "draft",
+      "parent_task_id": "tsk_00000000000000000000000000000002"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000036",
+      "node_key": "discovery-summary-review",
+      "rest_state": "done",
+      "parent_task_id": "tsk_00000000000000000000000000000035"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000037",
+      "node_key": "discovery-followup",
+      "rest_state": "draft",
+      "parent_task_id": "tsk_00000000000000000000000000000002"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000038",
       "node_key": "discovery-themes",
       "rest_state": "draft",
+      "parent_task_id": "tsk_00000000000000000000000000000002"
+    },
+    {
+      "task_id": "tsk_00000000000000000000000000000039",
+      "node_key": "waiting-task",
+      "rest_state": "waiting",
       "parent_task_id": "tsk_00000000000000000000000000000002"
     }
   ],
   "edges": [
-    {
-      "from": "tsk_00000000000000000000000000000012",
-      "to": "tsk_00000000000000000000000000000011",
-      "kind": "blocked_by",
-      "satisfied_by": [
-        "done"
-      ]
-    },
-    {
-      "from": "tsk_00000000000000000000000000000011",
-      "to": "tsk_00000000000000000000000000000010",
-      "kind": "blocked_by",
-      "satisfied_by": [
-        "done"
-      ]
-    },
-    {
-      "from": "tsk_00000000000000000000000000000010",
-      "to": "tsk_0000000000000000000000000000000f",
-      "kind": "blocked_by",
-      "satisfied_by": [
-        "done"
-      ]
-    },
-    {
-      "from": "tsk_00000000000000000000000000000013",
-      "to": "tsk_00000000000000000000000000000014",
-      "kind": "blocked_by",
-      "satisfied_by": [
-        "done"
-      ]
-    },
     {
       "from": "tsk_00000000000000000000000000000013",
       "to": "tsk_00000000000000000000000000000015",
@@ -361,31 +353,39 @@
       ]
     },
     {
-      "from": "tsk_00000000000000000000000000000013",
-      "to": "tsk_00000000000000000000000000000016",
-      "kind": "blocked_by",
-      "satisfied_by": [
-        "done"
-      ]
-    },
-    {
-      "from": "tsk_00000000000000000000000000000013",
+      "from": "tsk_00000000000000000000000000000016",
       "to": "tsk_00000000000000000000000000000017",
-      "kind": "blocked_by",
+      "kind": "after",
       "satisfied_by": [
         "done"
       ]
     },
     {
-      "from": "tsk_00000000000000000000000000000013",
+      "from": "tsk_00000000000000000000000000000017",
       "to": "tsk_00000000000000000000000000000018",
+      "kind": "after",
+      "satisfied_by": [
+        "done"
+      ]
+    },
+    {
+      "from": "tsk_0000000000000000000000000000001c",
+      "to": "tsk_0000000000000000000000000000001b",
       "kind": "blocked_by",
       "satisfied_by": [
         "done"
       ]
     },
     {
-      "from": "tsk_00000000000000000000000000000013",
+      "from": "tsk_0000000000000000000000000000001b",
+      "to": "tsk_0000000000000000000000000000001a",
+      "kind": "blocked_by",
+      "satisfied_by": [
+        "done"
+      ]
+    },
+    {
+      "from": "tsk_0000000000000000000000000000001a",
       "to": "tsk_00000000000000000000000000000019",
       "kind": "blocked_by",
       "satisfied_by": [
@@ -393,44 +393,68 @@
       ]
     },
     {
-      "from": "tsk_00000000000000000000000000000020",
-      "to": "tsk_00000000000000000000000000000022",
-      "kind": "after",
-      "satisfied_by": [
-        "done"
-      ]
-    },
-    {
-      "from": "tsk_00000000000000000000000000000024",
-      "to": "tsk_00000000000000000000000000000026",
+      "from": "tsk_0000000000000000000000000000001d",
+      "to": "tsk_0000000000000000000000000000001e",
       "kind": "blocked_by",
       "satisfied_by": [
         "done"
       ]
     },
     {
-      "from": "tsk_00000000000000000000000000000027",
-      "to": "tsk_00000000000000000000000000000028",
-      "kind": "after",
+      "from": "tsk_0000000000000000000000000000001d",
+      "to": "tsk_0000000000000000000000000000001f",
+      "kind": "blocked_by",
       "satisfied_by": [
         "done"
       ]
     },
     {
-      "from": "tsk_00000000000000000000000000000028",
-      "to": "tsk_00000000000000000000000000000029",
-      "kind": "after",
+      "from": "tsk_0000000000000000000000000000001d",
+      "to": "tsk_00000000000000000000000000000020",
+      "kind": "blocked_by",
       "satisfied_by": [
         "done"
       ]
     },
     {
-      "from": "tsk_00000000000000000000000000000031",
-      "to": "tsk_00000000000000000000000000000032",
+      "from": "tsk_0000000000000000000000000000001d",
+      "to": "tsk_00000000000000000000000000000021",
+      "kind": "blocked_by",
+      "satisfied_by": [
+        "done"
+      ]
+    },
+    {
+      "from": "tsk_0000000000000000000000000000001d",
+      "to": "tsk_00000000000000000000000000000022",
+      "kind": "blocked_by",
+      "satisfied_by": [
+        "done"
+      ]
+    },
+    {
+      "from": "tsk_0000000000000000000000000000001d",
+      "to": "tsk_00000000000000000000000000000023",
+      "kind": "blocked_by",
+      "satisfied_by": [
+        "done"
+      ]
+    },
+    {
+      "from": "tsk_00000000000000000000000000000030",
+      "to": "tsk_00000000000000000000000000000031",
       "kind": "after",
       "satisfied_by": [
         "done",
         "skipped"
+      ]
+    },
+    {
+      "from": "tsk_00000000000000000000000000000033",
+      "to": "tsk_00000000000000000000000000000035",
+      "kind": "after",
+      "satisfied_by": [
+        "done"
       ]
     }
   ]
