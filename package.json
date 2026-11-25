@@ -15,6 +15,7 @@
   "scripts": {
     "build:panel": "esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js",
     "build:service": "esbuild service/main.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=service/main.js",
+    "build:engine-board": "node engine-board/main.ts",
     "build": "npm run build:panel && npm run build:service",
     "start:web": "node web/dist/server.mjs",
     "typecheck": "tsc --noEmit",

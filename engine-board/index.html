@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tree engine-board-slice-1</title>
+<style>
+:root {
+  --paper: #f6f7f8;
+  --ink: #15181c;
+  --muted: #5c646e;
+  --rule: #d5d9de;
+  --rule-soft: #e3e6ea;
+  --defect: #9f1239;
+  --defect-soft: #fbeff2;
+  --sans: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "SFMono-Regular", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1113;
+    --ink: #e9ecef;
+    --muted: #a5adb7;
+    --rule: #2b3036;
+    --rule-soft: #20242a;
+    --defect: #ff9db0;
+    --defect-soft: #2a1519;
+  }
+}
+[data-state="draft"] { --state: #68707b; }
+[data-state="blocked"] { --state: #b42318; }
+[data-state="ready"] { --state: #1d4ed8; }
+[data-state="waiting"] { --state: #9a5b00; }
+[data-state="done"] { --state: #15703a; }
+[data-state="failed"] { --state: #9f1239; }
+[data-state="cancelled"] { --state: #68707b; }
+[data-state="skipped"] { --state: #5f5a54; }
+@media (prefers-color-scheme: dark) {
+  [data-state="draft"] { --state: #9aa3ae; }
+  [data-state="blocked"] { --state: #ff8a80; }
+  [data-state="ready"] { --state: #8ab4ff; }
+  [data-state="waiting"] { --state: #e0a44a; }
+  [data-state="done"] { --state: #6fcf97; }
+  [data-state="failed"] { --state: #ff9db0; }
+  [data-state="cancelled"] { --state: #9aa3ae; }
+  [data-state="skipped"] { --state: #b0a99f; }
+}
+* { box-sizing: border-box; }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+html { background: var(--paper); }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+.mono, .node-key, .task-id, .ref, .state-word, .runtime, .source .mono { font-family: var(--mono); }
+.sheet {
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  padding-bottom: calc(clamp(1.25rem, 4vw, 3rem) + env(safe-area-inset-bottom));
+}
+.masthead { border-bottom: 1px solid var(--rule); padding-bottom: 1.15rem; }
+.provenance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.55rem, 3.8vw, 2.35rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+h1 .mono { font-weight: 500; letter-spacing: -0.03em; }
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.meta .value { color: var(--ink); }
+.states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.35rem;
+  margin: 0;
+  padding: 1rem 0;
+  list-style: none;
+  border-bottom: 1px solid var(--rule);
+}
+.state, .state-word {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.42rem;
+}
+.state .dot, .state-word .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--state);
+  flex: none;
+  transform: translateY(-1px);
+}
+.state .word, .state-word .word {
+  color: var(--state);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+.state .count {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.state[data-zero="true"] .dot {
+  background: transparent;
+  border: 1px solid var(--state);
+}
+.state[data-zero="true"] .word,
+.state[data-zero="true"] .count { color: var(--muted); }
+.states-note {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.state[data-observed="false"] .count { color: var(--muted); }
+.unobserved {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.01em;
+}
+.defects {
+  margin: 1.15rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid var(--defect);
+  background: var(--defect-soft);
+}
+.defects h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--defect);
+}
+.defects ul {
+  margin: 0;
+  padding-left: 1.05rem;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.defects li { margin-bottom: 0.25rem; }
+.defect-kind {
+  font-weight: 600;
+  color: var(--defect);
+  margin-right: 0.35rem;
+}
+.ledger { padding-top: 1.35rem; }
+.treegrid { display: block; }
+.columns, .node-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8.5rem 17rem;
+  gap: 1.25rem;
+}
+.columns {
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+}
+.node-row {
+  padding: 0.62rem 0 0.7rem;
+  border-bottom: 1px solid var(--rule-soft);
+  align-items: start;
+}
+.key { position: relative; min-width: 0; }
+.key[data-depth]:not([data-depth="0"])::before { content: ""; position: absolute; top: 0.78rem; width: 0.5rem; border-top: 1px solid var(--rule); }
+.key[data-depth="1"] { padding-left: 1.15rem; }
+.key[data-depth="1"]::before { left: 0.30rem; }
+.key[data-depth="2"] { padding-left: 2.30rem; }
+.key[data-depth="2"]::before { left: 1.45rem; }
+.node-key {
+  display: block;
+  font-size: 0.87rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.task-id {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.edge, .flag {
+  margin: 0.32rem 0 0;
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+.edge-kind {
+  margin-right: 0.35rem;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+}
+.edge .ref {
+  display: inline-block;
+  margin-right: 0.55rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+a.ref { text-decoration: underline; text-underline-offset: 0.16em; }
+a.ref:hover, a.ref:focus-visible { color: var(--ink); }
+.edge .ref.outside { text-decoration: underline dotted; }
+.flag { color: var(--muted); }
+.state-word { padding-top: 0.08rem; }
+.state-word .word { font-size: 0.79rem; }
+.runtime {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+.runtime .pair { display: inline-flex; gap: 0.32rem; min-width: 0; }
+.runtime .label { color: var(--muted); }
+.runtime .value {
+  min-width: 0;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.runtime .pair.missing .value { color: var(--muted); }
+.runtime .pair.wait .value { color: var(--state); }
+.runtime .pair.hold .value { color: var(--state); }
+.empty {
+  margin: 1.5rem 0;
+  color: var(--muted);
+}
+.defect-empty { color: var(--defect); }
+.limits {
+  margin-top: 2.5rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--rule);
+}
+.limits h2 {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.limits ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.limits li { margin-bottom: 0.3rem; }
+.source {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+@media (max-width: 720px) {
+  /* Hidden visually, not removed: a screen reader still needs the column names. */
+  .columns {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .node-row { grid-template-columns: minmax(0, 1fr) auto; gap: 0.55rem 1rem; }
+  .runtime { grid-column: 1 / -1; margin-top: 0.15rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <header class="masthead">
+    <p class="provenance">
+      <span>Fixture capture</span>
+      <span>read at 2026-11-25T13:17:50Z</span>
+      <span>task-engine@33651ee</span>
+      <span>schema 7</span>
+    </p>
+    <h1>Tree <span class="mono">engine-board-slice-1</span></h1>
+    <p class="meta">
+      <span><span class="label">project</span> <span class="value mono">engine-board</span></span>
+      <span><span class="value">7 tasks</span></span>
+      <span class="pair"><span class="label">runner</span> <span class="value">stub</span> <span class="label">capacity</span> <span class="value">2</span></span>
+    </p>
+  </header>
+
+  <section aria-label="rest_state counts">
+    <ul class="states" role="list"><li class="state" data-state="draft" data-zero="false" data-observed="true"><span class="dot" aria-hidden="true"></span><span class="word">draft</span><span class="count">2</span></li><li class="state" data-state="blocked" data-zero="false" data-observed="true"><span class="dot" aria-hidden="true"></span><span class="word">blocked</span><span class="count">1</span></li><li class="state" data-state="ready" data-zero="false" data-observed="true"><span class="dot" aria-hidden="true"></span><span class="word">ready</span><span class="count">2</span></li><li class="state" data-state="waiting" data-zero="false" data-observed="true"><span class="dot" aria-hidden="true"></span><span class="word">waiting</span><span class="count">1</span></li><li class="state" data-state="done" data-zero="false" data-observed="true"><span class="dot" aria-hidden="true"></span><span class="word">done</span><span class="count">1</span></li><li class="state" data-state="failed" data-zero="true" data-observed="false"><span class="dot" aria-hidden="true"></span><span class="word">failed</span><span class="count">0</span><span class="unobserved">not captured</span></li><li class="state" data-state="cancelled" data-zero="true" data-observed="false"><span class="dot" aria-hidden="true"></span><span class="word">cancelled</span><span class="count">0</span><span class="unobserved">not captured</span></li><li class="state" data-state="skipped" data-zero="true" data-observed="false"><span class="dot" aria-hidden="true"></span><span class="word">skipped</span><span class="count">0</span><span class="unobserved">not captured</span></li></ul>
+    
+  </section>
+
+  
+
+  <section class="ledger" aria-labelledby="tree-heading">
+    <h2 id="tree-heading" class="visually-hidden">Task tree</h2>
+    <div class="treegrid" role="treegrid" aria-labelledby="tree-heading" aria-readonly="true">
+      <div class="columns" role="row">
+        <span role="columnheader">node_key</span><span role="columnheader">rest_state</span><span role="columnheader">attempt and wait</span>
+      </div>
+      <div role="rowgroup"><div class="node-row" role="row" aria-level="1" data-depth="0" id="task-tsk_e4421d64b2344bc4a139d414d3769480">
+  <div class="key" role="gridcell" data-depth="0">
+    <span class="node-key">build</span>
+    <span class="task-id">tsk_e4421d64b2344bc4a139d414d3769480</span>
+    
+  </div>
+  <div class="state-word" role="gridcell" data-state="ready"><span class="dot" aria-hidden="true"></span><span class="word">ready</span></div>
+  <div class="runtime" role="gridcell"></div>
+</div><div class="node-row" role="row" aria-level="2" data-depth="1" id="task-tsk_aa9449eabd214d498f5b16ac36a32cf4">
+  <div class="key" role="gridcell" data-depth="1">
+    <span class="node-key">build/spec</span>
+    <span class="task-id">tsk_aa9449eabd214d498f5b16ac36a32cf4</span>
+    
+  </div>
+  <div class="state-word" role="gridcell" data-state="draft"><span class="dot" aria-hidden="true"></span><span class="word">draft</span></div>
+  <div class="runtime" role="gridcell"></div>
+</div><div class="node-row" role="row" aria-level="2" data-depth="1" id="task-tsk_70403fe4538b4fe0b1a7e866b85a25e9">
+  <div class="key" role="gridcell" data-depth="1">
+    <span class="node-key">build/read-model</span>
+    <span class="task-id">tsk_70403fe4538b4fe0b1a7e866b85a25e9</span>
+    
+  </div>
+  <div class="state-word" role="gridcell" data-state="done"><span class="dot" aria-hidden="true"></span><span class="word">done</span></div>
+  <div class="runtime" role="gridcell"><span class="pair"><span class="label">handoff</span> <span class="value">2</span></span></div>
+</div><div class="node-row" role="row" aria-level="2" data-depth="1" id="task-tsk_d026ad2841384f7fa930ef28efba4596">
+  <div class="key" role="gridcell" data-depth="1">
+    <span class="node-key">build/render</span>
+    <span class="task-id">tsk_d026ad2841384f7fa930ef28efba4596</span>
+    
+  </div>
+  <div class="state-word" role="gridcell" data-state="ready"><span class="dot" aria-hidden="true"></span><span class="word">ready</span></div>
+  <div class="runtime" role="gridcell"><span class="pair"><span class="label">phase</span> <span class="value">live</span></span><span class="pair"><span class="label">slot</span> <span class="value">0</span></span><span class="pair missing"><span class="label">slot limit</span> <span class="value">not reported</span></span><span class="pair missing"><span class="label">runner_slot</span> <span class="value">not reported</span></span></div>
+</div><div class="node-row" role="row" aria-level="3" data-depth="2" id="task-tsk_cbe8c0538630444191150e5d9f1598ce">
+  <div class="key" role="gridcell" data-depth="2">
+    <span class="node-key">build/render/legend</span>
+    <span class="task-id">tsk_cbe8c0538630444191150e5d9f1598ce</span>
+    
+  </div>
+  <div class="state-word" role="gridcell" data-state="draft"><span class="dot" aria-hidden="true"></span><span class="word">draft</span></div>
+  <div class="runtime" role="gridcell"></div>
+</div><div class="node-row" role="row" aria-level="2" data-depth="1" id="task-tsk_b3ab42799d4b48e49486b87bf778ec9a">
+  <div class="key" role="gridcell" data-depth="1">
+    <span class="node-key">build/verify</span>
+    <span class="task-id">tsk_b3ab42799d4b48e49486b87bf778ec9a</span>
+    
+  </div>
+  <div class="state-word" role="gridcell" data-state="waiting"><span class="dot" aria-hidden="true"></span><span class="word">waiting</span></div>
+  <div class="runtime" role="gridcell"><span class="pair"><span class="label">handoff</span> <span class="value">2</span></span><span class="pair wait"><span class="label">wait reason</span> <span class="value">rejected:condition:check:unit</span></span><span class="pair wait"><span class="label">cause</span> <span class="value">settle_rejected</span></span><span class="pair wait"><span class="label">owner</span> <span class="value">person:local</span></span></div>
+</div><div class="node-row" role="row" aria-level="2" data-depth="1" id="task-tsk_1a3ff4501c8843189c3f0e7a4e549e37">
+  <div class="key" role="gridcell" data-depth="1">
+    <span class="node-key">build/integration</span>
+    <span class="task-id">tsk_1a3ff4501c8843189c3f0e7a4e549e37</span>
+    <p class="edge"><span class="edge-kind">blocked_by</span> <a class="ref" href="#task-tsk_b3ab42799d4b48e49486b87bf778ec9a" title="tsk_b3ab42799d4b48e49486b87bf778ec9a">build/verify</a></p><p class="edge"><span class="edge-kind">after</span> <a class="ref" href="#task-tsk_d026ad2841384f7fa930ef28efba4596" title="tsk_d026ad2841384f7fa930ef28efba4596">build/render</a></p>
+  </div>
+  <div class="state-word" role="gridcell" data-state="blocked"><span class="dot" aria-hidden="true"></span><span class="word">blocked</span></div>
+  <div class="runtime" role="gridcell"></div>
+</div></div>
+    </div>
+    
+  </section>
+
+  <footer class="limits">
+    <h2>Read model limits</h2>
+    <ul role="list">
+      <li><span class="mono">runner_slot</span>, <span class="mono">runner_id</span> are in INTERFACE §2's attempt table, but no <span class="mono">--json</span> read prints them.</li>
+      <li>The <span class="mono">slot</span> shown is the project slot; its limit is not printed, so it has no denominator.</li>
+      <li><span class="mono">title</span>, <span class="mono">priority</span>, <span class="mono">tags</span>, <span class="mono">requires</span> are not printed by any read verb. <span class="mono">tags</span> and <span class="mono">requires</span> exist in <span class="mono">task.created</span> payloads, but <span class="mono">task watch</span> prints no payload.</li>
+      <li><span class="mono">tree_key</span> is not printed by any read verb. The key above is the value passed to <span class="mono">task create --tree-key</span>.</li>
+      <li><span class="mono">failed</span>, <span class="mono">cancelled</span>, <span class="mono">skipped</span> need paths this slice does not have. Their counts are zero above because the read could not produce them, not because the tree never reaches them.</li>
+      <li><span class="mono">phase</span> and <span class="mono">slot</span> are the live attempt only. A <span class="mono">done</span>, <span class="mono">failed</span>, <span class="mono">cancelled</span> or <span class="mono">skipped</span> task shows no attempt because the ended attempt is not readable; that is not a claim that no attempt ran.</li>
+      <li>Not from a CLI verb: store.get_or_create_node(..., edges=[blocked_by, after], initial_state=blocked): task create has no edge flag</li>
+      <li>Not from a CLI verb: store.claim + store.begin_launch + store.transition_attempt(to_phase=live): task run drives the stub to an end</li>
+    </ul>
+    <p class="source">
+      <span>Reads:</span> <span class="mono">task graph --project engine-board --tree &lt;root_task_id&gt; --depth 8 --json</span>, <span class="mono">task graph --project engine-board --json (completeness check)</span>, <span class="mono">task status &lt;every tree task_id&gt; --json</span>, <span class="mono">task project show --project engine-board --json</span>, <span class="mono">task runner list --project engine-board --json</span>
+    </p>
+    <p class="source">The tree container is one task row with <span class="mono">node_key &quot;$root&quot;</span>; it is hidden here because it is not a node of the work tree.</p>
+    <p class="source">Fixture capture. Read at 2026-11-25T13:17:50Z from <span class="mono">task-engine@33651ee</span>. Every rest_state and phase above is engine output; no state is computed by this page.</p>
+  </footer>
+</main>
+</body>
+</html>

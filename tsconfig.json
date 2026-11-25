@@ -16,5 +16,5 @@
     ],
     "types": ["node"]
   },
-  "include": ["panel/**/*.ts", "service/**/*.ts"]
+  "include": ["panel/**/*.ts", "service/**/*.ts", "engine-board/**/*.ts"]
 }

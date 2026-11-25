@@ -1,0 +1,34 @@
+{
+  "captured_at": "2026-11-25T13:17:50Z",
+  "container_node_key": "$root",
+  "engine": {
+    "commit": "33651ee",
+    "path": "/workspace/code/task-engine",
+    "schema_revision": 7
+  },
+  "notes": [
+    "tree_key is the value passed to task create --tree-key; no read verb returns it",
+    "task title, goal, priority, tags and requires are in the store but no read verb prints them; task create has no flag for tags or requires",
+    "runner_slot and runner_id are in INTERFACE \u00a72's attempt table but no read verb prints them",
+    "graph --tree is read with --depth 8; its default depth is 2 and truncates without a marker"
+  ],
+  "port_only_steps": [
+    "store.get_or_create_node(..., edges=[blocked_by, after], initial_state=blocked): task create has no edge flag",
+    "store.claim + store.begin_launch + store.transition_attempt(to_phase=live): task run drives the stub to an end"
+  ],
+  "project_id": "engine-board",
+  "read_verbs": [
+    "task graph --project engine-board --tree <root_task_id> --depth 8 --json",
+    "task graph --project engine-board --json (completeness check)",
+    "task status <every tree task_id> --json",
+    "task project show --project engine-board --json",
+    "task runner list --project engine-board --json"
+  ],
+  "root_task_id": "tsk_7c7cdda9a8d347ee9a7557b95c6ebccd",
+  "tree_key": "engine-board-slice-1",
+  "unobserved_states": [
+    "failed",
+    "cancelled",
+    "skipped"
+  ]
+}
