@@ -48,10 +48,14 @@ export interface GraphNode {
 }
 
 // `task graph --json` edge. `from` is the blocker; `to` is the blocked task.
+// `satisfied_by` is the engine's own answer to "which blocker states satisfy
+// this edge"; null means the payload did not carry it (schema 7), which is not
+// a licence to assume `done`.
 export interface GraphEdge {
   from: string;
   to: string;
   kind: EdgeKind;
+  satisfied_by: string[] | null;
 }
 
 export interface GraphPayload {
@@ -175,6 +179,8 @@ export interface TreeEdgeRef {
   task_id: string;
   // null when the edge names a task outside the visible tree.
   node_key: string | null;
+  // The edge's own `satisfied_by`, or null when the read did not carry it.
+  satisfied_by: string[] | null;
 }
 
 // A parent a row names but this read did not return. The whole subtree below
@@ -187,13 +193,19 @@ export interface RerootedInfo {
 export interface TreeRow {
   task_id: string;
   node_key: string;
+  // The parent pointer as the read returned it. The tree nests by it; the List
+  // and the board's scope projection also need it as data.
+  parent_task_id: string | null;
   // The engine's own title. null when the read did not print one; the board
-  // then falls back to node_key rather than inventing a name.
+  // then falls back to node_key and says the title was not read.
   title: string | null;
   rest_state: RestState;
   // False when the engine's string is outside the frozen enum. The row still
   // shows the engine's word, but it is not counted as a known state.
   rest_state_known: boolean;
+  // The engine's archive timestamp for this row. Non-null means the row is
+  // archived: it stays in the tree, labelled, and is not counted as live work.
+  archived_at: string | null;
   phase: AttemptPhase | null;
   slot: number | null;
   // The attempt's slot limit as the status row prints it (R-1), not the
@@ -242,6 +254,11 @@ export interface ReadModelCapabilities {
 
 export type TreeDefectKind = 'cycle' | 'unreachable' | 'rerooted';
 
+// INTERFACE §1's tree state, derived at the read like the engine does: the
+// root's `archived_at` decides `archived`, otherwise every terminal task decides
+// `completed`, otherwise `open`.
+export type TreeState = 'archived' | 'completed' | 'open';
+
 // A placement failure. `tasks` is how many tasks are affected; `keys` names
 // them (for `rerooted`, the top node of each lifted subtree).
 export interface TreeDefect {
@@ -255,6 +272,9 @@ export interface TreeModel {
   config_revision: number;
   tree_key: string;
   root_task_id: string;
+  // Derived the same way the engine derives it, from the root's archive stamp
+  // and the rows' rest states.
+  tree_state: TreeState;
   provenance: ReadProvenance;
   runners: RunnerRow[];
   runners_available: boolean;
@@ -395,6 +415,7 @@ function edgeRefs(
     .map((edge) => ({
       task_id: edge.from,
       node_key: nodeKeyById.get(edge.from) ?? null,
+      satisfied_by: Array.isArray(edge.satisfied_by) ? edge.satisfied_by : null,
     }));
 }
 
@@ -494,9 +515,17 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
       (node) => node.task_id === snapshot.root_task_id,
     ) ?? null;
 
-  const nodes = snapshot.graph.nodes.filter(
-    (node) => node !== hiddenContainer,
-  );
+  // A graph payload that repeats a task_id must not become two roots or two
+  // counted rows. First row wins, the way a map would; the repeat contributes
+  // nothing. `graph --tree` does not emit one today; the model is not silent
+  // about a payload that does.
+  const seenNodeIds = new Set<string>();
+  const nodes = snapshot.graph.nodes.filter((node) => {
+    if (node === hiddenContainer) return false;
+    if (seenNodeIds.has(node.task_id)) return false;
+    seenNodeIds.add(node.task_id);
+    return true;
+  });
   const nodeById = new Map(nodes.map((node) => [node.task_id, node]));
   const nodeKeyById = new Map(nodes.map((node) => [node.task_id, node.node_key]));
   const parentOf = new Map<string, string | null>(
@@ -562,9 +591,12 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
     return {
       task_id: node.task_id,
       node_key: node.node_key,
+      parent_task_id: node.parent_task_id,
       title: stringField(statusRecord, 'title') ?? stringField(node, 'title'),
       rest_state: restState,
       rest_state_known: restStateKnown,
+      archived_at:
+        stringField(statusRecord, 'archived_at') ?? stringField(node, 'archived_at'),
       phase: status ? status.phase : null,
       slot: status ? status.slot : null,
       slot_limit: numberField(statusRecord, 'slot_limit'),
@@ -600,6 +632,22 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
   };
 
   const roots = rootNodes.map((node) => visit(node, 0));
+
+  // The engine's `tree_state` (INTERFACE §1) is derived at read time. The root
+  // row's `archived_at` decides `archived`; otherwise every row's rest state
+  // decides `completed`. The hidden container is a task row too, so it is part
+  // of the "every row" question exactly as it is in the engine.
+  const allRows = [...(hiddenContainer === null ? [] : [hiddenContainer]), ...nodes];
+  const terminal = new Set<string>(['done', 'failed', 'cancelled', 'skipped']);
+  const treeState: TreeState =
+    hiddenContainer !== null && stringField(hiddenContainer, 'archived_at') !== null
+      ? 'archived'
+      : allRows.length > 0 &&
+          allRows.every((node) =>
+            terminal.has(statusById.get(node.task_id)?.rest_state ?? node.rest_state),
+          )
+        ? 'completed'
+        : 'open';
 
   const defects: TreeDefect[] = [];
   if (cycle.size > 0) {
@@ -643,6 +691,7 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
     config_revision: snapshot.project.config_revision,
     tree_key: snapshot.tree_key,
     root_task_id: snapshot.root_task_id,
+    tree_state: treeState,
     provenance: snapshot.provenance,
     runners: snapshot.runners,
     runners_available: snapshot.runners_available,

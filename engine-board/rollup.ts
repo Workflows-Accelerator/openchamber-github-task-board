@@ -11,48 +11,62 @@
 import type { RestState, TreeRow } from './model.ts';
 
 export interface Containment {
-  // Descendants, not including the row itself.
+  // Live descendants, not including the row itself. An archived descendant is
+  // named in `archived`, never counted as live work.
   inside: number;
   done: number;
+  archived: number;
 }
 
 export interface Progress {
   done: number;
   total: number;
+  archived: number;
 }
 
 export function containment(row: TreeRow): Containment {
   let inside = 0;
   let done = 0;
+  let archived = 0;
   const walk = (rows: readonly TreeRow[]): void => {
     for (const child of rows) {
-      inside += 1;
-      if (child.rest_state === 'done') {
-        done += 1;
+      if (child.archived_at !== null) {
+        archived += 1;
+      } else {
+        inside += 1;
+        if (child.rest_state === 'done') {
+          done += 1;
+        }
       }
       walk(child.children);
     }
   };
   walk(row.children);
-  return { inside, done };
+  return { inside, done, archived };
 }
 
-// Every placed row, the roots included: the header's denominator is the tree,
-// not the top level.
+// Every live placed row, the roots included: the header's denominator is the
+// tree, not the top level. Archived rows are counted apart so the denominator
+// is live work only.
 export function progress(roots: readonly TreeRow[]): Progress {
   let total = 0;
   let done = 0;
+  let archived = 0;
   const walk = (rows: readonly TreeRow[]): void => {
     for (const row of rows) {
-      total += 1;
-      if (row.rest_state === 'done') {
-        done += 1;
+      if (row.archived_at !== null) {
+        archived += 1;
+      } else {
+        total += 1;
+        if (row.rest_state === 'done') {
+          done += 1;
+        }
       }
       walk(row.children);
     }
   };
   walk(roots);
-  return { done, total };
+  return { done, total, archived };
 }
 
 // The order the lanes are drawn in: the work moves left to right. `failed`,
@@ -95,28 +109,48 @@ export interface LanePlan {
   empty: number;
 }
 
-export function lanePlan(rows: readonly TreeRow[]): LanePlan {
-  const known = new Set<string>(LANE_ORDER);
-  const cards = [...rows];
-  const lanes: Lane[] = [];
-  for (const state of LANE_ORDER) {
-    const inLane = cards.filter((row) => row.rest_state === state);
-    if (inLane.length > 0) {
-      lanes.push({ state, cards: inLane });
+// The lane vocabulary, applied once. The page's inline script embeds this
+// function's own source (`laneGroups.toString()`), so the plan the tests check
+// and the plan the page draws are the same code, not two copies that can drift.
+export function laneGroups(
+  states: readonly string[],
+  order: readonly string[],
+): { lanes: LaneState[]; empty: number } {
+  const lanes: LaneState[] = [];
+  for (const state of order) {
+    if (states.includes(state)) {
+      lanes.push(state as RestState);
     }
   }
-  const unknown = cards.filter((row) => !known.has(row.rest_state));
-  let total = LANE_ORDER.length;
-  if (unknown.length > 0) {
-    lanes.push({ state: 'unknown', cards: unknown });
-    total += 1;
+  // A state this build does not know gets one lane of its own. It is not an
+  // empty vocabulary lane, so it never contributes to `empty`.
+  const unknown = states.some((state) => !order.includes(state));
+  if (unknown) {
+    lanes.push('unknown');
   }
-  return { lanes, empty: total - lanes.length };
+  return { lanes, empty: order.length + (unknown ? 1 : 0) - lanes.length };
 }
 
-// Blockers the read can see and that are not done. A blocker outside the read
-// is not evidence of a disagreement, so it is not counted here; the card still
-// names it from the edge ref.
+export function lanePlan(rows: readonly TreeRow[]): LanePlan {
+  const states = rows.map((row) => row.rest_state);
+  const grouped = laneGroups(states, LANE_ORDER);
+  return {
+    lanes: grouped.lanes.map((state) => ({
+      state,
+      cards: rows.filter((row) =>
+        state === 'unknown'
+          ? !(LANE_ORDER as readonly string[]).includes(row.rest_state)
+          : row.rest_state === state,
+      ),
+    })),
+    empty: grouped.empty,
+  };
+}
+
+// Blockers the read can see and whose own state is not one this edge accepts.
+// `satisfied_by` is the engine's answer, not the board's; a read that did not
+// carry it is unknown, never evidence of a disagreement. A blocker outside the
+// read is not evidence either; the card still names it from the edge ref.
 export function unsatisfiedBlockers(
   row: TreeRow,
   byId: ReadonlyMap<string, TreeRow>,
@@ -124,17 +158,22 @@ export function unsatisfiedBlockers(
   const unsatisfied: TreeRow[] = [];
   for (const ref of row.blocked_by) {
     const blocker = byId.get(ref.task_id);
-    if (blocker !== undefined && blocker.rest_state !== 'done') {
+    if (blocker === undefined || ref.satisfied_by === null) {
+      continue;
+    }
+    if (!ref.satisfied_by.includes(blocker.rest_state)) {
       unsatisfied.push(blocker);
     }
   }
   return unsatisfied;
 }
 
-// Ruling 6: a `ready` row with an unsatisfied `blocked_by` is the engine's
-// current defect (R-2), not the board's mistake. The board keeps the engine's
-// word and states the disagreement beside it. When the engine stops producing
-// this combination the notice disappears on its own, which is the check.
+// Ruling 6: a `ready` row with a blocker its edge does not accept is the
+// engine's defect (R-2), not the board's mistake. The board keeps the engine's
+// word and states the disagreement beside it. `satisfied_by` decides, so a
+// dependency on a failed or skipped task that the edge allows never accuses a
+// healthy engine. When the engine stops producing this combination the notice
+// disappears on its own, which is the check.
 export function engineDisagreement(
   row: TreeRow,
   byId: ReadonlyMap<string, TreeRow>,

@@ -22,7 +22,7 @@ What the read surface gained since the `33651ee` pin, and what that closes:
 | `created_at`, `updated_at` | `graph` nodes and `status` | Both render in the panel. |
 | `max_concurrency` | `project show`, and `status` | The panel's slot reads `N of <limit>`; `slot_limit` on `status` wins over the project value. |
 | `slot_limit`, `runner_id`, `runner_slot`, `attempts`, `ended_attempt` | `status` | The panel's slot, runner and attempt rows have a real source; `runners_available` stays false because `task runner list` is still not read. |
-| `next_cursor` | `graph` | New paging field. `null` for this tree; the live source does not follow a cursor, so a non-null value would be an unhandled truncation. Recorded as a seam, not a defect. |
+| `next_cursor` | `graph` | Paging field, `null` on a `--tree` read. The live source refuses a non-null value rather than follow it: a tree read that paged would be a silently smaller tree. |
 
 Edge shape changed: `graph` prints `{blocker_task_id, blocked_task_id, input_name,
 kind, required, satisfied_by, edge_id}`; the fixture's `{from,to,kind}` is no

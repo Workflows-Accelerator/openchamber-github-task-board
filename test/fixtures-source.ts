@@ -1,9 +1,10 @@
 // ==========================================
-// Fixture source
+// Fixture source (tests only)
 //
-// The only implementation of EngineTreeSource in this slice. It reads the
-// frozen verb payloads in this directory and echoes the requested tree key and
-// root id, which no read verb returns.
+// The same `EngineTreeSource` seam as the live source, over the frozen verb
+// payloads in `engine-board/fixtures/`. It lives under `test/` because no
+// shipped page imports it: the pages are built from the live engine, and this
+// is a fixture, not an alternative implementation.
 // ==========================================
 
 import { readFileSync } from 'node:fs';
@@ -18,7 +19,7 @@ import type {
   RunnerRow,
   StatusPayload,
   TreeRequest,
-} from '../model.ts';
+} from '../engine-board/model.ts';
 
 export interface FixtureMeta {
   engine: {

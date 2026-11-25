@@ -12,9 +12,11 @@ node --test test/engine-board.test.js
 ```
 
 Open `engine-board/index.html` and `engine-board/list.html` directly. Neither
-page makes a request, loads an external asset or needs a build step. Script adds
-scope entry, the `Here` marker and the detail dialog; every card and row is in
-the HTML before it runs, so the pages read with JavaScript off.
+page makes a request, loads an external asset or needs a build step. Without
+script the Board is the List body: one stacked tree, every row and every count
+already in the HTML. Script adds scope entry, the `Here` marker and the detail
+dialog, and nothing else; the dialog is built on click from one inline JSON
+block, so no inert `<dialog>` is shipped per task.
 
 ## What is here
 
@@ -23,13 +25,12 @@ the HTML before it runs, so the pages read with JavaScript off.
 | `engine-board/model.ts` | The engine's own field names folded into a tree. DOM-free, Node-free. |
 | `engine-board/rollup.ts` | Containment, progress, the lane plan and the disagreement check, all over `children`. |
 | `engine-board/scope.ts` | Scope keys, the hash round trip and the section traversal. |
-| `engine-board/board-render.ts` | Board and List HTML, the dialog markup and the one inline script. |
+| `engine-board/board-render.ts` | Board and List HTML, the inline data block and the one inline script. |
 | `engine-board/live-source.ts` | `EngineTreeSource` over `task graph`, `task status`, `task project show`, `task store check`. |
 | `engine-board/main.ts` | Reads the live source once and writes both pages. |
-| `engine-board/fixtures/source.ts` | The same seam over the frozen capture, for tests only. |
+| `test/fixtures-source.ts` | The same seam over the frozen capture. Tests only; no shipped page imports it. |
 | `engine-board/fixtures/*.json` | Frozen `--json` payloads and capture metadata. |
 | `engine-board/fixtures/capture.sh` | Rebuilds the capture from the pinned engine revision. |
-| `engine-board/render.ts` | The slice-2 single-page renderer. Kept because its tests are kept; the pages no longer use it. |
 
 ## The seam
 
@@ -57,12 +58,18 @@ rather than guess:
 - `task status --json` prints the status object itself for one id and
   `{"tasks":[…]}` for two or more. Both are accepted.
 - `task graph --json` prints `{from,to,kind}` at schema 7 and
-  `{blocker_task_id,blocked_task_id,kind}` now. Both are folded to one internal
-  edge, `{from,to,kind}`.
+  `{blocker_task_id,blocked_task_id,kind,satisfied_by}` now. Both are folded to
+  one internal edge, `{from,to,kind,satisfied_by}`; a schema-7 edge has
+  `satisfied_by: null`, which is "not read", never an assumed `["done"]`.
 
 It also refuses a graph whose root is not the requested task, or whose
 `tree_key` differs from the request: a page built from the wrong tree would look
 right and be wrong.
+
+A `--tree` read is whole by contract, so the source refuses a partial one: a
+payload with `truncated: true` is an error, and so is a `next_cursor` that is
+not `null`. A missing task rendered as "absent" is the bug this line of work
+started with.
 
 ## Field names
 
@@ -82,7 +89,8 @@ The model and the page use INTERFACE §2's words, not the board's:
 ## What the board states
 
 - **Progress** (ruling 1) — one thin bar and `N of M finished` on both views,
-  over every placed row.
+  over live placed rows. Archived rows never enter `M`; they are named beside it
+  (`3 of 7 finished · 4 archived`).
 - **Empty lanes** (ruling 2) — a lane with no card is not drawn; the level line
   says `N lanes empty` once, in the same words everywhere.
 - **List scope** (ruling 3) — `Showing everything`, and the current scope's row
@@ -90,9 +98,17 @@ The model and the page use INTERFACE §2's words, not the board's:
 - **No second back link** (ruling 4) — the trail is the only way up.
 - **Out-of-scope blocker** (ruling 5) — a blocked card names its blocker by
   title, read from the whole tree, not from its own level.
-- **Engine disagreement** (ruling 6) — a `ready` row whose `blocked_by` is not
-  done keeps the engine's word and gains one line: `Engine defect: recorded
-  ready, but <title> is not done.` The board never re-derives the state.
+- **Engine disagreement** (ruling 6) — a `ready` row with a blocker its edge's
+  `satisfied_by` does not accept keeps the engine's word and gains one line:
+  `Engine defect: recorded ready, but <title> is <state>.` A blocker the edge
+  accepts (`failed`, `skipped`) is no disagreement, and an edge that did not
+  carry `satisfied_by` cannot accuse the engine. The board never re-derives the
+  state.
+- **Archived** (interfaces §1) — an archived row stays where it is with an
+  `Archived` marker, never hidden. An archived tree says `Archived` in the scope
+  header. `containment` keeps archived descendants out of `inside`/`done` and
+  names them as their own count, so a closed subtree does not read as unfinished
+  live work.
 - **Unknown source** (ruling 7) — a read without a revision or a read time is
   `Unknown source`.
 
@@ -101,8 +117,7 @@ The model and the page use INTERFACE §2's words, not the board's:
 Pinned to `/workspace/code/task-engine` at `33651ee`, schema revision 7. The
 tree read is `graph --tree <root_task_id> --depth 8`; the default depth is 2 and
 truncates deeper trees without a marker. The live source passes no `--depth`
-because the current CLI returns the whole tree without one; `truncated` is still
-honoured if a payload carries it.
+because the current CLI returns the whole tree without one.
 
 | `rest_state` | How it was produced |
 |---|---|
@@ -128,6 +143,26 @@ to it: it has no `title` on any node, no `max_concurrency` on the project, and
 `slot`/`phase` are `null` where the live store has values. It stays because it
 is the only coverage of `blocked`, the disagreement case and the defect shapes;
 the live source is the only thing the pages are built from.
+
+## Limitations we keep
+
+These are deliberate and visible, not defects waiting to be discovered:
+
+- **`provenance.operations` is hand-written.** The live source lists the verbs it
+  intends to call; it is not derived from the calls actually made. A source that
+  gained a call would print an incomplete list until someone edited it.
+- **The engine default path is hard-coded.** `main.ts` defaults `--engine` to
+  `/workspace/code/task-engine`; another checkout needs the flag (or
+  `ENGINE_*`/`TASK_DB` environment fallbacks, which the usage line does not
+  list).
+- **The lane order is hand-kept.** `LANE_ORDER` and `STATE_WORDS` mirror the
+  engine's vocabulary. A new engine state gets its own `Unknown state` lane with
+  the raw string shown, and `N lanes empty` counts only the eight known lanes.
+  It never disappears, but it is not a designed lane until the order is updated.
+- **`task_title` is a capability, and the page says so.** When a payload carries
+  no title the row shows its node key with `title not read`, and the dialog's
+  `State`/`Node key` facts are unchanged. A key is never silently shown as if it
+  were a title.
 
 ## Gaps
 

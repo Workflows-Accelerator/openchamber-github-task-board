@@ -45,6 +45,7 @@ interface GraphPayloadRead {
   edges?: unknown;
   truncated?: unknown;
   omitted?: unknown;
+  next_cursor?: unknown;
 }
 
 function recordOf(value: unknown, what: string): Record<string, unknown> {
@@ -121,7 +122,20 @@ function normalizeEdge(value: unknown): GraphEdge {
   if (kind !== 'blocked_by' && kind !== 'after') {
     throw new Error(`graph edge has an unknown kind: ${String(kind)}`);
   }
-  return { from, to, kind };
+  // The engine's own answer to "which blocker states satisfy this edge". A
+  // schema-7 payload has no field at all; null is "not read", never `done`.
+  const rawSatisfied = record.satisfied_by;
+  let satisfiedBy: string[] | null = null;
+  if (rawSatisfied !== undefined && rawSatisfied !== null) {
+    if (
+      !Array.isArray(rawSatisfied) ||
+      rawSatisfied.some((state) => typeof state !== 'string')
+    ) {
+      throw new Error(`graph edge has an unreadable satisfied_by: ${String(rawSatisfied)}`);
+    }
+    satisfiedBy = [...rawSatisfied];
+  }
+  return { from, to, kind, satisfied_by: satisfiedBy };
 }
 
 function normalizeNode(value: unknown): GraphNode {
@@ -144,6 +158,19 @@ function normalizeGraph(text: string): GraphPayload {
   }
   if (!Array.isArray(raw.edges)) {
     throw new Error('graph payload has no edges array');
+  }
+  // A tree read is whole by contract: `--tree` refuses a cursor and never
+  // pages, and the verb says so with `next_cursor: null`. A cursor, or a
+  // payload that does not say, is refused rather than rendered as a tree whose
+  // missing tasks would simply look absent.
+  if (raw.truncated === true) {
+    const omitted = typeof raw.omitted === 'number' ? raw.omitted : 'some';
+    throw new Error(`graph tree read is truncated: ${omitted} tasks omitted`);
+  }
+  if (raw.next_cursor !== null) {
+    throw new Error(
+      'graph tree read did not prove it is whole: next_cursor is not null',
+    );
   }
   return {
     nodes: raw.nodes.map(normalizeNode),

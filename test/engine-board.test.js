@@ -11,18 +11,20 @@ import {
   buildTree,
   flattenTree,
 } from '../engine-board/model.ts';
-import { renderBoard } from '../engine-board/render.ts';
 import {
   LANE_ORDER,
   containment,
   engineDisagreement,
+  laneGroups,
   lanePlan,
   progress,
 } from '../engine-board/rollup.ts';
 import {
+  boardData,
   detailFields,
   renderBoardPage,
   renderListPage,
+  sheetFieldsHtml,
   sourceLabel,
 } from '../engine-board/board-render.ts';
 import {
@@ -36,7 +38,7 @@ import {
   createFixtureSource,
   loadFixtureSnapshot,
   readFixtureMeta,
-} from '../engine-board/fixtures/source.ts';
+} from './fixtures-source.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const board = join(here, '..', 'engine-board');
@@ -381,68 +383,34 @@ test('the fixture source is the one seam and refuses a different request', async
   );
 });
 
-test('the rendered page is read-only, carries the engine words and states its gaps', () => {
-  const html = renderBoard(fixtureModel());
-
-  assert.match(html, /<html lang="en">/);
-  for (const state of REST_STATES) {
-    assert.ok(html.includes(`>${state}<`), state);
-  }
-  assert.ok(html.includes('rest_state'));
-  assert.ok(html.includes('runner_slot'));
-  assert.ok(html.includes('not reported'));
-  assert.ok(html.includes('blocked_by'));
-  assert.ok(html.includes('build/verify'));
-  assert.ok(html.includes('tree_key'));
-  assert.ok(html.includes('Read model limits'));
-  assert.ok(html.includes('because the ended attempt is not readable'));
-  // The row's state word carries the palette hook, not only the strip entry.
-  assert.ok(html.includes('<div class="state-word" role="gridcell" data-state="ready">'));
-
-  // The three states the capture cannot produce are marked at the strip, not
-  // only in the footer.
-  assert.deepEqual(readFixtureMeta(fixtures).unobserved_states, [
-    'failed',
-    'cancelled',
-    'skipped',
-  ]);
-  assert.equal((html.match(/>not captured</g) ?? []).length, 3);
-
-  assert.equal(html.includes('<button'), false);
-  assert.equal(html.includes('<input'), false);
-  assert.equal(html.includes('onclick='), false);
-  assert.equal(html.includes(' style='), false);
-});
-
-test('the renderer escapes node keys and the tree key', () => {
+test('the page escapes node keys and titles', () => {
   const snapshot = snapshotOf({
     nodes: [
-      node('t1', '<script>alert(1)</script>', 'ready', null),
+      node('t1', '<script>alert(1)</script>', 'ready', null, {
+        title: '<b>title</b>',
+      }),
     ],
     statuses: [statusOf('t1', 'ready')],
-    treeKey: '<b>tree</b>',
-    rootTaskId: 'root',
   });
-  const html = renderBoard(buildTree(snapshot));
+  const html = renderBoardPage(buildTree(snapshot));
   assert.equal(html.includes('<script>alert(1)</script>'), false);
   assert.ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
-  assert.ok(html.includes('&lt;b&gt;tree&lt;/b&gt;'));
+  assert.ok(html.includes('&lt;b&gt;title&lt;/b&gt;'));
 });
 
-test('the renderer escapes an unknown rest_state and counts it apart from zero', () => {
+test('an unknown rest_state is escaped and counted apart from zero', () => {
   const restState = '"><script>alert(2)</script>';
   const snapshot = snapshotOf({
     nodes: [node('t1', 'task', restState, null)],
   });
   const model = buildTree(snapshot);
-  const html = renderBoard(model);
+  const html = renderBoardPage(model);
 
   assert.equal(model.unknown_rest_states, 1);
   assert.equal(model.roots[0].rest_state_known, false);
   assert.equal(html.includes(restState), false);
   assert.ok(html.includes('&quot;&gt;&lt;script&gt;alert(2)&lt;/script&gt;'));
-  assert.ok(html.includes('unrecognized rest_state'));
-  assert.ok(html.includes('1 task outside the frozen'));
+  assert.ok(html.includes('The engine reported a state this board does not know'));
   assert.equal(
     Object.values(model.counts).reduce((sum, count) => sum + count, 0),
     0,
@@ -459,9 +427,9 @@ test('an opaque wait member renders as missing instead of throwing', () => {
       }),
     ],
   });
-  const html = renderBoard(buildTree(snapshot));
+  const html = renderBoardPage(buildTree(snapshot));
   assert.ok(html.includes('not reported'));
-  assert.ok(html.includes('hold'));
+  assert.ok(html.includes('Raw hold'));
   assert.ok(html.includes('shape changed'));
 });
 
@@ -487,14 +455,12 @@ test('a parent cycle is a stated defect, never an empty tree', () => {
     { kind: 'cycle', tasks: 3, keys: ['alpha', 'beta', 'gamma'] },
   ]);
 
-  const html = renderBoard(model);
+  const html = renderBoardPage(model);
   assert.ok(html.includes('Parent cycle'));
   assert.ok(html.includes('3 tasks could not be placed'));
   for (const key of ['alpha', 'beta', 'gamma']) {
     assert.ok(html.includes(key), key);
   }
-  assert.equal(html.includes('No tasks in this tree.'), false);
-  assert.ok(html.includes('No task could be placed.'));
   assert.ok(html.includes('3 tasks in this read could not be placed'));
 });
 
@@ -511,7 +477,7 @@ test('a self-parent is a cycle of one', () => {
     { kind: 'cycle', tasks: 1, keys: ['alpha'] },
   ]);
   assert.equal(model.total, 0);
-  const html = renderBoard(model);
+  const html = renderBoardPage(model);
   assert.ok(html.includes('1 task could not be placed'));
 });
 
@@ -532,7 +498,7 @@ test('a component hanging below a cycle is reported as disconnected', () => {
   ]);
   assert.equal(model.total, 0);
   assert.equal(model.unplaced, 3);
-  const html = renderBoard(model);
+  const html = renderBoardPage(model);
   assert.ok(html.includes('Disconnected'));
   assert.ok(html.includes('1 task below a cycle could not be placed'));
   assert.ok(html.includes('delta'));
@@ -555,11 +521,9 @@ test('a reachable row renders beside a cycle defect', () => {
     { kind: 'cycle', tasks: 2, keys: ['alpha', 'beta'] },
   ]);
 
-  const html = renderBoard(model);
-  assert.ok(html.includes('<span class="node-key">ok</span>'));
+  const html = renderBoardPage(model);
+  assert.ok(html.includes('data-key="ok"'));
   assert.ok(html.includes('2 tasks could not be placed'));
-  assert.equal(html.includes('No tasks in this tree.'), false);
-  assert.equal(html.includes('No task could be placed.'), false);
 });
 
 test('a subtree under an outside parent is flagged as a whole, not just its top', () => {
@@ -582,11 +546,10 @@ test('a subtree under an outside parent is flagged as a whole, not just its top'
   assert.deepEqual(model.defects, [
     { kind: 'rerooted', tasks: 3, keys: ['x'] },
   ]);
-  const html = renderBoard(model);
+  const html = renderBoardPage(model);
   assert.ok(html.includes('Re-rooted'));
-  assert.ok(html.includes('re-rooted subtree, 3 tasks'));
-  assert.ok(html.includes('parent <span class="mono">gone</span> is outside this read'));
-  assert.ok(html.includes('1 subtree (3 tasks)'));
+  assert.ok(html.includes('1 task with a parent outside this read'));
+  assert.ok(html.includes('<span class="mono">x</span>'));
 });
 
 test('the container is hidden by task_id, so a second tree keeps its own $root row', () => {
@@ -606,11 +569,11 @@ test('the container is hidden by task_id, so a second tree keeps its own $root r
   assert.deepEqual(keys, ['$root', 'beta', 'alpha']);
   assert.equal(flattenTree(model.roots)[0].task_id, 'r2');
 
-  const html = renderBoard(model);
-  assert.equal(html.split('class="node-key">$root<').length - 1, 1);
+  const html = renderBoardPage(model);
+  assert.equal(html.split('data-key="$root"').length - 1, 1);
 });
 
-test('the renderer escapes phase', () => {
+test('the pages escape phase', () => {
   const phase = '"><script>alert(9)</script>';
   const snapshot = snapshotOf({
     nodes: [node('t1', 'task', 'ready', null)],
@@ -623,12 +586,13 @@ test('the renderer escapes phase', () => {
   });
   const model = buildTree(snapshot);
   assert.equal(model.roots[0].phase, phase);
-  const html = renderBoard(model);
+  const html = renderBoardPage(model);
   assert.equal(html.includes(phase), false);
-  assert.ok(html.includes('&quot;&gt;&lt;script&gt;alert(9)&lt;/script&gt;'));
+  // The inline JSON block cannot be broken out of: `<` is escaped in the data.
+  assert.ok(html.includes('\\u003cscript>alert(9)\\u003c/script>'));
 });
 
-test('capabilities come from the payloads, and the renderer reads them', () => {
+test('capabilities come from the payloads, and the panel reads them', () => {
   const snapshot = snapshotOf({
     project: { max_concurrency: 2 },
     nodes: [
@@ -664,22 +628,16 @@ test('capabilities come from the payloads, and the renderer reads them', () => {
     ended_attempt: true,
   });
 
-  const html = renderBoard(model);
-  assert.ok(html.includes('<span class="label">slot</span> <span class="value">0 of 2</span>'));
-  assert.ok(html.includes('<span class="value">3</span>'));
-  assert.ok(html.includes('<span class="value">runner-1</span>'));
-  assert.equal(html.includes('not reported'), false);
-  assert.equal(html.includes("INTERFACE §2's attempt table"), false);
-  assert.equal(html.includes('are not printed by any read verb'), false);
-  assert.equal(html.includes('task create --tree-key'), false);
-  assert.equal(html.includes('its limit is not printed'), false);
-  assert.equal(html.includes('because the ended attempt is not readable'), false);
+  const fields = detailFields(model.roots[0], model);
+  const value = (label) => fields.find((field) => field.label === label).value;
+  assert.equal(value('Slot'), '0 of 2');
+  assert.equal(value('Runner'), 'runner-1 (runner slot 3)');
 });
 
 test('provenance is printed from the snapshot, not from a fixture', () => {
   const fixture = fixtureModel();
   assert.equal(fixture.provenance.source_kind, 'fixture');
-  const fixtureHtml = renderBoard(fixture);
+  const fixtureHtml = renderBoardPage(fixture);
   assert.ok(fixtureHtml.includes('Fixture capture'));
   assert.ok(fixtureHtml.includes(readFixtureMeta(fixtures).captured_at));
 
@@ -694,35 +652,11 @@ test('provenance is printed from the snapshot, not from a fixture', () => {
       }),
     }),
   );
-  const liveHtml = renderBoard(live);
+  const liveHtml = renderListPage(live);
   assert.ok(liveHtml.includes('Live read'));
   assert.ok(liveHtml.includes('2026-02-02T00:00:00Z'));
   assert.ok(liveHtml.includes('live-1'));
   assert.equal(liveHtml.includes('Fixture capture'), false);
-  assert.equal(liveHtml.includes('Read-only capture'), false);
-});
-
-test('an unread runner list is not the same value as no runners', () => {
-  const unread = renderBoard(
-    buildTree(
-      snapshotOf({
-        nodes: [node('t1', 'task', 'ready', null)],
-        runnersAvailable: false,
-      }),
-    ),
-  );
-  assert.ok(unread.includes('list not read'));
-  assert.equal(unread.includes('<span class="value">none</span>'), false);
-
-  const empty = renderBoard(
-    buildTree(
-      snapshotOf({
-        nodes: [node('t1', 'task', 'ready', null)],
-        runners: [],
-      }),
-    ),
-  );
-  assert.ok(empty.includes('<span class="value">none</span>'));
 });
 
 test('an empty read is the only case that says the tree has no tasks', () => {
@@ -731,67 +665,9 @@ test('an empty read is the only case that says the tree has no tasks', () => {
   );
   assert.equal(model.nodes_read, 0);
   assert.equal(model.total, 0);
-  const html = renderBoard(model);
-  assert.ok(html.includes('No tasks in this tree.'));
+  const html = renderBoardPage(model);
+  assert.ok(html.includes('No tasks in this tree'));
   assert.equal(html.includes('could not be placed'), false);
-});
-
-test('indentation is generated past depth four', () => {
-  const nodes = [node('root', '$root', 'ready', null)];
-  let parent = 'root';
-  for (let index = 0; index < 6; index += 1) {
-    nodes.push(node(`n${index}`, `n${index}`, 'ready', parent));
-    parent = `n${index}`;
-  }
-  const model = buildTree(snapshotOf({ nodes }));
-  assert.equal(model.max_depth, 5);
-  const html = renderBoard(model);
-  assert.ok(html.includes('data-depth="5"'));
-  assert.ok(html.includes('.key[data-depth="5"] { padding-left: 5.75rem; }'));
-});
-
-test('the ledger exposes treegrid and column roles', () => {
-  const html = renderBoard(fixtureModel());
-  assert.equal((html.match(/role="treegrid"/g) ?? []).length, 1);
-  assert.equal((html.match(/role="columnheader"/g) ?? []).length, 3);
-  assert.equal((html.match(/role="gridcell"/g) ?? []).length, 21);
-  assert.equal((html.match(/role="row"/g) ?? []).length, 8);
-  assert.ok((html.match(/role="list"/g) ?? []).length >= 2);
-  // Narrow screens keep the column headers for assistive tech.
-  assert.equal(html.includes('.columns { display: none; }'), false);
-});
-
-test('an edge ref links to the row it names, and an outside ref says so', () => {
-  const fixtureHtml = renderBoard(fixtureModel());
-  const href = fixtureHtml.match(/href="#(task-[A-Za-z0-9_]+)"/);
-  assert.ok(href, 'a present edge ref must be a link');
-  assert.ok(fixtureHtml.includes(`id="${href[1]}"`));
-
-  const outside = renderBoard(
-    buildTree(
-      snapshotOf({
-        nodes: [node('a', 'alpha', 'ready', null)],
-        edges: [{ from: 'ghost', to: 'a', kind: 'blocked_by' }],
-      }),
-    ),
-  );
-  assert.ok(outside.includes('outside this tree'));
-  assert.ok(outside.includes('ghost'));
-  assert.equal(outside.includes('href="#task-ghost"'), false);
-
-  const unplaced = renderBoard(
-    buildTree(
-      snapshotOf({
-        nodes: [
-          node('a', 'alpha', 'ready', null),
-          node('c', 'gamma', 'ready', 'c'),
-        ],
-        edges: [{ from: 'c', to: 'a', kind: 'blocked_by' }],
-      }),
-    ),
-  );
-  assert.ok(unplaced.includes('(not placed, c)'));
-  assert.equal(unplaced.includes('href="#task-c"'), false);
 });
 
 test('a task without a status row is flagged as missing a status', () => {
@@ -799,8 +675,8 @@ test('a task without a status row is flagged as missing a status', () => {
     snapshotOf({ nodes: [node('a', 'alpha', 'ready', null)] }),
   );
   assert.equal(model.roots[0].status_missing, true);
-  const html = renderBoard(model);
-  assert.ok(html.includes('task status row missing'));
+  const html = renderBoardPage(model);
+  assert.ok(html.includes('No status row came back for this task.'));
 });
 
 test('a graph/status rest_state disagreement is flagged', () => {
@@ -812,17 +688,17 @@ test('a graph/status rest_state disagreement is flagged', () => {
   );
   assert.equal(model.roots[0].rest_state, 'done');
   assert.equal(model.roots[0].rest_state_mismatch, true);
-  const html = renderBoard(model);
-  assert.ok(html.includes('graph and status disagree on rest_state'));
+  const html = renderBoardPage(model);
+  assert.ok(html.includes("graph and the status read disagree on this task's state"));
 });
 
 test('a null rest_state is a flagged missing value, not a crash', () => {
   const model = buildTree(
     snapshotOf({ nodes: [node('a', 'alpha', null, null)] }),
   );
-  const html = renderBoard(model);
+  const html = renderBoardPage(model);
   assert.equal(model.unknown_rest_states, 1);
-  assert.ok(html.includes('unrecognized rest_state'));
+  assert.ok(html.includes('The engine reported a state this board does not know'));
   assert.equal(
     Object.values(model.counts).reduce((sum, count) => sum + count, 0),
     0,
@@ -864,14 +740,32 @@ test('containment is the rollup over children on a three-level tree', () => {
   );
   const byKey = new Map(flattenTree(model.roots).map((row) => [row.node_key, row]));
 
-  assert.deepEqual(containment(byKey.get('alpha')), { inside: 3, done: 1 });
-  assert.deepEqual(containment(byKey.get('alpha/beta')), { inside: 1, done: 1 });
-  assert.deepEqual(containment(byKey.get('alpha/beta/gamma')), { inside: 0, done: 0 });
-  assert.deepEqual(progress(model.roots), { done: 1, total: 4 });
+  assert.deepEqual(containment(byKey.get('alpha')), {
+    inside: 3,
+    done: 1,
+    archived: 0,
+  });
+  assert.deepEqual(containment(byKey.get('alpha/beta')), {
+    inside: 1,
+    done: 1,
+    archived: 0,
+  });
+  assert.deepEqual(containment(byKey.get('alpha/beta/gamma')), {
+    inside: 0,
+    done: 0,
+    archived: 0,
+  });
+  assert.deepEqual(progress(model.roots), { done: 1, total: 4, archived: 0 });
   // The renderer prints the same numbers the rollup returns.
   const html = renderBoardPage(model);
   assert.ok(html.includes('3 inside · 1 done'));
   assert.ok(html.includes('1 inside · 1 done'));
+  // The panel's Inside field uses the same rollup, not the level's row count.
+  assert.equal(
+    detailFields(byKey.get('alpha'), model).find((field) => field.label === 'Inside')
+      .value,
+    '3 inside · 1 done',
+  );
 });
 
 test('an empty lane is not drawn; the rest are counted once', () => {
@@ -889,26 +783,98 @@ test('an empty lane is not drawn; the rest are counted once', () => {
   assert.equal(plan.empty, LANE_ORDER.length - 1);
 
   const html = renderBoardPage(model);
-  assert.ok(html.includes(`${LANE_ORDER.length - 1} lanes empty`));
-  assert.equal((html.match(/class="lane"/g) ?? []).length, 1);
+  // The page ships the plan as data, so the script draws the plan the tests
+  // check instead of a second copy of the lane rules.
+  assert.ok(html.includes(`"empty":${LANE_ORDER.length - 1}`));
   assert.equal(html.includes('class="lane is-empty"'), false);
   assert.equal(html.includes('Empty.'), false);
 });
 
 test('a genuinely empty scope says it has no subtasks, not "lanes empty"', () => {
-  const html = renderBoardPage(
-    buildTree(
-      snapshotOf({
-        nodes: [
-          node('r', 'root', 'ready', null),
-          node('c', 'root/leaf', 'draft', 'r'),
-        ],
-      }),
-    ),
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', 'root', 'ready', null),
+        node('c', 'root/leaf', 'draft', 'r'),
+      ],
+    }),
   );
+  const html = renderBoardPage(model);
   assert.ok(html.includes('No subtasks. Nothing sits under this task.'));
   // The leaf's own scope is empty and must not claim eight empty lanes.
+  assert.equal(boardData(model).scopes['root/leaf'].lanes.length, 0);
+  assert.equal(boardData(model).scopes['root/leaf'].empty, LANE_ORDER.length);
   assert.equal((html.match(/lanes empty/g) ?? []).length, 1);
+});
+
+test('the lane vocabulary is the rest-state vocabulary, and unknown has its own lane', () => {
+  assert.deepEqual(new Set(LANE_ORDER), new Set(REST_STATES));
+
+  // A done child lands in the done lane, not in a lane chosen by document order.
+  const done = laneGroups(['done'], LANE_ORDER);
+  assert.deepEqual(done.lanes, ['done']);
+  assert.equal(done.empty, LANE_ORDER.length - 1);
+
+  // A state this build does not know gets one lane of its own; the eight
+  // vocabulary lanes stay empty and the unknown lane is not counted as one.
+  const bogus = laneGroups(['mystery'], LANE_ORDER);
+  assert.deepEqual(bogus.lanes, ['unknown']);
+  assert.equal(bogus.empty, LANE_ORDER.length);
+  assert.equal(bogus.empty, LANE_ORDER.length + 1 - bogus.lanes.length);
+
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', 'root', 'ready', null),
+        node('c', 'root/child', 'done', 'r'),
+      ],
+    }),
+  );
+  const plan = lanePlan(model.roots[0].children);
+  assert.deepEqual(plan.lanes.map((lane) => lane.state), ['done']);
+  assert.deepEqual(plan.lanes[0].cards.map((row) => row.node_key), ['root/child']);
+
+  const unknown = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', 'root', 'ready', null),
+        node('c', 'root/odd', 'mystery', 'r'),
+      ],
+    }),
+  );
+  const scopes = boardData(unknown).scopes;
+  assert.deepEqual(scopes.root.lanes, [{ state: 'unknown', tasks: ['c'] }]);
+  assert.equal(scopes.root.empty, LANE_ORDER.length);
+});
+
+test('an unknown state is named Unknown state with the engine string, before script', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', 'root', 'ready', null),
+        node('c', 'root/odd', 'mystery', 'r'),
+      ],
+    }),
+  );
+  const row = model.roots[0].children[0];
+  assert.equal(row.rest_state_known, false);
+  const html = renderListPage(model);
+  // The row's state is a label, never blank: a state this build does not know
+  // reads `Unknown state`, with the engine's raw string named beside it.
+  assert.ok(
+    html.includes(
+      '<span class="dot" aria-hidden="true"></span>Unknown state</span>',
+    ),
+  );
+  assert.ok(
+    html.includes(
+      'a state this board does not know: <span class="mono">mystery</span>',
+    ),
+  );
+  assert.equal(
+    detailFields(row, model).find((field) => field.label === 'State').value,
+    'Unknown state (mystery)',
+  );
 });
 
 test('a blocked card names a blocker outside its own level by title', () => {
@@ -936,7 +902,14 @@ test('a ready card with an unsatisfied blocked_by carries the engine defect noti
         node('a', 'alpha', 'ready', null, { title: 'Wire the read model' }),
         node('b', 'beta', 'waiting', null, { title: 'Check the unit tests' }),
       ],
-      edges: [{ from: 'b', to: 'a', kind: 'blocked_by' }],
+      edges: [
+        {
+          from: 'b',
+          to: 'a',
+          kind: 'blocked_by',
+          satisfied_by: ['done'],
+        },
+      ],
     }),
   );
   const byId = new Map(flattenTree(model.roots).map((row) => [row.task_id, row]));
@@ -945,9 +918,59 @@ test('a ready card with an unsatisfied blocked_by carries the engine defect noti
 
   const html = renderBoardPage(model);
   assert.ok(html.includes('Engine defect'));
-  assert.ok(html.includes('recorded ready, but Check the unit tests is not done'));
+  assert.ok(html.includes('recorded ready, but Check the unit tests is waiting'));
   // The engine's word is still what the card shows; the board does not replace it.
   assert.ok(html.includes('Ready to start'));
+});
+
+test('a blocker the edge accepts is not a disagreement, whatever its state', () => {
+  const cases = [
+    ['failed', ['done', 'failed']],
+    ['skipped', ['done', 'skipped']],
+  ];
+  for (const [state, satisfiedBy] of cases) {
+    const model = buildTree(
+      snapshotOf({
+        nodes: [
+          node('a', 'alpha', 'ready', null, { title: 'Ship the thing' }),
+          node('b', 'beta', state, null, { title: 'Optional check' }),
+        ],
+        edges: [
+          {
+            from: 'b',
+            to: 'a',
+            kind: 'blocked_by',
+            satisfied_by: satisfiedBy,
+          },
+        ],
+      }),
+    );
+    const byId = new Map(flattenTree(model.roots).map((row) => [row.task_id, row]));
+    assert.equal(
+      engineDisagreement(byId.get('a'), byId),
+      null,
+      `a dependency satisfied by ${state} must not accuse the engine`,
+    );
+    const html = renderBoardPage(model);
+    assert.equal(html.includes('Engine defect'), false, state);
+  }
+});
+
+test('an edge that did not carry satisfied_by cannot accuse the engine', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('a', 'alpha', 'ready', null, { title: 'Ship the thing' }),
+        node('b', 'beta', 'waiting', null, { title: 'Check the unit tests' }),
+      ],
+      // Schema 7's fixture predates `satisfied_by`; absent is "not read", and
+      // not a licence to assume `done` and invent a defect.
+      edges: [{ from: 'b', to: 'a', kind: 'blocked_by' }],
+    }),
+  );
+  const byId = new Map(flattenTree(model.roots).map((row) => [row.task_id, row]));
+  assert.equal(engineDisagreement(byId.get('a'), byId), null);
+  assert.equal(renderBoardPage(model).includes('Engine defect'), false);
 });
 
 test('scope survives a URL round trip and the breadcrumb is the path', () => {
@@ -962,6 +985,9 @@ test('scope survives a URL round trip and the breadcrumb is the path', () => {
   assert.deepEqual(parseHash('#list'), { view: 'list', node_key: null });
   assert.deepEqual(parseHash('#unknown/x'), { view: null, node_key: 'x' });
   assert.deepEqual(parseHash(''), { view: null, node_key: null });
+  // A malformed escape is a scope the page cannot name, not a crash.
+  assert.doesNotThrow(() => parseHash('#board/%'));
+  assert.deepEqual(parseHash('#board/%'), { view: 'board', node_key: null });
 
   const model = fixtureModel();
   assert.deepEqual(
@@ -973,9 +999,25 @@ test('scope survives a URL round trip and the breadcrumb is the path', () => {
     ['build/render/legend'],
   );
 
+  const data = boardData(model);
+  assert.deepEqual(Object.keys(data.scopes).sort(), [
+    '',
+    'build',
+    'build/integration',
+    'build/read-model',
+    'build/render',
+    'build/render/legend',
+    'build/spec',
+    'build/verify',
+  ]);
+  assert.deepEqual(
+    data.scopes['build/render'].lanes.flatMap((lane) => lane.tasks),
+    ['tsk_cbe8c0538630444191150e5d9f1598ce'],
+  );
+
   const html = renderBoardPage(model);
-  assert.ok(html.includes('data-scope="build/render"'));
-  assert.ok(html.includes('addEventListener(\'hashchange\''));
+  assert.ok(html.includes('"build/render"'));
+  assert.ok(html.includes("addEventListener('hashchange'"));
 });
 
 test('the detail panel lists the technical surface and the raw machine values', () => {
@@ -1036,6 +1078,7 @@ test('the detail panel lists the technical surface and the raw machine values', 
       'Runner',
       'Created',
       'Updated',
+      'Archived',
       'Attempt id',
       'Attempts',
       'Blocked by',
@@ -1056,7 +1099,16 @@ test('the detail panel lists the technical surface and the raw machine values', 
   assert.equal(value('Created'), '2026-11-25T13:00:00Z');
 
   const html = renderBoardPage(model);
-  assert.equal((html.match(/<dialog/g) ?? []).length, 1);
+  // The dialog is built on click; no inert <dialog> is shipped.
+  assert.equal((html.match(/<dialog/g) ?? []).length, 0);
+  // Every label the panel will show is a <dt> in the markup the page inserts.
+  const facts = sheetFieldsHtml(fields);
+  for (const field of fields) {
+    assert.ok(
+      facts.includes(`<dt>${field.label}</dt>`),
+      `missing <dt>${field.label}</dt>`,
+    );
+  }
   assert.ok(html.includes('aria-labelledby'));
   assert.ok(html.includes('Close details'));
   assert.ok(html.includes('Raw wait'));
@@ -1099,26 +1151,32 @@ test('a source with no revision or read time is unknown, never Live read', () =>
   }
 });
 
-test('every card and row is in the HTML before script runs', () => {
+test('the no-JS page is the whole tree, and no dialog is shipped', () => {
   const model = fixtureModel();
   const rows = flattenTree(model.roots);
   for (const html of [renderBoardPage(model), renderListPage(model)]) {
     for (const row of rows) {
-      assert.ok(html.includes(row.node_key), `missing ${row.node_key}`);
-      assert.ok(html.includes(`id="d-${row.task_id}"`), `missing panel ${row.node_key}`);
+      assert.ok(html.includes(`data-key="${row.node_key}"`), `missing ${row.node_key}`);
+      assert.ok(
+        html.includes(`data-task="${row.task_id}"`),
+        `missing row ${row.node_key}`,
+      );
     }
-    // Sections are hidden only by the class the inline script adds. With script
-    // off nothing is filtered out of view.
-    assert.ok(html.includes('html.js .scope-view { display: none; }'));
-    assert.equal(/(^|\n)\.scope-view \{ display: none; \}/.test(html), false);
-    assert.equal((html.match(/<dialog/g) ?? []).length, rows.length);
+    // The tree is hidden only by the class the inline script adds.
+    assert.ok(html.includes('html.js .nojs-tree { display: none; }'));
+    assert.equal(/(^|\n)\.nojs-tree \{ display: none; \}/.test(html), false);
+    // No inert dialog per task; the one dialog is built on click.
+    assert.equal((html.match(/<dialog/g) ?? []).length, 0);
     assert.equal(/<script[^>]+src=/.test(html), false);
   }
   const boardHtml = renderBoardPage(model);
-  for (const card of boardHtml.split('<article class="card"').slice(1)) {
-    const markup = card.split('</article>')[0];
-    assert.equal(markup.replace(/<[^>]*>/g, '').includes('tsk_'), false);
-  }
+  // The board's no-JS floor is the List body: one stacked tree, not one
+  // section per scope.
+  assert.ok(boardHtml.includes('<div class="nojs-tree" id="tree-source">'));
+  assert.equal((boardHtml.match(/class="scope-view"/g) ?? []).length, 0);
+  assert.equal((boardHtml.match(/<ul class="tree">/g) ?? []).length, 1);
+  // A task id is never a label.
+  assert.equal(/>tsk_[A-Za-z0-9]+</.test(boardHtml), false);
 });
 
 test('the progress line and no Map tab are on both views', () => {
@@ -1168,6 +1226,7 @@ test('the live source reads the CLI, normalizes the edge shape and declares prov
           satisfied_by: ['done'],
         },
       ],
+      next_cursor: null,
     }),
     status: JSON.stringify({
       tasks: [
@@ -1206,7 +1265,7 @@ test('the live source reads the CLI, normalizes the edge shape and declares prov
   assert.deepEqual(snapshot.provenance.port_only_steps, []);
   assert.deepEqual(snapshot.provenance.unobserved_states, []);
   assert.deepEqual(snapshot.graph.edges, [
-    { from: 'tsk_b', to: 'tsk_a', kind: 'blocked_by' },
+    { from: 'tsk_b', to: 'tsk_a', kind: 'blocked_by', satisfied_by: ['done'] },
   ]);
   assert.equal(snapshot.runners_available, false);
   assert.equal(snapshot.tree_key, 'tree-1');
@@ -1229,6 +1288,7 @@ test('the live source accepts the single-id status shape and refuses a wrong tre
       { task_id: 'tsk_a', node_key: 'build', rest_state: 'ready', parent_task_id: 'tsk_root' },
     ],
     edges: [],
+    next_cursor: null,
   });
   const source = createLiveSource({
     enginePath: '/engine',
@@ -1267,3 +1327,178 @@ test('the live source accepts the single-id status shape and refuses a wrong tre
   );
 });
 
+
+// ---------------------------------------------------------------- slice 4
+
+function liveSourceWith(graphPayload) {
+  return createLiveSource({
+    enginePath: '/engine',
+    dbPath: '/db.sqlite3',
+    command: async (args) => {
+      if (args[0] === 'graph') return JSON.stringify(graphPayload);
+      if (args[0] === 'status') {
+        return JSON.stringify({
+          tasks: graphPayload.nodes.map((entry) => ({
+            task_id: entry.task_id,
+            rest_state: entry.rest_state,
+            phase: null,
+            slot: null,
+            wait: null,
+            hold: null,
+            handoff_revision: 0,
+          })),
+        });
+      }
+      if (args[0] === 'project') {
+        return JSON.stringify({ project_id: 'p', config_revision: 1 });
+      }
+      return JSON.stringify({ schema_revision: 7 });
+    },
+    readCommit: async () => 'abc1234',
+  });
+}
+
+test('a tree read that cannot prove it is whole is refused', async () => {
+  const nodes = [
+    {
+      task_id: 'tsk_root',
+      node_key: '$root',
+      rest_state: 'ready',
+      parent_task_id: null,
+      tree_key: 'tree-1',
+    },
+    {
+      task_id: 'tsk_a',
+      node_key: 'build',
+      rest_state: 'ready',
+      parent_task_id: 'tsk_root',
+      tree_key: 'tree-1',
+    },
+  ];
+  const request = { project_id: 'p', tree_key: 'tree-1', root_task_id: 'tsk_root' };
+
+  await assert.rejects(
+    liveSourceWith({
+      nodes,
+      edges: [],
+      next_cursor: null,
+      truncated: true,
+      omitted: 1,
+    }).load(request),
+    /truncated: 1 tasks omitted/,
+  );
+
+  await assert.rejects(
+    liveSourceWith({ nodes, edges: [], next_cursor: 'cur_1' }).load(request),
+    /next_cursor is not null/,
+  );
+
+  // A payload that does not say `next_cursor: null` has not proved completeness.
+  await assert.rejects(
+    liveSourceWith({ nodes, edges: [] }).load(request),
+    /next_cursor is not null/,
+  );
+
+  const whole = await liveSourceWith({
+    nodes,
+    edges: [],
+    next_cursor: null,
+  }).load(request);
+  assert.equal(whole.graph.nodes.length, 2);
+});
+
+test('duplicate task_id rows in a graph payload are one row, not two roots', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('root', '$root', 'ready', null),
+        node('a', 'alpha', 'ready', 'root', { title: 'First read' }),
+        node('a', 'alpha', 'done', 'root', { title: 'Second read' }),
+        node('b', 'beta', 'ready', 'root'),
+      ],
+    }),
+  );
+  assert.equal(model.total, 2);
+  assert.deepEqual(
+    flattenTree(model.roots).map((row) => row.node_key),
+    ['alpha', 'beta'],
+  );
+  assert.equal(model.roots.length, 2, 'the duplicate is not a second root');
+  // First row wins, so the duplicate's `done` does not change the counts.
+  assert.equal(model.roots[0].rest_state, 'ready');
+  assert.deepEqual(progress(model.roots), { done: 0, total: 2, archived: 0 });
+});
+
+test('archived rows stay in the tree, labelled, and out of the live count', () => {
+  const archivedAt = '2026-11-01T00:00:00Z';
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('container', '$root', 'ready', null, { archived_at: archivedAt }),
+        node('alpha', 'alpha', 'done', 'container'),
+        node('a1', 'alpha/old', 'done', 'alpha', { archived_at: archivedAt }),
+        node('a2', 'alpha/live', 'ready', 'alpha'),
+        node('beta', 'beta', 'done', 'container', { archived_at: archivedAt }),
+      ],
+      rootTaskId: 'container',
+    }),
+  );
+  assert.equal(model.tree_state, 'archived');
+  assert.equal(model.roots[0].archived_at, null);
+  assert.equal(model.roots[0].children[0].archived_at, archivedAt);
+
+  // Never `of N`: archived work is named beside the live count.
+  assert.deepEqual(progress(model.roots), { done: 1, total: 2, archived: 2 });
+  const byKey = new Map(flattenTree(model.roots).map((row) => [row.node_key, row]));
+  // Archived descendants are their own bucket, not live `inside` work.
+  assert.deepEqual(containment(byKey.get('alpha')), {
+    inside: 1,
+    done: 0,
+    archived: 1,
+  });
+
+  const html = renderBoardPage(model);
+  assert.ok(html.includes('1 of 2</strong> finished'));
+  assert.ok(html.includes('· 2 archived'));
+  assert.ok(html.includes('data-tree-state="archived"'));
+  assert.ok(html.includes("DATA.tree_state === 'archived'"));
+  // Labelled, never hidden.
+  assert.ok(html.includes('data-key="beta"'));
+  assert.ok(html.includes('data-archived-self="1"'));
+  assert.ok(html.includes('<span class="archived-tag">Archived</span>'));
+  assert.ok(html.includes("archivedChip.textContent = 'Archived'"));
+});
+
+test('a tree with only archived rows says no live tasks, not no tasks', () => {
+  const archivedAt = '2026-11-01T00:00:00Z';
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('container', '$root', 'ready', null, { archived_at: archivedAt }),
+        node('alpha', 'alpha', 'done', 'container', { archived_at: archivedAt }),
+      ],
+      rootTaskId: 'container',
+    }),
+  );
+  assert.deepEqual(progress(model.roots), { done: 0, total: 0, archived: 1 });
+  const html = renderBoardPage(model);
+  assert.ok(html.includes('No live tasks'));
+  assert.ok(html.includes('· 1 archived'));
+  assert.equal(html.includes('No tasks in this tree'), false);
+});
+
+test('a row whose payload carried no title says so instead of passing the key off as one', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [node('a', 'alpha', 'ready', null)],
+      statuses: [statusOf('a', 'ready')],
+    }),
+  );
+  assert.equal(model.roots[0].title, null);
+  assert.equal(model.capabilities.task_title, false);
+  const html = renderBoardPage(model);
+  assert.ok(
+    html.includes('alpha <span class="title-missing">title not read</span>'),
+  );
+  assert.equal(html.includes('>alpha</button>'), false);
+});

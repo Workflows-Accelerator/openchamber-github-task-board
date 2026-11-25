@@ -14,19 +14,20 @@
 import {
   flattenTree,
   type ReadProvenance,
+  type RestState,
   type TreeModel,
   type TreeRow,
 } from './model.ts';
 import {
+  LANE_ORDER,
   STATE_WORDS,
   containment,
   engineDisagreement,
+  laneGroups,
   lanePlan,
   progress,
-  type LanePlan,
-  type LaneState,
 } from './rollup.ts';
-import { scopeHref, scopePath, type BoardView } from './scope.ts';
+import { scopeHref, type BoardView } from './scope.ts';
 
 const ENTITIES: Record<string, string> = {
   '&': '&amp;',
@@ -47,11 +48,13 @@ function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? '' : 's'}`;
 }
 
-export function stateWord(state: LaneState): string {
+export function stateWord(state: string): string {
   if (state === 'unknown') {
     return 'Unknown state';
   }
-  return STATE_WORDS[state];
+  // A state this build does not know is named as unknown, never blank and
+  // never silently renamed to a known word.
+  return STATE_WORDS[state as RestState] ?? 'Unknown state';
 }
 
 export function viewFile(view: BoardView): string {
@@ -91,6 +94,16 @@ function titleOf(row: TreeRow): string {
   return row.title ?? row.node_key;
 }
 
+// A key is not a title. When the payload carried no title the page still shows
+// the key, but says what it is; the `task_title` capability is what makes this
+// visible instead of silently reading as a name.
+function titleHtml(row: TreeRow): string {
+  const text = esc(titleOf(row));
+  return row.title === null
+    ? `${text} <span class="title-missing">title not read</span>`
+    : text;
+}
+
 export function dialogId(row: TreeRow): string {
   return `d-${row.task_id.replace(/[^A-Za-z0-9_-]/g, '-')}`;
 }
@@ -108,7 +121,7 @@ function refLabel(
 ): string {
   const row = rows.get(ref.task_id);
   if (row !== undefined) {
-    return titleOf(row);
+    return row.title === null ? `${titleOf(row)} (title not read)` : titleOf(row);
   }
   return ref.node_key === null ? 'a task outside this read' : ref.node_key;
 }
@@ -140,6 +153,9 @@ const NOT_REPORTED = 'not reported';
 export function detailFields(row: TreeRow, model: TreeModel): DetailField[] {
   const rows = byId(model);
   const contained = containment(row);
+  const inside =
+    `${contained.inside} inside · ${contained.done} done` +
+    (contained.archived > 0 ? ` · ${contained.archived} archived` : '');
   const limit = row.slot_limit ?? model.slot_limit;
   const slot =
     row.slot === null
@@ -170,12 +186,13 @@ export function detailFields(row: TreeRow, model: TreeModel): DetailField[] {
     { label: 'State', value: `${stateWord(row.rest_state)} (${row.rest_state})` },
     { label: 'Node key', value: row.node_key, mono: true },
     { label: 'Task id', value: row.task_id, mono: true },
-    { label: 'Inside', value: `${contained.inside} inside · ${contained.done} done` },
+    { label: 'Inside', value: inside },
     { label: 'Phase', value: row.phase ?? 'none' },
     { label: 'Slot', value: slot },
     { label: 'Runner', value: runner },
     { label: 'Created', value: row.created_at ?? NOT_REPORTED },
     { label: 'Updated', value: row.updated_at ?? NOT_REPORTED },
+    { label: 'Archived', value: row.archived_at ?? 'no' },
     { label: 'Attempt id', value: lastAttempt?.attempt_id ?? NOT_REPORTED, mono: true },
     { label: 'Attempts', value: `${row.attempts.length}; last ${lastWord}` },
     {
@@ -204,22 +221,20 @@ export function detailFields(row: TreeRow, model: TreeModel): DetailField[] {
   return fields;
 }
 
-function rawJson(value: unknown): string | null {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  return JSON.stringify(value, null, 2);
-}
-
 // ---------------------------------------------------------------- pieces
 
 function progressBlock(model: TreeModel): string {
-  const { done, total } = progress(model.roots);
+  const { done, total, archived } = progress(model.roots);
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-  const line =
+  let line =
     total === 0
-      ? 'No tasks in this tree'
+      ? archived > 0
+        ? 'No live tasks'
+        : 'No tasks in this tree'
       : `<strong>${done} of ${total}</strong> finished`;
+  if (archived > 0) {
+    line += ` · ${archived} archived`;
+  }
   return `<section class="progress" aria-label="Progress">
     <p class="progress-line">${line}</p>
     <span class="progress-track" aria-hidden="true"><span class="progress-fill pct-${pct}"></span></span>
@@ -240,30 +255,6 @@ function topBar(view: BoardView, defaultKey: string | null): string {
       }>List</a>
     </nav>
   </header>`;
-}
-
-function crumbs(
-  path: readonly TreeRow[],
-  view: BoardView,
-  topIsSection: boolean,
-): string {
-  if (path.length === 0) {
-    return '<p class="crumbs"><span aria-current="page">All work</span></p>';
-  }
-  const parts: string[] = [];
-  parts.push(
-    topIsSection
-      ? `<a href="${scopeHref(view, null)}">All work</a>`
-      : '<span>All work</span>',
-  );
-  // The trail is the ancestors; the scope's own title is the heading below, so
-  // printing it twice would only repeat the h1.
-  for (const row of path.slice(0, -1)) {
-    parts.push(`<a href="${scopeHref(view, row.node_key)}">${esc(titleOf(row))}</a>`);
-  }
-  return `<p class="crumbs">${parts.join(
-    '<span class="sep" aria-hidden="true">›</span>',
-  )}</p>`;
 }
 
 function defectBlock(model: TreeModel): string {
@@ -305,207 +296,107 @@ function defectBlock(model: TreeModel): string {
   </section>`;
 }
 
-function stateLine(row: TreeRow, className: string): string {
-  return `<p class="${className}" data-state="${esc(row.rest_state)}"><span class="dot" aria-hidden="true"></span>${esc(
-    stateWord(row.rest_state),
-  )}</p>`;
-}
-
-function card(
-  row: TreeRow,
-  rows: ReadonlyMap<string, TreeRow>,
-): string {
-  const contained = containment(row);
-  const hasChildren = row.children.length > 0;
-  const title = esc(titleOf(row));
-  const enter = hasChildren
-    ? `<a class="enter" href="${scopeHref('board', row.node_key)}">${title}</a>`
-    : `<button class="enter" type="button" data-dialog="${esc(dialogId(row))}">${title}</button>`;
-  const blockers = blockerLabels(row, rows);
-  const wait =
-    row.rest_state === 'blocked' && blockers.length > 0
-      ? `<p class="card-wait">Waiting for ${esc(joinWords(blockers))}</p>`
+// The facts list, as markup. It is written with concatenation and carries its
+// own escaping because the page embeds this function's source: the dialog is
+// built on click from the inline JSON block instead of shipping one inert
+// `<dialog>` per task. The tests call this function directly, so the labels in
+// the dialog are the labels `detailFields` returns.
+export function sheetFieldsHtml(fields: readonly DetailField[]): string {
+  const entities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  const escape = (value: unknown): string =>
+    typeof value === 'string'
+      ? value.replace(/[&<>"']/g, (character) => entities[character] ?? character)
       : '';
-  const defectRow = engineDisagreement(row, rows);
-  const disagreement =
-    defectRow === null
-      ? ''
-      : `<p class="card-defect"><span class="defect-kind">Engine defect</span>: recorded ready, but ${esc(
-          titleOf(defectRow),
-        )} is not done.</p>`;
-  const missing =
-    row.status_missing
-      ? '<p class="card-defect">No status row came back for this task.</p>'
-      : '';
-  const mismatch =
-    row.rest_state_mismatch
-      ? '<p class="card-defect">The graph and the status read disagree on this task\'s state.</p>'
-      : '';
-  const unknown = row.rest_state_known
-    ? ''
-    : `<p class="card-defect">The engine reported a state this board does not know: <span class="mono">${esc(
-        row.rest_state,
-      )}</span>.</p>`;
-  const count = hasChildren
-    ? `<p class="card-count">${contained.inside} inside · ${contained.done} done</p>`
-    : '';
-  return `<article class="card" data-state="${esc(row.rest_state)}">
-      <h3 class="card-title">${enter}</h3>
-      ${stateLine(row, 'card-state')}
-      ${count}
-      ${wait}
-      ${disagreement}
-      ${missing}
-      ${mismatch}
-      ${unknown}
-    </article>`;
-}
-
-function lanes(plan: LanePlan, rows: ReadonlyMap<string, TreeRow>): string {
-  if (plan.lanes.length === 0) {
-    return '';
-  }
-  const parts = plan.lanes
-    .map(
-      (lane) => `<section class="lane" data-state="${esc(lane.state)}" aria-label="${esc(
-        stateWord(lane.state),
-      )}">
-        <h2 class="lane-head" data-state="${esc(lane.state)}"><span class="dot" aria-hidden="true"></span><span class="lane-name">${esc(
-          stateWord(lane.state),
-        )}</span><span class="lane-count">${lane.cards.length}</span></h2>
-        <div class="lane-cards">${lane.cards
-          .map((cardRow) => card(cardRow, rows))
-          .join('\n')}</div>
-      </section>`,
-    )
-    .join('\n');
-  return `<div class="lanes">${parts}</div>`;
-}
-
-function scopeBoard(
-  section: {
-    key: string | null;
-    title: string;
-    row: TreeRow | null;
-    rows: TreeRow[];
-    path: TreeRow[];
-  },
-  rows: ReadonlyMap<string, TreeRow>,
-  isDefault: boolean,
-  topIsSection: boolean,
-): string {
-  const plan = lanePlan(section.rows);
-  const count = section.rows.length;
-  let level: string;
-  if (count === 0) {
-    level =
-      '<p class="level">No subtasks. Nothing sits under this task.</p>';
-  } else {
-    level = `<p class="level"><strong>${count}</strong> in this level${
-      plan.empty > 0 ? ` · ${plan.empty} lanes empty` : ''
-    }</p>`;
-  }
-  const header =
-    section.row === null
-      ? `<header class="scope-head">
-      <div class="scope-main"><h1>${esc(section.title)}</h1></div>
-      <div class="scope-side"><span class="chip">${plural(count, 'task')}</span></div>
-    </header>`
-      : `<header class="scope-head">
-      <div class="scope-main">
-        <h1>${esc(section.title)}</h1>
-        ${stateLine(section.row, 'scope-state')}
-      </div>
-      <div class="scope-side">
-        <span class="chip">${containment(section.row).inside} inside · ${
-          containment(section.row).done
-        } done</span>
-        <button class="details" type="button" data-dialog="${esc(
-          dialogId(section.row),
-        )}">Details</button>
-      </div>
-    </header>`;
-  return `<section class="scope-view" data-scope="${esc(section.key ?? '')}"${
-    isDefault ? ' data-default="true"' : ''
-  } aria-label="${esc(section.title)}">
-      ${crumbs(section.path, 'board', topIsSection)}
-      ${header}
-      ${level}
-      ${lanes(plan, rows)}
-    </section>`;
-}
-
-function sheet(row: TreeRow, model: TreeModel): string {
-  const fields = detailFields(row, model)
+  return fields
     .map(
       (field) =>
-        `<div class="fact"><dt>${esc(field.label)}</dt><dd${
-          field.mono ? ' class="mono"' : ''
-        }>${esc(field.value)}</dd></div>`,
+        '<div class="fact"><dt>' +
+        escape(field.label) +
+        '</dt><dd' +
+        (field.mono ? ' class="mono"' : '') +
+        '>' +
+        escape(field.value) +
+        '</dd></div>',
     )
     .join('');
-  const wait = rawJson(row.wait);
-  const hold = rawJson(row.hold);
-  const raw =
-    wait === null && hold === null
-      ? ''
-      : `<section class="raw">
-        ${wait === null ? '' : `<h3>Raw wait</h3><pre>${esc(wait)}</pre>`}
-        ${hold === null ? '' : `<h3>Raw hold</h3><pre>${esc(hold)}</pre>`}
-      </section>`;
-  return `<dialog class="sheet" id="${esc(dialogId(row))}" aria-labelledby="t-${esc(
-    dialogId(row),
-  )}">
-      <div class="sheet-inner">
-        <header class="sheet-head">
-          <h2 id="t-${esc(dialogId(row))}">${esc(titleOf(row))}</h2>
-          <button class="sheet-close" type="button" aria-label="Close details">Close</button>
-        </header>
-        ${stateLine(row, 'sheet-state')}
-        <dl class="facts">${fields}</dl>
-        ${raw}
-        <p class="sheet-source">${esc(sourceLine(model.provenance))}</p>
-      </div>
-    </dialog>`;
+}
+
+export interface BoardScopeData {
+  // Only the lanes that hold a task, in LANE_ORDER; an `unknown` lane is last.
+  lanes: { state: string; tasks: string[] }[];
+  // Vocabulary lanes that hold nothing, stated once under the level.
+  empty: number;
+}
+
+export interface BoardRowData {
+  dialog: string;
+  fields: DetailField[];
+  wait: unknown;
+  hold: unknown;
+}
+
+export interface BoardData {
+  tree_state: string;
+  source: string;
+  scopes: Record<string, BoardScopeData>;
+  rows: Record<string, BoardRowData>;
+}
+
+// Everything the inline script needs to draw a scope or a dialog, as data. No
+// scope is pre-rendered and no dialog is pre-built, so the page carries one
+// tree and one JSON block whatever the tree size.
+export function boardData(model: TreeModel): BoardData {
+  const scopes: Record<string, BoardScopeData> = {};
+  const rows: Record<string, BoardRowData> = {};
+  const record = (key: string, children: readonly TreeRow[]): void => {
+    const plan = lanePlan(children);
+    scopes[key] = {
+      lanes: plan.lanes.map((lane) => ({
+        state: lane.state,
+        tasks: lane.cards.map((card) => card.task_id),
+      })),
+      empty: plan.empty,
+    };
+  };
+  record('', model.roots);
+  for (const row of flattenTree(model.roots)) {
+    rows[row.task_id] = {
+      dialog: dialogId(row),
+      fields: detailFields(row, model),
+      wait: row.wait,
+      hold: row.hold,
+    };
+    record(row.node_key, row.children);
+  }
+  return {
+    tree_state: model.tree_state,
+    source: sourceLine(model.provenance),
+    scopes,
+    rows,
+  };
 }
 
 // ---------------------------------------------------------------- pages
 
-interface Section {
-  key: string | null;
-  title: string;
-  row: TreeRow | null;
-  rows: TreeRow[];
-  path: TreeRow[];
+function defaultKeyOf(model: TreeModel): string | null {
+  return model.roots.length === 1 ? model.roots[0].node_key : null;
 }
 
-function sectionsOf(model: TreeModel): { sections: Section[]; defaultKey: string | null } {
-  const sections: Section[] = [];
-  const treeSection: Section = {
-    key: null,
-    title: 'All work',
-    row: null,
-    rows: [...model.roots],
-    path: [],
-  };
-  if (model.roots.length !== 1) {
-    sections.push(treeSection);
-  }
-  for (const row of flattenTree(model.roots)) {
-    sections.push({
-      key: row.node_key,
-      title: titleOf(row),
-      row,
-      rows: row.children,
-      path: scopePath(model.roots, row.node_key),
-    });
-  }
-  if (sections.length === 0) {
-    sections.push(treeSection);
-  }
-  const defaultKey =
-    model.roots.length === 1 ? model.roots[0].node_key : null;
-  return { sections, defaultKey };
+function containedText(contained: {
+  inside: number;
+  done: number;
+  archived: number;
+}): string {
+  return (
+    `${contained.inside} inside · ${contained.done} done` +
+    (contained.archived > 0 ? ` · ${contained.archived} archived` : '')
+  );
 }
 
 function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
@@ -522,20 +413,52 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
       ? ''
       : `<p class="card-defect"><span class="defect-kind">Engine defect</span>: recorded ready, but ${esc(
           titleOf(defectRow),
-        )} is not done.</p>`;
-  return `<li>
+        )} is ${esc(defectRow.rest_state)}.</p>`;
+  const missing =
+    row.status_missing
+      ? '<p class="card-defect">No status row came back for this task.</p>'
+      : '';
+  const mismatch =
+    row.rest_state_mismatch
+      ? '<p class="card-defect">The graph and the status read disagree on this task\'s state.</p>'
+      : '';
+  const unknown = row.rest_state_known
+    ? ''
+    : `<p class="card-defect">The engine reported a state this board does not know: <span class="mono">${esc(
+        row.rest_state,
+      )}</span>.</p>`;
+  const archived =
+    row.archived_at === null
+      ? ''
+      : '<span class="archived-tag">Archived</span>';
+  return `<li data-task="${esc(row.task_id)}" data-parent="${esc(
+    row.parent_task_id ?? '',
+  )}" data-key="${esc(row.node_key)}" data-state="${esc(
+    row.rest_state,
+  )}" data-title="${esc(titleOf(row))}" data-title-missing="${
+    row.title === null ? '1' : '0'
+  }" data-inside="${contained.inside}" data-done="${contained.done}" data-archived="${
+    contained.archived
+  }" data-archived-self="${row.archived_at === null ? '0' : '1'}" data-has-children="${
+    hasChildren ? '1' : '0'
+  }" data-dialog="${esc(dialogId(row))}"${
+    row.depth === 0 ? ' data-root="1"' : ''
+  }>
     <div class="node-row${hasChildren ? '' : ' is-leaf'}" data-state="${esc(
       row.rest_state,
     )}">
       <div class="node-main">
-        <button class="enter" type="button" data-dialog="${esc(dialogId(row))}">${esc(
-          titleOf(row),
+        <button class="enter" type="button" data-dialog="${esc(dialogId(row))}">${titleHtml(
+          row,
         )}</button>
-        ${hasChildren ? `<span class="row-count">${contained.inside} inside · ${contained.done} done</span>` : ''}
+        ${hasChildren ? `<span class="row-count">${containedText(contained)}</span>` : ''}
         ${wait}
         ${disagreement}
+        ${missing}
+        ${mismatch}
+        ${unknown}
       </div>
-      <span class="row-state"><span class="here-tag" data-here="${esc(
+      <span class="row-state">${archived}<span class="here-tag" data-here="${esc(
         row.node_key,
       )}" hidden>Here</span><span class="dot" aria-hidden="true"></span>${esc(
         stateWord(row.rest_state),
@@ -549,6 +472,28 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
         : ''
     }
   </li>`;
+}
+
+// The list body is the page's no-JS floor and the data source the board's
+// inline script projects into lanes. Everything a card needs is an attribute or
+// a child of the row, so the script never asks the network for anything.
+function listBody(model: TreeModel): string {
+  const { done, total, archived } = progress(model.roots);
+  const rows = byId(model);
+  const levels = model.max_depth + 1;
+  const archivedPart = archived > 0 ? ` · ${archived} archived` : '';
+  return `<header class="list-head">
+    <div>
+      <h1>Everything, unfolded</h1>
+      <p class="list-bar"><strong>Showing everything</strong><span>·</span><span>${plural(
+        total,
+        'task',
+      )}, ${plural(levels, 'level')}</span><span>·</span><span>${done} done${archivedPart}</span></p>
+    </div>
+  </header>
+  <ul class="tree">${model.roots
+    .map((row) => listRow(row, rows))
+    .join('')}</ul>`;
 }
 
 const CSS = `
@@ -724,6 +669,18 @@ a { color: inherit; }
   background: var(--warning-soft); color: var(--warning);
   font-size: 0.75rem; line-height: 1.4;
 }
+.title-missing {
+  color: var(--faint); font-size: 0.72rem; font-weight: 400;
+  white-space: nowrap;
+}
+.archived-tag {
+  display: inline-flex; padding: 0 6px; border: 1px dashed var(--line-strong);
+  border-radius: 999px; color: var(--muted); font-size: 0.66rem;
+  vertical-align: 1px; white-space: nowrap;
+}
+.card-archived {
+  margin-top: 5px; color: var(--faint); font-size: 0.72rem;
+}
 .defect-kind { font-weight: 700; }
 .defects {
   margin: 22px 0 0; padding: 12px 14px; border-left: 3px solid var(--warning);
@@ -867,6 +824,23 @@ a { color: inherit; }
 // and the first is the one script adds.
 const SCRIPT = `(function () {
   var FILES = { board: 'index.html', list: 'list.html' };
+  var LANES = ${JSON.stringify(LANE_ORDER)};
+  var WORDS = ${JSON.stringify(STATE_WORDS)};
+  var DATA = {};
+  var node = document.getElementById('board-data');
+  if (node) {
+    try {
+      DATA = JSON.parse(node.textContent || '{}');
+    } catch (error) {
+      DATA = {};
+    }
+  }
+  var ROWS = DATA.rows || {};
+  var SCOPES = DATA.scopes || {};
+
+  ${laneGroups.toString()}
+
+  ${sheetFieldsHtml.toString()}
 
   function current() {
     var raw = location.hash.replace(/^#/, '');
@@ -889,19 +863,292 @@ const SCRIPT = `(function () {
     return '/' + key.split('/').map(encodeURIComponent).join('/');
   }
 
-  function showScope(key) {
-    var sections = Array.prototype.slice.call(document.querySelectorAll('.scope-view'));
-    if (sections.length === 0) return;
-    var fallback = null;
-    var target = null;
-    sections.forEach(function (section) {
-      if (section.hasAttribute('data-default')) fallback = section;
-      if (section.getAttribute('data-scope') === (key || '')) target = section;
+  function treeRows() {
+    var source = document.getElementById('tree-source') || document;
+    return Array.prototype.slice.call(
+      source.querySelectorAll('li[data-task]'),
+    );
+  }
+
+  function scopeNode(key) {
+    if (!key) return null;
+    var rows = treeRows();
+    for (var index = 0; index < rows.length; index += 1) {
+      if (rows[index].getAttribute('data-key') === key) return rows[index];
+    }
+    return null;
+  }
+
+  function rowsByTask() {
+    var map = {};
+    treeRows().forEach(function (row) {
+      map[row.getAttribute('data-task')] = row;
     });
-    target = target || fallback;
-    sections.forEach(function (section) {
-      section.classList.toggle('is-current', section === target);
+    return map;
+  }
+
+  function childrenOf(scope, rows) {
+    if (scope === null) {
+      return rows.filter(function (row) {
+        return row.getAttribute('data-root') === '1';
+      });
+    }
+    var id = scope.getAttribute('data-task');
+    return rows.filter(function (row) {
+      return row.getAttribute('data-parent') === id;
     });
+  }
+
+  function topIsSection() {
+    return treeRows().filter(function (row) {
+      return row.getAttribute('data-root') === '1';
+    }).length !== 1;
+  }
+
+  function titleOf(row) {
+    return row.getAttribute('data-title') || row.getAttribute('data-key');
+  }
+
+  function appendTitle(parent, row) {
+    parent.appendChild(document.createTextNode(titleOf(row)));
+    if (row.getAttribute('data-title-missing') === '1') {
+      parent.appendChild(document.createTextNode(' '));
+      var mark = document.createElement('span');
+      mark.className = 'title-missing';
+      mark.textContent = 'title not read';
+      parent.appendChild(mark);
+    }
+  }
+
+  function stateWord(state) {
+    if (state === 'unknown') return 'Unknown state';
+    return WORDS[state] || 'Unknown state';
+  }
+
+  function stateLine(state, className) {
+    var line = document.createElement('p');
+    line.className = className;
+    line.setAttribute('data-state', state);
+    var dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.setAttribute('aria-hidden', 'true');
+    line.appendChild(dot);
+    line.appendChild(document.createTextNode(stateWord(state)));
+    return line;
+  }
+
+  function separator() {
+    var sep = document.createElement('span');
+    sep.className = 'sep';
+    sep.setAttribute('aria-hidden', 'true');
+    sep.textContent = '›';
+    return sep;
+  }
+
+  function crumbs(scope, byTask) {
+    var trail = document.createElement('p');
+    trail.className = 'crumbs';
+    if (scope === null) {
+      var currentPage = document.createElement('span');
+      currentPage.setAttribute('aria-current', 'page');
+      currentPage.textContent = 'All work';
+      trail.appendChild(currentPage);
+      return trail;
+    }
+    if (topIsSection()) {
+      var all = document.createElement('a');
+      all.href = '#board';
+      all.textContent = 'All work';
+      trail.appendChild(all);
+    } else {
+      var root = document.createElement('span');
+      root.textContent = 'All work';
+      trail.appendChild(root);
+    }
+    var chain = [];
+    var parent = scope.getAttribute('data-parent');
+    while (parent && byTask[parent]) {
+      var ancestor = byTask[parent];
+      chain.unshift(ancestor);
+      parent = ancestor.getAttribute('data-parent');
+    }
+    chain.forEach(function (row) {
+      trail.appendChild(separator());
+      var link = document.createElement('a');
+      link.href = '#board' + encodeKey(row.getAttribute('data-key'));
+      appendTitle(link, row);
+      trail.appendChild(link);
+    });
+    return trail;
+  }
+
+  function header(scope, cards) {
+    var head = document.createElement('header');
+    head.className = 'scope-head';
+    var main = document.createElement('div');
+    main.className = 'scope-main';
+    var heading = document.createElement('h1');
+    if (scope === null) {
+      heading.textContent = 'All work';
+    } else {
+      appendTitle(heading, scope);
+    }
+    main.appendChild(heading);
+    if (scope !== null) {
+      main.appendChild(stateLine(scope.getAttribute('data-state'), 'scope-state'));
+    }
+    head.appendChild(main);
+
+    var side = document.createElement('div');
+    side.className = 'scope-side';
+    var chip = document.createElement('span');
+    chip.className = 'chip';
+    if (scope === null) {
+      chip.textContent = cards.length + (cards.length === 1 ? ' task' : ' tasks');
+      side.appendChild(chip);
+    } else {
+      var inside = Number(scope.getAttribute('data-inside')) || 0;
+      var done = Number(scope.getAttribute('data-done')) || 0;
+      var archived = Number(scope.getAttribute('data-archived')) || 0;
+      chip.textContent =
+        inside + ' inside · ' + done + ' done' +
+        (archived > 0 ? ' · ' + archived + ' archived' : '');
+      side.appendChild(chip);
+      var details = document.createElement('button');
+      details.type = 'button';
+      details.className = 'details';
+      details.setAttribute('data-dialog', scope.getAttribute('data-dialog'));
+      details.setAttribute('data-task', scope.getAttribute('data-task'));
+      details.textContent = 'Details';
+      side.appendChild(details);
+    }
+    if (DATA.tree_state === 'archived') {
+      var archivedChip = document.createElement('span');
+      archivedChip.className = 'chip archived-chip';
+      archivedChip.textContent = 'Archived';
+      side.appendChild(archivedChip);
+    }
+    head.appendChild(side);
+    return head;
+  }
+
+  function level(cards, plan) {
+    var line = document.createElement('p');
+    line.className = 'level';
+    if (cards.length === 0) {
+      line.textContent = 'No subtasks. Nothing sits under this task.';
+      return line;
+    }
+    var strong = document.createElement('strong');
+    strong.textContent = String(cards.length);
+    line.appendChild(strong);
+    line.appendChild(
+      document.createTextNode(
+        ' in this level' +
+          (plan.empty > 0 ? ' · ' + plan.empty + ' lanes empty' : ''),
+      ),
+    );
+    return line;
+  }
+
+  function cardFor(row) {
+    var state = row.getAttribute('data-state');
+    var card = document.createElement('article');
+    card.className = 'card';
+    card.setAttribute('data-state', state);
+
+    var title = document.createElement('h3');
+    title.className = 'card-title';
+    var enter;
+    if (row.getAttribute('data-has-children') === '1') {
+      enter = document.createElement('a');
+      enter.href = '#board' + encodeKey(row.getAttribute('data-key'));
+    } else {
+      enter = document.createElement('button');
+      enter.type = 'button';
+      enter.setAttribute('data-dialog', row.getAttribute('data-dialog'));
+      enter.setAttribute('data-task', row.getAttribute('data-task'));
+    }
+    enter.className = 'enter';
+    appendTitle(enter, row);
+    title.appendChild(enter);
+    card.appendChild(title);
+
+    card.appendChild(stateLine(state, 'card-state'));
+    var parts = row.querySelectorAll(
+      '.node-main > .row-count, .node-main > .card-wait, .node-main > .card-defect',
+    );
+    Array.prototype.forEach.call(parts, function (part) {
+      card.appendChild(part.cloneNode(true));
+    });
+    if (row.getAttribute('data-archived-self') === '1') {
+      var archived = document.createElement('p');
+      archived.className = 'card-archived';
+      archived.textContent = 'Archived';
+      card.appendChild(archived);
+    }
+    return card;
+  }
+
+  function lanesNode(plan, byTask) {
+    var wrap = document.createElement('div');
+    wrap.className = 'lanes';
+    plan.lanes.forEach(function (lane) {
+      var rows = lane.tasks
+        .map(function (id) { return byTask[id]; })
+        .filter(function (row) { return !!row; });
+      if (rows.length === 0) return;
+      var section = document.createElement('section');
+      section.className = 'lane';
+      section.setAttribute('data-state', lane.state);
+      section.setAttribute('aria-label', stateWord(lane.state));
+      var head = document.createElement('h2');
+      head.className = 'lane-head';
+      head.setAttribute('data-state', lane.state);
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.setAttribute('aria-hidden', 'true');
+      head.appendChild(dot);
+      var name = document.createElement('span');
+      name.className = 'lane-name';
+      name.textContent = stateWord(lane.state);
+      head.appendChild(name);
+      var count = document.createElement('span');
+      count.className = 'lane-count';
+      count.textContent = String(rows.length);
+      head.appendChild(count);
+      section.appendChild(head);
+      var body = document.createElement('div');
+      body.className = 'lane-cards';
+      rows.forEach(function (row) {
+        body.appendChild(cardFor(row));
+      });
+      section.appendChild(body);
+      wrap.appendChild(section);
+    });
+    return wrap;
+  }
+
+  function renderScope(key) {
+    var root = document.getElementById('board-root');
+    if (!root || !document.getElementById('tree-source')) return;
+    var wanted = key === null || key === undefined ? root.getAttribute('data-default') || null : key;
+    var scope = wanted === null ? null : scopeNode(wanted);
+    if (wanted !== null && scope === null) {
+      var fallback = root.getAttribute('data-default') || null;
+      scope = fallback === null ? null : scopeNode(fallback);
+    }
+    var scopeKey = scope === null ? '' : scope.getAttribute('data-key');
+    var plan = SCOPES[scopeKey] || { lanes: [], empty: LANES.length };
+    var rows = treeRows();
+    var cards = childrenOf(scope, rows);
+    var byTask = rowsByTask();
+    root.textContent = '';
+    root.appendChild(crumbs(scope, byTask));
+    root.appendChild(header(scope, cards));
+    root.appendChild(level(cards, plan));
+    if (cards.length > 0) root.appendChild(lanesNode(plan, byTask));
+    root.setAttribute('data-scope', scopeKey);
   }
 
   function markHere(key) {
@@ -919,13 +1166,6 @@ const SCRIPT = `(function () {
     });
   }
 
-  function apply() {
-    var here = current();
-    showScope(here.key);
-    markHere(here.key);
-    syncViews(here.key);
-  }
-
   function showScrim() {
     var scrim = document.getElementById('scrim');
     if (scrim) scrim.hidden = false;
@@ -936,33 +1176,45 @@ const SCRIPT = `(function () {
     if (scrim) scrim.hidden = true;
   }
 
-  window.addEventListener('hashchange', apply);
-  apply();
-
-  Array.prototype.forEach.call(document.querySelectorAll('[data-dialog]'), function (button) {
-    button.addEventListener('click', function () {
-      var sheet = document.getElementById(button.getAttribute('data-dialog'));
-      if (!sheet) return;
-      if (typeof sheet.showModal === 'function') {
-        sheet.showModal();
-      } else {
-        sheet.setAttribute('open', '');
-      }
-      showScrim();
-      var close = sheet.querySelector('.sheet-close');
-      if (close) close.focus();
+  function rawSection(inner, data) {
+    var parts = [];
+    if (data.wait !== null && data.wait !== undefined) parts.push(['Raw wait', data.wait]);
+    if (data.hold !== null && data.hold !== undefined) parts.push(['Raw hold', data.hold]);
+    if (parts.length === 0) return;
+    var section = document.createElement('section');
+    section.className = 'raw';
+    parts.forEach(function (part) {
+      var heading = document.createElement('h3');
+      heading.textContent = part[0];
+      var pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(part[1], null, 2);
+      section.appendChild(heading);
+      section.appendChild(pre);
     });
-  });
+    inner.appendChild(section);
+  }
 
-  Array.prototype.forEach.call(document.querySelectorAll('dialog.sheet'), function (sheet) {
-    sheet.addEventListener('close', hideScrim);
+  function closeSheet(sheet) {
+    if (typeof sheet.close === 'function') {
+      sheet.close();
+    } else {
+      hideScrim();
+      sheet.remove();
+    }
+  }
+
+  function wireSheet(sheet) {
+    sheet.addEventListener('close', function () {
+      hideScrim();
+      sheet.remove();
+    });
     sheet.addEventListener('click', function (event) {
-      if (event.target === sheet) sheet.close();
+      if (event.target === sheet) closeSheet(sheet);
     });
     sheet.addEventListener('keydown', function (event) {
       if (event.key === 'Escape') {
         event.preventDefault();
-        sheet.close();
+        closeSheet(sheet);
         return;
       }
       if (event.key !== 'Tab') return;
@@ -984,10 +1236,95 @@ const SCRIPT = `(function () {
     var close = sheet.querySelector('.sheet-close');
     if (close) {
       close.addEventListener('click', function () {
-        sheet.close();
+        closeSheet(sheet);
       });
     }
+  }
+
+  function buildSheet(taskId) {
+    var data = ROWS[taskId];
+    if (!data) return null;
+    var row = rowsByTask()[taskId];
+    var id = data.dialog;
+    var sheet = document.createElement('dialog');
+    sheet.className = 'sheet';
+    sheet.id = id;
+    sheet.setAttribute('aria-labelledby', 't-' + id);
+
+    var inner = document.createElement('div');
+    inner.className = 'sheet-inner';
+    var head = document.createElement('header');
+    head.className = 'sheet-head';
+    var title = document.createElement('h2');
+    title.id = 't-' + id;
+    if (row) appendTitle(title, row);
+    else title.textContent = taskId;
+    head.appendChild(title);
+    var close = document.createElement('button');
+    close.className = 'sheet-close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close details');
+    close.textContent = 'Close';
+    head.appendChild(close);
+    inner.appendChild(head);
+
+    if (row) inner.appendChild(stateLine(row.getAttribute('data-state'), 'sheet-state'));
+    var facts = document.createElement('dl');
+    facts.className = 'facts';
+    facts.innerHTML = sheetFieldsHtml(data.fields || []);
+    inner.appendChild(facts);
+    rawSection(inner, data);
+    var source = document.createElement('p');
+    source.className = 'sheet-source';
+    source.textContent = DATA.source || 'Unknown source';
+    inner.appendChild(source);
+    sheet.appendChild(inner);
+    wireSheet(sheet);
+    return sheet;
+  }
+
+  function openSheet(taskId) {
+    var data = ROWS[taskId];
+    if (!data) return;
+    var sheet = document.getElementById(data.dialog);
+    if (!sheet) {
+      sheet = buildSheet(taskId);
+    }
+    if (!sheet) return;
+    if (!sheet.parentNode) document.body.appendChild(sheet);
+    showScrim();
+    if (typeof sheet.showModal === 'function') {
+      sheet.showModal();
+    } else {
+      sheet.setAttribute('open', '');
+    }
+    var close = sheet.querySelector('.sheet-close');
+    if (close) close.focus();
+  }
+
+  document.addEventListener('click', function (event) {
+    var trigger =
+      event.target && event.target.closest
+        ? event.target.closest('[data-dialog]')
+        : null;
+    if (!trigger) return;
+    var taskId = trigger.getAttribute('data-task');
+    if (!taskId) {
+      var host = trigger.closest('li[data-task]');
+      taskId = host ? host.getAttribute('data-task') : null;
+    }
+    if (taskId) openSheet(taskId);
   });
+
+  function apply() {
+    var here = current();
+    renderScope(here.key);
+    markHere(here.key);
+    syncViews(here.key);
+  }
+
+  window.addEventListener('hashchange', apply);
+  apply();
 })();`;
 
 function shell(
@@ -996,7 +1333,6 @@ function shell(
     view: BoardView;
     pageTitle: string;
     body: string;
-    sheets: string;
     defaultKey: string | null;
   },
 ): string {
@@ -1010,9 +1346,10 @@ function shell(
 <title>${esc(options.pageTitle)}</title>
 <style>${CSS}
 .pct-${pct} { width: ${pct}%; }
-.scope-view { display: block; }
-html.js .scope-view { display: none; }
-html.js .scope-view.is-current { display: block; }
+.board-scope { display: none; }
+.nojs-tree { display: block; }
+html.js .board-scope { display: block; }
+html.js .nojs-tree { display: none; }
 </style>
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -1028,7 +1365,6 @@ html.js .scope-view.is-current { display: block; }
     <p>The board renders the engine's words. It computes no state; counts are the rollup over children.</p>
   </footer>
 </main>
-${options.sheets}
 <div class="scrim" id="scrim" hidden></div>
 <script>${SCRIPT}</script>
 </body>
@@ -1037,49 +1373,30 @@ ${options.sheets}
 }
 
 export function renderBoardPage(model: TreeModel): string {
-  const { sections, defaultKey } = sectionsOf(model);
-  const rows = byId(model);
-  const body = sections
-    .map((section) =>
-      scopeBoard(
-        section,
-        rows,
-        section.key === defaultKey,
-        model.roots.length !== 1,
-      ),
-    )
-    .join('\n');
-  const sheets = flattenTree(model.roots).map((row) => sheet(row, model)).join('\n');
+  const defaultKey = defaultKeyOf(model);
+  const data = JSON.stringify(boardData(model)).replace(/</g, '\\u003c');
+  const body = `<div class="board-scope" id="board-root" data-default="${esc(
+    defaultKey ?? '',
+  )}" data-tree-state="${esc(model.tree_state)}"></div>
+  <div class="nojs-tree" id="tree-source">${listBody(model)}</div>
+  <script type="application/json" id="board-data">${data}</script>`;
   return shell(model, {
     view: 'board',
     pageTitle: 'Engine board',
     body,
-    sheets,
     defaultKey,
   });
 }
 
 export function renderListPage(model: TreeModel): string {
-  const { defaultKey } = sectionsOf(model);
-  const { done, total } = progress(model.roots);
-  const rows = byId(model);
-  const levels = model.max_depth + 1;
-  const body = `<header class="list-head">
-    <div>
-      <h1>Everything, unfolded</h1>
-      <p class="list-bar"><strong>Showing everything</strong><span>·</span><span>${plural(
-        total,
-        'task',
-      )}, ${plural(levels, 'level')}</span><span>·</span><span>${done} done</span></p>
-    </div>
-  </header>
-  <ul class="tree">${model.roots.map((row) => listRow(row, rows)).join('')}</ul>`;
-  const sheets = flattenTree(model.roots).map((row) => sheet(row, model)).join('\n');
+  const defaultKey = defaultKeyOf(model);
+  const data = JSON.stringify(boardData(model)).replace(/</g, '\\u003c');
+  const body = `${listBody(model)}
+  <script type="application/json" id="board-data">${data}</script>`;
   return shell(model, {
     view: 'list',
     pageTitle: 'Engine board — everything',
     body,
-    sheets,
     defaultKey,
   });
 }
