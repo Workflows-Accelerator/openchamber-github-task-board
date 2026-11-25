@@ -2339,14 +2339,12 @@ test('the panel names both dependency directions, and only the edge says satisfi
   assert.ok(waits, 'the first screen has a Waits for field');
   assert.equal(
     waits.value,
-    'Waited for Approve the pricing copy — done. ' +
-      'Waits for Check the release notes. ' +
-      'Waits for A done row with no accepted edge. ' +
-      'Waited for Draft the pricing model — skipped.',
+    'Approve the pricing copy — done, Check the release notes, ' +
+      'A done row with no accepted edge and Draft the pricing model — skipped.',
   );
   const holds = sections.primary.find((field) => field.label === 'Holds up');
   assert.ok(holds, 'the first screen has a Holds up field');
-  assert.equal(holds.value, 'Holds up 1 task: Hold the gate.');
+  assert.equal(holds.value, '1 task: Hold the gate.');
   // The satisfied and the still-waiting blocker are in one sentence, before
   // More: this is why the panel was opened.
   assert.equal(
@@ -2397,11 +2395,11 @@ test('two edges to one task: one unaccepted edge keeps it waiting', () => {
   const waits = detailSections(row, model).primary.find(
     (field) => field.label === 'Waits for',
   );
-  assert.equal(waits.value, 'Waits for Approve the pricing copy.');
+  assert.equal(waits.value, 'Approve the pricing copy.');
   const holds = detailSections(approves, model).primary.find(
     (field) => field.label === 'Holds up',
   );
-  assert.equal(holds.value, 'Holds up 1 task: Sign off the pricing claims.');
+  assert.equal(holds.value, '1 task: Sign off the pricing claims.');
 });
 
 test('a task that holds up six names all six', () => {
@@ -2436,7 +2434,7 @@ test('a task that holds up six names all six', () => {
   assert.ok(holds, 'the fan names what it holds up');
   assert.equal(
     holds.value,
-    'Holds up 6 tasks: Uses the API one, Uses the API two, Uses the API three, ' +
+    '6 tasks: Uses the API one, Uses the API two, Uses the API three, ' +
       'Uses the API four, Uses the API five and Uses the API six.',
   );
   assert.equal(

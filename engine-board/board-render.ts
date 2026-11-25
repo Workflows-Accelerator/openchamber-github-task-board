@@ -233,13 +233,16 @@ function holdEntries(row: TreeRow, model: TreeModel): DependencyEntry[] {
 }
 
 function waitsText(entries: readonly DependencyEntry[]): string {
-  return `${entries
-    .map((entry) =>
+  // The field label already says "Waits for", so the value names the task and,
+  // when the read's edge accepts its state, says so in the same breath. A
+  // value that repeated the verb would read "Waits for / Waits for X".
+  return `${joinWords(
+    entries.map((entry) =>
       entry.satisfied && entry.state !== null
-        ? `Waited for ${entry.title} — ${entry.state}`
-        : `Waits for ${entry.title}`,
-    )
-    .join('. ')}.`;
+        ? `${entry.title} — ${entry.state}`
+        : entry.title,
+    ),
+  )}.`;
 }
 
 function holdsText(entries: readonly DependencyEntry[]): string {
@@ -249,7 +252,7 @@ function holdsText(entries: readonly DependencyEntry[]): string {
       ? `${entry.title} (${entry.state})`
       : entry.title,
   );
-  return `Holds up ${count} task${count === 1 ? '' : 's'}: ${joinWords(names)}.`;
+  return `${count} task${count === 1 ? '' : 's'}: ${joinWords(names)}.`;
 }
 
 function joinWords(words: readonly string[]): string {
@@ -2523,14 +2526,14 @@ const SCRIPT = `(function () {
   }
 
   document.addEventListener('click', function (event) {
-    var trigger =
-      event.target && event.target.closest
-        ? event.target.closest('[data-dialog]')
-        : null;
-    // Ruling 3: the row <li> carries data-dialog so leaf cards can copy it.
-    // A click on the row itself, on its title link or on its disclosure must
-    // not open the panel behind that gesture.
-    if (!trigger || trigger.tagName === 'LI') return;
+    var target = event.target;
+    if (!target || !target.closest) return;
+    // Ruling 3: the row <li> carries data-dialog so a click anywhere on the row
+    // still opens the panel. The two gestures that own their rows — the
+    // disclosure and the scope link — are the only ones that must not.
+    if (target.closest('button.disclosure, a.enter')) return;
+    var trigger = target.closest('[data-dialog]');
+    if (!trigger) return;
     var taskId = trigger.getAttribute('data-task');
     if (!taskId) {
       var host = trigger.closest('li[data-task]');

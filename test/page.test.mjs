@@ -502,7 +502,7 @@ test(
     // Ruling 1: the boundary edge that is not drawn also means the container
     // holds Alpha up, so that fact leads beside its own counts.
     assert.deepEqual(opened.labels, ['Holds up', 'Inside']);
-    assert.equal(opened.facts['Holds up'], 'Holds up 1 task: Alpha.');
+    assert.equal(opened.facts['Holds up'], '1 task: Alpha.');
     assert.equal(opened.facts.Inside, '2 inside · 1 done · 2 archived');
     // Ruling 2: the container's status was not read, so its description,
     // contract, history and conversation are not four empty sections.
@@ -798,7 +798,7 @@ test(
       conversation: false,
       primary: true,
     });
-    assert.equal(beta.facts['Waits for'], 'Waits for Alpha.');
+    assert.equal(beta.facts['Waits for'], 'Alpha.');
     assert.equal(beta.facts.Contract, "This task's contract pins no conditions.");
     assert.equal(beta.facts.Attempts, '0 runs');
     assert.equal('Description' in beta.facts, false);
@@ -1336,7 +1336,7 @@ test(
     // a blocked task, so it is not claimed satisfied.
     assert.equal(
       blocked.facts['Waits for'],
-      'Waits for Approve the pricing copy.',
+      'Approve the pricing copy.',
     );
     assert.equal('Waiting for' in blocked.facts, false, 'the old field is gone');
     assert.equal(/tsk_|rest_state/.test(blocked.firstText), false);
@@ -1731,6 +1731,24 @@ test(
       .querySelector('li[data-key="work"] button.disclosure')
       .click()`);
 
+    // ---- the row itself is the third gesture -------------------------------
+    // A click on the row's own space still opens the panel; only the
+    // disclosure and the scope link are exempt.
+    await page.evaluate(`document.querySelector('li[data-key="solo"]').click()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the row space opens the panel',
+    );
+    assert.equal(
+      await page.evaluate(
+        "document.querySelector('dialog.sheet[open] h2').textContent",
+      ),
+      'Solo',
+      'the row opened its own panel',
+    );
+    await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
+
     // ---- the title enters the scope, a different gesture -------------------
     await page.evaluate(`(function () {
       document
@@ -1742,6 +1760,11 @@ test(
       page,
       "location.hash === '#list/work'",
       'the title enters the work scope',
+    );
+    await until(
+      page,
+      "document.querySelector('.here-tag:not([hidden])') !== null",
+      'the here tag follows the scope',
     );
     const entered = await page.evaluate(`(function () {
       var tag = document.querySelector('.here-tag:not([hidden])');
