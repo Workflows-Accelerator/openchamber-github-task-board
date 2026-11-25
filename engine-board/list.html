@@ -218,8 +218,13 @@ a { color: inherit; }
   font-size: 0.68rem; font-weight: 400; vertical-align: 2px; white-space: nowrap;
 }
 .row-count {
-  display: block; margin-top: 3px; color: var(--muted);
-  font-size: 0.78rem; font-variant-numeric: tabular-nums;
+  display: block; margin-top: 3px; padding: 0; border: 0; background: none;
+  color: var(--muted); font: inherit;
+  font-size: 0.78rem; font-variant-numeric: tabular-nums; text-align: left;
+  cursor: pointer;
+}
+.row-count:hover, .row-count:focus-visible {
+  color: var(--accent); text-decoration: underline; text-underline-offset: 0.16em;
 }
 .row-state {
   display: inline-flex; align-items: center; gap: 7px; flex: none;
@@ -331,6 +336,7 @@ a { color: inherit; }
 .nojs-tree { display: block; }
 html.js .board-scope { display: block; }
 html.js .nojs-tree { display: none; }
+.board-failure { margin: 14px 0 0; font-size: 0.8rem; color: var(--muted); }
 </style>
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -343,22 +349,23 @@ html.js .nojs-tree { display: none; }
       <a class="view is-on" href="list.html#list/build" data-view-link="list" aria-current="page">List</a>
     </nav>
   </header>
-  <section class="progress" aria-label="Progress">
-    <p class="progress-line"><strong>1 of 7</strong> finished</p>
-    <span class="progress-track" aria-hidden="true"><span class="progress-fill pct-14"></span></span>
+  <section class="progress" aria-label="Whole tree progress">
+    <p class="progress-line"><strong>1 of 7</strong> done</p>
+    <span class="progress-track" role="progressbar" aria-label="Done share" aria-valuemin="0" aria-valuemax="7" aria-valuenow="1"><span class="progress-fill pct-14"></span></span>
   </section>
   
+  <p class="board-failure" id="board-failure" hidden></p>
   <header class="list-head">
     <div>
       <h1>Everything, unfolded</h1>
-      <p class="list-bar"><strong>Showing everything</strong><span>·</span><span>7 tasks, 3 levels</span><span>·</span><span>1 done</span></p>
+      <p class="list-bar"><strong>Showing everything</strong><span>·</span><span>7 tasks, 3 levels</span><span>·</span><span>1 of 7 done</span></p>
     </div>
   </header>
   <ul class="tree"><li data-task="tsk_e4421d64b2344bc4a139d414d3769480" data-parent="tsk_7c7cdda9a8d347ee9a7557b95c6ebccd" data-key="build" data-state="ready" data-title="Build the engine-backed board slice" data-title-missing="0" data-inside="6" data-done="1" data-archived="0" data-archived-self="0" data-has-children="1" data-dialog="d-tsk_e4421d64b2344bc4a139d414d3769480" data-root="1">
     <div class="node-row" data-state="ready">
       <div class="node-main">
         <button class="enter" type="button" data-dialog="d-tsk_e4421d64b2344bc4a139d414d3769480">Build the engine-backed board slice</button>
-        <span class="row-count">6 inside · 1 done</span>
+        <button type="button" class="row-count" data-dialog="d-tsk_e4421d64b2344bc4a139d414d3769480" data-task="tsk_e4421d64b2344bc4a139d414d3769480" aria-label="Facts for Build the engine-backed board slice, 6 inside · 1 done">6 inside · 1 done</button>
         
         
         
@@ -399,7 +406,7 @@ html.js .nojs-tree { display: none; }
     <div class="node-row" data-state="ready">
       <div class="node-main">
         <button class="enter" type="button" data-dialog="d-tsk_d026ad2841384f7fa930ef28efba4596">Render the tree read-only</button>
-        <span class="row-count">1 inside · 0 done</span>
+        <button type="button" class="row-count" data-dialog="d-tsk_d026ad2841384f7fa930ef28efba4596" data-task="tsk_d026ad2841384f7fa930ef28efba4596" aria-label="Facts for Render the tree read-only, 1 inside · 0 done">1 inside · 0 done</button>
         
         
         
@@ -434,7 +441,7 @@ html.js .nojs-tree { display: none; }
         
         
       </div>
-      <span class="row-state"><span class="here-tag" data-here="build/verify" hidden>Here</span><span class="dot" aria-hidden="true"></span>Waiting on review</span>
+      <span class="row-state"><span class="here-tag" data-here="build/verify" hidden>Here</span><span class="dot" aria-hidden="true"></span>Waiting on a verdict</span>
     </div>
     
   </li><li data-task="tsk_1a3ff4501c8843189c3f0e7a4e549e37" data-parent="tsk_e4421d64b2344bc4a139d414d3769480" data-key="build/integration" data-state="blocked" data-title="Wire the read model to the live engine" data-title-missing="0" data-inside="0" data-done="0" data-archived="0" data-archived-self="0" data-has-children="0" data-dialog="d-tsk_1a3ff4501c8843189c3f0e7a4e549e37">
@@ -453,9 +460,9 @@ html.js .nojs-tree { display: none; }
     
   </li></ul>
   </li></ul>
-  <script type="application/json" id="board-data">{"tree_state":"open","source":"Live read · read at 2026-11-25T16:39:50.381Z · task-engine@80df30f · schema 7","scopes":{"":{"lanes":[{"state":"ready","tasks":["tsk_e4421d64b2344bc4a139d414d3769480"]}],"empty":7},"build":{"lanes":[{"state":"draft","tasks":["tsk_aa9449eabd214d498f5b16ac36a32cf4"]},{"state":"ready","tasks":["tsk_d026ad2841384f7fa930ef28efba4596"]},{"state":"waiting","tasks":["tsk_b3ab42799d4b48e49486b87bf778ec9a"]},{"state":"blocked","tasks":["tsk_1a3ff4501c8843189c3f0e7a4e549e37"]},{"state":"done","tasks":["tsk_70403fe4538b4fe0b1a7e866b85a25e9"]}],"empty":3},"build/spec":{"lanes":[],"empty":8},"build/read-model":{"lanes":[],"empty":8},"build/render":{"lanes":[{"state":"draft","tasks":["tsk_cbe8c0538630444191150e5d9f1598ce"]}],"empty":7},"build/render/legend":{"lanes":[],"empty":8},"build/verify":{"lanes":[],"empty":8},"build/integration":{"lanes":[],"empty":8}},"rows":{"tsk_e4421d64b2344bc4a139d414d3769480":{"dialog":"d-tsk_e4421d64b2344bc4a139d414d3769480","fields":[{"label":"State","value":"Ready to start (ready)"},{"label":"Node key","value":"build","mono":true},{"label":"Task id","value":"tsk_e4421d64b2344bc4a139d414d3769480","mono":true},{"label":"Inside","value":"6 inside · 1 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:48.845101Z"},{"label":"Updated","value":"2026-11-25T13:17:48.845101Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_aa9449eabd214d498f5b16ac36a32cf4":{"dialog":"d-tsk_aa9449eabd214d498f5b16ac36a32cf4","fields":[{"label":"State","value":"Draft (draft)"},{"label":"Node key","value":"build/spec","mono":true},{"label":"Task id","value":"tsk_aa9449eabd214d498f5b16ac36a32cf4","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:49.019044Z"},{"label":"Updated","value":"2026-11-25T13:17:49.019044Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_70403fe4538b4fe0b1a7e866b85a25e9":{"dialog":"d-tsk_70403fe4538b4fe0b1a7e866b85a25e9","fields":[{"label":"State","value":"Done (done)"},{"label":"Node key","value":"build/read-model","mono":true},{"label":"Task id","value":"tsk_70403fe4538b4fe0b1a7e866b85a25e9","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"ended"},{"label":"Slot","value":"0 of 2"},{"label":"Runner","value":"rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)"},{"label":"Created","value":"2026-11-25T13:17:49.152901Z"},{"label":"Updated","value":"2026-11-25T13:17:49.979966Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"att_5ddcd771ee894f3e8c724248ca74ace8","mono":true},{"label":"Attempts","value":"1; last ended, ok"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_d026ad2841384f7fa930ef28efba4596":{"dialog":"d-tsk_d026ad2841384f7fa930ef28efba4596","fields":[{"label":"State","value":"Ready to start (ready)"},{"label":"Node key","value":"build/render","mono":true},{"label":"Task id","value":"tsk_d026ad2841384f7fa930ef28efba4596","mono":true},{"label":"Inside","value":"1 inside · 0 done"},{"label":"Phase","value":"live"},{"label":"Slot","value":"0 of 2"},{"label":"Runner","value":"rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)"},{"label":"Created","value":"2026-11-25T13:17:49.335023Z"},{"label":"Updated","value":"2026-11-25T13:17:49.335023Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"att_1a3c1caae79c4144807ec9f150b967f0","mono":true},{"label":"Attempts","value":"1; last live"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_cbe8c0538630444191150e5d9f1598ce":{"dialog":"d-tsk_cbe8c0538630444191150e5d9f1598ce","fields":[{"label":"State","value":"Draft (draft)"},{"label":"Node key","value":"build/render/legend","mono":true},{"label":"Task id","value":"tsk_cbe8c0538630444191150e5d9f1598ce","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:49.445329Z"},{"label":"Updated","value":"2026-11-25T13:17:49.445329Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_b3ab42799d4b48e49486b87bf778ec9a":{"dialog":"d-tsk_b3ab42799d4b48e49486b87bf778ec9a","fields":[{"label":"State","value":"Waiting on review (waiting)"},{"label":"Node key","value":"build/verify","mono":true},{"label":"Task id","value":"tsk_b3ab42799d4b48e49486b87bf778ec9a","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"ended"},{"label":"Slot","value":"0 of 2"},{"label":"Runner","value":"rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)"},{"label":"Created","value":"2026-11-25T13:17:49.565023Z"},{"label":"Updated","value":"2026-11-25T13:17:50.155621Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"att_c45adfaf3f3842798492a707ba415472","mono":true},{"label":"Attempts","value":"1; last ended, ok"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"},{"label":"Wait reason","value":"rejected:condition:check:unit","mono":true},{"label":"Wait cause","value":"settle_rejected","mono":true},{"label":"Wait owner","value":"person:local","mono":true},{"label":"Wait opened","value":"2026-11-25T13:17:50.155518Z"}],"wait":{"cause":"settle_rejected","ended_by":null,"escalation_level":0,"expires_at":"2026-11-26T13:17:50.155539Z","opened_at":"2026-11-25T13:17:50.155518Z","opened_by_attempt":"att_c45adfaf3f3842798492a707ba415472","owner":"person:local","reason":"rejected:condition:check:unit","resume_at":null},"hold":null},"tsk_1a3ff4501c8843189c3f0e7a4e549e37":{"dialog":"d-tsk_1a3ff4501c8843189c3f0e7a4e549e37","fields":[{"label":"State","value":"Can't start yet (blocked)"},{"label":"Node key","value":"build/integration","mono":true},{"label":"Task id","value":"tsk_1a3ff4501c8843189c3f0e7a4e549e37","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:50.235731Z"},{"label":"Updated","value":"2026-11-25T13:17:50.235731Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"Prove the frozen fixture matches the engine"},{"label":"Starts after","value":"Render the tree read-only"}],"wait":null,"hold":null}}}</script>
+  <script type="application/json" id="board-data">{"tree_state":"open","source":"Live read · read at 2026-11-25T17:21:34.810Z · task-engine@5ed656d · schema 7","scopes":{"":{"lanes":[{"state":"ready","tasks":["tsk_e4421d64b2344bc4a139d414d3769480"]}],"empty":7,"details":null},"build":{"lanes":[{"state":"draft","tasks":["tsk_aa9449eabd214d498f5b16ac36a32cf4"]},{"state":"ready","tasks":["tsk_d026ad2841384f7fa930ef28efba4596"]},{"state":"waiting","tasks":["tsk_b3ab42799d4b48e49486b87bf778ec9a"]},{"state":"blocked","tasks":["tsk_1a3ff4501c8843189c3f0e7a4e549e37"]},{"state":"done","tasks":["tsk_70403fe4538b4fe0b1a7e866b85a25e9"]}],"empty":3,"details":{"dialog":"d-tsk_e4421d64b2344bc4a139d414d3769480","task":"tsk_e4421d64b2344bc4a139d414d3769480"}},"build/spec":{"lanes":[],"empty":8,"details":{"dialog":"d-tsk_aa9449eabd214d498f5b16ac36a32cf4","task":"tsk_aa9449eabd214d498f5b16ac36a32cf4"}},"build/read-model":{"lanes":[],"empty":8,"details":{"dialog":"d-tsk_70403fe4538b4fe0b1a7e866b85a25e9","task":"tsk_70403fe4538b4fe0b1a7e866b85a25e9"}},"build/render":{"lanes":[{"state":"draft","tasks":["tsk_cbe8c0538630444191150e5d9f1598ce"]}],"empty":7,"details":{"dialog":"d-tsk_d026ad2841384f7fa930ef28efba4596","task":"tsk_d026ad2841384f7fa930ef28efba4596"}},"build/render/legend":{"lanes":[],"empty":8,"details":{"dialog":"d-tsk_cbe8c0538630444191150e5d9f1598ce","task":"tsk_cbe8c0538630444191150e5d9f1598ce"}},"build/verify":{"lanes":[],"empty":8,"details":{"dialog":"d-tsk_b3ab42799d4b48e49486b87bf778ec9a","task":"tsk_b3ab42799d4b48e49486b87bf778ec9a"}},"build/integration":{"lanes":[],"empty":8,"details":{"dialog":"d-tsk_1a3ff4501c8843189c3f0e7a4e549e37","task":"tsk_1a3ff4501c8843189c3f0e7a4e549e37"}}},"rows":{"tsk_e4421d64b2344bc4a139d414d3769480":{"dialog":"d-tsk_e4421d64b2344bc4a139d414d3769480","fields":[{"label":"State","value":"Ready to start (ready)"},{"label":"Node key","value":"build","mono":true},{"label":"Task id","value":"tsk_e4421d64b2344bc4a139d414d3769480","mono":true},{"label":"Inside","value":"6 inside · 1 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:48.845101Z"},{"label":"Updated","value":"2026-11-25T13:17:48.845101Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null,"contained":"6 inside · 1 done"},"tsk_aa9449eabd214d498f5b16ac36a32cf4":{"dialog":"d-tsk_aa9449eabd214d498f5b16ac36a32cf4","fields":[{"label":"State","value":"Draft (draft)"},{"label":"Node key","value":"build/spec","mono":true},{"label":"Task id","value":"tsk_aa9449eabd214d498f5b16ac36a32cf4","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:49.019044Z"},{"label":"Updated","value":"2026-11-25T13:17:49.019044Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_70403fe4538b4fe0b1a7e866b85a25e9":{"dialog":"d-tsk_70403fe4538b4fe0b1a7e866b85a25e9","fields":[{"label":"State","value":"Done (done)"},{"label":"Node key","value":"build/read-model","mono":true},{"label":"Task id","value":"tsk_70403fe4538b4fe0b1a7e866b85a25e9","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"ended"},{"label":"Slot","value":"0 of 2"},{"label":"Runner","value":"rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)"},{"label":"Created","value":"2026-11-25T13:17:49.152901Z"},{"label":"Updated","value":"2026-11-25T13:17:49.979966Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"att_5ddcd771ee894f3e8c724248ca74ace8","mono":true},{"label":"Attempts","value":"1; last ended, ok"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_d026ad2841384f7fa930ef28efba4596":{"dialog":"d-tsk_d026ad2841384f7fa930ef28efba4596","fields":[{"label":"State","value":"Ready to start (ready)"},{"label":"Node key","value":"build/render","mono":true},{"label":"Task id","value":"tsk_d026ad2841384f7fa930ef28efba4596","mono":true},{"label":"Inside","value":"1 inside · 0 done"},{"label":"Phase","value":"live"},{"label":"Slot","value":"0 of 2"},{"label":"Runner","value":"rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)"},{"label":"Created","value":"2026-11-25T13:17:49.335023Z"},{"label":"Updated","value":"2026-11-25T13:17:49.335023Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"att_1a3c1caae79c4144807ec9f150b967f0","mono":true},{"label":"Attempts","value":"1; last live"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null,"contained":"1 inside · 0 done"},"tsk_cbe8c0538630444191150e5d9f1598ce":{"dialog":"d-tsk_cbe8c0538630444191150e5d9f1598ce","fields":[{"label":"State","value":"Draft (draft)"},{"label":"Node key","value":"build/render/legend","mono":true},{"label":"Task id","value":"tsk_cbe8c0538630444191150e5d9f1598ce","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:49.445329Z"},{"label":"Updated","value":"2026-11-25T13:17:49.445329Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"}],"wait":null,"hold":null},"tsk_b3ab42799d4b48e49486b87bf778ec9a":{"dialog":"d-tsk_b3ab42799d4b48e49486b87bf778ec9a","fields":[{"label":"State","value":"Waiting on a verdict (waiting)"},{"label":"Node key","value":"build/verify","mono":true},{"label":"Task id","value":"tsk_b3ab42799d4b48e49486b87bf778ec9a","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"ended"},{"label":"Slot","value":"0 of 2"},{"label":"Runner","value":"rnr_eafa027495bb4d4e8b0849917af9b255 (runner slot 0)"},{"label":"Created","value":"2026-11-25T13:17:49.565023Z"},{"label":"Updated","value":"2026-11-25T13:17:50.155621Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"att_c45adfaf3f3842798492a707ba415472","mono":true},{"label":"Attempts","value":"1; last ended, ok"},{"label":"Blocked by","value":"nothing"},{"label":"Starts after","value":"nothing"},{"label":"Wait reason","value":"rejected:condition:check:unit","mono":true},{"label":"Wait cause","value":"settle_rejected","mono":true},{"label":"Wait owner","value":"person:local","mono":true},{"label":"Wait opened","value":"2026-11-25T13:17:50.155518Z"}],"wait":{"cause":"settle_rejected","ended_by":null,"escalation_level":0,"expires_at":"2026-11-26T13:17:50.155539Z","opened_at":"2026-11-25T13:17:50.155518Z","opened_by_attempt":"att_c45adfaf3f3842798492a707ba415472","owner":"person:local","reason":"rejected:condition:check:unit","resume_at":null},"hold":null},"tsk_1a3ff4501c8843189c3f0e7a4e549e37":{"dialog":"d-tsk_1a3ff4501c8843189c3f0e7a4e549e37","fields":[{"label":"State","value":"Can't start yet (blocked)"},{"label":"Node key","value":"build/integration","mono":true},{"label":"Task id","value":"tsk_1a3ff4501c8843189c3f0e7a4e549e37","mono":true},{"label":"Inside","value":"0 inside · 0 done"},{"label":"Phase","value":"none"},{"label":"Slot","value":"none"},{"label":"Runner","value":"none"},{"label":"Created","value":"2026-11-25T13:17:50.235731Z"},{"label":"Updated","value":"2026-11-25T13:17:50.235731Z"},{"label":"Archived","value":"no"},{"label":"Attempt id","value":"not reported","mono":true},{"label":"Attempts","value":"0; last none readable"},{"label":"Blocked by","value":"Prove the frozen fixture matches the engine"},{"label":"Starts after","value":"Render the tree read-only"}],"wait":null,"hold":null}}}</script>
   <footer class="foot">
-    <p>Live read · read at 2026-11-25T16:39:50.381Z · task-engine@80df30f · schema 7</p>
+    <p>Live read · read at 2026-11-25T17:21:34.810Z · task-engine@5ed656d · schema 7</p>
     <p>Reads: task graph --project engine-board --tree tsk_7c7cdda9a8d347ee9a7557b95c6ebccd --json, task status &lt;every tree task id&gt; --json, task project show --project engine-board --json, task store check --json</p>
     <p>The board renders the engine's words. It computes no state; counts are the rollup over children.</p>
   </footer>
@@ -464,18 +471,27 @@ html.js .nojs-tree { display: none; }
 <script>(function () {
   var FILES = { board: 'index.html', list: 'list.html' };
   var LANES = ["draft","ready","waiting","blocked","done","failed","cancelled","skipped"];
-  var WORDS = {"draft":"Draft","ready":"Ready to start","waiting":"Waiting on review","blocked":"Can't start yet","done":"Done","failed":"Failed","cancelled":"Cancelled","skipped":"Skipped"};
-  var DATA = {};
+  var WORDS = {"draft":"Draft","ready":"Ready to start","waiting":"Waiting on a verdict","blocked":"Can't start yet","done":"Done","failed":"Failed","cancelled":"Cancelled","skipped":"Skipped"};
+  // A page whose data block is missing or unreadable must not quietly draw an
+  // empty board: it keeps the no-JS tree and says why the interactive view
+  // could not start.
+  var DATA = null;
+  var FAILED = '';
   var node = document.getElementById('board-data');
-  if (node) {
+  if (!node) {
+    FAILED = 'the data block is missing';
+  } else {
     try {
-      DATA = JSON.parse(node.textContent || '{}');
+      DATA = JSON.parse(node.textContent || '');
     } catch (error) {
-      DATA = {};
+      FAILED = 'the data block could not be read';
     }
   }
-  var ROWS = DATA.rows || {};
-  var SCOPES = DATA.scopes || {};
+  if (!FAILED && (!DATA || typeof DATA !== 'object' || Array.isArray(DATA))) {
+    FAILED = 'the data block is not a tree read';
+  }
+  var ROWS = (DATA && DATA.rows) || {};
+  var SCOPES = (DATA && DATA.scopes) || {};
 
   function laneGroups(
   states                   ,
@@ -591,7 +607,8 @@ html.js .nojs-tree { display: none; }
 
   function appendTitle(parent, row) {
     parent.appendChild(document.createTextNode(titleOf(row)));
-    if (row.getAttribute('data-title-missing') === '1') {
+    var data = ROWS[row.getAttribute('data-task')];
+    if (data && data.title_missing) {
       parent.appendChild(document.createTextNode(' '));
       var mark = document.createElement('span');
       mark.className = 'title-missing';
@@ -681,26 +698,26 @@ html.js .nojs-tree { display: none; }
 
     var side = document.createElement('div');
     side.className = 'scope-side';
-    var chip = document.createElement('span');
-    chip.className = 'chip';
-    if (scope === null) {
-      chip.textContent = cards.length + (cards.length === 1 ? ' task' : ' tasks');
-      side.appendChild(chip);
-    } else {
-      var inside = Number(scope.getAttribute('data-inside')) || 0;
-      var done = Number(scope.getAttribute('data-done')) || 0;
-      var archived = Number(scope.getAttribute('data-archived')) || 0;
-      chip.textContent =
-        inside + ' inside · ' + done + ' done' +
-        (archived > 0 ? ' · ' + archived + ' archived' : '');
-      side.appendChild(chip);
-      var details = document.createElement('button');
-      details.type = 'button';
-      details.className = 'details';
-      details.setAttribute('data-dialog', scope.getAttribute('data-dialog'));
-      details.setAttribute('data-task', scope.getAttribute('data-task'));
-      details.textContent = 'Details';
-      side.appendChild(details);
+    if (scope !== null) {
+      var scopeKey = scope.getAttribute('data-key');
+      var scopePlan = SCOPES[scopeKey];
+      var owner = scopePlan && scopePlan.details;
+      var ownerData = owner ? ROWS[owner.task] : null;
+      if (ownerData && ownerData.contained) {
+        var chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = ownerData.contained;
+        side.appendChild(chip);
+      }
+      if (owner) {
+        var details = document.createElement('button');
+        details.type = 'button';
+        details.className = 'details';
+        details.setAttribute('data-dialog', owner.dialog);
+        details.setAttribute('data-task', owner.task);
+        details.textContent = 'Details';
+        side.appendChild(details);
+      }
     }
     if (DATA.tree_state === 'archived') {
       var archivedChip = document.createElement('span');
@@ -719,12 +736,19 @@ html.js .nojs-tree { display: none; }
       line.textContent = 'No subtasks. Nothing sits under this task.';
       return line;
     }
+    var archived = 0;
+    cards.forEach(function (card) {
+      if (card.getAttribute('data-archived-self') === '1') archived += 1;
+    });
+    var live = cards.length - archived;
     var strong = document.createElement('strong');
-    strong.textContent = String(cards.length);
+    strong.textContent = String(live);
     line.appendChild(strong);
     line.appendChild(
       document.createTextNode(
-        ' in this level' +
+        ' live' +
+          (archived > 0 ? ' · ' + archived + ' archived' : '') +
+          ' in this level' +
           (plan.empty > 0 ? ' · ' + plan.empty + ' lanes empty' : ''),
       ),
     );
@@ -844,6 +868,19 @@ html.js .nojs-tree { display: none; }
       var view = link.getAttribute('data-view-link');
       link.setAttribute('href', FILES[view] + '#' + view + encodeKey(key));
     });
+  }
+
+  // Same weight as a read defect, not a red banner: the page has no colour
+  // language for an apology. Removing the js class is what brings the no-JS
+  // tree back, so the reader keeps every row and every count.
+  function fail(why) {
+    document.documentElement.classList.remove('js');
+    var line = document.getElementById('board-failure');
+    if (!line) return;
+    line.textContent =
+      'The interactive board could not start: ' + why +
+      '. The full list is shown instead.';
+    line.hidden = false;
   }
 
   function showScrim() {
@@ -1003,8 +1040,17 @@ html.js .nojs-tree { display: none; }
     syncViews(here.key);
   }
 
-  window.addEventListener('hashchange', apply);
-  apply();
+  var boardRoot = document.getElementById('board-root');
+  var stopped = FAILED;
+  if (boardRoot && !stopped && !document.getElementById('tree-source')) {
+    stopped = 'the tree it draws from is missing';
+  }
+  if (boardRoot && stopped) {
+    fail(stopped);
+  } else {
+    window.addEventListener('hashchange', apply);
+    apply();
+  }
 })();</script>
 </body>
 </html>

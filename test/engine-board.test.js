@@ -18,6 +18,7 @@ import {
   laneGroups,
   lanePlan,
   progress,
+  progressText,
 } from '../engine-board/rollup.ts';
 import {
   boardData,
@@ -755,7 +756,14 @@ test('containment is the rollup over children on a three-level tree', () => {
     done: 0,
     archived: 0,
   });
-  assert.deepEqual(progress(model.roots), { done: 1, total: 4, archived: 0 });
+  assert.deepEqual(progress(model.roots), {
+    done: 1,
+    failed: 0,
+    cancelled: 0,
+    skipped: 0,
+    total: 4,
+    archived: 0,
+  });
   // The renderer prints the same numbers the rollup returns.
   const html = renderBoardPage(model);
   assert.ok(html.includes('3 inside · 1 done'));
@@ -1090,7 +1098,7 @@ test('the detail panel lists the technical surface and the raw machine values', 
     ],
   );
   const value = (label) => fields.find((field) => field.label === label).value;
-  assert.equal(value('State'), 'Waiting on review (waiting)');
+  assert.equal(value('State'), 'Waiting on a verdict (waiting)');
   assert.equal(value('Slot'), '0 of 2');
   assert.equal(value('Runner'), 'rnr_1 (runner slot 0)');
   assert.equal(value('Attempt id'), 'att_1');
@@ -1182,7 +1190,7 @@ test('the no-JS page is the whole tree, and no dialog is shipped', () => {
 test('the progress line and no Map tab are on both views', () => {
   const model = fixtureModel();
   for (const html of [renderBoardPage(model), renderListPage(model)]) {
-    assert.ok(html.includes('1 of 7</strong> finished'));
+    assert.ok(html.includes('1 of 7</strong> done'));
     assert.ok(html.includes('class="progress-fill'));
     assert.equal(html.includes('>Map<'), false);
     assert.equal(html.includes('data-view-link="map"'), false);
@@ -1390,13 +1398,14 @@ test('a tree read that cannot prove it is whole is refused', async () => {
 
   await assert.rejects(
     liveSourceWith({ nodes, edges: [], next_cursor: 'cur_1' }).load(request),
-    /next_cursor is not null/,
+    /graph tree read is paged \(next_cursor cur_1\); this is not a whole tree/,
   );
 
-  // A payload that does not say `next_cursor: null` has not proved completeness.
+  // A payload that does not carry the key at all has not declared completeness;
+  // that is a different failure from a paged read, and it says which.
   await assert.rejects(
     liveSourceWith({ nodes, edges: [] }).load(request),
-    /next_cursor is not null/,
+    /did not declare completeness: next_cursor is missing/,
   );
 
   const whole = await liveSourceWith({
@@ -1426,7 +1435,25 @@ test('duplicate task_id rows in a graph payload are one row, not two roots', () 
   assert.equal(model.roots.length, 2, 'the duplicate is not a second root');
   // First row wins, so the duplicate's `done` does not change the counts.
   assert.equal(model.roots[0].rest_state, 'ready');
-  assert.deepEqual(progress(model.roots), { done: 0, total: 2, archived: 0 });
+  assert.deepEqual(progress(model.roots), {
+    done: 0,
+    failed: 0,
+    cancelled: 0,
+    skipped: 0,
+    total: 2,
+    archived: 0,
+  });
+  // The difference is stated, not silent: one defective read, named.
+  assert.deepEqual(model.defects, [
+    { kind: 'duplicate', tasks: 1, keys: ['alpha'] },
+  ]);
+  const html = renderBoardPage(model);
+  assert.ok(html.includes('aria-label="Read defects"'));
+  assert.ok(
+    html.includes(
+      '<li data-kind="duplicate"><span class="defect-kind">Duplicate rows</span>: 1 task id was read twice; the first read of each was kept (<span class="mono">alpha</span>).</li>',
+    ),
+  );
 });
 
 test('archived rows stay in the tree, labelled, and out of the live count', () => {
@@ -1448,7 +1475,14 @@ test('archived rows stay in the tree, labelled, and out of the live count', () =
   assert.equal(model.roots[0].children[0].archived_at, archivedAt);
 
   // Never `of N`: archived work is named beside the live count.
-  assert.deepEqual(progress(model.roots), { done: 1, total: 2, archived: 2 });
+  assert.deepEqual(progress(model.roots), {
+    done: 1,
+    failed: 0,
+    cancelled: 0,
+    skipped: 0,
+    total: 2,
+    archived: 2,
+  });
   const byKey = new Map(flattenTree(model.roots).map((row) => [row.node_key, row]));
   // Archived descendants are their own bucket, not live `inside` work.
   assert.deepEqual(containment(byKey.get('alpha')), {
@@ -1458,7 +1492,7 @@ test('archived rows stay in the tree, labelled, and out of the live count', () =
   });
 
   const html = renderBoardPage(model);
-  assert.ok(html.includes('1 of 2</strong> finished'));
+  assert.ok(html.includes('1 of 2</strong> done'));
   assert.ok(html.includes('· 2 archived'));
   assert.ok(html.includes('data-tree-state="archived"'));
   assert.ok(html.includes("DATA.tree_state === 'archived'"));
@@ -1480,7 +1514,14 @@ test('a tree with only archived rows says no live tasks, not no tasks', () => {
       rootTaskId: 'container',
     }),
   );
-  assert.deepEqual(progress(model.roots), { done: 0, total: 0, archived: 1 });
+  assert.deepEqual(progress(model.roots), {
+    done: 0,
+    failed: 0,
+    cancelled: 0,
+    skipped: 0,
+    total: 0,
+    archived: 1,
+  });
   const html = renderBoardPage(model);
   assert.ok(html.includes('No live tasks'));
   assert.ok(html.includes('· 1 archived'));
@@ -1501,4 +1542,182 @@ test('a row whose payload carried no title says so instead of passing the key of
     html.includes('alpha <span class="title-missing">title not read</span>'),
   );
   assert.equal(html.includes('>alpha</button>'), false);
+});
+
+// ---------------------------------------------------------------- slice 5
+
+function allSettled(model) {
+  const terminal = new Set(['done', 'failed', 'cancelled', 'skipped']);
+  let settled = true;
+  const walk = (rows) => {
+    for (const row of rows) {
+      if (row.archived_at === null && !terminal.has(row.rest_state)) settled = false;
+      walk(row.children);
+    }
+  };
+  walk(model.roots);
+  return settled;
+}
+
+test('progress is done plus the settled states, never one word for both', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'ready', null),
+        node('a', 'alpha', 'skipped', 'r'),
+        node('b', 'beta', 'ready', 'r'),
+      ],
+    }),
+  );
+  const p = progress(model.roots);
+  assert.deepEqual(p, {
+    done: 0,
+    failed: 0,
+    cancelled: 0,
+    skipped: 1,
+    total: 3,
+    archived: 0,
+  });
+  // The denominator includes skipped work; the numerator does not absorb it.
+  const html = renderBoardPage(model);
+  assert.ok(html.includes('0 of 3</strong> done · 1 skipped'));
+});
+
+test('every settled row is accounted for, and every open row is visibly left over', () => {
+  const settled = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'done', null),
+        node('a', 'alpha', 'done', 'r'),
+        node('b', 'beta', 'failed', 'r'),
+        node('c', 'gamma', 'cancelled', 'r'),
+        node('d', 'delta', 'skipped', 'r'),
+      ],
+    }),
+  );
+  const open = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'ready', null),
+        node('a', 'alpha', 'done', 'r'),
+        node('b', 'beta', 'failed', 'r'),
+        node('c', 'gamma', 'skipped', 'r'),
+      ],
+    }),
+  );
+  const archived = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'ready', null),
+        node('a', 'alpha', 'done', 'r', { archived_at: '2026-11-01T00:00:00Z' }),
+        node('b', 'beta', 'skipped', 'r'),
+      ],
+    }),
+  );
+  for (const model of [settled, open, archived]) {
+    const p = progress(model.roots);
+    assert.equal(
+      p.done + p.failed + p.cancelled + p.skipped === p.total,
+      allSettled(model),
+      'the settled buckets account for every live row iff no live row is open',
+    );
+    if (!allSettled(model)) {
+      assert.ok(p.done + p.failed + p.cancelled + p.skipped < p.total);
+    }
+  }
+});
+
+test('one text builder prints the same buckets on the Board and the List', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'ready', null),
+        node('a', 'alpha', 'done', 'r'),
+        node('b', 'beta', 'failed', 'r'),
+        node('c', 'gamma', 'cancelled', 'r'),
+        node('d', 'delta', 'skipped', 'r'),
+      ],
+    }),
+  );
+  const p = progress(model.roots);
+  const line = '1 of 5 done · 1 failed · 1 cancelled · 1 skipped';
+  assert.equal(progressText(p), line);
+  assert.ok(renderBoardPage(model).includes(line));
+  assert.ok(renderListPage(model).includes(line));
+});
+
+test('a container with only archived work leads with the archived count', () => {
+  const archivedAt = '2026-11-01T00:00:00Z';
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'ready', null),
+        node('box', 'box', 'done', 'r'),
+        node('a', 'box/old-a', 'done', 'box', { archived_at: archivedAt }),
+        node('b', 'box/old-b', 'done', 'box', { archived_at: archivedAt }),
+      ],
+    }),
+  );
+  const row = model.roots[0].children[0];
+  assert.equal(containment(row).inside, 0);
+  assert.equal(
+    detailFields(row, model).find((field) => field.label === 'Inside').value,
+    '2 archived inside · no live work',
+  );
+  assert.equal(
+    boardData(model).rows.box.contained,
+    '2 archived inside · no live work',
+  );
+  const html = renderBoardPage(model);
+  assert.ok(
+    html.includes('>2 archived inside · no live work</button>'),
+  );
+});
+
+test('the container counts line is a facts button, named for what it opens', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'ready', null),
+        node('box', 'box', 'ready', 'r', { title: 'Box of work' }),
+        node('a', 'box/alpha', 'done', 'box'),
+        node('b', 'box/beta', 'ready', 'box'),
+      ],
+    }),
+  );
+  const html = renderBoardPage(model);
+  assert.ok(
+    html.includes(
+      '<button type="button" class="row-count" data-dialog="d-box" data-task="box" aria-label="Facts for Box of work, 2 inside · 1 done">2 inside · 1 done</button>',
+    ),
+  );
+  // A title that was read costs no page bytes and no flag.
+  assert.equal(boardData(model).rows.box.title_missing, undefined);
+});
+
+test('the page data carries the title fact and the scope facts target', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('r', '$root', 'ready', null),
+        node('box', 'box', 'ready', 'r'),
+        node('a', 'box/alpha', 'ready', 'box'),
+      ],
+    }),
+  );
+  const data = boardData(model);
+  // A missing title is a fact in the data, not an attribute the script reads.
+  assert.equal(data.rows.a.title_missing, true);
+  assert.equal(data.rows.box.title_missing, true);
+  assert.equal(data.rows.r.title_missing, true);
+  // The scope's own row is where its Details control points.
+  assert.deepEqual(data.scopes.box.details, { dialog: 'd-box', task: 'box' });
+  assert.deepEqual(data.scopes['box/alpha'].details, {
+    dialog: 'd-a',
+    task: 'a',
+  });
+  assert.equal(data.scopes[''].details, null);
+  assert.equal(data.rows.box.contained, '1 inside · 0 done');
+  // A leaf draws no counts line, so it carries no contained string.
+  assert.equal('contained' in data.rows.a, false);
 });

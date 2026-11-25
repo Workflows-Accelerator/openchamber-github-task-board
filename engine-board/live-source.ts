@@ -167,9 +167,16 @@ function normalizeGraph(text: string): GraphPayload {
     const omitted = typeof raw.omitted === 'number' ? raw.omitted : 'some';
     throw new Error(`graph tree read is truncated: ${omitted} tasks omitted`);
   }
+  if (!('next_cursor' in raw)) {
+    throw new Error(
+      'graph tree read did not declare completeness: next_cursor is missing',
+    );
+  }
   if (raw.next_cursor !== null) {
     throw new Error(
-      'graph tree read did not prove it is whole: next_cursor is not null',
+      `graph tree read is paged (next_cursor ${String(
+        raw.next_cursor,
+      )}); this is not a whole tree`,
     );
   }
   return {

@@ -26,6 +26,7 @@ import {
   laneGroups,
   lanePlan,
   progress,
+  progressText,
 } from './rollup.ts';
 import { scopeHref, type BoardView } from './scope.ts';
 
@@ -153,9 +154,7 @@ const NOT_REPORTED = 'not reported';
 export function detailFields(row: TreeRow, model: TreeModel): DetailField[] {
   const rows = byId(model);
   const contained = containment(row);
-  const inside =
-    `${contained.inside} inside · ${contained.done} done` +
-    (contained.archived > 0 ? ` · ${contained.archived} archived` : '');
+  const inside = containedText(contained);
   const limit = row.slot_limit ?? model.slot_limit;
   const slot =
     row.slot === null
@@ -224,20 +223,19 @@ export function detailFields(row: TreeRow, model: TreeModel): DetailField[] {
 // ---------------------------------------------------------------- pieces
 
 function progressBlock(model: TreeModel): string {
-  const { done, total, archived } = progress(model.roots);
-  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-  let line =
-    total === 0
-      ? archived > 0
-        ? 'No live tasks'
-        : 'No tasks in this tree'
-      : `<strong>${done} of ${total}</strong> finished`;
-  if (archived > 0) {
-    line += ` · ${archived} archived`;
-  }
-  return `<section class="progress" aria-label="Progress">
+  const p = progress(model.roots);
+  const pct = p.total === 0 ? 0 : Math.round((p.done / p.total) * 100);
+  const text = progressText(p);
+  const line =
+    p.total === 0
+      ? text
+      : text.replace(
+          `${p.done} of ${p.total}`,
+          `<strong>${p.done} of ${p.total}</strong>`,
+        );
+  return `<section class="progress" aria-label="Whole tree progress">
     <p class="progress-line">${line}</p>
-    <span class="progress-track" aria-hidden="true"><span class="progress-fill pct-${pct}"></span></span>
+    <span class="progress-track" role="progressbar" aria-label="Done share" aria-valuemin="0" aria-valuemax="${p.total}" aria-valuenow="${p.done}"><span class="progress-fill pct-${pct}"></span></span>
   </section>`;
 }
 
@@ -264,6 +262,11 @@ function defectBlock(model: TreeModel): string {
   const items = model.defects
     .map((defect) => {
       const keys = defect.keys.map((key) => `<span class="mono">${esc(key)}</span>`).join(', ');
+      if (defect.kind === 'duplicate') {
+        return `<li data-kind="duplicate"><span class="defect-kind">Duplicate rows</span>: ${
+          defect.tasks === 1 ? '1 task id was' : `${defect.tasks} task ids were`
+        } read twice; the first read of each was kept (${keys}).</li>`;
+      }
       if (defect.kind === 'cycle') {
         return `<li data-kind="cycle"><span class="defect-kind">Parent cycle</span>: ${plural(
           defect.tasks,
@@ -289,8 +292,8 @@ function defectBlock(model: TreeModel): string {
           'task',
         )} in this read could not be placed; the count above covers placed rows only.</p>`
       : '';
-  return `<section class="defects" aria-label="Placement defects">
-    <h2>Placement defects</h2>
+  return `<section class="defects" aria-label="Read defects">
+    <h2>Read defects</h2>
     <ul>${items}</ul>
     ${unplaced}
   </section>`;
@@ -332,6 +335,9 @@ export interface BoardScopeData {
   lanes: { state: string; tasks: string[] }[];
   // Vocabulary lanes that hold nothing, stated once under the level.
   empty: number;
+  // The row that owns this scope, for its own `Details` control. null for the
+  // tree's top scope, which no task owns.
+  details: { dialog: string; task: string } | null;
 }
 
 export interface BoardRowData {
@@ -339,6 +345,13 @@ export interface BoardRowData {
   fields: DetailField[];
   wait: unknown;
   hold: unknown;
+  // The same phrase the panel's Inside field prints, so the card's counts
+  // button and the panel cannot disagree. Present only for a row that has
+  // children, because only a container draws the line.
+  contained?: string;
+  // True when the payload carried no title; the page then says so instead of
+  // passing the node key off as one. Absent means the title was read.
+  title_missing?: boolean;
 }
 
 export interface BoardData {
@@ -354,7 +367,11 @@ export interface BoardData {
 export function boardData(model: TreeModel): BoardData {
   const scopes: Record<string, BoardScopeData> = {};
   const rows: Record<string, BoardRowData> = {};
-  const record = (key: string, children: readonly TreeRow[]): void => {
+  const record = (
+    key: string,
+    children: readonly TreeRow[],
+    owner: TreeRow | null,
+  ): void => {
     const plan = lanePlan(children);
     scopes[key] = {
       lanes: plan.lanes.map((lane) => ({
@@ -362,17 +379,30 @@ export function boardData(model: TreeModel): BoardData {
         tasks: lane.cards.map((card) => card.task_id),
       })),
       empty: plan.empty,
+      details:
+        owner === null
+          ? null
+          : { dialog: dialogId(owner), task: owner.task_id },
     };
   };
-  record('', model.roots);
+  record('', model.roots, null);
   for (const row of flattenTree(model.roots)) {
-    rows[row.task_id] = {
+    const data: BoardRowData = {
       dialog: dialogId(row),
       fields: detailFields(row, model),
       wait: row.wait,
       hold: row.hold,
     };
-    record(row.node_key, row.children);
+    // Only the exceptional values take bytes in the page: a row with no
+    // children draws no counts line, and a title that was read needs no flag.
+    if (row.children.length > 0) {
+      data.contained = containedText(containment(row));
+    }
+    if (row.title === null) {
+      data.title_missing = true;
+    }
+    rows[row.task_id] = data;
+    record(row.node_key, row.children, row);
   }
   return {
     tree_state: model.tree_state,
@@ -393,6 +423,12 @@ function containedText(contained: {
   done: number;
   archived: number;
 }): string {
+  // A container whose live work is empty and whose archived work is not should
+  // lead with the fact that matters; otherwise the reader sees two zeroes and
+  // stops before the only non-zero number.
+  if (contained.inside === 0 && contained.done === 0 && contained.archived > 0) {
+    return `${contained.archived} archived inside · no live work`;
+  }
   return (
     `${contained.inside} inside · ${contained.done} done` +
     (contained.archived > 0 ? ` · ${contained.archived} archived` : '')
@@ -401,6 +437,7 @@ function containedText(contained: {
 
 function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
   const contained = containment(row);
+  const counts = containedText(contained);
   const hasChildren = row.children.length > 0;
   const blockers = blockerLabels(row, rows);
   const wait =
@@ -451,7 +488,13 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
         <button class="enter" type="button" data-dialog="${esc(dialogId(row))}">${titleHtml(
           row,
         )}</button>
-        ${hasChildren ? `<span class="row-count">${containedText(contained)}</span>` : ''}
+        ${hasChildren
+          ? `<button type="button" class="row-count" data-dialog="${esc(
+              dialogId(row),
+            )}" data-task="${esc(row.task_id)}" aria-label="Facts for ${esc(
+              titleOf(row),
+            )}, ${esc(counts)}">${esc(counts)}</button>`
+          : ''}
         ${wait}
         ${disagreement}
         ${missing}
@@ -478,17 +521,16 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
 // inline script projects into lanes. Everything a card needs is an attribute or
 // a child of the row, so the script never asks the network for anything.
 function listBody(model: TreeModel): string {
-  const { done, total, archived } = progress(model.roots);
+  const p = progress(model.roots);
   const rows = byId(model);
   const levels = model.max_depth + 1;
-  const archivedPart = archived > 0 ? ` · ${archived} archived` : '';
   return `<header class="list-head">
     <div>
       <h1>Everything, unfolded</h1>
       <p class="list-bar"><strong>Showing everything</strong><span>·</span><span>${plural(
-        total,
+        p.total,
         'task',
-      )}, ${plural(levels, 'level')}</span><span>·</span><span>${done} done${archivedPart}</span></p>
+      )}, ${plural(levels, 'level')}</span><span>·</span><span>${progressText(p)}</span></p>
     </div>
   </header>
   <ul class="tree">${model.roots
@@ -710,8 +752,13 @@ a { color: inherit; }
   font-size: 0.68rem; font-weight: 400; vertical-align: 2px; white-space: nowrap;
 }
 .row-count {
-  display: block; margin-top: 3px; color: var(--muted);
-  font-size: 0.78rem; font-variant-numeric: tabular-nums;
+  display: block; margin-top: 3px; padding: 0; border: 0; background: none;
+  color: var(--muted); font: inherit;
+  font-size: 0.78rem; font-variant-numeric: tabular-nums; text-align: left;
+  cursor: pointer;
+}
+.row-count:hover, .row-count:focus-visible {
+  color: var(--accent); text-decoration: underline; text-underline-offset: 0.16em;
 }
 .row-state {
   display: inline-flex; align-items: center; gap: 7px; flex: none;
@@ -826,17 +873,26 @@ const SCRIPT = `(function () {
   var FILES = { board: 'index.html', list: 'list.html' };
   var LANES = ${JSON.stringify(LANE_ORDER)};
   var WORDS = ${JSON.stringify(STATE_WORDS)};
-  var DATA = {};
+  // A page whose data block is missing or unreadable must not quietly draw an
+  // empty board: it keeps the no-JS tree and says why the interactive view
+  // could not start.
+  var DATA = null;
+  var FAILED = '';
   var node = document.getElementById('board-data');
-  if (node) {
+  if (!node) {
+    FAILED = 'the data block is missing';
+  } else {
     try {
-      DATA = JSON.parse(node.textContent || '{}');
+      DATA = JSON.parse(node.textContent || '');
     } catch (error) {
-      DATA = {};
+      FAILED = 'the data block could not be read';
     }
   }
-  var ROWS = DATA.rows || {};
-  var SCOPES = DATA.scopes || {};
+  if (!FAILED && (!DATA || typeof DATA !== 'object' || Array.isArray(DATA))) {
+    FAILED = 'the data block is not a tree read';
+  }
+  var ROWS = (DATA && DATA.rows) || {};
+  var SCOPES = (DATA && DATA.scopes) || {};
 
   ${laneGroups.toString()}
 
@@ -911,7 +967,8 @@ const SCRIPT = `(function () {
 
   function appendTitle(parent, row) {
     parent.appendChild(document.createTextNode(titleOf(row)));
-    if (row.getAttribute('data-title-missing') === '1') {
+    var data = ROWS[row.getAttribute('data-task')];
+    if (data && data.title_missing) {
       parent.appendChild(document.createTextNode(' '));
       var mark = document.createElement('span');
       mark.className = 'title-missing';
@@ -1001,26 +1058,26 @@ const SCRIPT = `(function () {
 
     var side = document.createElement('div');
     side.className = 'scope-side';
-    var chip = document.createElement('span');
-    chip.className = 'chip';
-    if (scope === null) {
-      chip.textContent = cards.length + (cards.length === 1 ? ' task' : ' tasks');
-      side.appendChild(chip);
-    } else {
-      var inside = Number(scope.getAttribute('data-inside')) || 0;
-      var done = Number(scope.getAttribute('data-done')) || 0;
-      var archived = Number(scope.getAttribute('data-archived')) || 0;
-      chip.textContent =
-        inside + ' inside · ' + done + ' done' +
-        (archived > 0 ? ' · ' + archived + ' archived' : '');
-      side.appendChild(chip);
-      var details = document.createElement('button');
-      details.type = 'button';
-      details.className = 'details';
-      details.setAttribute('data-dialog', scope.getAttribute('data-dialog'));
-      details.setAttribute('data-task', scope.getAttribute('data-task'));
-      details.textContent = 'Details';
-      side.appendChild(details);
+    if (scope !== null) {
+      var scopeKey = scope.getAttribute('data-key');
+      var scopePlan = SCOPES[scopeKey];
+      var owner = scopePlan && scopePlan.details;
+      var ownerData = owner ? ROWS[owner.task] : null;
+      if (ownerData && ownerData.contained) {
+        var chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = ownerData.contained;
+        side.appendChild(chip);
+      }
+      if (owner) {
+        var details = document.createElement('button');
+        details.type = 'button';
+        details.className = 'details';
+        details.setAttribute('data-dialog', owner.dialog);
+        details.setAttribute('data-task', owner.task);
+        details.textContent = 'Details';
+        side.appendChild(details);
+      }
     }
     if (DATA.tree_state === 'archived') {
       var archivedChip = document.createElement('span');
@@ -1039,12 +1096,19 @@ const SCRIPT = `(function () {
       line.textContent = 'No subtasks. Nothing sits under this task.';
       return line;
     }
+    var archived = 0;
+    cards.forEach(function (card) {
+      if (card.getAttribute('data-archived-self') === '1') archived += 1;
+    });
+    var live = cards.length - archived;
     var strong = document.createElement('strong');
-    strong.textContent = String(cards.length);
+    strong.textContent = String(live);
     line.appendChild(strong);
     line.appendChild(
       document.createTextNode(
-        ' in this level' +
+        ' live' +
+          (archived > 0 ? ' · ' + archived + ' archived' : '') +
+          ' in this level' +
           (plan.empty > 0 ? ' · ' + plan.empty + ' lanes empty' : ''),
       ),
     );
@@ -1164,6 +1228,19 @@ const SCRIPT = `(function () {
       var view = link.getAttribute('data-view-link');
       link.setAttribute('href', FILES[view] + '#' + view + encodeKey(key));
     });
+  }
+
+  // Same weight as a read defect, not a red banner: the page has no colour
+  // language for an apology. Removing the js class is what brings the no-JS
+  // tree back, so the reader keeps every row and every count.
+  function fail(why) {
+    document.documentElement.classList.remove('js');
+    var line = document.getElementById('board-failure');
+    if (!line) return;
+    line.textContent =
+      'The interactive board could not start: ' + why +
+      '. The full list is shown instead.';
+    line.hidden = false;
   }
 
   function showScrim() {
@@ -1323,8 +1400,17 @@ const SCRIPT = `(function () {
     syncViews(here.key);
   }
 
-  window.addEventListener('hashchange', apply);
-  apply();
+  var boardRoot = document.getElementById('board-root');
+  var stopped = FAILED;
+  if (boardRoot && !stopped && !document.getElementById('tree-source')) {
+    stopped = 'the tree it draws from is missing';
+  }
+  if (boardRoot && stopped) {
+    fail(stopped);
+  } else {
+    window.addEventListener('hashchange', apply);
+    apply();
+  }
 })();`;
 
 function shell(
@@ -1350,6 +1436,7 @@ function shell(
 .nojs-tree { display: block; }
 html.js .board-scope { display: block; }
 html.js .nojs-tree { display: none; }
+.board-failure { margin: 14px 0 0; font-size: 0.8rem; color: var(--muted); }
 </style>
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -1358,6 +1445,7 @@ html.js .nojs-tree { display: none; }
   ${topBar(options.view, options.defaultKey)}
   ${progressBlock(model)}
   ${defectBlock(model)}
+  <p class="board-failure" id="board-failure" hidden></p>
   ${options.body}
   <footer class="foot">
     <p>${esc(sourceLine(model.provenance))}</p>

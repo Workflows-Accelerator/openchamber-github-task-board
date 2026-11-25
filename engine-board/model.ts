@@ -252,7 +252,7 @@ export interface ReadModelCapabilities {
   ended_attempt: boolean;
 }
 
-export type TreeDefectKind = 'cycle' | 'unreachable' | 'rerooted';
+export type TreeDefectKind = 'duplicate' | 'cycle' | 'unreachable' | 'rerooted';
 
 // INTERFACE §1's tree state, derived at the read like the engine does: the
 // root's `archived_at` decides `archived`, otherwise every terminal task decides
@@ -517,12 +517,20 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
 
   // A graph payload that repeats a task_id must not become two roots or two
   // counted rows. First row wins, the way a map would; the repeat contributes
-  // nothing. `graph --tree` does not emit one today; the model is not silent
-  // about a payload that does.
+  // nothing, and is named as a read defect so the difference is not silent.
+  // `graph --tree` does not emit one today; the model is not silent about a
+  // payload that does.
   const seenNodeIds = new Set<string>();
+  const duplicateKeys: string[] = [];
   const nodes = snapshot.graph.nodes.filter((node) => {
-    if (node === hiddenContainer) return false;
-    if (seenNodeIds.has(node.task_id)) return false;
+    if (node === hiddenContainer) {
+      seenNodeIds.add(node.task_id);
+      return false;
+    }
+    if (seenNodeIds.has(node.task_id)) {
+      duplicateKeys.push(node.node_key);
+      return false;
+    }
     seenNodeIds.add(node.task_id);
     return true;
   });
@@ -650,6 +658,13 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
         : 'open';
 
   const defects: TreeDefect[] = [];
+  if (duplicateKeys.length > 0) {
+    defects.push({
+      kind: 'duplicate',
+      tasks: duplicateKeys.length,
+      keys: duplicateKeys,
+    });
+  }
   if (cycle.size > 0) {
     defects.push({
       kind: 'cycle',

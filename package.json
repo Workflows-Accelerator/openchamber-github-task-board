@@ -19,7 +19,8 @@
     "build": "npm run build:panel && npm run build:service",
     "start:web": "node web/dist/server.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:page": "node --test test/page.test.mjs"
   },
   "openchamber": {
     "apiVersion": 1,

@@ -2,7 +2,7 @@
 // Containment counts and lane planning
 //
 // The engine prints a tree, not a summary. "N inside · M done" and the global
-// "1 of 7 finished" are rolled up here, from `children`, once per render.
+// "1 of 7 done · 2 skipped" are rolled up here, from `children`, once per render.
 // Nothing in this module reads `counts` from the read model: those are the
 // engine's own per-state totals over every placed row, which is a different
 // question from "what is under this task".
@@ -20,6 +20,9 @@ export interface Containment {
 
 export interface Progress {
   done: number;
+  failed: number;
+  cancelled: number;
+  skipped: number;
   total: number;
   archived: number;
 }
@@ -51,6 +54,9 @@ export function containment(row: TreeRow): Containment {
 export function progress(roots: readonly TreeRow[]): Progress {
   let total = 0;
   let done = 0;
+  let failed = 0;
+  let cancelled = 0;
+  let skipped = 0;
   let archived = 0;
   const walk = (rows: readonly TreeRow[]): void => {
     for (const row of rows) {
@@ -58,15 +64,35 @@ export function progress(roots: readonly TreeRow[]): Progress {
         archived += 1;
       } else {
         total += 1;
-        if (row.rest_state === 'done') {
-          done += 1;
-        }
+        if (row.rest_state === 'done') done += 1;
+        else if (row.rest_state === 'failed') failed += 1;
+        else if (row.rest_state === 'cancelled') cancelled += 1;
+        else if (row.rest_state === 'skipped') skipped += 1;
       }
       walk(row.children);
     }
   };
   walk(roots);
-  return { done, total, archived };
+  return { done, failed, cancelled, skipped, total, archived };
+}
+
+// The one progress sentence both views print. The numerator is `done`, never
+// `finished`: absorbing failed or skipped work into "finished" would be the
+// board making a verdict the engine did not. The other settled states are
+// named beside it, in lane order, so a reader can subtract and see what is
+// left. Archived rows are a separate class, never part of the denominator.
+export function progressText(p: Progress): string {
+  if (p.total === 0) {
+    return p.archived > 0
+      ? `No live tasks · ${p.archived} archived`
+      : 'No tasks in this tree';
+  }
+  let line = `${p.done} of ${p.total} done`;
+  if (p.failed > 0) line += ` · ${p.failed} failed`;
+  if (p.cancelled > 0) line += ` · ${p.cancelled} cancelled`;
+  if (p.skipped > 0) line += ` · ${p.skipped} skipped`;
+  if (p.archived > 0) line += ` · ${p.archived} archived`;
+  return line;
 }
 
 // The order the lanes are drawn in: the work moves left to right. `failed`,
@@ -86,7 +112,7 @@ export const LANE_ORDER: readonly RestState[] = [
 export const STATE_WORDS: Record<RestState, string> = {
   draft: 'Draft',
   ready: 'Ready to start',
-  waiting: 'Waiting on review',
+  waiting: 'Waiting on a verdict',
   blocked: "Can't start yet",
   done: 'Done',
   failed: 'Failed',

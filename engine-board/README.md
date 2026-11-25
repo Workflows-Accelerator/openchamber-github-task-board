@@ -8,15 +8,17 @@ engine's words and rolls up the counts over `children`.
 ```sh
 node engine-board/main.ts --db <store> --project <id> --tree-key <key> --root <task id>
 npm run typecheck
-node --test test/engine-board.test.js
+npm test
+npm run test:page   # real browser over file://, Obscura CDP on PATH
 ```
 
 Open `engine-board/index.html` and `engine-board/list.html` directly. Neither
 page makes a request, loads an external asset or needs a build step. Without
 script the Board is the List body: one stacked tree, every row and every count
-already in the HTML. Script adds scope entry, the `Here` marker and the detail
-dialog, and nothing else; the dialog is built on click from one inline JSON
-block, so no inert `<dialog>` is shipped per task.
+already in the HTML. Script adds scope entry, the `Here` marker, the detail
+dialog and, when the data block cannot be read, the one quiet line saying the
+interactive view did not start. The dialog is built on click from one inline
+JSON block, so no inert `<dialog>` is shipped per task.
 
 ## What is here
 
@@ -29,6 +31,8 @@ block, so no inert `<dialog>` is shipped per task.
 | `engine-board/live-source.ts` | `EngineTreeSource` over `task graph`, `task status`, `task project show`, `task store check`. |
 | `engine-board/main.ts` | Reads the live source once and writes both pages. |
 | `test/fixtures-source.ts` | The same seam over the frozen capture. Tests only; no shipped page imports it. |
+| `test/engine-board.test.js` | The renderer and model, asserted as data and as strings. |
+| `test/page.test.mjs` | The page itself: a real browser over `file://` (`npm run test:page`). |
 | `engine-board/fixtures/*.json` | Frozen `--json` payloads and capture metadata. |
 | `engine-board/fixtures/capture.sh` | Rebuilds the capture from the pinned engine revision. |
 
@@ -88,11 +92,23 @@ The model and the page use INTERFACE §2's words, not the board's:
 
 ## What the board states
 
-- **Progress** (ruling 1) — one thin bar and `N of M finished` on both views,
-  over live placed rows. Archived rows never enter `M`; they are named beside it
-  (`3 of 7 finished · 4 archived`).
+- **Progress** (ruling 1) — one thin bar and `N of M done` on both views, over
+  live placed rows. Archived rows never enter `M`; they are named beside it
+  (`1 of 7 done · 2 skipped · 4 archived`). A settled state that is not `done`
+  (`failed`, `cancelled`, `skipped`) is named in lane order instead of being
+  absorbed into the numerator: the board does not call a failure or a skip
+  "finished". The bar's accessible name is `Done share`, not `progress`.
 - **Empty lanes** (ruling 2) — a lane with no card is not drawn; the level line
-  says `N lanes empty` once, in the same words everywhere.
+  says how many vocabulary lanes are empty once, in the same words everywhere.
+- **Every count names a class and a scope** — the level line reads
+  `3 live · 2 archived in this level · 7 lanes empty`; there is no bare task
+  count in the scope header. The progress line is the whole tree's and carries
+  that name as its accessible label.
+- **A container's facts** — the counts line on a container (`2 inside · 1 done ·
+  2 archived`) is a button that opens the row's own panel; the title still
+  enters the scope, and a leaf title still opens its panel. An archived-only
+  container reads `2 archived inside · no live work`, so two zeroes do not hide
+  the only non-zero fact.
 - **List scope** (ruling 3) — `Showing everything`, and the current scope's row
   carries `Here`.
 - **No second back link** (ruling 4) — the trail is the only way up.
@@ -111,6 +127,14 @@ The model and the page use INTERFACE §2's words, not the board's:
   live work.
 - **Unknown source** (ruling 7) — a read without a revision or a read time is
   `Unknown source`.
+- **Duplicates are a read defect** — a graph payload that repeats a task id is
+  one row, and the first read is kept. The repeat is named under **Read
+  defects** with the kept node key; a payload difference the page normalises is
+  never a difference the page hides.
+- **A page that cannot start says so** — if the inline data block is missing or
+  unreadable, the Board keeps the no-JS tree and prints one quiet line: the
+  interactive board could not start, why, and that the full list is shown. The
+  default view never degrades into the other view in silence.
 
 ## What the capture covers
 
