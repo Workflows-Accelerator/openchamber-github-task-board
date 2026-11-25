@@ -1191,6 +1191,9 @@ test('the detail panel leads with the plain facts and folds the machine record',
       'Task id',
       'Node key',
       'Engine state',
+      'Description',
+      'Contract',
+      'Conversation',
       'Phase',
       'Slot',
       'Runner',
@@ -1205,6 +1208,20 @@ test('the detail panel leads with the plain facts and folds the machine record',
     ],
   );
   assert.equal(more('Engine state').value, 'waiting');
+  // Ruling 2: the unread description and contract are machine facts, so they
+  // moved behind More instead of being first-screen empty sections.
+  assert.equal(
+    more('Description').value,
+    "The description was not read through this engine's read commands.",
+  );
+  assert.equal(
+    more('Contract').value,
+    "The pinned contract is not readable through this engine's read commands.",
+  );
+  assert.equal(
+    more('Conversation').value,
+    "The mirror link was not read through this engine's read commands.",
+  );
   assert.equal(more('Slot').value, '0 of 2');
   assert.equal(more('Runner').value, 'rnr_1 (slot 0)');
   assert.equal(more('Created').value, '2026-11-25T13:00:00Z');
@@ -2027,7 +2044,8 @@ test('a body is plain paragraphs, and empty is a sentence', () => {
   assert.equal(missing.state, 'not-read');
   // No markdown machinery: a `#` or `**` is just characters.
   const html = renderBoardPage(model);
-  assert.ok(html.includes("textNode('sheet-empty', 'No description yet')"));
+  // Ruling 2: an absent description is not a `No description yet` section.
+  assert.equal(html.includes('No description yet'), false);
   assert.equal(html.includes('marked'), false);
 });
 
@@ -2207,6 +2225,13 @@ test('the conversation names the mirror, or says none is linked', () => {
     conversationStatement(model.roots[1]),
     'Comments and discussions live on the issue mirror, not in the engine. This task has no conversation linked to it.',
   );
+  // Ruling 2: the task with no mirror has no Conversation section at all; the
+  // sentence above is the text the panel would show if it had one.
+  assert.equal(detailSections(model.roots[1], model).conversation, '');
+  assert.equal(
+    renderBoardPage(model).includes("if (!data.conversation) return;"),
+    true,
+  );
   const render = renderBoardPage(model);
   assert.ok(render.includes("sectionNode('Conversation', 'sheet-conversation')"));
   // No comment box: the panel does not ship an input or a textarea.
@@ -2232,4 +2257,286 @@ test('capabilities report the reading fields the payloads carry', () => {
   assert.equal(model.roots[0].body, 'A description.');
   assert.equal(model.roots[0].conditions.length, 1);
   assert.equal(model.roots[0].mirror, 'issue #1');
+});
+
+// ---------------------------------------------------------------- slice 9
+
+test('the panel names both dependency directions, and only the edge says satisfied', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('hold', 'hold', 'ready', null, { title: 'Hold the gate' }),
+        node('done-blocker', 'done-blocker', 'done', null, {
+          title: 'Approve the pricing copy',
+        }),
+        node('waiting-blocker', 'waiting-blocker', 'waiting', null, {
+          title: 'Check the release notes',
+        }),
+        node('after-blocker', 'after-blocker', 'skipped', null, {
+          title: 'Draft the pricing model',
+        }),
+        node('silent-blocker', 'silent-blocker', 'done', null, {
+          title: 'A done row with no accepted edge',
+        }),
+        node('row', 'row', 'blocked', null, {
+          title: 'Sign off the pricing claims',
+        }),
+      ],
+      statuses: [
+        statusOf('hold', 'ready', { title: 'Hold the gate' }),
+        statusOf('done-blocker', 'done', {
+          title: 'Approve the pricing copy',
+        }),
+        statusOf('waiting-blocker', 'waiting', {
+          title: 'Check the release notes',
+        }),
+        statusOf('after-blocker', 'skipped', {
+          title: 'Draft the pricing model',
+        }),
+        statusOf('silent-blocker', 'done', {
+          title: 'A done row with no accepted edge',
+        }),
+        statusOf('row', 'blocked', {
+          title: 'Sign off the pricing claims',
+        }),
+      ],
+      edges: [
+        {
+          from: 'done-blocker',
+          to: 'row',
+          kind: 'blocked_by',
+          satisfied_by: ['done'],
+        },
+        {
+          from: 'waiting-blocker',
+          to: 'row',
+          kind: 'blocked_by',
+          satisfied_by: ['done'],
+        },
+        {
+          from: 'after-blocker',
+          to: 'row',
+          kind: 'after',
+          satisfied_by: ['done', 'failed', 'cancelled', 'skipped'],
+        },
+        // The row is done, but the read's edge accepts nothing: state alone
+        // must not turn this into "Waited for".
+        { from: 'silent-blocker', to: 'row', kind: 'blocked_by' },
+        // The reverse direction: `row` holds `hold` up.
+        {
+          from: 'row',
+          to: 'hold',
+          kind: 'blocked_by',
+          satisfied_by: ['done'],
+        },
+      ],
+    }),
+  );
+  const row = model.roots.find((candidate) => candidate.node_key === 'row');
+  assert.ok(row, 'the blocked row is in the tree');
+  const sections = detailSections(row, model);
+  const waits = sections.primary.find((field) => field.label === 'Waits for');
+  assert.ok(waits, 'the first screen has a Waits for field');
+  assert.equal(
+    waits.value,
+    'Waited for Approve the pricing copy — done. ' +
+      'Waits for Check the release notes. ' +
+      'Waits for A done row with no accepted edge. ' +
+      'Waited for Draft the pricing model — skipped.',
+  );
+  const holds = sections.primary.find((field) => field.label === 'Holds up');
+  assert.ok(holds, 'the first screen has a Holds up field');
+  assert.equal(holds.value, 'Holds up 1 task: Hold the gate.');
+  // The satisfied and the still-waiting blocker are in one sentence, before
+  // More: this is why the panel was opened.
+  assert.equal(
+    sections.more.some((field) => /Waits for|Holds up/.test(field.label)),
+    false,
+    'dependencies are not folded into More',
+  );
+});
+
+test('two edges to one task: one unaccepted edge keeps it waiting', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('approve', 'approve', 'done', null, {
+          title: 'Approve the pricing copy',
+        }),
+        node('row', 'row', 'blocked', null, {
+          title: 'Sign off the pricing claims',
+        }),
+      ],
+      statuses: [
+        statusOf('approve', 'done', { title: 'Approve the pricing copy' }),
+        statusOf('row', 'blocked', { title: 'Sign off the pricing claims' }),
+      ],
+      // The blocked_by edge accepts done; the after edge accepts only skipped.
+      // The task is done, so one edge cleared and one did not. The row still
+      // waits, and the panel must not say "Waited for ... done".
+      edges: [
+        {
+          from: 'approve',
+          to: 'row',
+          kind: 'blocked_by',
+          satisfied_by: ['done'],
+        },
+        {
+          from: 'approve',
+          to: 'row',
+          kind: 'after',
+          satisfied_by: ['skipped'],
+        },
+      ],
+    }),
+  );
+  const row = model.roots.find((candidate) => candidate.node_key === 'row');
+  const approves = model.roots.find(
+    (candidate) => candidate.node_key === 'approve',
+  );
+  const waits = detailSections(row, model).primary.find(
+    (field) => field.label === 'Waits for',
+  );
+  assert.equal(waits.value, 'Waits for Approve the pricing copy.');
+  const holds = detailSections(approves, model).primary.find(
+    (field) => field.label === 'Holds up',
+  );
+  assert.equal(holds.value, 'Holds up 1 task: Sign off the pricing claims.');
+});
+
+test('a task that holds up six names all six', () => {
+  const blockers = ['one', 'two', 'three', 'four', 'five', 'six'];
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('fan', 'fan', 'waiting', null, { title: 'Publish the shared API' }),
+        ...blockers.map((key) =>
+          node(`fan-${key}`, `fan-${key}`, 'blocked', null, {
+            title: `Uses the API ${key}`,
+          }),
+        ),
+      ],
+      statuses: [
+        statusOf('fan', 'waiting', { title: 'Publish the shared API' }),
+        ...blockers.map((key) =>
+          statusOf(`fan-${key}`, 'blocked', { title: `Uses the API ${key}` }),
+        ),
+      ],
+      edges: blockers.map((key) => ({
+        from: 'fan',
+        to: `fan-${key}`,
+        kind: 'blocked_by',
+        satisfied_by: ['done'],
+      })),
+    }),
+  );
+  const fan = model.roots.find((candidate) => candidate.node_key === 'fan');
+  const sections = detailSections(fan, model);
+  const holds = sections.primary.find((field) => field.label === 'Holds up');
+  assert.ok(holds, 'the fan names what it holds up');
+  assert.equal(
+    holds.value,
+    'Holds up 6 tasks: Uses the API one, Uses the API two, Uses the API three, ' +
+      'Uses the API four, Uses the API five and Uses the API six.',
+  );
+  assert.equal(
+    detailSections(model.roots[1], model).primary.some(
+      (field) => field.label === 'Waits for',
+    ),
+    true,
+    'the other end of the same edge waits for the fan',
+  );
+});
+
+test('an empty section is not drawn, and its machine fact moves to More', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('quiet', 'quiet', 'ready', null, { title: 'Quiet task' }),
+        node('unread', 'unread', 'ready', null, { title: 'Unread task' }),
+      ],
+      // Quiet carries every field the read can report, all of them empty. The
+      // unread task has no status row at all.
+      statuses: [
+        statusOf('quiet', 'ready', {
+          title: 'Quiet task',
+          body: '',
+          conditions: [],
+          attempts: [],
+          mirror: null,
+          handoff_revision: 1,
+        }),
+      ],
+    }),
+  );
+  const quiet = model.roots.find((candidate) => candidate.node_key === 'quiet');
+  const quietSections = detailSections(quiet, model);
+  assert.equal(quietSections.body.state, 'empty');
+  assert.equal(quietSections.conditions.state, 'empty');
+  assert.deepEqual(quietSections.history, []);
+  assert.equal(quietSections.conversation, '');
+  assert.deepEqual(quietSections.primary, [], 'nothing to lead with');
+  const contract = quietSections.more.find((field) => field.label === 'Contract');
+  assert.equal(contract.value, "This task's contract pins no conditions.");
+  const attempts = quietSections.more.find((field) => field.label === 'Attempts');
+  assert.equal(attempts.value, '0 runs');
+  assert.equal(
+    quietSections.more.some((field) => field.label === 'Description'),
+    false,
+    'an empty description has no fact worth printing',
+  );
+
+  const unread = model.roots.find((candidate) => candidate.node_key === 'unread');
+  const unreadSections = detailSections(unread, model);
+  assert.equal(unreadSections.conditions.state, 'unread');
+  assert.equal(unreadSections.body.state, 'not-read');
+  const unreadFacts = Object.fromEntries(
+    unreadSections.more.map((field) => [field.label, field.value]),
+  );
+  assert.equal(
+    unreadFacts.Description,
+    "The description was not read through this engine's read commands.",
+  );
+  assert.equal(
+    unreadFacts.Contract,
+    "The pinned contract is not readable through this engine's read commands.",
+  );
+
+  // When no status anywhere carries a mirror, the missing Conversation
+  // section is a read limit, and More carries that limit.
+  const noMirrorRead = buildTree(
+    snapshotOf({
+      nodes: [node('x', 'x', 'ready', null, { title: 'X' })],
+      statuses: [statusOf('x', 'ready', { title: 'X' })],
+    }),
+  );
+  const limitFacts = Object.fromEntries(
+    detailSections(noMirrorRead.roots[0], noMirrorRead).more.map((field) => [
+      field.label,
+      field.value,
+    ]),
+  );
+  assert.equal(
+    limitFacts.Conversation,
+    "The mirror link was not read through this engine's read commands.",
+  );
+
+  // The client-side panel draws a section only when it has content.
+  const render = renderBoardPage(model);
+  assert.ok(
+    render.includes("if (conditions.state !== 'ok') return;"),
+    'the Done when heading is guarded',
+  );
+  assert.ok(
+    render.includes("if (body.state !== 'ok') return;"),
+    'the Description heading is guarded',
+  );
+  assert.ok(
+    render.includes('if (lines.length === 0) return;'),
+    'the What has happened heading is guarded',
+  );
+  assert.ok(
+    render.includes('if (!data.conversation) return;'),
+    'the Conversation heading is guarded',
+  );
 });

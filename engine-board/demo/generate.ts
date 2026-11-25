@@ -36,7 +36,7 @@ const PROJECT = 'engine-board-demo';
 // read revision. The pin names the engine revision whose schema and vocabulary
 // the fixture is shaped for, and keeps regeneration deterministic while the
 // engine moves. The real capture under `fixtures/` keeps its own read revision.
-const ENGINE_PIN = '39585c1';
+const ENGINE_PIN = 'd919c5c';
 
 function taskId(index: number): string {
   return `tsk_${index.toString(16).padStart(32, '0')}`;
@@ -419,6 +419,27 @@ function realTree(): Fixture {
     body: 'Read the notes as a user would, not as the person who wrote them. Anything that needs a second sentence goes back.',
     conditions: [{ kind: 'verdict' }],
   });
+  // Two blockers in one panel: the page contract is done, the release check is
+  // still waiting. The panel says both, and says the done one is done. This
+  // row also holds up the announcement, so both dependency directions appear
+  // on one card.
+  fixture.add({
+    key: 'release-signoff',
+    title: 'Sign off the pricing claims',
+    state: 'blocked',
+    parent: 'release',
+    body: 'The claims are written. One reviewer has signed; the release check and the page contract still have to clear.',
+    conditions: [{ kind: 'verdict' }],
+  });
+  fixture.edge('build-spec', 'release-signoff');
+  fixture.edge('release-check', 'release-signoff');
+  fixture.add({
+    key: 'release-announce',
+    title: 'Announce the release',
+    state: 'blocked',
+    parent: 'release',
+  });
+  fixture.edge('release-signoff', 'release-announce');
   fixture.add({ key: 'release-notes', title: 'Draft the release notes', state: 'draft', parent: 'release' });
   fixture.add({
     key: 'release-stage',
@@ -431,8 +452,8 @@ function realTree(): Fixture {
       { kind: 'evidence', evidence_kind: 'signed-build' },
     ],
   });
-  // Deliberately without a description: the panel's empty state is part of the
-  // reading surface, not an accident of the fixture.
+  // Deliberately without a description, a contract, an attempt or a mirror:
+  // the panel must not draw four empty sections for it.
   fixture.add({ key: 'release-support', title: 'Tell the support team', state: 'ready', parent: 'release' });
 
   // Operations: one failure with a retry, and the archived subtree.

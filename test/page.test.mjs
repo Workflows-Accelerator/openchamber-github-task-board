@@ -488,12 +488,31 @@ test(
         firstText: sheet.querySelector('.sheet-inner').innerText,
         moreOpen: more ? more.open : null,
         moreSummary: more ? more.querySelector('summary').textContent : null,
+        sections: {
+          description: !!sheet.querySelector('.sheet-description'),
+          conditions: !!sheet.querySelector('.sheet-conditions'),
+          history: !!sheet.querySelector('.sheet-history'),
+          conversation: !!sheet.querySelector('.sheet-conversation'),
+          primary: !!sheet.querySelector('.facts-primary'),
+        },
       };
     })()`);
     assert.ok(opened, 'the counts button opens a dialog');
     // Slice 6: the first screen is plain, the machine record is one fold down.
-    assert.deepEqual(opened.labels, ['Inside']);
+    // Ruling 1: the boundary edge that is not drawn also means the container
+    // holds Alpha up, so that fact leads beside its own counts.
+    assert.deepEqual(opened.labels, ['Holds up', 'Inside']);
+    assert.equal(opened.facts['Holds up'], 'Holds up 1 task: Alpha.');
     assert.equal(opened.facts.Inside, '2 inside · 1 done · 2 archived');
+    // Ruling 2: the container's status was not read, so its description,
+    // contract, history and conversation are not four empty sections.
+    assert.deepEqual(opened.sections, {
+      description: false,
+      conditions: false,
+      history: false,
+      conversation: false,
+      primary: true,
+    });
     assert.equal(/tsk_|rest_state|\bslot \d/.test(opened.firstText), false);
     assert.equal(/\d{4}-\d\d-\d\dT/.test(opened.firstText), false);
     assert.equal(opened.moreOpen, false, 'More is closed on open');
@@ -745,11 +764,50 @@ test(
       "document.querySelector('dialog.sheet[open]') !== null",
       'the Beta panel opens',
     );
+    const beta = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var facts = {};
+      Array.prototype.forEach.call(
+        sheet.querySelectorAll('dt'),
+        function (dt) {
+          facts[dt.textContent] = dt.nextElementSibling
+            ? dt.nextElementSibling.textContent
+            : null;
+        },
+      );
+      return {
+        firstText: sheet.querySelector('.sheet-inner').innerText,
+        sections: {
+          description: !!sheet.querySelector('.sheet-description'),
+          conditions: !!sheet.querySelector('.sheet-conditions'),
+          history: !!sheet.querySelector('.sheet-history'),
+          conversation: !!sheet.querySelector('.sheet-conversation'),
+          primary: !!sheet.querySelector('.facts-primary'),
+        },
+        facts: facts,
+      };
+    })()`);
+    // Ruling 2: Beta's body is empty, its contract pins no conditions, it has
+    // no attempt and no mirror. None of those four is drawn, and no `not
+    // reported` row replaces them. Ruling 1: Beta waits for Alpha, and the
+    // edge carries no `satisfied_by`, so that is not claimed as satisfied.
+    assert.deepEqual(beta.sections, {
+      description: false,
+      conditions: false,
+      history: false,
+      conversation: false,
+      primary: true,
+    });
+    assert.equal(beta.facts['Waits for'], 'Waits for Alpha.');
+    assert.equal(beta.facts.Contract, "This task's contract pins no conditions.");
+    assert.equal(beta.facts.Attempts, '0 runs');
+    assert.equal('Description' in beta.facts, false);
     assert.equal(
-      await page.evaluate(
-        "document.querySelector('dialog.sheet[open] .sheet-description .sheet-empty').textContent",
+      /Done when|No description yet|Not attempted yet|No conversation/.test(
+        beta.firstText,
       ),
-      'No description yet',
+      false,
+      'no empty heading or empty-state sentence on the first screen',
     );
     await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
     await until(
@@ -1274,7 +1332,13 @@ test(
     })()`);
     assert.equal(blocked.title, 'Ship the pricing page');
     assert.equal(blocked.lane, 'Waiting for other work', 'the panel speaks the lane word');
-    assert.equal(blocked.facts['Waiting for'], 'Approve the pricing copy');
+    // Ruling 1: the first screen says what the task waits for; the edge is on
+    // a blocked task, so it is not claimed satisfied.
+    assert.equal(
+      blocked.facts['Waits for'],
+      'Waits for Approve the pricing copy.',
+    );
+    assert.equal('Waiting for' in blocked.facts, false, 'the old field is gone');
     assert.equal(/tsk_|rest_state/.test(blocked.firstText), false);
     assert.equal(blocked.moreOpen, false);
 
@@ -1395,6 +1459,321 @@ test(
       deviceScaleFactor: 1,
       mobile: false,
     });
+
+    assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
+    assert.deepEqual(page.exceptions, []);
+    assert.deepEqual(page.failedRequests, []);
+  },
+);
+
+test(
+  'a List row collapses in place, keeps its counts, and the title still enters the scope',
+  { timeout: 60000 },
+  async (t) => {
+    requireObscura();
+    // A three-deep tree: work > alpha > alpha-one, plus a leaf sibling.
+    const model = buildTree({
+      provenance: {
+        source_kind: 'live',
+        read_at: '2026-01-01T00:00:00Z',
+        engine_commit: 'page-test',
+        schema_revision: 7,
+        operations: [],
+        port_only_steps: [],
+        unobserved_states: [],
+      },
+      project: { project_id: 'p', config_revision: 1, max_concurrency: 2 },
+      runners: [],
+      runners_available: false,
+      graph: {
+        nodes: [
+          { task_id: 'root', node_key: '$root', rest_state: 'ready', parent_task_id: null },
+          { task_id: 'work', node_key: 'work', rest_state: 'ready', parent_task_id: 'root', title: 'The work' },
+          { task_id: 'alpha', node_key: 'work/alpha', rest_state: 'ready', parent_task_id: 'work', title: 'Alpha' },
+          { task_id: 'alpha-one', node_key: 'work/alpha/one', rest_state: 'done', parent_task_id: 'alpha', title: 'Alpha one' },
+          { task_id: 'beta', node_key: 'work/beta', rest_state: 'blocked', parent_task_id: 'work', title: 'Beta' },
+          { task_id: 'solo', node_key: 'solo', rest_state: 'ready', parent_task_id: 'root', title: 'Solo' },
+        ],
+        edges: [],
+      },
+      statuses: [
+        { task_id: 'work', rest_state: 'ready', title: 'The work', handoff_revision: 1 },
+        { task_id: 'alpha', rest_state: 'ready', title: 'Alpha', handoff_revision: 1 },
+        { task_id: 'alpha-one', rest_state: 'done', title: 'Alpha one', handoff_revision: 1 },
+        { task_id: 'beta', rest_state: 'blocked', title: 'Beta', handoff_revision: 1 },
+        { task_id: 'solo', rest_state: 'ready', title: 'Solo', handoff_revision: 1 },
+      ],
+      tree_key: 'tree',
+      root_task_id: 'root',
+    });
+    const dir = mkdtempSync(join(tmpdir(), 'engine-board-list-'));
+    const listFile = join(dir, 'list.html');
+    writeFileSync(listFile, renderListPage(model));
+    const url = pathToFileURL(listFile).href;
+
+    const port = await freePort();
+    const server = spawn(
+      'obscura',
+      ['serve', '--port', String(port), '--allow-file-access'],
+      { stdio: 'ignore' },
+    );
+    let browser;
+    t.after(() => {
+      browser?.close();
+      server.kill('SIGTERM');
+      rmSync(dir, { recursive: true, force: true });
+    });
+    const version = await waitForJson(`http://127.0.0.1:${port}/json/version`);
+    browser = connect(version.webSocketDebuggerUrl);
+    await browser.open;
+    const page = await openPage(browser, url);
+    await page.navigate(url);
+    await until(
+      page,
+      "document.querySelector('li[data-key=\"work\"] button.disclosure') !== null",
+      'the disclosure is rendered',
+    );
+
+    const read = `(function () {
+      var row = document.querySelector('li[data-key="work"]');
+      var button = row.firstElementChild.querySelector('button.disclosure');
+      var list = document.getElementById(button.getAttribute('aria-controls'));
+      var counts = row.firstElementChild.querySelector('.row-count');
+      var solo = document.querySelector('li[data-key="solo"]');
+      return {
+        tag: button.tagName,
+        expanded: button.getAttribute('aria-expanded'),
+        controls: button.getAttribute('aria-controls'),
+        ownsList: list !== null,
+        hidden: list ? list.hidden : null,
+        listDisplay: list ? getComputedStyle(list).display : null,
+        label: button.getAttribute('aria-label'),
+        hash: location.hash,
+        title: document.title,
+        counts: counts ? counts.textContent : null,
+        countsVisible: counts ? counts.offsetParent !== null : false,
+        leafDisclosure: solo.firstElementChild.querySelector('button.disclosure'),
+        leafSpacer: solo.firstElementChild.querySelector('.disclosure-spacer') !== null,
+        dialogOpen: document.querySelector('dialog.sheet[open]') !== null,
+      };
+    })()`;
+
+    const open = await page.evaluate(read);
+    assert.equal(open.tag, 'BUTTON');
+    assert.equal(open.expanded, 'true');
+    assert.equal(open.ownsList, true, 'aria-controls names a real list');
+    assert.equal(open.hidden, false);
+    assert.equal(open.counts, '3 inside · 1 done');
+    assert.equal(open.countsVisible, true);
+    assert.equal(open.leafDisclosure, null, 'a leaf has no disclosure');
+    assert.equal(open.leafSpacer, true, 'a leaf keeps the column');
+    assert.equal(open.dialogOpen, false);
+
+    // ---- collapse in place -------------------------------------------------
+    await page.evaluate(`(function () {
+      document
+        .querySelector('li[data-key="work"] button.disclosure')
+        .click();
+    })()`);
+    const collapsed = await page.evaluate(read);
+    assert.equal(collapsed.expanded, 'false');
+    assert.equal(collapsed.hidden, true, 'the children list is hidden');
+    assert.equal(collapsed.listDisplay, 'none');
+    assert.equal(
+      collapsed.label,
+      'Expand the subtasks of The work',
+      'assistive technology hears the action',
+    );
+    assert.equal(collapsed.hash, open.hash, 'collapsing does not navigate');
+    assert.equal(collapsed.title, open.title, 'collapsing does not change scope');
+    assert.equal(collapsed.counts, open.counts, 'the counts survive the collapse');
+    assert.equal(collapsed.countsVisible, true);
+    assert.equal(collapsed.dialogOpen, false, 'collapsing does not open the panel');
+
+    await page.evaluate(`(function () {
+      document
+        .querySelector('li[data-key="work"] button.disclosure')
+        .click();
+    })()`);
+    assert.equal(
+      (await page.evaluate(read)).expanded,
+      'true',
+      'the second click restores the children',
+    );
+
+    // ---- a nested branch keeps its own state -------------------------------
+    await page.evaluate(`(function () {
+      document
+        .querySelector('li[data-key="work/alpha"] button.disclosure')
+        .click();
+    })()`);
+    await page.evaluate(`(function () {
+      document
+        .querySelector('li[data-key="work"] button.disclosure')
+        .click();
+    })()`);
+    await page.evaluate(`(function () {
+      document
+        .querySelector('li[data-key="work"] button.disclosure')
+        .click();
+    })()`);
+    const nested = await page.evaluate(`(function () {
+      var alpha = document.querySelector('li[data-key="work/alpha"]');
+      var button = alpha.firstElementChild.querySelector('button.disclosure');
+      var list = document.getElementById(button.getAttribute('aria-controls'));
+      return { expanded: button.getAttribute('aria-expanded'), hidden: list.hidden };
+    })()`);
+    assert.equal(nested.expanded, 'false', 'the nested branch stayed collapsed');
+    assert.equal(nested.hidden, true);
+
+    // ---- keyboard and assistive technology ---------------------------------
+    // A real button, not a clickable div: this is what makes Enter and Space
+    // activation the platform's job, and the accessibility tree is where that
+    // contract is measured.
+    const axState = async () => {
+      const tree = await page.send('Accessibility.getFullAXTree');
+      const node = tree.nodes.find((candidate) =>
+        String(candidate.name ? candidate.name.value : '').includes(
+          'the subtasks of The work',
+        ),
+      );
+      if (!node) return null;
+      const property = (name) => {
+        const found = (node.properties || []).find((entry) => entry.name === name);
+        return found ? found.value.value : null;
+      };
+      return {
+        role: node.role.value,
+        name: node.name.value,
+        focusable: property('focusable'),
+        expanded: property('expanded'),
+      };
+    };
+    const openAx = await axState();
+    assert.deepEqual(openAx, {
+      role: 'button',
+      name: 'Collapse the subtasks of The work',
+      focusable: true,
+      expanded: true,
+    });
+
+    const press = async (key, code, keyCode, text) => {
+      await page.send('Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        key,
+        code,
+        text,
+        unmodifiedText: text,
+        windowsVirtualKeyCode: keyCode,
+        nativeVirtualKeyCode: keyCode,
+      });
+      await page.send('Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        key,
+        code,
+        windowsVirtualKeyCode: keyCode,
+        nativeVirtualKeyCode: keyCode,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    };
+    const keys = await page.evaluate(`(function () {
+      window.__keys = [];
+      var button = document.querySelector('li[data-key="work"] button.disclosure');
+      button.addEventListener('keydown', function (event) {
+        window.__keys.push('down:' + event.key);
+      });
+      button.addEventListener('keyup', function (event) {
+        window.__keys.push('up:' + event.key);
+      });
+      button.focus();
+      return {
+        focused: document.activeElement === button,
+        tag: button.tagName,
+        type: button.type,
+        disabled: button.disabled,
+        tabIndex: button.tabIndex,
+      };
+    })()`);
+    assert.equal(keys.focused, true, 'the disclosure takes focus');
+    assert.equal(keys.tag, 'BUTTON', 'a native button owns the keyboard');
+    assert.equal(keys.type, 'button');
+    assert.equal(keys.disabled, false);
+    assert.equal(keys.tabIndex, 0, 'the control is in the tab order');
+    // Obscura delivers the key events but does not synthesise a button's
+    // native activation, so this asserts the control receives Enter and Space
+    // while focused; the activation path itself is the click asserted above,
+    // which is the same event a native button fires for those keys.
+    await press('Enter', 'Enter', 13, '\r');
+    await press(' ', 'Space', 32, ' ');
+    assert.deepEqual(
+      await page.evaluate('window.__keys'),
+      ['down:Enter', 'up:Enter', 'down: ', 'up: '],
+      'Enter and Space reach the focused disclosure',
+    );
+    assert.equal(
+      await page.evaluate(
+        "document.querySelector('li[data-key=\"work\"] button.disclosure').getAttribute('aria-expanded')",
+      ),
+      'true',
+      'the keys did not change scope or state',
+    );
+
+    // The accessibility tree carries the state after a real activation.
+    await page.evaluate(`document
+      .querySelector('li[data-key="work"] button.disclosure')
+      .click()`);
+    const collapsedAx = await axState();
+    assert.equal(collapsedAx.role, 'button');
+    assert.equal(collapsedAx.name, 'Expand the subtasks of The work');
+    assert.equal(collapsedAx.expanded, false, 'collapsed is reported to AT');
+    // Restore the branch for the title test below.
+    await page.evaluate(`document
+      .querySelector('li[data-key="work"] button.disclosure')
+      .click()`);
+
+    // ---- the title enters the scope, a different gesture -------------------
+    await page.evaluate(`(function () {
+      document
+        .querySelector('li[data-key="work"] button.disclosure')
+        .click();
+    })()`);
+    await page.evaluate(`document.querySelector('li[data-key="work"] .enter').click()`);
+    await until(
+      page,
+      "location.hash === '#list/work'",
+      'the title enters the work scope',
+    );
+    const entered = await page.evaluate(`(function () {
+      var tag = document.querySelector('.here-tag:not([hidden])');
+      var button = document.querySelector('li[data-key="work"] button.disclosure');
+      return {
+        hash: location.hash,
+        here: tag ? tag.closest('li').getAttribute('data-key') : null,
+        expanded: button.getAttribute('aria-expanded'),
+        dialogOpen: document.querySelector('dialog.sheet[open]') !== null,
+      };
+    })()`);
+    assert.equal(entered.here, 'work');
+    assert.equal(entered.expanded, 'false', 'the title did not toggle the disclosure');
+    assert.equal(entered.dialogOpen, false, 'the title did not open the panel');
+    assert.equal(
+      await page.evaluate('document.title'),
+      'The work · Engine board — everything',
+      'the List title follows the scope',
+    );
+
+    // ---- state is per page load -------------------------------------------
+    await page.navigate(url);
+    await until(
+      page,
+      "document.querySelector('li[data-key=\"work\"] button.disclosure') !== null",
+      'the reloaded List renders',
+    );
+    assert.equal(
+      (await page.evaluate(read)).expanded,
+      'true',
+      'a fresh page load starts expanded',
+    );
 
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);

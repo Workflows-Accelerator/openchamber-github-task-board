@@ -114,6 +114,12 @@ export function dialogId(row: TreeRow): string {
   return `d-${row.task_id.replace(/[^A-Za-z0-9_-]/g, '-')}`;
 }
 
+// The child list a row's disclosure owns. The id is derived from the task id so
+// the button's `aria-controls` and the list cannot drift apart.
+export function childrenId(row: TreeRow): string {
+  return `kids-${row.task_id.replace(/[^A-Za-z0-9_-]/g, '-')}`;
+}
+
 function byId(model: TreeModel): Map<string, TreeRow> {
   return new Map(flattenTree(model.roots).map((row) => [row.task_id, row]));
 }
@@ -137,6 +143,113 @@ function blockerLabels(
   rows: ReadonlyMap<string, TreeRow>,
 ): string[] {
   return row.blocked_by.map((ref) => refLabel(ref, rows));
+}
+
+interface DependencyEntry {
+  title: string;
+  // True only when the read's own `satisfied_by` accepts the other row's
+  // state. A done-looking row with no `satisfied_by` is not called satisfied.
+  satisfied: boolean;
+  // The state word that satisfied the edge, or null.
+  state: string | null;
+}
+
+function satisfiedState(
+  ref: { task_id: string; satisfied_by: string[] | null },
+  other: TreeRow | undefined,
+): string | null {
+  if (other === undefined || ref.satisfied_by === null) {
+    return null;
+  }
+  if (!ref.satisfied_by.includes(other.rest_state)) {
+    return null;
+  }
+  return stateWord(other.rest_state).toLowerCase();
+}
+
+// Ruling 1: an incoming dependency is a task this row waits for. Both edge
+// kinds are dependencies; the kind stays in the graph, not on the first
+// screen. Satisfaction is the edge's own `satisfied_by`, never a guess from
+// the blocker's state.
+function waitEntries(
+  row: TreeRow,
+  rows: ReadonlyMap<string, TreeRow>,
+): DependencyEntry[] {
+  const entries = new Map<string, DependencyEntry>();
+  for (const ref of [...row.blocked_by, ...row.after]) {
+    const other = rows.get(ref.task_id);
+    const state = satisfiedState(ref, other);
+    const existing = entries.get(ref.task_id);
+    if (existing === undefined) {
+      entries.set(ref.task_id, {
+        title: refLabel(ref, rows),
+        satisfied: state !== null,
+        state,
+      });
+    } else if (existing.satisfied && state === null) {
+      // The same pair can carry more than one edge. The row waits until every
+      // edge clears, so one unaccepted edge keeps the dependency waiting; an
+      // accepted edge must not speak for it.
+      existing.satisfied = false;
+      existing.state = null;
+    }
+  }
+  return [...entries.values()];
+}
+
+// Ruling 1: the other direction is the same read edges, viewed from the
+// blocker. A row holds up every visible row that names it in `blocked_by` or
+// `after`. An edge to a task outside this read cannot be named by title and is
+// not invented.
+function holdEntries(row: TreeRow, model: TreeModel): DependencyEntry[] {
+  const entries = new Map<string, DependencyEntry>();
+  for (const other of flattenTree(model.roots)) {
+    if (other.task_id === row.task_id) {
+      continue;
+    }
+    const refs = [...other.blocked_by, ...other.after].filter(
+      (ref) => ref.task_id === row.task_id,
+    );
+    if (refs.length === 0) {
+      continue;
+    }
+    let state: string | null = null;
+    let allSatisfied = true;
+    for (const ref of refs) {
+      const refState = satisfiedState(ref, row);
+      if (refState === null) {
+        allSatisfied = false;
+      } else if (state === null) {
+        state = refState;
+      }
+    }
+    entries.set(other.task_id, {
+      title: titleOf(other),
+      satisfied: allSatisfied && state !== null,
+      state: allSatisfied ? state : null,
+    });
+  }
+  return [...entries.values()];
+}
+
+function waitsText(entries: readonly DependencyEntry[]): string {
+  return `${entries
+    .map((entry) =>
+      entry.satisfied && entry.state !== null
+        ? `Waited for ${entry.title} — ${entry.state}`
+        : `Waits for ${entry.title}`,
+    )
+    .join('. ')}.`;
+}
+
+function holdsText(entries: readonly DependencyEntry[]): string {
+  const count = entries.length;
+  const names = entries.map((entry) =>
+    entry.satisfied && entry.state !== null
+      ? `${entry.title} (${entry.state})`
+      : entry.title,
+  );
+  return `Holds up ${count} task${count === 1 ? '' : 's'}: ${joinWords(names)}.`;
 }
 
 function joinWords(words: readonly string[]): string {
@@ -356,11 +469,10 @@ function attemptCount(count: number): string {
 }
 
 export function historyLines(row: TreeRow): string[] {
-  if (row.status_missing) {
-    return ['No attempt history came back for this task.'];
-  }
-  if (row.attempts.length === 0) {
-    return ['Not attempted yet.'];
+  // Ruling 2: no attempts is an empty history section, not a sentence. The
+  // fact (zero, or not read) is carried in More.
+  if (row.status_missing || row.attempts.length === 0) {
+    return [];
   }
   const lines: string[] = [attemptCount(row.attempts.length)];
   const last = row.attempts[row.attempts.length - 1];
@@ -452,25 +564,23 @@ export function detailSections(
 ): DetailSections {
   const rows = byId(model);
   const now = model.provenance.read_at;
+  const body = bodyContent(row);
+  const conditions = conditionsContent(row);
   // The state is already the dot and word under the panel title. Repeating it
   // as a field would make the first screen say the same thing twice.
   const primary: DetailField[] = [];
+  // Ruling 1: both directions of the read's edges, by title, on the first
+  // screen. A satisfied edge says so beside the name.
+  const waits = waitEntries(row, rows);
+  if (waits.length > 0) {
+    primary.push({ label: 'Waits for', value: waitsText(waits) });
+  }
+  const holds = holdEntries(row, model);
+  if (holds.length > 0) {
+    primary.push({ label: 'Holds up', value: holdsText(holds) });
+  }
   if (row.children.length > 0) {
     primary.push({ label: 'Inside', value: containedText(containment(row)) });
-  }
-  // Both edge kinds are dependencies the reader recognizes by title. The raw
-  // ids stay out of the first screen; the full edge list is not repeated.
-  if (row.blocked_by.length > 0) {
-    primary.push({
-      label: 'Waiting for',
-      value: joinWords(blockerLabels(row, rows)),
-    });
-  }
-  if (row.after.length > 0) {
-    primary.push({
-      label: 'Starts after',
-      value: joinWords(row.after.map((ref) => refLabel(ref, rows))),
-    });
   }
   const active = row.phase !== null && ACTIVE_PHASES.has(row.phase);
   if (active) {
@@ -500,6 +610,41 @@ export function detailSections(
     { label: 'Node key', value: row.node_key, mono: true },
     { label: 'Engine state', value: row.rest_state, mono: true },
   ];
+  // Ruling 2: an empty section is not drawn. The machine fact behind it moves
+  // here; a section with no fact at all is not on the page anywhere.
+  if (body.state === 'unread') {
+    more.push({
+      label: 'Description',
+      value: 'The description could not be read.',
+    });
+  } else if (body.state === 'not-read') {
+    more.push({
+      label: 'Description',
+      value: "The description was not read through this engine's read commands.",
+    });
+  }
+  if (conditions.state === 'empty') {
+    more.push({
+      label: 'Contract',
+      value: "This task's contract pins no conditions.",
+    });
+  } else if (conditions.state === 'unread') {
+    more.push({
+      label: 'Contract',
+      value:
+        "The pinned contract is not readable through this engine's read commands.",
+    });
+  }
+  if (row.mirror === null && !model.capabilities.mirror_link) {
+    // A fixture that carries mirror links reports them; a live read has no verb
+    // that prints one. The absent Conversation section is then a read limit,
+    // and the limit is the machine value behind it.
+    more.push({
+      label: 'Conversation',
+      value:
+        "The mirror link was not read through this engine's read commands.",
+    });
+  }
   if (row.phase !== null) {
     more.push({ label: 'Phase', value: row.phase, mono: true });
   }
@@ -583,6 +728,14 @@ export function detailSections(
         mono: true,
       });
     }
+  } else {
+    // No attempt section is drawn; the zero or the read limit is the machine
+    // value, so it belongs here rather than as "Not attempted yet." on the
+    // first screen.
+    more.push({
+      label: 'Attempts',
+      value: row.status_missing ? 'Not read' : '0 runs',
+    });
   }
   const wait = row.wait;
   let waitOpenedRaw = '';
@@ -622,10 +775,12 @@ export function detailSections(
     }
   }
   return {
-    body: bodyContent(row),
-    conditions: conditionsContent(row),
+    body,
+    conditions,
     history: historyLines(row),
-    conversation: conversationStatement(row),
+    // Ruling 2: a task with no mirror has no conversation section. A sentence
+    // that says nothing is linked is the empty section in words.
+    conversation: row.mirror === null ? '' : conversationStatement(row),
     primary,
     more,
     notes,
@@ -934,10 +1089,15 @@ function containedText(contained: {
   );
 }
 
-function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
+function listRow(
+  row: TreeRow,
+  rows: ReadonlyMap<string, TreeRow>,
+  view: BoardView,
+): string {
   const contained = containment(row);
   const counts = containedText(contained);
   const hasChildren = row.children.length > 0;
+  const kids = childrenId(row);
   const blockers = blockerLabels(row, rows);
   const wait =
     row.rest_state === 'blocked' && blockers.length > 0
@@ -990,10 +1150,24 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
     <div class="node-row${hasChildren ? '' : ' is-leaf'}" data-state="${esc(
       row.rest_state,
     )}">
+      ${
+        hasChildren
+          ? `<button type="button" class="disclosure" aria-expanded="true" aria-controls="${kids}" aria-label="Collapse the subtasks of ${esc(
+              titleOf(row),
+            )}"><span class="disclosure-mark" aria-hidden="true"></span></button>`
+          : '<span class="disclosure-spacer" aria-hidden="true"></span>'
+      }
       <div class="node-main">
-        <button class="enter" type="button" data-dialog="${esc(dialogId(row))}">${titleHtml(
-          row,
-        )}</button>
+        ${
+          hasChildren
+            ? `<a class="enter" href="${scopeHref(
+                view,
+                row.node_key,
+              )}" data-scope-link="${view}">${titleHtml(row)}</a>`
+            : `<button class="enter" type="button" data-dialog="${esc(
+                dialogId(row),
+              )}">${titleHtml(row)}</button>`
+        }
         ${hasChildren
           ? `<button type="button" class="row-count" data-dialog="${esc(
               dialogId(row),
@@ -1018,8 +1192,8 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
     </div>
     ${
       hasChildren
-        ? `<ul class="children">${row.children
-            .map((child) => listRow(child, rows))
+        ? `<ul class="children" id="${kids}">${row.children
+            .map((child) => listRow(child, rows, view))
             .join('')}</ul>`
         : ''
     }
@@ -1029,7 +1203,7 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
 // The list body is the page's no-JS floor and the data source the board's
 // inline script projects into lanes. Everything a card needs is an attribute or
 // a child of the row, so the script never asks the network for anything.
-function listBody(model: TreeModel): string {
+function listBody(model: TreeModel, view: BoardView): string {
   const p = progress(model.roots);
   const rows = byId(model);
   const levels = model.max_depth + 1;
@@ -1043,7 +1217,7 @@ function listBody(model: TreeModel): string {
     </div>
   </header>
   <ul class="tree">${model.roots
-    .map((row) => listRow(row, rows))
+    .map((row) => listRow(row, rows, view))
     .join('')}</ul>`;
 }
 
@@ -1262,6 +1436,22 @@ a { color: inherit; }
 .tree ul { list-style: none; margin: 0; padding: 0; }
 .tree li { list-style: none; }
 .node-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; }
+.disclosure, .disclosure-spacer { flex: 0 0 24px; width: 24px; height: 24px; }
+.disclosure {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin: 0; padding: 0; border: 0; background: none;
+  color: var(--muted); cursor: pointer;
+}
+.disclosure:hover, .disclosure:focus-visible { color: var(--accent); }
+.disclosure-mark {
+  width: 0; height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 120ms ease;
+}
+.disclosure[aria-expanded="true"] .disclosure-mark { transform: rotate(90deg); }
+.disclosure-spacer { display: block; }
 .node-main { flex: 1 1 auto; min-width: 0; }
 .node-main .enter {
   display: block; width: 100%;
@@ -2186,25 +2376,13 @@ const SCRIPT = `(function () {
   // interpreted, and empty is a sentence rather than white space.
   function appendDescription(inner, data) {
     var body = data.body || { state: 'empty', paragraphs: [] };
+    // Ruling 2: a section with no description is not drawn. The unread limits
+    // are machine facts, so they stay behind More.
+    if (body.state !== 'ok') return;
     var section = sectionNode('Description', 'sheet-description');
-    if (body.state === 'ok') {
-      body.paragraphs.forEach(function (text) {
-        section.appendChild(textNode('sheet-paragraph', text));
-      });
-    } else if (body.state === 'empty') {
-      section.appendChild(textNode('sheet-empty', 'No description yet'));
-    } else if (body.state === 'unread') {
-      section.appendChild(
-        textNode('sheet-muted', 'The description could not be read.'),
-      );
-    } else {
-      section.appendChild(
-        textNode(
-          'sheet-muted',
-          "The description was not read through this engine's read commands.",
-        ),
-      );
-    }
+    body.paragraphs.forEach(function (text) {
+      section.appendChild(textNode('sheet-paragraph', text));
+    });
     inner.appendChild(section);
   }
 
@@ -2212,35 +2390,27 @@ const SCRIPT = `(function () {
   // that this read cannot see it.
   function appendConditions(inner, data) {
     var conditions = data.conditions || { state: 'unread', lines: [] };
+    // Ruling 2: an unread or empty contract is not a Done when heading with
+    // nothing under it. Its machine fact is in More.
+    if (conditions.state !== 'ok') return;
     var section = sectionNode('Done when', 'sheet-conditions');
-    if (conditions.state === 'ok') {
-      var list = document.createElement('ul');
-      list.className = 'sheet-list';
-      conditions.lines.forEach(function (line) {
-        var item = document.createElement('li');
-        item.textContent = line;
-        list.appendChild(item);
-      });
-      section.appendChild(list);
-    } else if (conditions.state === 'empty') {
-      section.appendChild(
-        textNode('sheet-muted', "This task's contract pins no conditions."),
-      );
-    } else {
-      section.appendChild(
-        textNode(
-          'sheet-muted',
-          "The pinned contract is not readable through this engine's read commands.",
-        ),
-      );
-    }
+    var list = document.createElement('ul');
+    list.className = 'sheet-list';
+    conditions.lines.forEach(function (line) {
+      var item = document.createElement('li');
+      item.textContent = line;
+      list.appendChild(item);
+    });
+    section.appendChild(list);
     inner.appendChild(section);
   }
 
   // Ruling 6: what has happened, in sentences. The raw enums stay behind More.
   function appendHistory(inner, data) {
+    var lines = data.history || [];
+    if (lines.length === 0) return;
     var section = sectionNode('What has happened', 'sheet-history');
-    (data.history || []).forEach(function (line) {
+    lines.forEach(function (line) {
       section.appendChild(textNode('sheet-history-line', line));
     });
     inner.appendChild(section);
@@ -2248,9 +2418,10 @@ const SCRIPT = `(function () {
 
   // Ruling 7: where a conversation lives, or that none is linked. No box.
   function appendConversation(inner, data) {
+    if (!data.conversation) return;
     var section = sectionNode('Conversation', 'sheet-conversation');
     section.appendChild(
-      textNode('sheet-muted', data.conversation || ''),
+      textNode('sheet-muted', data.conversation),
     );
     inner.appendChild(section);
   }
@@ -2295,10 +2466,13 @@ const SCRIPT = `(function () {
     }
     appendDescription(inner, data);
     appendConditions(inner, data);
-    var facts = document.createElement('dl');
-    facts.className = 'facts facts-primary';
-    facts.innerHTML = sheetFieldsHtml(data.primary || []);
-    inner.appendChild(facts);
+    // Ruling 2: no facts means no facts block, not an empty bordered list.
+    if (data.primary && data.primary.length > 0) {
+      var facts = document.createElement('dl');
+      facts.className = 'facts facts-primary';
+      facts.innerHTML = sheetFieldsHtml(data.primary);
+      inner.appendChild(facts);
+    }
     (data.notes || []).forEach(function (text) {
       var note = document.createElement('p');
       note.className = 'sheet-note';
@@ -2353,7 +2527,10 @@ const SCRIPT = `(function () {
       event.target && event.target.closest
         ? event.target.closest('[data-dialog]')
         : null;
-    if (!trigger) return;
+    // Ruling 3: the row <li> carries data-dialog so leaf cards can copy it.
+    // A click on the row itself, on its title link or on its disclosure must
+    // not open the panel behind that gesture.
+    if (!trigger || trigger.tagName === 'LI') return;
     var taskId = trigger.getAttribute('data-task');
     if (!taskId) {
       var host = trigger.closest('li[data-task]');
@@ -2361,6 +2538,35 @@ const SCRIPT = `(function () {
     }
     if (taskId) openSheet(taskId);
   });
+
+  // Ruling 3: a row with children opens and closes in place. This is a real
+  // button, so Enter and Space work; aria-expanded carries the state and
+  // aria-controls points at the list it owns. Nothing here touches the hash.
+  var disclosuresWired = false;
+  function wireDisclosures() {
+    if (disclosuresWired) return;
+    disclosuresWired = true;
+    var buttons = document.querySelectorAll('button.disclosure[aria-controls]');
+    Array.prototype.forEach.call(buttons, function (button) {
+      button.addEventListener('click', function () {
+        var id = button.getAttribute('aria-controls');
+        var list = id ? document.getElementById(id) : null;
+        if (!list) return;
+        var expanded = button.getAttribute('aria-expanded') === 'true';
+        var next = !expanded;
+        button.setAttribute('aria-expanded', String(next));
+        list.hidden = !next;
+        var host = button.closest('li[data-task]');
+        var name = host
+          ? host.getAttribute('data-title') || host.getAttribute('data-key') || ''
+          : '';
+        button.setAttribute(
+          'aria-label',
+          (next ? 'Collapse' : 'Expand') + ' the subtasks of ' + name,
+        );
+      });
+    });
+  }
 
   function apply() {
     var here = current();
@@ -2383,6 +2589,7 @@ const SCRIPT = `(function () {
   } else {
     window.addEventListener('hashchange', apply);
     apply();
+    wireDisclosures();
   }
 })();`;
 
@@ -2435,7 +2642,7 @@ export function renderBoardPage(model: TreeModel): string {
   const body = `<div class="board-scope" id="board-root" data-default="${esc(
     defaultKey ?? '',
   )}" data-tree-state="${esc(model.tree_state)}"></div>
-  <div class="nojs-tree" id="tree-source">${listBody(model)}</div>
+  <div class="nojs-tree" id="tree-source">${listBody(model, 'board')}</div>
   <script type="application/json" id="board-data">${data}</script>`;
   return shell(model, {
     view: 'board',
@@ -2448,7 +2655,7 @@ export function renderBoardPage(model: TreeModel): string {
 export function renderListPage(model: TreeModel): string {
   const defaultKey = defaultKeyOf(model);
   const data = JSON.stringify(boardData(model)).replace(/</g, '\\u003c');
-  const body = `${listBody(model)}
+  const body = `${listBody(model, 'list')}
   <script type="application/json" id="board-data">${data}</script>`;
   return shell(model, {
     view: 'list',
