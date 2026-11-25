@@ -278,6 +278,50 @@ test(
     assert.equal(loaded.level, '3 live in this level · 7 lanes empty');
     assert.equal(loaded.progress, '1 of 5 done · 1 skipped · 4 archived');
 
+    // Slice 6: the reading surface is human, the machine record is folded.
+    const skin = await page.evaluate(`(function () {
+      var provenance = document.querySelector('details.provenance');
+      var focus = document.querySelector('#board-root .focus-line');
+      var laneCount = function (state) {
+        var lane = document.querySelector('#board-root .lane[data-state="' + state + '"]');
+        return lane ? lane.querySelectorAll('.card').length : 0;
+      };
+      return {
+        provenanceOpen: provenance ? provenance.open : null,
+        provenanceSummary: provenance
+          ? provenance.querySelector('summary').textContent
+          : null,
+        text: document.body.innerText,
+        focus: focus ? focus.textContent : null,
+        counts: focus
+          ? {
+              canStart: Number(focus.getAttribute('data-can-start')),
+              waiting: Number(focus.getAttribute('data-waiting')),
+              inProgress: Number(focus.getAttribute('data-in-progress')),
+            }
+          : null,
+        lanes: {
+          ready: laneCount('ready'),
+          waiting: laneCount('waiting'),
+          blocked: laneCount('blocked'),
+        },
+      };
+    })()`);
+    assert.equal(skin.provenanceOpen, false, 'provenance is closed by default');
+    assert.equal(skin.provenanceSummary, 'Where this page came from');
+    assert.equal(/\d{4}-\d\d-\d\dT/.test(skin.text), false, 'no ISO on the surface');
+    assert.ok(skin.focus.includes('ready to start'), skin.focus);
+    assert.equal(
+      skin.counts.canStart + skin.counts.inProgress,
+      skin.lanes.ready,
+      'ready lane = can start + running',
+    );
+    assert.equal(
+      skin.counts.waiting,
+      skin.lanes.waiting + skin.lanes.blocked,
+      'waiting count = waiting + blocked lanes',
+    );
+
     const facts = await page.evaluate(`(function () {
       var cards = Array.prototype.slice.call(
         document.querySelectorAll('#board-root .card'),
@@ -331,19 +375,51 @@ test(
     const opened = await page.evaluate(`(function () {
       var sheet = document.querySelector('dialog.sheet[open]');
       if (!sheet) return null;
+      var primary = {};
+      sheet.querySelectorAll('.facts-primary dt').forEach(function (dt) {
+        var dd = dt.nextElementSibling;
+        primary[dt.textContent] = dd ? dd.textContent : null;
+      });
+      var more = sheet.querySelector('details.sheet-more');
+      return {
+        labels: Object.keys(primary),
+        facts: primary,
+        firstText: sheet.querySelector('.sheet-inner').innerText,
+        moreOpen: more ? more.open : null,
+        moreSummary: more ? more.querySelector('summary').textContent : null,
+      };
+    })()`);
+    assert.ok(opened, 'the counts button opens a dialog');
+    // Slice 6: the first screen is plain, the machine record is one fold down.
+    assert.deepEqual(opened.labels, ['Inside']);
+    assert.equal(opened.facts.Inside, '2 inside · 1 done · 2 archived');
+    assert.equal(/tsk_|rest_state|\bslot \d/.test(opened.firstText), false);
+    assert.equal(/\d{4}-\d\d-\d\dT/.test(opened.firstText), false);
+    assert.equal(opened.moreOpen, false, 'More is closed on open');
+    assert.equal(opened.moreSummary, 'More');
+    assert.ok(opened.firstText.includes('No status row came back for this task.'));
+
+    await page.evaluate(`document.querySelector('dialog.sheet[open] details.sheet-more summary').click()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open] details.sheet-more').open === true",
+      'More opens',
+    );
+    const more = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
       var facts = {};
-      Array.prototype.forEach.call(sheet.querySelectorAll('dt'), function (dt) {
+      Array.prototype.forEach.call(sheet.querySelectorAll('details.sheet-more dt'), function (dt) {
         var dd = dt.nextElementSibling;
         facts[dt.textContent] = dd ? dd.textContent : null;
       });
       return { labels: Object.keys(facts), facts: facts };
     })()`);
-    assert.ok(opened, 'the counts button opens a dialog');
-    for (const label of ['Task id', 'Node key', 'State', 'Inside']) {
-      assert.ok(opened.labels.includes(label), `the panel carries ${label}`);
+    for (const label of ['Task id', 'Node key', 'Engine state']) {
+      assert.ok(more.labels.includes(label), `More carries ${label}`);
     }
-    assert.equal(opened.facts['Task id'], 'box');
-    assert.equal(opened.facts['Inside'], '2 inside · 1 done · 2 archived');
+    assert.equal(more.facts['Task id'], 'box');
+    assert.equal(more.facts['Node key'], 'box');
+    assert.equal(more.facts['Engine state'], 'ready');
 
     await page.evaluate(`(function () {
       var sheet = document.querySelector('dialog.sheet[open]');
@@ -535,6 +611,147 @@ test(
     assert.equal(cold.level, '2 live · 2 archived in this level · 6 lanes empty');
     assert.equal(cold.progress, '1 of 5 done · 1 skipped · 4 archived');
     assert.equal(cold.here, 'box');
+    const coldSkin = await page.evaluate(`(function () {
+      var provenance = document.querySelector('details.provenance');
+      var focus = document.querySelector('#board-root .focus-line');
+      return {
+        provenanceOpen: provenance ? provenance.open : null,
+        isoText: /\d{4}-\d\d-\d\dT/.test(document.body.innerText),
+        focus: focus ? focus.textContent : null,
+      };
+    })()`);
+    assert.equal(coldSkin.provenanceOpen, false);
+    assert.equal(coldSkin.isoText, false);
+    assert.ok(coldSkin.focus.includes('ready to start'), coldSkin.focus);
+    assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
+    assert.deepEqual(page.exceptions, []);
+    assert.deepEqual(page.failedRequests, []);
+  },
+);
+
+
+test(
+  'the committed demo page carries the volume tree, not the seven-task line',
+  { timeout: 60000 },
+  async (t) => {
+    requireObscura();
+    const demoFile = join(
+      process.cwd(),
+      'engine-board',
+      'index.html',
+    );
+    const port = await freePort();
+    const server = spawn(
+      'obscura',
+      ['serve', '--port', String(port), '--allow-file-access'],
+      { stdio: 'ignore' },
+    );
+    let browser;
+    t.after(() => {
+      browser?.close();
+      server.kill('SIGTERM');
+    });
+    const version = await waitForJson(`http://127.0.0.1:${port}/json/version`);
+    browser = connect(version.webSocketDebuggerUrl);
+    await browser.open;
+    const page = await openPage(browser, pathToFileURL(demoFile).href);
+    await page.navigate(pathToFileURL(demoFile).href);
+
+    const board = await page.evaluate(`(function () {
+      var laneCount = function (state) {
+        var lane = document.querySelector('#board-root .lane[data-state="' + state + '"]');
+        return lane ? lane.querySelectorAll('.card').length : 0;
+      };
+      var focus = document.querySelector('#board-root .focus-line');
+      return {
+        cards: document.querySelectorAll('#board-root .card').length,
+        focus: focus ? focus.textContent : null,
+        counts: focus
+          ? {
+              canStart: Number(focus.getAttribute('data-can-start')),
+              waiting: Number(focus.getAttribute('data-waiting')),
+              inProgress: Number(focus.getAttribute('data-in-progress')),
+            }
+          : null,
+        lanes: {
+          ready: laneCount('ready'),
+          waiting: laneCount('waiting'),
+          blocked: laneCount('blocked'),
+        },
+        provenanceOpen: document.querySelector('details.provenance').open,
+        isoText: /\d{4}-\d\d-\d\dT/.test(document.body.innerText),
+      };
+    })()`);
+    assert.equal(board.cards, 29, 'the top scope is the demo volume');
+    assert.equal(board.lanes.ready, 10, 'the crowded ready lane');
+    assert.equal(board.counts.canStart, 8, 'eight can start now');
+    assert.equal(board.counts.inProgress, 2, 'two are already moving');
+    assert.equal(board.counts.canStart + board.counts.inProgress, board.lanes.ready);
+    assert.equal(
+      board.counts.waiting,
+      board.lanes.waiting + board.lanes.blocked,
+    );
+    assert.equal(board.provenanceOpen, false);
+    assert.equal(board.isoText, false);
+
+    // The two rows a worker is on lead the ready lane and say so; every other
+    // card stays quiet, because its lane already names the state.
+    const moving = await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .lane[data-state="ready"] .card'),
+      );
+      var words = function (card) {
+        var line = card.querySelector('.card-state');
+        return line && line.offsetParent !== null
+          ? line.textContent.trim()
+          : null;
+      };
+      return {
+        running: document.querySelectorAll(
+          '#board-root .lane[data-state="ready"] .card[data-running]',
+        ).length,
+        head: cards.slice(0, 2).map(words),
+        quiet: words(cards[2]),
+      };
+    })()`);
+    assert.equal(moving.running, 2, 'two cards say a worker is on them');
+    assert.deepEqual(moving.head, ['In progress', 'In progress']);
+    assert.equal(moving.quiet, null, 'the rest trust the lane word');
+
+    // Open a blocked row's panel: the chain is named by title on the first
+    // screen, and its ids stay behind More.
+    await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var chain = cards.filter(function (card) {
+        return card.textContent.indexOf('Ship the pricing page') !== -1;
+      })[0];
+      chain.querySelector('.card-title .enter').click();
+    })()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the blocked card opens its panel',
+    );
+    const blocked = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var facts = {};
+      sheet.querySelectorAll('.facts-primary dt').forEach(function (dt) {
+        facts[dt.textContent] = dt.nextElementSibling
+          ? dt.nextElementSibling.textContent
+          : null;
+      });
+      return {
+        title: sheet.querySelector('h2').textContent,
+        facts: facts,
+        firstText: sheet.querySelector('.facts-primary').innerText,
+      };
+    })()`);
+    assert.equal(blocked.title, 'Ship the pricing page');
+    assert.equal(blocked.facts['Waiting for'], 'Approve the pricing copy');
+    assert.equal(/tsk_|rest_state/.test(blocked.firstText), false);
+
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);
     assert.deepEqual(page.failedRequests, []);

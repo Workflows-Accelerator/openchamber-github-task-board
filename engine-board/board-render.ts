@@ -23,6 +23,7 @@ import {
   STATE_WORDS,
   containment,
   engineDisagreement,
+  focusCounts,
   laneGroups,
   lanePlan,
   progress,
@@ -83,14 +84,6 @@ export function sourceLabel(provenance: ReadProvenance | null | undefined): stri
   return 'Unknown source';
 }
 
-export function sourceLine(provenance: ReadProvenance | null | undefined): string {
-  const label = sourceLabel(provenance);
-  if (label === 'Unknown source' || !provenance) {
-    return label;
-  }
-  return `${label} · read at ${provenance.read_at} · task-engine@${provenance.engine_commit} · schema ${provenance.schema_revision}`;
-}
-
 function titleOf(row: TreeRow): string {
   return row.title ?? row.node_key;
 }
@@ -145,79 +138,261 @@ export interface DetailField {
   label: string;
   value: string;
   mono?: boolean;
+  // The exact machine timestamp, kept in a title so the reading surface can
+  // say "4 minutes ago" without losing the fact underneath it.
+  title?: string;
 }
 
-const NOT_REPORTED = 'not reported';
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+const ACTIVE_PHASES = new Set(['claimed', 'launching', 'live', 'ending']);
 
-// The technical surface: every machine word the read carries, and nothing the
-// default page says twice.
-export function detailFields(row: TreeRow, model: TreeModel): DetailField[] {
-  const rows = byId(model);
-  const contained = containment(row);
-  const inside = containedText(contained);
-  const limit = row.slot_limit ?? model.slot_limit;
-  const slot =
-    row.slot === null
-      ? 'none'
-      : limit !== null
-        ? `${row.slot} of ${limit}`
-        : `${row.slot} (limit not read)`;
-  const runner =
-    row.runner_id === null
-      ? row.runner_id_reported
-        ? 'none'
-        : NOT_REPORTED
-      : `${row.runner_id}${
-          row.runner_slot === null ? '' : ` (runner slot ${row.runner_slot})`
-        }`;
-  const lastAttempt =
-    row.attempts.length === 0 ? null : row.attempts[row.attempts.length - 1];
-  const lastWord =
-    lastAttempt === null
-      ? 'none readable'
-      : [
-          lastAttempt.phase ?? 'phase not read',
-          lastAttempt.end_reason ?? lastAttempt.outcome ?? null,
-        ]
-          .filter((part): part is string => part !== null)
-          .join(', ');
-  const fields: DetailField[] = [
-    { label: 'State', value: `${stateWord(row.rest_state)} (${row.rest_state})` },
-    { label: 'Node key', value: row.node_key, mono: true },
-    { label: 'Task id', value: row.task_id, mono: true },
-    { label: 'Inside', value: inside },
-    { label: 'Phase', value: row.phase ?? 'none' },
-    { label: 'Slot', value: slot },
-    { label: 'Runner', value: runner },
-    { label: 'Created', value: row.created_at ?? NOT_REPORTED },
-    { label: 'Updated', value: row.updated_at ?? NOT_REPORTED },
-    { label: 'Archived', value: row.archived_at ?? 'no' },
-    { label: 'Attempt id', value: lastAttempt?.attempt_id ?? NOT_REPORTED, mono: true },
-    { label: 'Attempts', value: `${row.attempts.length}; last ${lastWord}` },
-    {
-      label: 'Blocked by',
-      value:
-        row.blocked_by.length === 0
-          ? 'nothing'
-          : joinWords(blockerLabels(row, rows)),
-    },
-    {
-      label: 'Starts after',
-      value:
-        row.after.length === 0
-          ? 'nothing'
-          : joinWords(row.after.map((ref) => refLabel(ref, rows))),
-    },
-  ];
-  if (row.wait !== null) {
-    fields.push(
-      { label: 'Wait reason', value: row.wait.reason || NOT_REPORTED, mono: true },
-      { label: 'Wait cause', value: row.wait.cause || NOT_REPORTED, mono: true },
-      { label: 'Wait owner', value: row.wait.owner || NOT_REPORTED, mono: true },
-      { label: 'Wait opened', value: row.wait.opened_at || NOT_REPORTED },
-    );
+function utcDay(date: Date): number {
+  return Math.floor(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) /
+      86_400_000,
+  );
+}
+
+function calendarDay(date: Date, now: Date | null): string {
+  const day = date.getUTCDate();
+  const month = MONTHS[date.getUTCMonth()];
+  if (now !== null && now.getUTCFullYear() === date.getUTCFullYear()) {
+    return `${day} ${month}`;
   }
-  return fields;
+  return `${day} ${month} ${date.getUTCFullYear()}`;
+}
+
+// Ruling 2: the reading surface says "4 minutes ago", "yesterday", "20 Nov",
+// and only reaches for a year when the year differs. Relative wording is
+// measured against the read, not the machine clock, so a saved page keeps the
+// sentence it was built with.
+export function humanTime(
+  value: string | null | undefined,
+  nowValue: string | null | undefined,
+): string {
+  if (typeof value !== 'string' || value === '') {
+    return '';
+  }
+  const then = new Date(value);
+  if (Number.isNaN(then.getTime())) {
+    return '';
+  }
+  const now =
+    typeof nowValue === 'string' && nowValue !== ''
+      ? new Date(nowValue)
+      : null;
+  const usableNow = now !== null && !Number.isNaN(now.getTime()) ? now : null;
+  if (usableNow !== null) {
+    const diff = usableNow.getTime() - then.getTime();
+    if (diff >= 0) {
+      const minutes = Math.floor(diff / 60_000);
+      if (minutes < 1) return 'just now';
+      if (minutes < 60) {
+        return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+      }
+      const dayDiff = utcDay(usableNow) - utcDay(then);
+      if (dayDiff === 1) return 'yesterday';
+      if (dayDiff > 1 && dayDiff < 7) {
+        return `${dayDiff} days ago`;
+      }
+      if (dayDiff === 0) {
+        const hours = Math.floor(diff / 3_600_000);
+        return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+      }
+    }
+  }
+  return calendarDay(then, usableNow);
+}
+
+// The read time is a fact about the page, not a task timestamp: name the day
+// and minute once, and keep the ISO value in the element's datetime attribute.
+export function humanMoment(value: string | null | undefined): string {
+  if (typeof value !== 'string' || value === '') return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  return `${calendarDay(date, null)}, ${hours}:${minutes}`;
+}
+
+export interface DetailSections {
+  // The first screen: what it is, its state in human words, what it waits for
+  // by title, what is doing it, and when it last changed.
+  primary: DetailField[];
+  // Everything machine-shaped, behind the panel's More disclosure.
+  more: DetailField[];
+  // The plain sentence that replaces a column of `not reported` rows.
+  notes: string[];
+}
+
+// A value the read actually carried. An opaque member (a number where the
+// engine promised a string) is not printed as if it were readable.
+function readable(value: unknown): string {
+  return typeof value === 'string' && value !== '' ? value : '';
+}
+
+// The panel is not a field dump. It leads with the useful facts and keeps ids,
+// keys, machine state names, slot numbers and raw wait payloads behind More.
+export function detailSections(
+  row: TreeRow,
+  model: TreeModel,
+): DetailSections {
+  const rows = byId(model);
+  const now = model.provenance.read_at;
+  // The state is already the dot and word under the panel title. Repeating it
+  // as a field would make the first screen say the same thing twice.
+  const primary: DetailField[] = [];
+  if (row.children.length > 0) {
+    primary.push({ label: 'Inside', value: containedText(containment(row)) });
+  }
+  // Both edge kinds are dependencies the reader recognizes by title. The raw
+  // ids stay out of the first screen; the full edge list is not repeated.
+  if (row.blocked_by.length > 0) {
+    primary.push({
+      label: 'Waiting for',
+      value: joinWords(blockerLabels(row, rows)),
+    });
+  }
+  if (row.after.length > 0) {
+    primary.push({
+      label: 'Starts after',
+      value: joinWords(row.after.map((ref) => refLabel(ref, rows))),
+    });
+  }
+  const active = row.phase !== null && ACTIVE_PHASES.has(row.phase);
+  if (active) {
+    primary.push({ label: 'Doing it', value: 'A worker is on it' });
+  } else if (row.attempts.length > 0) {
+    primary.push({ label: 'Doing it', value: 'No worker is on it' });
+  }
+  if (row.updated_at !== null) {
+    primary.push({
+      label: 'Last change',
+      value: humanTime(row.updated_at, now),
+      title: row.updated_at,
+    });
+  }
+  const waitOpened = row.wait === null ? '' : readable(row.wait.opened_at);
+  if (waitOpened) {
+    primary.push({
+      label: 'Waiting since',
+      value: humanTime(waitOpened, now),
+      title: waitOpened,
+    });
+  }
+
+  const limit = row.slot_limit ?? model.slot_limit;
+  const more: DetailField[] = [
+    { label: 'Task id', value: row.task_id, mono: true },
+    { label: 'Node key', value: row.node_key, mono: true },
+    { label: 'Engine state', value: row.rest_state, mono: true },
+  ];
+  if (row.phase !== null) {
+    more.push({ label: 'Phase', value: row.phase, mono: true });
+  }
+  if (row.slot !== null) {
+    more.push({
+      label: 'Slot',
+      value:
+        limit === null ? String(row.slot) : `${row.slot} of ${limit}`,
+      mono: true,
+    });
+  }
+  if (row.runner_id !== null) {
+    more.push({
+      label: 'Runner',
+      value: `${row.runner_id}${
+        row.runner_slot === null ? '' : ` (slot ${row.runner_slot})`
+      }`,
+      mono: true,
+    });
+  }
+  // Inside More the exact machine value is the point, so the ISO string is
+  // printed as it came rather than formatted a second time.
+  if (row.created_at !== null) {
+    more.push({ label: 'Created', value: row.created_at, mono: true });
+  }
+  if (row.updated_at !== null) {
+    more.push({ label: 'Updated', value: row.updated_at, mono: true });
+  }
+  if (row.archived_at !== null) {
+    more.push({ label: 'Archived', value: row.archived_at, mono: true });
+  }
+  if (row.attempts.length > 0) {
+    const last = row.attempts[row.attempts.length - 1];
+    more.push({
+      label: 'Attempts',
+      value: `${row.attempts.length} ${
+        row.attempts.length === 1 ? 'run' : 'runs'
+      }${last === undefined ? '' : `; last ${last.end_reason ?? last.outcome ?? 'ended'}`}`,
+    });
+    if (last?.attempt_id) {
+      more.push({ label: 'Attempt id', value: last.attempt_id, mono: true });
+    }
+  }
+  const wait = row.wait;
+  let waitOpenedRaw = '';
+  if (wait !== null) {
+    const reason = readable(wait.reason);
+    const cause = readable(wait.cause);
+    const owner = readable(wait.owner);
+    waitOpenedRaw = readable(wait.opened_at);
+    if (reason) {
+      more.push({ label: 'Wait reason', value: reason, mono: true });
+    }
+    if (cause) {
+      more.push({ label: 'Wait cause', value: cause, mono: true });
+    }
+    if (owner) {
+      more.push({ label: 'Wait owner', value: owner, mono: true });
+    }
+    if (waitOpenedRaw) {
+      more.push({ label: 'Wait opened', value: waitOpenedRaw, mono: true });
+    }
+  }
+
+  const notes: string[] = [];
+  if (row.status_missing) {
+    notes.push('No status row came back for this task.');
+  } else if (
+    row.attempts.length === 0 &&
+    row.runner_id === null &&
+    row.phase === null
+  ) {
+    notes.push('This task has no run yet.');
+  }
+  if (wait !== null) {
+    const missing: string[] = [];
+    if (!readable(wait.reason)) missing.push('a reason');
+    if (!readable(wait.cause)) missing.push('a cause');
+    if (!readable(wait.owner)) missing.push('an owner');
+    if (!waitOpenedRaw) missing.push('when it started');
+    if (missing.length > 0) {
+      notes.push(
+        `The engine did not report ${joinWords(missing)} for this wait.`,
+      );
+    }
+  }
+  return { primary, more, notes };
+}
+
+// Kept for callers that need one flat list; the page uses the two sections.
+export function detailFields(row: TreeRow, model: TreeModel): DetailField[] {
+  const sections = detailSections(row, model);
+  return [...sections.primary, ...sections.more];
 }
 
 // ---------------------------------------------------------------- pieces
@@ -299,6 +474,51 @@ function defectBlock(model: TreeModel): string {
   </section>`;
 }
 
+function provenanceBlock(model: TreeModel): string {
+  const provenance = model.provenance;
+  const label = sourceLabel(provenance);
+  const known = label !== 'Unknown source';
+  const read = known ? humanMoment(provenance.read_at) : '';
+  const commands =
+    provenance.operations.length > 0
+      ? provenance.operations
+          .map((operation) => `<span class="mono">${esc(operation)}</span>`)
+          .join(', ')
+      : '';
+  const portOnly =
+    provenance.port_only_steps.length > 0
+      ? `<p>Fixture steps: ${provenance.port_only_steps
+          .map((step) => `<span class="mono">${esc(step)}</span>`)
+          .join(', ')}</p>`
+      : '';
+  const unobserved =
+    provenance.unobserved_states.length > 0
+      ? `<p>Not reached in this read: ${provenance.unobserved_states
+          .map((state) => esc(stateWord(state).toLowerCase()))
+          .join(', ')}.</p>`
+      : '';
+  return `<footer class="foot">
+  <details class="provenance">
+    <summary>Where this page came from</summary>
+    <p>${esc(label)}${
+      read
+        ? ` on <time datetime="${esc(provenance.read_at)}">${esc(read)}</time>`
+        : ''
+    }.</p>
+    ${
+      known
+        ? `<p>Engine <span class="mono">${esc(
+            provenance.engine_commit,
+          )}</span>, schema ${provenance.schema_revision}.</p>`
+        : ''
+    }
+    ${commands ? `<p>Read with: ${commands}</p>` : ''}
+    ${portOnly}
+    ${unobserved}
+  </details>
+</footer>`;
+}
+
 // The facts list, as markup. It is written with concatenation and carries its
 // own escaping because the page embeds this function's source: the dialog is
 // built on click from the inline JSON block instead of shipping one inert
@@ -323,6 +543,7 @@ export function sheetFieldsHtml(fields: readonly DetailField[]): string {
         escape(field.label) +
         '</dt><dd' +
         (field.mono ? ' class="mono"' : '') +
+        (field.title ? ' title="' + escape(field.title) + '"' : '') +
         '>' +
         escape(field.value) +
         '</dd></div>',
@@ -342,7 +563,11 @@ export interface BoardScopeData {
 
 export interface BoardRowData {
   dialog: string;
-  fields: DetailField[];
+  // The first screen and the folded rest, computed once so the page and the
+  // tests read the same split.
+  primary: DetailField[];
+  more: DetailField[];
+  notes: string[];
   wait: unknown;
   hold: unknown;
   // The same phrase the panel's Inside field prints, so the card's counts
@@ -356,7 +581,6 @@ export interface BoardRowData {
 
 export interface BoardData {
   tree_state: string;
-  source: string;
   scopes: Record<string, BoardScopeData>;
   rows: Record<string, BoardRowData>;
 }
@@ -387,9 +611,12 @@ export function boardData(model: TreeModel): BoardData {
   };
   record('', model.roots, null);
   for (const row of flattenTree(model.roots)) {
+    const sections = detailSections(row, model);
     const data: BoardRowData = {
       dialog: dialogId(row),
-      fields: detailFields(row, model),
+      primary: sections.primary,
+      more: sections.more,
+      notes: sections.notes,
       wait: row.wait,
       hold: row.hold,
     };
@@ -406,7 +633,6 @@ export function boardData(model: TreeModel): BoardData {
   }
   return {
     tree_state: model.tree_state,
-    source: sourceLine(model.provenance),
     scopes,
     rows,
   };
@@ -450,7 +676,7 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
       ? ''
       : `<p class="card-defect"><span class="defect-kind">Engine defect</span>: recorded ready, but ${esc(
           titleOf(defectRow),
-        )} is ${esc(defectRow.rest_state)}.</p>`;
+        )} is ${esc(stateWord(defectRow.rest_state).toLowerCase())}.</p>`;
   const missing =
     row.status_missing
       ? '<p class="card-defect">No status row came back for this task.</p>'
@@ -461,9 +687,7 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
       : '';
   const unknown = row.rest_state_known
     ? ''
-    : `<p class="card-defect">The engine reported a state this board does not know: <span class="mono">${esc(
-        row.rest_state,
-      )}</span>.</p>`;
+    : '<p class="card-defect">The engine reported a state this page does not know.</p>';
   const archived =
     row.archived_at === null
       ? ''
@@ -472,7 +696,7 @@ function listRow(row: TreeRow, rows: ReadonlyMap<string, TreeRow>): string {
     row.parent_task_id ?? '',
   )}" data-key="${esc(row.node_key)}" data-state="${esc(
     row.rest_state,
-  )}" data-title="${esc(titleOf(row))}" data-title-missing="${
+  )}" data-phase="${esc(row.phase ?? '')}" data-title="${esc(titleOf(row))}" data-title-missing="${
     row.title === null ? '1' : '0'
   }" data-inside="${contained.inside}" data-done="${contained.done}" data-archived="${
     contained.archived
@@ -540,35 +764,20 @@ function listBody(model: TreeModel): string {
 
 const CSS = `
 :root {
-  --paper: #f3f5f3;
+  --paper: #ffffff;
   --surface: #ffffff;
-  --ink: #1b2521;
-  --muted: #5c6862;
-  --faint: #8a958f;
-  --line: #dae1dc;
-  --line-strong: #c2cdc6;
-  --accent: #1f5c4a;
-  --accent-soft: #e5efe9;
-  --warning: #8a5200;
-  --warning-soft: #f7eede;
+  --ink: #17211c;
+  --muted: #4d5a53;
+  --faint: #68756e;
+  --line: #e3e8e4;
+  --line-strong: #c8d2cb;
+  --accent: #176b4d;
+  --accent-soft: #e8f2ed;
+  --warning: #7a4a00;
+  --warning-soft: #fbf3e6;
   --sans: -apple-system, "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
   --serif: "Iowan Old Style", "Source Serif 4", Georgia, serif;
   --mono: "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #111714;
-    --surface: #18211c;
-    --ink: #e7ede8;
-    --muted: #a1ada6;
-    --faint: #7d8982;
-    --line: #29352f;
-    --line-strong: #3a4840;
-    --accent: #8acbb0;
-    --accent-soft: #1c3028;
-    --warning: #e2aa52;
-    --warning-soft: #332616;
-  }
 }
 [data-state="draft"] { --state: var(--faint); }
 [data-state="ready"] { --state: var(--accent); }
@@ -669,6 +878,10 @@ a { color: inherit; }
   font-variant-numeric: tabular-nums;
 }
 .level strong { color: var(--ink); font-weight: 700; }
+.focus-line {
+  margin: 0 0 16px; color: var(--muted); font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
 .lanes { display: flex; align-items: flex-start; gap: 18px; }
 .lane { flex: 1 1 0; min-width: 0; }
 .lane-head {
@@ -684,6 +897,7 @@ a { color: inherit; }
 .card {
   padding: 12px 13px; background: var(--surface);
   border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(23, 33, 28, 0.04);
 }
 .card-title { font-size: 0.94rem; font-weight: 700; line-height: 1.32; }
 .card-title .enter {
@@ -698,10 +912,16 @@ a { color: inherit; }
   display: none; align-items: center; gap: 6px; margin-top: 5px;
   color: var(--muted); font-size: 0.78rem;
 }
+/* The lane already names the state, except for the row a worker is on: that
+   one says so, because the lane word would read as untouched. */
+.card-state[data-running='1'] {
+  display: flex; color: var(--accent); font-weight: 600;
+}
 .card-count {
   margin-top: 5px; color: var(--faint); font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
+.card .row-count { width: 100%; white-space: normal; }
 .card-wait {
   margin-top: 5px; color: var(--muted); font-size: 0.76rem;
   line-height: 1.4; overflow-wrap: anywhere;
@@ -755,7 +975,7 @@ a { color: inherit; }
   display: block; margin-top: 3px; padding: 0; border: 0; background: none;
   color: var(--muted); font: inherit;
   font-size: 0.78rem; font-variant-numeric: tabular-nums; text-align: left;
-  cursor: pointer;
+  white-space: nowrap; cursor: pointer;
 }
 .row-count:hover, .row-count:focus-visible {
   color: var(--accent); text-decoration: underline; text-underline-offset: 0.16em;
@@ -783,6 +1003,14 @@ a { color: inherit; }
   margin-top: 48px; padding-top: 14px; border-top: 1px solid var(--line);
   color: var(--muted); font-size: 0.76rem; line-height: 1.6;
 }
+.provenance summary {
+  cursor: pointer; color: var(--muted); font-size: 0.78rem;
+}
+.provenance summary:hover, .provenance summary:focus-visible {
+  color: var(--accent);
+}
+.provenance[open] summary { margin-bottom: 8px; }
+.provenance p { margin: 3px 0; }
 .foot .mono, .defect-line .mono { font-family: var(--mono); }
 /* The dimming layer is an element, not a backdrop pseudo-element: not every
    engine paints that pseudo-element, and a missing backdrop leaves the sheet
@@ -793,11 +1021,12 @@ a { color: inherit; }
 }
 .sheet {
   position: fixed;
-  top: 1rem; bottom: 1rem; left: 0; right: 0;
+  top: 4vh; bottom: auto; left: 0; right: 0;
   z-index: 20;
   margin: 0 auto;
   display: flex; flex-direction: column;
   width: min(34rem, calc(100vw - 2rem));
+  max-height: 92vh;
   padding: 0; border: 1px solid var(--line-strong); border-radius: 14px;
   background: var(--surface); color: var(--ink);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
@@ -806,7 +1035,7 @@ a { color: inherit; }
 .sheet:not([open]) { display: none; }
 .sheet::backdrop { background: transparent; }
 .sheet-inner {
-  flex: 1 1 auto; min-height: 0; overflow: auto;
+  flex: 1 1 auto; min-height: 0; max-height: 92vh; overflow: auto;
   background: var(--surface); border-radius: inherit; padding: 20px 22px 24px;
 }
 .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
@@ -824,7 +1053,21 @@ a { color: inherit; }
   color: var(--muted); font-size: 0.86rem;
 }
 .sheet-state .mono { font-family: var(--mono); font-size: 0.78rem; }
-.facts { display: grid; gap: 0; margin-top: 16px; border-top: 1px solid var(--line); }
+.facts { display: grid; gap: 0; margin-top: 14px; border-top: 1px solid var(--line); }
+.facts-primary .fact { padding: 8px 0; font-size: 0.84rem; }
+.sheet-note {
+  margin-top: 10px; color: var(--muted); font-size: 0.82rem;
+}
+.sheet-more {
+  margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line);
+}
+.sheet-more summary {
+  cursor: pointer; color: var(--muted); font-size: 0.82rem;
+}
+.sheet-more summary:hover, .sheet-more summary:focus-visible {
+  color: var(--accent);
+}
+.sheet-more[open] summary { margin-bottom: 6px; }
 .fact {
   display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line);
   font-size: 0.8rem; line-height: 1.45;
@@ -982,7 +1225,7 @@ const SCRIPT = `(function () {
     return WORDS[state] || 'Unknown state';
   }
 
-  function stateLine(state, className) {
+  function stateLine(state, className, text) {
     var line = document.createElement('p');
     line.className = className;
     line.setAttribute('data-state', state);
@@ -990,8 +1233,21 @@ const SCRIPT = `(function () {
     dot.className = 'dot';
     dot.setAttribute('aria-hidden', 'true');
     line.appendChild(dot);
-    line.appendChild(document.createTextNode(stateWord(state)));
+    line.appendChild(document.createTextNode(text || stateWord(state)));
     return line;
+  }
+
+  // A task a worker is on still reads ready in the engine, so its state word
+  // alone would read like work nobody has picked up. The card says the plain
+  // fact instead, and the header counts the same rows.
+  function isRunning(row) {
+    var phase = row.getAttribute('data-phase');
+    return (
+      phase === 'claimed' ||
+      phase === 'launching' ||
+      phase === 'live' ||
+      phase === 'ending'
+    );
   }
 
   function separator() {
@@ -1115,6 +1371,32 @@ const SCRIPT = `(function () {
     return line;
   }
 
+  ${focusCounts.toString()}
+
+  // The answer to "where do I start", in counts and in the lanes' own words.
+  // A running task is not also "ready to start", so the three counts never
+  // double-count a row. The wording reuses the lane vocabulary instead of
+  // naming a state the page does not have.
+  function focusLine(cards) {
+    var counts = focusCounts(cards.map(function (row) {
+      return {
+        rest_state: row.getAttribute('data-state'),
+        phase: row.getAttribute('data-phase') || null,
+      };
+    }));
+    var line = document.createElement('p');
+    line.className = 'focus-line';
+    line.setAttribute('data-can-start', String(counts.canStart));
+    line.setAttribute('data-in-progress', String(counts.inProgress));
+    line.setAttribute('data-waiting', String(counts.waiting));
+    line.textContent =
+      counts.canStart + ' ' + WORDS.ready.toLowerCase() + ' · ' +
+      counts.waiting + ' ' + WORDS.waiting.toLowerCase() +
+      ' or ' + WORDS.blocked.toLowerCase() + ' · ' +
+      counts.inProgress + ' in progress';
+    return line;
+  }
+
   function cardFor(row) {
     var state = row.getAttribute('data-state');
     var card = document.createElement('article');
@@ -1138,10 +1420,27 @@ const SCRIPT = `(function () {
     title.appendChild(enter);
     card.appendChild(title);
 
-    card.appendChild(stateLine(state, 'card-state'));
-    var parts = row.querySelectorAll(
-      '.node-main > .row-count, .node-main > .card-wait, .node-main > .card-defect',
-    );
+    var running = isRunning(row);
+    var stateText = running ? 'In progress' : null;
+    var stateLineEl = stateLine(state, 'card-state', stateText);
+    if (running) {
+      card.setAttribute('data-running', '1');
+      stateLineEl.setAttribute('data-running', '1');
+    }
+    card.appendChild(stateLineEl);
+    // Only this row's own facts. A descendant's counts or wait line belongs to
+    // the descendant's card, not this container's.
+    var ownRow = row.firstElementChild;
+    var ownMain = ownRow ? ownRow.querySelector('.node-main') : null;
+    var parts = ownMain
+      ? Array.prototype.filter.call(ownMain.children, function (part) {
+          return (
+            part.classList.contains('row-count') ||
+            part.classList.contains('card-wait') ||
+            part.classList.contains('card-defect')
+          );
+        })
+      : [];
     Array.prototype.forEach.call(parts, function (part) {
       card.appendChild(part.cloneNode(true));
     });
@@ -1161,6 +1460,11 @@ const SCRIPT = `(function () {
       var rows = lane.tasks
         .map(function (id) { return byTask[id]; })
         .filter(function (row) { return !!row; });
+      // Work already moving leads the lane: it is the answer to "what is
+      // happening now" and it must be visible without scrolling.
+      rows = rows.slice().sort(function (a, b) {
+        return (isRunning(a) ? 0 : 1) - (isRunning(b) ? 0 : 1);
+      });
       if (rows.length === 0) return;
       var section = document.createElement('section');
       section.className = 'lane';
@@ -1208,9 +1512,10 @@ const SCRIPT = `(function () {
     var cards = childrenOf(scope, rows);
     var byTask = rowsByTask();
     root.textContent = '';
-    root.appendChild(crumbs(scope, byTask));
+    if (scope !== null) root.appendChild(crumbs(scope, byTask));
     root.appendChild(header(scope, cards));
     root.appendChild(level(cards, plan));
+    root.appendChild(focusLine(cards));
     if (cards.length > 0) root.appendChild(lanesNode(plan, byTask));
     root.setAttribute('data-scope', scopeKey);
   }
@@ -1347,14 +1652,32 @@ const SCRIPT = `(function () {
 
     if (row) inner.appendChild(stateLine(row.getAttribute('data-state'), 'sheet-state'));
     var facts = document.createElement('dl');
-    facts.className = 'facts';
-    facts.innerHTML = sheetFieldsHtml(data.fields || []);
+    facts.className = 'facts facts-primary';
+    facts.innerHTML = sheetFieldsHtml(data.primary || []);
     inner.appendChild(facts);
-    rawSection(inner, data);
-    var source = document.createElement('p');
-    source.className = 'sheet-source';
-    source.textContent = DATA.source || 'Unknown source';
-    inner.appendChild(source);
+    (data.notes || []).forEach(function (text) {
+      var note = document.createElement('p');
+      note.className = 'sheet-note';
+      note.textContent = text;
+      inner.appendChild(note);
+    });
+    var hasMore =
+      (data.more && data.more.length > 0) ||
+      (data.wait !== null && data.wait !== undefined) ||
+      (data.hold !== null && data.hold !== undefined);
+    if (hasMore) {
+      var more = document.createElement('details');
+      more.className = 'sheet-more';
+      var summary = document.createElement('summary');
+      summary.textContent = 'More';
+      more.appendChild(summary);
+      var moreFacts = document.createElement('dl');
+      moreFacts.className = 'facts';
+      moreFacts.innerHTML = sheetFieldsHtml(data.more || []);
+      more.appendChild(moreFacts);
+      rawSection(more, data);
+      inner.appendChild(more);
+    }
     sheet.appendChild(inner);
     wireSheet(sheet);
     return sheet;
@@ -1447,11 +1770,7 @@ html.js .nojs-tree { display: none; }
   ${defectBlock(model)}
   <p class="board-failure" id="board-failure" hidden></p>
   ${options.body}
-  <footer class="foot">
-    <p>${esc(sourceLine(model.provenance))}</p>
-    <p>Reads: ${model.provenance.operations.map(esc).join(', ')}</p>
-    <p>The board renders the engine's words. It computes no state; counts are the rollup over children.</p>
-  </footer>
+  ${provenanceBlock(model)}
 </main>
 <div class="scrim" id="scrim" hidden></div>
 <script>${SCRIPT}</script>

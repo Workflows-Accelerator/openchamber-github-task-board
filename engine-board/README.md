@@ -12,6 +12,15 @@ npm test
 npm run test:page   # real browser over file://, Obscura CDP on PATH
 ```
 
+The committed `engine-board/index.html` and `engine-board/list.html` are the
+demo pages: they render `fixtures/demo`, the generated 48-live-task tree. The
+live builder still writes the same two files from a live read:
+
+```sh
+node engine-board/demo/generate.ts   # rewrites the demo pages and both fixtures
+npm run build:engine-board -- --db <store> --project <id> --tree-key <key> --root <task id>
+```
+
 Open `engine-board/index.html` and `engine-board/list.html` directly. Neither
 page makes a request, loads an external asset or needs a build step. Without
 script the Board is the List body: one stacked tree, every row and every count
@@ -35,6 +44,9 @@ JSON block, so no inert `<dialog>` is shipped per task.
 | `test/page.test.mjs` | The page itself: a real browser over `file://` (`npm run test:page`). |
 | `engine-board/fixtures/*.json` | Frozen `--json` payloads and capture metadata. |
 | `engine-board/fixtures/capture.sh` | Rebuilds the capture from the pinned engine revision. |
+| `engine-board/fixtures/demo/` | Generated demo tree: 52 placed rows, 48 live. Do not hand-edit. |
+| `engine-board/fixtures/demo-volume/` | Generated ~200-task tree for the volume proof. |
+| `engine-board/demo/generate.ts` | Rewrites both fixtures and every demo page; deterministic at one engine revision. |
 
 ## The seam
 
@@ -80,7 +92,8 @@ started with.
 The model and the page use INTERFACE §2's words, not the board's:
 
 - `rest_state` — never `status`. A value outside the vocabulary is rendered as
-  `Unknown state` with the raw string shown; it is never dropped or renamed.
+  `Unknown state` on the reading surface; the raw string stays in the panel's
+  More disclosure. It is never dropped or renamed.
 - `tree_key`
 - `runner_slot` / `runner_id` — `null` with `runner_slot_reported` /
   `runner_id_reported` false means the read did not print it, which is not the
@@ -126,7 +139,21 @@ The model and the page use INTERFACE §2's words, not the board's:
   names them as their own count, so a closed subtree does not read as unfinished
   live work.
 - **Unknown source** (ruling 7) — a read without a revision or a read time is
-  `Unknown source`.
+  `Unknown source`. Provenance (source, human read time, engine commit, schema,
+  commands) is in one collapsed `Where this page came from` disclosure, closed
+  by default; the reading surface prints no ISO timestamp.
+- **A human reading surface** (slice 6) — dates read `4 minutes ago`,
+  `yesterday`, `14 Nov`, `20 Nov 2025`; the exact ISO is only in a `title` or
+  the folded record. The panel's first screen is state, what it waits for by
+  title, who is on it, and when it last changed. Ids, keys, machine states,
+  slots and raw wait/hold are behind `More`. Missing facts are one sentence,
+  never a column of `not reported` rows.
+- **The header line** (slice 6) — above the lanes, in counts only:
+  `8 ready to start · 12 waiting on a verdict or can't start yet · 2 in progress`.
+  The words are the lane words; the ready count plus the running count is the
+  ready lane, and the waiting count is the waiting and blocked lanes. A card a
+  worker is on says `In progress` and leads its lane, because the lane word
+  alone would read as untouched.
 - **Duplicates are a read defect** — a graph payload that repeats a task id is
   one row, and the first read is kept. The repeat is named under **Read
   defects** with the kept node key; a payload difference the page normalises is
@@ -165,8 +192,10 @@ in `fixtures/meta.json`.
 The capture is older than the running engine and is no longer payload-identical
 to it: it has no `title` on any node, no `max_concurrency` on the project, and
 `slot`/`phase` are `null` where the live store has values. It stays because it
-is the only coverage of `blocked`, the disagreement case and the defect shapes;
-the live source is the only thing the pages are built from.
+is the only coverage of `blocked`, the disagreement case and the defect shapes.
+The committed pages are built from the generated demo fixture, so the owner
+opens a tree with volume; the live source remains the way to build from a real
+store.
 
 ## Limitations we keep
 
@@ -184,9 +213,8 @@ These are deliberate and visible, not defects waiting to be discovered:
   the raw string shown, and `N lanes empty` counts only the eight known lanes.
   It never disappears, but it is not a designed lane until the order is updated.
 - **`task_title` is a capability, and the page says so.** When a payload carries
-  no title the row shows its node key with `title not read`, and the dialog's
-  `State`/`Node key` facts are unchanged. A key is never silently shown as if it
-  were a title.
+  no title the row shows its node key with `title not read`; the dialog title
+  says the same. A key is never silently shown as if it were a title.
 
 ## Gaps
 

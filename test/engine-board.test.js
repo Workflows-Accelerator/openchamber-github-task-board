@@ -15,6 +15,7 @@ import {
   LANE_ORDER,
   containment,
   engineDisagreement,
+  focusCounts,
   laneGroups,
   lanePlan,
   progress,
@@ -23,6 +24,9 @@ import {
 import {
   boardData,
   detailFields,
+  detailSections,
+  humanMoment,
+  humanTime,
   renderBoardPage,
   renderListPage,
   sheetFieldsHtml,
@@ -411,7 +415,13 @@ test('an unknown rest_state is escaped and counted apart from zero', () => {
   assert.equal(model.roots[0].rest_state_known, false);
   assert.equal(html.includes(restState), false);
   assert.ok(html.includes('&quot;&gt;&lt;script&gt;alert(2)&lt;/script&gt;'));
-  assert.ok(html.includes('The engine reported a state this board does not know'));
+  // Slice 6: the raw engine string is an attribute for the panel, never a
+  // sentence on the card. The card says the plain fact.
+  assert.ok(html.includes('The engine reported a state this page does not know.'));
+  assert.equal(
+    html.includes('a state this board does not know: <span class="mono">'),
+    false,
+  );
   assert.equal(
     Object.values(model.counts).reduce((sum, count) => sum + count, 0),
     0,
@@ -428,10 +438,23 @@ test('an opaque wait member renders as missing instead of throwing', () => {
       }),
     ],
   });
-  const html = renderBoardPage(buildTree(snapshot));
-  assert.ok(html.includes('not reported'));
+  const model = buildTree(snapshot);
+  const sections = detailSections(model.roots[0], model);
+  const html = renderBoardPage(model);
+  // Slice 6: missing members are one sentence, not a column of rows.
+  assert.equal(html.includes('not reported'), false);
+  assert.ok(
+    sections.notes.some((note) => note.includes('did not report a reason')),
+    sections.notes.join(' / '),
+  );
+  assert.equal(
+    sections.primary.some((field) => field.value === 'not reported'),
+    false,
+  );
+  // The raw hold is still on the page, behind the panel's More disclosure.
   assert.ok(html.includes('Raw hold'));
   assert.ok(html.includes('shape changed'));
+  assert.ok(html.includes("summary.textContent = 'More'"));
 });
 
 // ---------------------------------------------------------------------------
@@ -632,7 +655,7 @@ test('capabilities come from the payloads, and the panel reads them', () => {
   const fields = detailFields(model.roots[0], model);
   const value = (label) => fields.find((field) => field.label === label).value;
   assert.equal(value('Slot'), '0 of 2');
-  assert.equal(value('Runner'), 'runner-1 (runner slot 3)');
+  assert.equal(value('Runner'), 'runner-1 (slot 3)');
 });
 
 test('provenance is printed from the snapshot, not from a fixture', () => {
@@ -699,31 +722,50 @@ test('a null rest_state is a flagged missing value, not a crash', () => {
   );
   const html = renderBoardPage(model);
   assert.equal(model.unknown_rest_states, 1);
-  assert.ok(html.includes('The engine reported a state this board does not know'));
+  // Slice 6: the raw engine string is an attribute for the panel, never a
+  // sentence on the card. The card says the plain fact.
+  assert.ok(html.includes('The engine reported a state this page does not know.'));
+  assert.equal(
+    html.includes('a state this board does not know: <span class="mono">'),
+    false,
+  );
   assert.equal(
     Object.values(model.counts).reduce((sum, count) => sum + count, 0),
     0,
   );
 });
 
-test('the committed pages are the live Board and List pages', () => {
-  // Slice 2's golden compared `index.html` to a fixture render. The page is now
-  // a live read, whose read time cannot be replayed in CI, so the assertion is
-  // about what the committed artifact declares: a live source with a revision
-  // and a time, no external request, and the page's own view.
+test('the committed pages are the demo Board and List pages', () => {
+  // Slice 6: the owner-facing demo must carry the generated volume tree, so
+  // the committed pages are rendered from `fixtures/demo`, not from the
+  // seven-task capture. `fixtures/` stays the real capture for model tests.
   const index = readFileSync(join(board, 'index.html'), 'utf8');
   const list = readFileSync(join(board, 'list.html'), 'utf8');
+  const demo = buildTree(
+    loadFixtureSnapshot(
+      join(fixtures, 'demo'),
+      readFixtureMeta(join(fixtures, 'demo')),
+    ),
+  );
 
   assert.ok(index.includes('<body data-page="board">'), 'index.html is the Board');
   assert.ok(list.includes('<body data-page="list">'), 'list.html is the List');
   for (const html of [index, list]) {
     assert.equal(/<script[^>]+src=/.test(html), false, 'no external script');
     assert.equal(/(src|href)="https?:/.test(html), false, 'no network request');
-    assert.match(html, /task-engine@[0-9a-f]{7,}/);
-    assert.match(html, /read at \d{4}-\d\d-\d\dT/);
+    assert.ok(html.includes('Where this page came from'));
+    assert.ok(html.includes(demo.provenance.engine_commit));
+    assert.ok(html.includes('Fixture capture'));
   }
-  assert.ok(index.includes('Live read'));
   assert.ok(list.includes('Showing everything'));
+  assert.equal(demo.total >= 45, true, `${demo.total} demo tasks`);
+  assert.equal(demo.max_depth + 1, 4);
+  // Every placed demo row is in the no-JS list, so the page really carries the
+  // volume tree and not a smaller sample.
+  assert.equal(
+    (index.match(/<li data-task="/g) ?? []).length,
+    demo.total,
+  );
 });
 
 // ---------------------------------------------------------------- slice 3
@@ -870,18 +912,24 @@ test('an unknown state is named Unknown state with the engine string, before scr
   // The row's state is a label, never blank: a state this build does not know
   // reads `Unknown state`, with the engine's raw string named beside it.
   assert.ok(
-    html.includes(
-      '<span class="dot" aria-hidden="true"></span>Unknown state</span>',
-    ),
+    html.includes('<span class="dot" aria-hidden="true"></span>Unknown state</span>'),
   );
-  assert.ok(
-    html.includes(
-      'a state this board does not know: <span class="mono">mystery</span>',
-    ),
+  // Slice 6: the engine's raw string left the reading surface. It is in the
+  // row's data attributes and behind the panel's More, where a diagnosis lives.
+  assert.equal(
+    html.includes('a state this board does not know: <span class="mono">mystery</span>'),
+    false,
+  );
+  const sections = detailSections(row, model);
+  // The state line under the title says Unknown state; the engine string is
+  // only in the data attribute and behind More.
+  assert.equal(
+    sections.primary.some((field) => field.value === 'mystery'),
+    false,
   );
   assert.equal(
-    detailFields(row, model).find((field) => field.label === 'State').value,
-    'Unknown state (mystery)',
+    sections.more.find((field) => field.label === 'Engine state').value,
+    'mystery',
   );
 });
 
@@ -1028,7 +1076,7 @@ test('scope survives a URL round trip and the breadcrumb is the path', () => {
   assert.ok(html.includes("addEventListener('hashchange'"));
 });
 
-test('the detail panel lists the technical surface and the raw machine values', () => {
+test('the detail panel leads with the plain facts and folds the machine record', () => {
   const wait = {
     reason: 'rejected:condition:check:unit',
     cause: 'settle_rejected',
@@ -1043,6 +1091,7 @@ test('the detail panel lists the technical surface and the raw machine values', 
   const model = buildTree(
     snapshotOf({
       project: { max_concurrency: 2 },
+      prov: provenance({ read_at: '2026-11-25T13:20:00Z' }),
       nodes: [
         node('t1', 'build/verify', 'waiting', null, {
           title: 'Check the unit tests',
@@ -1073,45 +1122,58 @@ test('the detail panel lists the technical surface and the raw machine values', 
     }),
   );
   const row = model.roots[0];
-  const fields = detailFields(row, model);
+  const sections = detailSections(row, model);
+  const primary = (label) =>
+    sections.primary.find((field) => field.label === label);
+  const more = (label) => sections.more.find((field) => field.label === label);
+
+  // The first screen: state, who is on it, when it last changed, since when it
+  // waits. No id, key, raw state, phase or slot.
   assert.deepEqual(
-    fields.map((field) => field.label),
+    sections.primary.map((field) => field.label),
+    ['Doing it', 'Last change', 'Waiting since'],
+  );
+  assert.equal(primary('Doing it').value, 'No worker is on it');
+  assert.equal(primary('Last change').value, '3 minutes ago');
+  assert.equal(primary('Last change').title, '2026-11-25T13:17:00Z');
+  assert.equal(primary('Waiting since').value, '2 minutes ago');
+
+  // The machine record is all there, one disclosure down.
+  assert.deepEqual(
+    sections.more.map((field) => field.label),
     [
-      'State',
-      'Node key',
       'Task id',
-      'Inside',
+      'Node key',
+      'Engine state',
       'Phase',
       'Slot',
       'Runner',
       'Created',
       'Updated',
-      'Archived',
-      'Attempt id',
       'Attempts',
-      'Blocked by',
-      'Starts after',
+      'Attempt id',
       'Wait reason',
       'Wait cause',
       'Wait owner',
       'Wait opened',
     ],
   );
-  const value = (label) => fields.find((field) => field.label === label).value;
-  assert.equal(value('State'), 'Waiting on a verdict (waiting)');
-  assert.equal(value('Slot'), '0 of 2');
-  assert.equal(value('Runner'), 'rnr_1 (runner slot 0)');
-  assert.equal(value('Attempt id'), 'att_1');
-  assert.equal(value('Wait reason'), 'rejected:condition:check:unit');
-  assert.equal(value('Wait cause'), 'settle_rejected');
-  assert.equal(value('Created'), '2026-11-25T13:00:00Z');
+  assert.equal(more('Engine state').value, 'waiting');
+  assert.equal(more('Slot').value, '0 of 2');
+  assert.equal(more('Runner').value, 'rnr_1 (slot 0)');
+  assert.equal(more('Created').value, '2026-11-25T13:00:00Z');
+  assert.equal(more('Attempt id').value, 'att_1');
+  assert.equal(more('Wait reason').value, 'rejected:condition:check:unit');
 
   const html = renderBoardPage(model);
   // The dialog is built on click; no inert <dialog> is shipped.
   assert.equal((html.match(/<dialog/g) ?? []).length, 0);
-  // Every label the panel will show is a <dt> in the markup the page inserts.
-  const facts = sheetFieldsHtml(fields);
-  for (const field of fields) {
+  const primaryFacts = sheetFieldsHtml(sections.primary);
+  const moreFacts = sheetFieldsHtml(sections.more);
+  assert.equal(primaryFacts.includes('not reported'), false);
+  assert.equal(/tsk_|rest_state|slot \d/.test(primaryFacts), false);
+  for (const field of [...sections.primary, ...sections.more]) {
+    const facts = sections.primary.includes(field) ? primaryFacts : moreFacts;
     assert.ok(
       facts.includes(`<dt>${field.label}</dt>`),
       `missing <dt>${field.label}</dt>`,
@@ -1119,11 +1181,14 @@ test('the detail panel lists the technical surface and the raw machine values', 
   }
   assert.ok(html.includes('aria-labelledby'));
   assert.ok(html.includes('Close details'));
+  assert.ok(html.includes("summary.textContent = 'More'"));
+  assert.ok(html.includes('<details class="provenance">'));
+  assert.equal(/<details class="provenance" open/.test(html), false);
+  assert.ok(html.includes('Where this page came from'));
+  // The raw hold stays one disclosure down.
   assert.ok(html.includes('Raw wait'));
   assert.ok(html.includes('settle_rejected'));
   assert.ok(html.includes('Check the unit tests'));
-  // Focus is moved into the dialog and kept there; Escape closes it even where
-  // the browser's own modal handling is partial.
   assert.ok(html.includes("event.key === 'Escape'"));
   assert.ok(html.includes("event.key !== 'Tab'"));
   assert.ok(html.includes("close.focus()"));
@@ -1720,4 +1785,70 @@ test('the page data carries the title fact and the scope facts target', () => {
   assert.equal(data.rows.box.contained, '1 inside · 0 done');
   // A leaf draws no counts line, so it carries no contained string.
   assert.equal('contained' in data.rows.a, false);
+});
+
+
+// ---------------------------------------------------------------- slice 6
+
+test('human timestamps say minutes, yesterday, a day, and a year only when it differs', () => {
+  const now = '2026-11-25T12:00:00Z';
+  assert.equal(humanTime('2026-11-25T11:56:00Z', now), '4 minutes ago');
+  assert.equal(humanTime('2026-11-25T11:59:30Z', now), 'just now');
+  assert.equal(humanTime('2026-11-25T09:00:00Z', now), '3 hours ago');
+  assert.equal(humanTime('2026-11-24T18:00:00Z', now), 'yesterday');
+  assert.equal(humanTime('2026-11-22T18:00:00Z', now), '3 days ago');
+  assert.equal(humanTime('2026-11-14T18:00:00Z', now), '14 Nov');
+  assert.equal(humanTime('2025-11-20T18:00:00Z', now), '20 Nov 2025');
+  assert.equal(humanTime('', now), '');
+  assert.equal(humanTime('not a date', now), '');
+  assert.equal(humanMoment('2026-11-25T12:00:00Z'), '25 Nov 2026, 12:00');
+});
+
+test('the on-page timestamp carries the exact ISO value in its title, never as text', () => {
+  const model = buildTree(
+    snapshotOf({
+      prov: provenance({ read_at: '2026-11-25T12:00:00Z' }),
+      nodes: [node('t1', 'task', 'ready', null, { title: 'Do the thing' })],
+      statuses: [
+        statusOf('t1', 'ready', {
+          title: 'Do the thing',
+          updated_at: '2026-11-25T11:56:00Z',
+        }),
+      ],
+    }),
+  );
+  const sections = detailSections(model.roots[0], model);
+  const lastChange = sections.primary.find((field) => field.label === 'Last change');
+  assert.equal(lastChange.value, '4 minutes ago');
+  assert.equal(lastChange.title, '2026-11-25T11:56:00Z');
+  const facts = sheetFieldsHtml(sections.primary);
+  assert.equal(/<dd[^>]*>[^<]*2026-11-25T11:56:00Z/.test(facts), false);
+  assert.ok(facts.includes('title="2026-11-25T11:56:00Z"'));
+});
+
+test('the header counts are the lanes, split by running and ready', () => {
+  assert.deepEqual(
+    focusCounts([
+      { rest_state: 'ready', phase: 'live' },
+      { rest_state: 'ready', phase: null },
+      { rest_state: 'ready', phase: 'ended' },
+      { rest_state: 'waiting', phase: null },
+      { rest_state: 'blocked', phase: null },
+      { rest_state: 'done', phase: null },
+      { rest_state: 'draft', phase: null },
+    ]),
+    { canStart: 2, waiting: 2, inProgress: 1 },
+  );
+});
+
+test('the provenance details is closed and the reading surface carries no ISO text', () => {
+  const html = renderBoardPage(fixtureModel());
+  assert.ok(html.includes('<details class="provenance">'));
+  assert.equal(/<details class="provenance"[^>]*\sopen/.test(html), false);
+  assert.ok(html.includes('<summary>Where this page came from</summary>'));
+  // The exact value exists, but only as a datetime/title attribute.
+  assert.equal(
+    (html.match(/>[^<]*\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ[^<]*</g) ?? []).length,
+    0,
+  );
 });

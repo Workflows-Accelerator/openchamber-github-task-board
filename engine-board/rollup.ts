@@ -120,6 +120,39 @@ export const STATE_WORDS: Record<RestState, string> = {
   skipped: 'Skipped',
 };
 
+// The three counts the Board puts above its lanes. They answer "where do I
+// start" without inventing a state: `canStart` is the ready lane without a
+// running worker, `waiting` is the waiting and blocked lanes together, and
+// `inProgress` is a task with an active attempt, which can sit in any lane.
+// The words beside them reuse STATE_WORDS.
+export interface FocusCounts {
+  canStart: number;
+  waiting: number;
+  inProgress: number;
+}
+
+export function focusCounts(
+  rows: readonly { rest_state: string; phase: string | null }[],
+): FocusCounts {
+  // Kept inside the function because the page embeds `focusCounts.toString()`;
+  // a module constant would be a free variable in the inline script.
+  const activePhases = ['claimed', 'launching', 'live', 'ending'];
+  let canStart = 0;
+  let waiting = 0;
+  let inProgress = 0;
+  for (const row of rows) {
+    const running = row.phase !== null && activePhases.includes(row.phase);
+    if (running) {
+      inProgress += 1;
+    } else if (row.rest_state === 'ready') {
+      canStart += 1;
+    } else if (row.rest_state === 'waiting' || row.rest_state === 'blocked') {
+      waiting += 1;
+    }
+  }
+  return { canStart, waiting, inProgress };
+}
+
 export type LaneState = RestState | 'unknown';
 
 export interface Lane {
