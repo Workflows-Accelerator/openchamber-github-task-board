@@ -2339,8 +2339,8 @@ test('the panel names both dependency directions, and only the edge says satisfi
   assert.ok(waits, 'the first screen has a Waits for field');
   assert.equal(
     waits.value,
-    'Approve the pricing copy — done, Check the release notes, ' +
-      'A done row with no accepted edge and Draft the pricing model — skipped.',
+    'Approve the pricing copy (done), Check the release notes, ' +
+      'A done row with no accepted edge and Draft the pricing model (skipped).',
   );
   const holds = sections.primary.find((field) => field.label === 'Holds up');
   assert.ok(holds, 'the first screen has a Holds up field');

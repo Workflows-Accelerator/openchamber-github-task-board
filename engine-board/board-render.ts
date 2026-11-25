@@ -239,7 +239,7 @@ function waitsText(entries: readonly DependencyEntry[]): string {
   return `${joinWords(
     entries.map((entry) =>
       entry.satisfied && entry.state !== null
-        ? `${entry.title} — ${entry.state}`
+        ? `${entry.title} (${entry.state})`
         : entry.title,
     ),
   )}.`;
@@ -1212,7 +1212,7 @@ function listBody(model: TreeModel, view: BoardView): string {
   const levels = model.max_depth + 1;
   return `<header class="list-head">
     <div>
-      <h1>Everything, unfolded</h1>
+      <h1>The whole tree</h1>
       <p class="list-bar"><strong>Showing everything</strong><span>·</span><span>${plural(
         p.total,
         'task',
@@ -2368,6 +2368,18 @@ const SCRIPT = `(function () {
     return section;
   }
 
+  // Ruling 2 is structural here, not a rule each builder has to remember: a
+  // section is mounted only if it has something to say after its heading. A
+  // later section that forgets its own guard still cannot draw an empty one.
+  function mountSection(inner, section) {
+    if (!section) return;
+    var heading = section.querySelector('h3');
+    var said = section.textContent;
+    if (heading) said = said.slice(heading.textContent.length);
+    if (said.trim() === '') return;
+    inner.appendChild(section);
+  }
+
   function textNode(className, text) {
     var node = document.createElement('p');
     node.className = className;
@@ -2386,7 +2398,7 @@ const SCRIPT = `(function () {
     body.paragraphs.forEach(function (text) {
       section.appendChild(textNode('sheet-paragraph', text));
     });
-    inner.appendChild(section);
+    mountSection(inner, section);
   }
 
   // Ruling 5: the pinned contract in plain language, or the honest statement
@@ -2405,7 +2417,7 @@ const SCRIPT = `(function () {
       list.appendChild(item);
     });
     section.appendChild(list);
-    inner.appendChild(section);
+    mountSection(inner, section);
   }
 
   // Ruling 6: what has happened, in sentences. The raw enums stay behind More.
@@ -2416,7 +2428,7 @@ const SCRIPT = `(function () {
     lines.forEach(function (line) {
       section.appendChild(textNode('sheet-history-line', line));
     });
-    inner.appendChild(section);
+    mountSection(inner, section);
   }
 
   // Ruling 7: where a conversation lives, or that none is linked. No box.
@@ -2426,7 +2438,7 @@ const SCRIPT = `(function () {
     section.appendChild(
       textNode('sheet-muted', data.conversation),
     );
-    inner.appendChild(section);
+    mountSection(inner, section);
   }
 
   function buildSheet(taskId) {

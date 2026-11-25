@@ -488,6 +488,9 @@ test(
         firstText: sheet.querySelector('.sheet-inner').innerText,
         moreOpen: more ? more.open : null,
         moreSummary: more ? more.querySelector('summary').textContent : null,
+        // The count is the structural tripwire: a later section that forgets
+        // its own guard still must not draw an empty one.
+        sectionCount: sheet.querySelectorAll('section').length,
         sections: {
           description: !!sheet.querySelector('.sheet-description'),
           conditions: !!sheet.querySelector('.sheet-conditions'),
@@ -513,6 +516,11 @@ test(
       conversation: false,
       primary: true,
     });
+    assert.equal(
+      opened.sectionCount,
+      0,
+      'no section is drawn without content, not only the four named here',
+    );
     assert.equal(/tsk_|rest_state|\bslot \d/.test(opened.firstText), false);
     assert.equal(/\d{4}-\d\d-\d\dT/.test(opened.firstText), false);
     assert.equal(opened.moreOpen, false, 'More is closed on open');
@@ -777,6 +785,7 @@ test(
       );
       return {
         firstText: sheet.querySelector('.sheet-inner').innerText,
+        sectionCount: sheet.querySelectorAll('section').length,
         sections: {
           description: !!sheet.querySelector('.sheet-description'),
           conditions: !!sheet.querySelector('.sheet-conditions'),
@@ -798,6 +807,11 @@ test(
       conversation: false,
       primary: true,
     });
+    assert.equal(
+      beta.sectionCount,
+      0,
+      'no section is drawn without content, not only the four named here',
+    );
     assert.equal(beta.facts['Waits for'], 'Alpha.');
     assert.equal(beta.facts.Contract, "This task's contract pins no conditions.");
     assert.equal(beta.facts.Attempts, '0 runs');
@@ -1372,6 +1386,65 @@ test(
       'the Release panel closes',
     );
 
+    // Ruling 1 across levels: `Write the page contract` lives under Build, so
+    // this panel names a blocker the Release level does not contain.
+    assert.equal(
+      await page.evaluate(`(function () {
+        var titles = Array.prototype.slice.call(
+          document.querySelectorAll('#board-root .card .card-title'),
+        );
+        return titles.some(function (title) {
+          return title.textContent.indexOf('Write the page contract') !== -1;
+        });
+      })()`),
+      false,
+      'the blocker is not a card in this level',
+    );
+    await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var signoff = cards.filter(function (card) {
+        return card.textContent.indexOf('Sign off the pricing claims') !== -1;
+      })[0];
+      signoff.querySelector('.card-title .enter').click();
+    })()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the sign-off panel opens',
+    );
+    const signoff = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var facts = {};
+      sheet.querySelectorAll('.facts-primary dt').forEach(function (dt) {
+        facts[dt.textContent] = dt.nextElementSibling
+          ? dt.nextElementSibling.textContent
+          : null;
+      });
+      return { facts: facts, text: sheet.innerText };
+    })()`);
+    assert.equal(
+      signoff.facts['Waits for'],
+      'Write the page contract (done) and Check the release notes.',
+      'the satisfied blocker reads as done in the same breath',
+    );
+    assert.equal(
+      signoff.facts['Holds up'],
+      '1 task: Announce the release.',
+    );
+    assert.notEqual(
+      signoff.text.indexOf('Write the page contract'),
+      -1,
+      'the panel names the task the level cannot show',
+    );
+    await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
+      'the sign-off panel closes',
+    );
+
     // The one `after` edge in the demo: dashed above 640 px, dropped below it
     // with the card carrying the same fact.
     await page.evaluate(`location.hash = '#board/research'`);
@@ -1471,7 +1544,7 @@ test(
   { timeout: 60000 },
   async (t) => {
     requireObscura();
-    // A three-deep tree: work > alpha > alpha-one, plus a leaf sibling.
+    // A four-deep tree: work > alpha > alpha-one > deep, plus a leaf sibling.
     const model = buildTree({
       provenance: {
         source_kind: 'live',
@@ -1491,6 +1564,7 @@ test(
           { task_id: 'work', node_key: 'work', rest_state: 'ready', parent_task_id: 'root', title: 'The work' },
           { task_id: 'alpha', node_key: 'work/alpha', rest_state: 'ready', parent_task_id: 'work', title: 'Alpha' },
           { task_id: 'alpha-one', node_key: 'work/alpha/one', rest_state: 'done', parent_task_id: 'alpha', title: 'Alpha one' },
+          { task_id: 'alpha-one-deep', node_key: 'work/alpha/one/deep', rest_state: 'done', parent_task_id: 'alpha-one', title: 'Alpha one deep' },
           { task_id: 'beta', node_key: 'work/beta', rest_state: 'blocked', parent_task_id: 'work', title: 'Beta' },
           { task_id: 'solo', node_key: 'solo', rest_state: 'ready', parent_task_id: 'root', title: 'Solo' },
         ],
@@ -1500,6 +1574,7 @@ test(
         { task_id: 'work', rest_state: 'ready', title: 'The work', handoff_revision: 1 },
         { task_id: 'alpha', rest_state: 'ready', title: 'Alpha', handoff_revision: 1 },
         { task_id: 'alpha-one', rest_state: 'done', title: 'Alpha one', handoff_revision: 1 },
+        { task_id: 'alpha-one-deep', rest_state: 'done', title: 'Alpha one deep', handoff_revision: 1 },
         { task_id: 'beta', rest_state: 'blocked', title: 'Beta', handoff_revision: 1 },
         { task_id: 'solo', rest_state: 'ready', title: 'Solo', handoff_revision: 1 },
       ],
@@ -1563,7 +1638,7 @@ test(
     assert.equal(open.expanded, 'true');
     assert.equal(open.ownsList, true, 'aria-controls names a real list');
     assert.equal(open.hidden, false);
-    assert.equal(open.counts, '3 inside · 1 done');
+    assert.equal(open.counts, '4 inside · 2 done');
     assert.equal(open.countsVisible, true);
     assert.equal(open.leafDisclosure, null, 'a leaf has no disclosure');
     assert.equal(open.leafSpacer, true, 'a leaf keeps the column');
@@ -1589,6 +1664,20 @@ test(
     assert.equal(collapsed.counts, open.counts, 'the counts survive the collapse');
     assert.equal(collapsed.countsVisible, true);
     assert.equal(collapsed.dialogOpen, false, 'collapsing does not open the panel');
+    // The fold hides the whole subtree, not only the immediate children: the
+    // grandchild is still in the DOM and has no box.
+    assert.deepEqual(
+      await page.evaluate(`(function () {
+        var deep = document.querySelector('li[data-key="work/alpha/one/deep"]');
+        return {
+          exists: deep !== null,
+          rects: deep ? deep.getClientRects().length : -1,
+          offsetParent: deep ? deep.offsetParent : 'missing',
+        };
+      })()`),
+      { exists: true, rects: 0, offsetParent: null },
+      'a collapsed parent hides its grandchildren too',
+    );
 
     await page.evaluate(`(function () {
       document

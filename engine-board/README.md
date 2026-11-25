@@ -158,7 +158,7 @@ The model and the page use INTERFACE §2's words, not the board's:
 - **The header line** (slice 7) — above the lanes, in counts only:
   `12 can start · 2 in progress · 1 waiting`. It is the three lanes a reader can
   act on, in that order; a zero clause is omitted rather than printed. The
-  unfolded List uses the same lane words, so the whole surface speaks one
+  List uses the same lane words, so the whole surface speaks one
   vocabulary; the raw `rest_state` stays in the data attributes and behind
   `More`.
 - **A human reading surface** (slice 6) — dates read `4 minutes ago`,
