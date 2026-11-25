@@ -56,6 +56,13 @@ interface AddOptions {
   hold?: Record<string, unknown> | null;
   attempts?: StatusPayload['attempts'];
   updatedAt?: string;
+  // The reading surface: a real description, the pinned contract's conditions,
+  // and the issue-mirror link when the fixture demonstrates one. No read verb
+  // prints the contract today; the fixture is the shape, and a live read falls
+  // back to the panel's sentence.
+  body?: string;
+  conditions?: unknown[];
+  mirror?: string;
 }
 
 class Fixture {
@@ -93,6 +100,9 @@ class Fixture {
       slot: options.slot ?? null,
       slot_limit: SLOT_LIMIT,
       title: options.title,
+      body: options.body ?? '',
+      conditions: options.conditions ?? [],
+      mirror: options.mirror ?? null,
       created_at: created,
       updated_at: updated,
       archived_at: options.archived ? '2026-10-01T09:00:00Z' : null,
@@ -167,9 +177,24 @@ class Fixture {
   }
 }
 
-function attempt(index: number, phase: string, reason: string, at: string) {
+interface AttemptNote {
+  ordinal?: number;
+  end_evidence?: string | null;
+  attested_by?: string | null;
+  approved_by?: string | null;
+  principal?: string | null;
+}
+
+function attempt(
+  index: number,
+  phase: string,
+  reason: string,
+  at: string,
+  note: AttemptNote = {},
+) {
   return {
     attempt_id: `att_${String(index).padStart(4, '0')}`,
+    ordinal: note.ordinal ?? index,
     phase,
     runner_id: 'rnr_demo_1',
     runner_slot: index % 2,
@@ -177,7 +202,11 @@ function attempt(index: number, phase: string, reason: string, at: string) {
     launched_at: new Date(Date.parse(at) - 20 * 60_000).toISOString(),
     ended_at: at,
     end_reason: reason,
+    end_evidence: note.end_evidence ?? null,
     outcome: phase === 'ended' ? reason : null,
+    attested_by: note.attested_by ?? null,
+    approved_by: note.approved_by ?? null,
+    principal: note.principal ?? 'agent:demo',
     launch_count: 1,
   };
 }
@@ -203,15 +232,40 @@ function realTree(): Fixture {
 
   // The top level is the portfolio: five processes, each with counts. A loose
   // leaf task beside them would read as a flat list, not as work with owners.
-  const containers: [string, string, RestState][] = [
-    ['discovery', 'Discovery', 'draft'],
-    ['build', 'Build the engine', 'ready'],
-    ['release', 'Release', 'waiting'],
-    ['ops', 'Operations', 'blocked'],
-    ['research', 'Research', 'draft'],
+  const containers: [string, string, RestState, string][] = [
+    [
+      'discovery',
+      'Discovery',
+      'draft',
+      'Find out how operators actually work, not how the handbook says they do.\n\nFive interviews, then a recommendation the team can act on.',
+    ],
+    [
+      'build',
+      'Build the engine',
+      'ready',
+      'Make the engine board readable: what a task contains, what it depends on, and where the work stands.\n\nThe first slices settled the shell and the lanes. This one puts the work back on the surface.',
+    ],
+    [
+      'release',
+      'Release',
+      'waiting',
+      'Everything that has to be true before the next cut leaves the building.',
+    ],
+    [
+      'ops',
+      'Operations',
+      'blocked',
+      'Keep the running system honest: watch it, repair it, and write down what we learned.',
+    ],
+    [
+      'research',
+      'Research',
+      'draft',
+      'Small bets on things that might save time later. Nothing here blocks the release.',
+    ],
   ];
-  for (const [key, title, state] of containers) {
-    fixture.add({ key, title, state, parent: null });
+  for (const [key, title, state, body] of containers) {
+    fixture.add({ key, title, state, parent: null, body });
   }
 
   // Build is the crowded workstream: twelve tasks a reader can start right
@@ -252,6 +306,9 @@ function realTree(): Fixture {
     slot: 0,
     attempts: [attempt(6, 'live', 'ok', '2026-11-25T11:50:00Z')],
     updatedAt: '2026-11-25T11:56:00Z',
+    body: 'Read the tree once, through the engine\'s own verbs, and draw it without inventing a second model.\n\nEvery state word on the page has to be the engine\'s word. Where the engine and its edges disagree, print both rather than choosing for it.',
+    conditions: [{ kind: 'check', name: 'page-tests' }],
+    mirror: 'openchamber-github-task-board#482',
   });
   fixture.add({
     key: 'build-render',
@@ -263,30 +320,88 @@ function realTree(): Fixture {
     runnerSlot: 1,
     slot: 1,
     attempts: [attempt(7, 'live', 'ok', '2026-11-25T11:52:00Z')],
+    body: 'The first screen answers what this is, what it waits for, and what it needs. Ids, keys, slots and raw payloads live one fold down.\n\nA reader should not have to scroll to learn whether they can start.',
+    conditions: [
+      { kind: 'check', name: 'first-screen-fits' },
+      { kind: 'verdict', verdict: 'ship' },
+    ],
   });
   fixture.add({
     key: 'build-tests',
     title: 'Prove it in a real browser',
     state: 'blocked',
     parent: 'build',
+    body: 'Unit strings are not enough. Load the page over file://, click the thing, and assert what the reader sees.\n\nA test that skips when the browser is missing proves nothing.',
+    conditions: [
+      { kind: 'check', name: 'browser-pass' },
+      { kind: 'verdict' },
+    ],
   });
   fixture.edge('build-engine', 'build-tests');
-  fixture.add({ key: 'build-spec', title: 'Write the page contract', state: 'done', parent: 'build', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(8, 'ended', 'ok', '2026-11-22T16:00:00Z')], updatedAt: '2025-11-20T10:00:00Z' });
+  fixture.add({
+    key: 'build-spec',
+    title: 'Write the page contract',
+    state: 'done',
+    parent: 'build',
+    phase: 'ended',
+    runner: 'rnr_demo_1',
+    attempts: [attempt(8, 'ended', 'ok', '2026-11-22T16:00:00Z')],
+    updatedAt: '2025-11-20T10:00:00Z',
+    body: 'Pin what the reading surface promises before the surface is built: the breadcrumb, the home link, the dependency lines, and the four panel sections.\n\nThis is the contract the rest of the slice is checked against.',
+    conditions: [
+      { kind: 'child', settle: 'all_done' },
+      { kind: 'check', name: 'contract-examples' },
+    ],
+  });
   fixture.add({ key: 'build-spec-review', title: 'Review the page contract', state: 'done', parent: 'build-spec', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(9, 'ended', 'ok', '2026-11-22T17:00:00Z')] });
   fixture.add({ key: 'build-spec-review-check', title: 'Check the contract examples', state: 'done', parent: 'build-spec-review', phase: 'ended', runner: 'rnr_demo_1', attempts: [attempt(10, 'ended', 'ok', '2026-11-22T18:00:00Z')] });
   fixture.edge('build-spec', 'build-spec-review', 'after');
   fixture.edge('build-spec-review', 'build-spec-review-check', 'after');
 
   // Release: a three-deep blocked chain and one task that blocks six.
-  fixture.add({ key: 'chain-01', title: 'Ship the pricing page', state: 'blocked', parent: 'release' });
-  fixture.add({ key: 'chain-02', title: 'Approve the pricing copy', state: 'blocked', parent: 'release' });
-  fixture.add({ key: 'chain-03', title: 'Finish the pricing model', state: 'blocked', parent: 'release' });
-  fixture.add({ key: 'chain-04', title: 'Decide the packaging', state: 'waiting', parent: 'release' });
+  fixture.add({
+    key: 'chain-01',
+    title: 'Ship the pricing page',
+    state: 'blocked',
+    parent: 'release',
+    body: 'The page is built; the copy and the packaging are not settled. This task is the last one to move.',
+    conditions: [{ kind: 'check', name: 'pricing-page-live' }],
+  });
+  fixture.add({
+    key: 'chain-02',
+    title: 'Approve the pricing copy',
+    state: 'blocked',
+    parent: 'release',
+    body: 'A person has to read the final copy and say yes. No agent can approve it for them.',
+    conditions: [{ kind: 'verdict' }],
+  });
+  fixture.add({
+    key: 'chain-03',
+    title: 'Finish the pricing model',
+    state: 'blocked',
+    parent: 'release',
+    body: 'Tie the tier prices to the usage numbers so the page cannot drift from the model.',
+  });
+  fixture.add({
+    key: 'chain-04',
+    title: 'Decide the packaging',
+    state: 'waiting',
+    parent: 'release',
+    body: 'Three options are on the table. Pick one, and write down why the other two lost.',
+    conditions: [{ kind: 'answer', field: 'packaging', equals: 'three-tier' }],
+  });
   fixture.edge('chain-04', 'chain-03');
   fixture.edge('chain-03', 'chain-02');
   fixture.edge('chain-02', 'chain-01');
 
-  fixture.add({ key: 'fan-source', title: 'Publish the shared API', state: 'waiting', parent: 'release' });
+  fixture.add({
+    key: 'fan-source',
+    title: 'Publish the shared API',
+    state: 'waiting',
+    parent: 'release',
+    body: 'One contract, six consumers. Publish it once and let each consumer connect on its own schedule.',
+    conditions: [{ kind: 'check', name: 'api-contract-published' }],
+  });
   for (let index = 1; index <= 6; index += 1) {
     fixture.add({
       key: `fan-0${index}`,
@@ -296,9 +411,28 @@ function realTree(): Fixture {
     });
     fixture.edge('fan-source', `fan-0${index}`);
   }
-  fixture.add({ key: 'release-check', title: 'Check the release notes', state: 'waiting', parent: 'release' });
+  fixture.add({
+    key: 'release-check',
+    title: 'Check the release notes',
+    state: 'waiting',
+    parent: 'release',
+    body: 'Read the notes as a user would, not as the person who wrote them. Anything that needs a second sentence goes back.',
+    conditions: [{ kind: 'verdict' }],
+  });
   fixture.add({ key: 'release-notes', title: 'Draft the release notes', state: 'draft', parent: 'release' });
-  fixture.add({ key: 'release-stage', title: 'Stage the release', state: 'ready', parent: 'release' });
+  fixture.add({
+    key: 'release-stage',
+    title: 'Stage the release',
+    state: 'ready',
+    parent: 'release',
+    body: 'Put the build where the release check can reach it, with the notes and the migration window attached.',
+    conditions: [
+      { kind: 'check', name: 'staging-smoke' },
+      { kind: 'evidence', evidence_kind: 'signed-build' },
+    ],
+  });
+  // Deliberately without a description: the panel's empty state is part of the
+  // reading surface, not an accident of the fixture.
   fixture.add({ key: 'release-support', title: 'Tell the support team', state: 'ready', parent: 'release' });
 
   // Operations: one failure with a retry, and the archived subtree.
@@ -312,9 +446,15 @@ function realTree(): Fixture {
     runnerSlot: 0,
     slot: 1,
     attempts: [
-      attempt(1, 'ended', 'failed', '2026-11-25T10:10:00Z'),
-      attempt(2, 'ended', 'failed', '2026-11-25T11:20:00Z'),
+      attempt(1, 'ended', 'failed', '2026-11-25T10:10:00Z', {
+        end_evidence: 'exit 1: the index lock was still held',
+      }),
+      attempt(2, 'ended', 'failed', '2026-11-25T11:20:00Z', {
+        end_evidence: 'exit 1: the index lock was still held',
+      }),
     ],
+    body: 'Rebuild the archive index in place, without taking the search surface down.\n\nThe first two attempts died on the same lock. Stop retrying until the lock is released by hand.',
+    conditions: [{ kind: 'check', name: 'archive-index-rebuilt' }],
   });
   fixture.add({ key: 'ops-monitor', title: 'Watch the first hour', state: 'done', parent: 'ops', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(11, 'ended', 'ok', '2026-11-21T09:00:00Z')] });
   fixture.add({ key: 'ops-runbook', title: 'Write the on-call runbook', state: 'draft', parent: 'ops' });
@@ -355,9 +495,17 @@ function realTree(): Fixture {
     slot: 0,
     attempts: [attempt(4, 'ended', 'ok', '2026-11-24T15:00:00Z')],
     updatedAt: '2026-11-10T09:00:00Z',
+    body: 'Five half-hour conversations, no script past the first question. Ask what they did yesterday, not what they wish the tool did.',
   });
   fixture.add({ key: 'discovery-notes', title: 'Write the findings', state: 'draft', parent: 'discovery' });
-  fixture.add({ key: 'discovery-summary', title: 'Shape the recommendation', state: 'draft', parent: 'discovery' });
+  fixture.add({
+    key: 'discovery-summary',
+    title: 'Shape the recommendation',
+    state: 'draft',
+    parent: 'discovery',
+    body: 'Turn the interview notes into one recommendation with its cost and its risk.\n\nIf the answer is "do nothing", say that plainly and show what it costs.',
+    conditions: [{ kind: 'answer', field: 'recommendation' }],
+  });
   fixture.add({ key: 'discovery-summary-review', title: 'Review the recommendation', state: 'done', parent: 'discovery-summary', phase: 'ended', runner: 'rnr_demo_2', attempts: [attempt(5, 'ended', 'ok', '2026-11-20T10:00:00Z')], updatedAt: '2026-11-20T10:00:00Z' });
   fixture.edge('discovery-interviews', 'discovery-summary', 'after');
   fixture.add({ key: 'discovery-followup', title: 'Book the follow-up interviews', state: 'draft', parent: 'discovery' });
@@ -371,8 +519,14 @@ function realTree(): Fixture {
     runner: 'rnr_demo_2',
     runnerSlot: 1,
     slot: 2,
-    attempts: [attempt(3, 'ended', 'ok', '2026-11-25T11:30:00Z')],
+    attempts: [
+      attempt(3, 'ended', 'ok', '2026-11-25T11:30:00Z', {
+        attested_by: 'person:local',
+      }),
+    ],
     wait: waitPayload('rejected:condition:review:owner'),
+    body: 'The contrast pass is done. A person has to look at the four changed screens and approve them before this closes.',
+    conditions: [{ kind: 'verdict' }],
   });
 
   return fixture;
@@ -408,10 +562,23 @@ function volumeTree(): Fixture {
     ['volume-ready-2', 'Confirm the on-call rota'],
     ['volume-ready-3', 'Clear the review queue'],
   ]) {
-    fixture.add({ key, title, state: 'ready', parent: null });
+    fixture.add({
+      key,
+      title,
+      state: 'ready',
+      parent: null,
+      body:
+        key === 'volume-ready-1'
+          ? 'Read the plan against last week\'s actuals, then sign it off.\n\nIf the numbers moved, say why before approving.'
+          : '',
+      conditions:
+        key === 'volume-ready-1'
+          ? [{ kind: 'check', name: 'weekly-plan-reviewed' }]
+          : [],
+    });
   }
-  fixture.add({ key: 'volume-running', title: 'Rebuild the shared index', state: 'ready', parent: null, phase: 'live', runner: 'rnr_demo_1', runnerSlot: 0, slot: 0, attempts: [attempt(701, 'live', 'ok', '2026-11-25T11:40:00Z')], updatedAt: '2026-11-25T11:55:00Z' });
-  fixture.add({ key: 'volume-blocked', title: 'Publish the quarterly report', state: 'blocked', parent: null });
+  fixture.add({ key: 'volume-running', title: 'Rebuild the shared index', state: 'ready', parent: null, phase: 'live', runner: 'rnr_demo_1', runnerSlot: 0, slot: 0, attempts: [attempt(701, 'live', 'ok', '2026-11-25T11:40:00Z')], updatedAt: '2026-11-25T11:55:00Z', body: 'Rebuild the index behind the search surface and swap it in once the counts agree.', conditions: [{ kind: 'check', name: 'index-counts-match' }] });
+  fixture.add({ key: 'volume-blocked', title: 'Publish the quarterly report', state: 'blocked', parent: null, body: 'The report is written. It waits for the plan sign-off before it can go out.', conditions: [{ kind: 'verdict' }] });
   fixture.add({
     key: 'volume-failed',
     title: 'Rotate the signing key',
@@ -420,9 +587,15 @@ function volumeTree(): Fixture {
     phase: 'ended',
     runner: 'rnr_demo_2',
     attempts: [
-      attempt(702, 'ended', 'failed', '2026-11-25T09:10:00Z'),
-      attempt(703, 'ended', 'failed', '2026-11-25T09:30:00Z'),
+      attempt(702, 'ended', 'failed', '2026-11-25T09:10:00Z', {
+        end_evidence: 'the old key is still in use by the mobile client',
+      }),
+      attempt(703, 'ended', 'failed', '2026-11-25T09:30:00Z', {
+        end_evidence: 'the old key is still in use by the mobile client',
+      }),
     ],
+    body: 'Rotate the signing key without breaking clients that have not updated yet. Two attempts failed on the same old-client check.',
+    conditions: [{ kind: 'check', name: 'old-clients-retired' }],
   });
   // Two more failures, not twenty-four: a broken product is not the volume
   // proof. One of the three carries a retry.

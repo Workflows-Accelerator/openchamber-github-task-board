@@ -37,6 +37,46 @@ The fixture remains pinned at `33651ee` and is now payload-different from the
 engine: it has no `title`, no `max_concurrency`, and `slot`/`phase` are `null`
 where the live store has values. It stays only as test coverage.
 
+## Revision note — reading surface at 39585c1 (slice 8)
+
+Slice 8 adds the body, the pinned contract, attempt history and the
+conversation statement to the panel. Re-checked against `task-engine@39585c1`,
+schema revision 7.
+
+What the read surface carries now:
+
+| Fact | Where it appears | Effect |
+|---|---|---|
+| `title`, `body`, `priority`, `tags`, `requires` | `status` | G5 is closed for the status read. The panel's description comes from `body` as a string; the board does not render markdown. |
+| `attempts`, `ended_attempt`, `outcome`, `close_reason`, `skip` | `status` | Attempt rows now carry `end_evidence`, `outcome`, `attested_by`, `approved_by`, `principal` and `ordinal`. G15 is closed for the status read. |
+| `archived_at` | `status` | G16 is closed for the status read. |
+| `contract_digest` | `status` | The digest is printed; the handoff body is not. See G18. |
+
+What is still absent is below.
+
+## G18. The pinned contract's conditions are unreadable
+
+`status` prints `contract_digest` and `handoff_revision`, but not the handoff
+body and not the acceptance conditions. No `handoff` read verb exists at
+`39585c1`. The condition kinds the engine validates are `evidence`, `answer`,
+`verdict`, `check` and `child` (`model.py:130-140`); a reader cannot see which
+ones a task pins.
+
+Impact: a live board can state only that the contract is not readable. The
+demo fixture carries a `conditions` array so the panel's shape is exercised;
+that array is fixture-only, and the model's `contract_conditions` capability
+stays false on a live read.
+
+## G19. Comments and discussions live outside the engine
+
+The engine has no comment store. Conversations live on the issue mirror, which
+this board does not read; `status` carries no mirror reference. A live read
+therefore has no linked conversation to name.
+
+Impact: the panel states where a conversation lives, or that none is linked. It
+does not invent a comment box. A fixture-only `mirror` field demonstrates the
+linked shape; the model's `mirror_link` capability is false on a live read.
+
 ## Revision note — reviewed at 33651ee
 
 The fixture was recaptured four times: `87247d1` → `41b2170` (the tree and

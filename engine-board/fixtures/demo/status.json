@@ -7,6 +7,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Engine demo",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-25T01:00:00.000Z",
       "updated_at": "2026-11-25T11:46:00.000Z",
       "archived_at": null,
@@ -24,6 +27,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Discovery",
+      "body": "Find out how operators actually work, not how the handbook says they do.\n\nFive interviews, then a recommendation the team can act on.",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-25T00:00:00.000Z",
       "updated_at": "2026-11-25T11:39:00.000Z",
       "archived_at": null,
@@ -41,6 +47,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Build the engine",
+      "body": "Make the engine board readable: what a task contains, what it depends on, and where the work stands.\n\nThe first slices settled the shell and the lanes. This one puts the work back on the surface.",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T23:00:00.000Z",
       "updated_at": "2026-11-25T11:32:00.000Z",
       "archived_at": null,
@@ -58,6 +67,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Release",
+      "body": "Everything that has to be true before the next cut leaves the building.",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T22:00:00.000Z",
       "updated_at": "2026-11-25T11:25:00.000Z",
       "archived_at": null,
@@ -75,6 +87,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Operations",
+      "body": "Keep the running system honest: watch it, repair it, and write down what we learned.",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T21:00:00.000Z",
       "updated_at": "2026-11-25T11:18:00.000Z",
       "archived_at": null,
@@ -92,6 +107,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Research",
+      "body": "Small bets on things that might save time later. Nothing here blocks the release.",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T20:00:00.000Z",
       "updated_at": "2026-11-25T11:11:00.000Z",
       "archived_at": null,
@@ -109,6 +127,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Answer the support queue",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T19:00:00.000Z",
       "updated_at": "2026-11-25T11:04:00.000Z",
       "archived_at": null,
@@ -126,6 +147,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Update the onboarding notes",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T18:00:00.000Z",
       "updated_at": "2026-11-25T10:57:00.000Z",
       "archived_at": null,
@@ -143,6 +167,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Pin the next release",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T17:00:00.000Z",
       "updated_at": "2026-11-25T10:50:00.000Z",
       "archived_at": null,
@@ -160,6 +187,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Clear the error budget",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T16:00:00.000Z",
       "updated_at": "2026-11-25T10:43:00.000Z",
       "archived_at": null,
@@ -177,6 +207,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Review the open proposals",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T15:00:00.000Z",
       "updated_at": "2026-11-25T10:36:00.000Z",
       "archived_at": null,
@@ -194,6 +227,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Refresh the demo data",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T14:00:00.000Z",
       "updated_at": "2026-11-25T10:29:00.000Z",
       "archived_at": null,
@@ -211,6 +247,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Write the weekly note",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T13:00:00.000Z",
       "updated_at": "2026-11-25T10:22:00.000Z",
       "archived_at": null,
@@ -228,6 +267,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Check the backup restore",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T12:00:00.000Z",
       "updated_at": "2026-11-25T10:15:00.000Z",
       "archived_at": null,
@@ -245,6 +287,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Triage the new reports",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T11:00:00.000Z",
       "updated_at": "2026-11-25T10:08:00.000Z",
       "archived_at": null,
@@ -262,6 +307,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Reconcile the usage numbers",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T10:00:00.000Z",
       "updated_at": "2026-11-25T10:01:00.000Z",
       "archived_at": null,
@@ -279,6 +327,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Book the design review",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T09:00:00.000Z",
       "updated_at": "2026-11-25T09:54:00.000Z",
       "archived_at": null,
@@ -296,6 +347,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Confirm the migration window",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T08:00:00.000Z",
       "updated_at": "2026-11-25T09:47:00.000Z",
       "archived_at": null,
@@ -313,6 +367,14 @@
       "slot": 0,
       "slot_limit": 4,
       "title": "Render the tree from the read",
+      "body": "Read the tree once, through the engine's own verbs, and draw it without inventing a second model.\n\nEvery state word on the page has to be the engine's word. Where the engine and its edges disagree, print both rather than choosing for it.",
+      "conditions": [
+        {
+          "kind": "check",
+          "name": "page-tests"
+        }
+      ],
+      "mirror": "openchamber-github-task-board#482",
       "created_at": "2026-11-24T07:00:00.000Z",
       "updated_at": "2026-11-25T11:56:00Z",
       "archived_at": null,
@@ -321,6 +383,7 @@
       "attempts": [
         {
           "attempt_id": "att_0006",
+          "ordinal": 6,
           "phase": "live",
           "runner_id": "rnr_demo_1",
           "runner_slot": 0,
@@ -328,7 +391,11 @@
           "launched_at": "2026-11-25T11:30:00.000Z",
           "ended_at": "2026-11-25T11:50:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": null,
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -343,6 +410,18 @@
       "slot": 1,
       "slot_limit": 4,
       "title": "Make the panel read in one screen",
+      "body": "The first screen answers what this is, what it waits for, and what it needs. Ids, keys, slots and raw payloads live one fold down.\n\nA reader should not have to scroll to learn whether they can start.",
+      "conditions": [
+        {
+          "kind": "check",
+          "name": "first-screen-fits"
+        },
+        {
+          "kind": "verdict",
+          "verdict": "ship"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-24T06:00:00.000Z",
       "updated_at": "2026-11-25T09:33:00.000Z",
       "archived_at": null,
@@ -351,6 +430,7 @@
       "attempts": [
         {
           "attempt_id": "att_0007",
+          "ordinal": 7,
           "phase": "live",
           "runner_id": "rnr_demo_1",
           "runner_slot": 1,
@@ -358,7 +438,11 @@
           "launched_at": "2026-11-25T11:32:00.000Z",
           "ended_at": "2026-11-25T11:52:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": null,
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -373,6 +457,17 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Prove it in a real browser",
+      "body": "Unit strings are not enough. Load the page over file://, click the thing, and assert what the reader sees.\n\nA test that skips when the browser is missing proves nothing.",
+      "conditions": [
+        {
+          "kind": "check",
+          "name": "browser-pass"
+        },
+        {
+          "kind": "verdict"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-24T05:00:00.000Z",
       "updated_at": "2026-11-25T09:26:00.000Z",
       "archived_at": null,
@@ -390,6 +485,18 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Write the page contract",
+      "body": "Pin what the reading surface promises before the surface is built: the breadcrumb, the home link, the dependency lines, and the four panel sections.\n\nThis is the contract the rest of the slice is checked against.",
+      "conditions": [
+        {
+          "kind": "child",
+          "settle": "all_done"
+        },
+        {
+          "kind": "check",
+          "name": "contract-examples"
+        }
+      ],
+      "mirror": null,
       "created_at": "2025-11-20T09:00:00.000Z",
       "updated_at": "2025-11-20T10:00:00Z",
       "archived_at": null,
@@ -398,6 +505,7 @@
       "attempts": [
         {
           "attempt_id": "att_0008",
+          "ordinal": 8,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 0,
@@ -405,7 +513,11 @@
           "launched_at": "2026-11-22T15:40:00.000Z",
           "ended_at": "2026-11-22T16:00:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": "ok",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -420,6 +532,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Review the page contract",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T03:00:00.000Z",
       "updated_at": "2026-11-25T09:12:00.000Z",
       "archived_at": null,
@@ -428,6 +543,7 @@
       "attempts": [
         {
           "attempt_id": "att_0009",
+          "ordinal": 9,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 1,
@@ -435,7 +551,11 @@
           "launched_at": "2026-11-22T16:40:00.000Z",
           "ended_at": "2026-11-22T17:00:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": "ok",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -450,6 +570,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Check the contract examples",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-24T02:00:00.000Z",
       "updated_at": "2026-11-25T09:05:00.000Z",
       "archived_at": null,
@@ -458,6 +581,7 @@
       "attempts": [
         {
           "attempt_id": "att_0010",
+          "ordinal": 10,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 0,
@@ -465,7 +589,11 @@
           "launched_at": "2026-11-22T17:40:00.000Z",
           "ended_at": "2026-11-22T18:00:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": "ok",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -480,6 +608,14 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Ship the pricing page",
+      "body": "The page is built; the copy and the packaging are not settled. This task is the last one to move.",
+      "conditions": [
+        {
+          "kind": "check",
+          "name": "pricing-page-live"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-24T01:00:00.000Z",
       "updated_at": "2026-11-25T08:58:00.000Z",
       "archived_at": null,
@@ -497,6 +633,13 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Approve the pricing copy",
+      "body": "A person has to read the final copy and say yes. No agent can approve it for them.",
+      "conditions": [
+        {
+          "kind": "verdict"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-24T00:00:00.000Z",
       "updated_at": "2026-11-25T08:51:00.000Z",
       "archived_at": null,
@@ -514,6 +657,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Finish the pricing model",
+      "body": "Tie the tier prices to the usage numbers so the page cannot drift from the model.",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T23:00:00.000Z",
       "updated_at": "2026-11-25T08:44:00.000Z",
       "archived_at": null,
@@ -531,6 +677,15 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Decide the packaging",
+      "body": "Three options are on the table. Pick one, and write down why the other two lost.",
+      "conditions": [
+        {
+          "kind": "answer",
+          "field": "packaging",
+          "equals": "three-tier"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-23T22:00:00.000Z",
       "updated_at": "2026-11-25T08:37:00.000Z",
       "archived_at": null,
@@ -548,6 +703,14 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Publish the shared API",
+      "body": "One contract, six consumers. Publish it once and let each consumer connect on its own schedule.",
+      "conditions": [
+        {
+          "kind": "check",
+          "name": "api-contract-published"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-23T21:00:00.000Z",
       "updated_at": "2026-11-25T08:30:00.000Z",
       "archived_at": null,
@@ -565,6 +728,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Connect billing to the API",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T20:00:00.000Z",
       "updated_at": "2026-11-25T08:23:00.000Z",
       "archived_at": null,
@@ -582,6 +748,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Connect search to the API",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T19:00:00.000Z",
       "updated_at": "2026-11-25T08:16:00.000Z",
       "archived_at": null,
@@ -599,6 +768,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Connect reports to the API",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T18:00:00.000Z",
       "updated_at": "2026-11-25T08:09:00.000Z",
       "archived_at": null,
@@ -616,6 +788,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Connect alerts to the API",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T17:00:00.000Z",
       "updated_at": "2026-11-25T08:02:00.000Z",
       "archived_at": null,
@@ -633,6 +808,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Connect export to the API",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T16:00:00.000Z",
       "updated_at": "2026-11-25T07:55:00.000Z",
       "archived_at": null,
@@ -650,6 +828,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Connect mobile to the API",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T15:00:00.000Z",
       "updated_at": "2026-11-25T07:48:00.000Z",
       "archived_at": null,
@@ -667,6 +848,13 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Check the release notes",
+      "body": "Read the notes as a user would, not as the person who wrote them. Anything that needs a second sentence goes back.",
+      "conditions": [
+        {
+          "kind": "verdict"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-23T14:00:00.000Z",
       "updated_at": "2026-11-25T07:41:00.000Z",
       "archived_at": null,
@@ -684,6 +872,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Draft the release notes",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T13:00:00.000Z",
       "updated_at": "2026-11-25T07:34:00.000Z",
       "archived_at": null,
@@ -701,6 +892,18 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Stage the release",
+      "body": "Put the build where the release check can reach it, with the notes and the migration window attached.",
+      "conditions": [
+        {
+          "kind": "check",
+          "name": "staging-smoke"
+        },
+        {
+          "kind": "evidence",
+          "evidence_kind": "signed-build"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-23T12:00:00.000Z",
       "updated_at": "2026-11-25T07:27:00.000Z",
       "archived_at": null,
@@ -718,6 +921,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Tell the support team",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T11:00:00.000Z",
       "updated_at": "2026-11-25T07:20:00.000Z",
       "archived_at": null,
@@ -735,6 +941,14 @@
       "slot": 1,
       "slot_limit": 4,
       "title": "Migrate the archive index",
+      "body": "Rebuild the archive index in place, without taking the search surface down.\n\nThe first two attempts died on the same lock. Stop retrying until the lock is released by hand.",
+      "conditions": [
+        {
+          "kind": "check",
+          "name": "archive-index-rebuilt"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-23T10:00:00.000Z",
       "updated_at": "2026-11-25T07:13:00.000Z",
       "archived_at": null,
@@ -743,6 +957,7 @@
       "attempts": [
         {
           "attempt_id": "att_0001",
+          "ordinal": 1,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 1,
@@ -750,11 +965,16 @@
           "launched_at": "2026-11-25T09:50:00.000Z",
           "ended_at": "2026-11-25T10:10:00Z",
           "end_reason": "failed",
+          "end_evidence": "exit 1: the index lock was still held",
           "outcome": "failed",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         },
         {
           "attempt_id": "att_0002",
+          "ordinal": 2,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 0,
@@ -762,7 +982,11 @@
           "launched_at": "2026-11-25T11:00:00.000Z",
           "ended_at": "2026-11-25T11:20:00Z",
           "end_reason": "failed",
+          "end_evidence": "exit 1: the index lock was still held",
           "outcome": "failed",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -777,6 +1001,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Watch the first hour",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T09:00:00.000Z",
       "updated_at": "2026-11-25T07:06:00.000Z",
       "archived_at": null,
@@ -785,6 +1012,7 @@
       "attempts": [
         {
           "attempt_id": "att_0011",
+          "ordinal": 11,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 1,
@@ -792,7 +1020,11 @@
           "launched_at": "2026-11-21T08:40:00.000Z",
           "ended_at": "2026-11-21T09:00:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": "ok",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -807,6 +1039,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Write the on-call runbook",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T08:00:00.000Z",
       "updated_at": "2026-11-25T06:59:00.000Z",
       "archived_at": null,
@@ -824,6 +1059,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Tune the alert thresholds",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T07:00:00.000Z",
       "updated_at": "2026-11-25T06:52:00.000Z",
       "archived_at": null,
@@ -844,6 +1082,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Last year’s release",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T06:00:00.000Z",
       "updated_at": "2026-11-25T06:45:00.000Z",
       "archived_at": "2026-10-01T09:00:00Z",
@@ -861,6 +1102,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Archived follow-up 1",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T05:00:00.000Z",
       "updated_at": "2026-11-25T06:38:00.000Z",
       "archived_at": "2026-10-01T09:00:00Z",
@@ -878,6 +1122,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Archived follow-up 2",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T04:00:00.000Z",
       "updated_at": "2026-11-25T06:31:00.000Z",
       "archived_at": "2026-10-01T09:00:00Z",
@@ -895,6 +1142,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Archived follow-up 3",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T03:00:00.000Z",
       "updated_at": "2026-11-25T06:24:00.000Z",
       "archived_at": "2026-10-01T09:00:00Z",
@@ -912,6 +1162,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Try the optional search provider",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T02:00:00.000Z",
       "updated_at": "2026-11-25T06:17:00.000Z",
       "archived_at": null,
@@ -920,6 +1173,7 @@
       "attempts": [
         {
           "attempt_id": "att_0012",
+          "ordinal": 12,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 0,
@@ -927,7 +1181,11 @@
           "launched_at": "2026-11-23T13:40:00.000Z",
           "ended_at": "2026-11-23T14:00:00Z",
           "end_reason": "skipped",
+          "end_evidence": null,
           "outcome": "skipped",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -942,6 +1200,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Adopt search when it lands",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T01:00:00.000Z",
       "updated_at": "2026-11-25T06:10:00.000Z",
       "archived_at": null,
@@ -959,6 +1220,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Compare two providers",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-23T00:00:00.000Z",
       "updated_at": "2026-11-25T06:03:00.000Z",
       "archived_at": null,
@@ -976,6 +1240,9 @@
       "slot": 0,
       "slot_limit": 4,
       "title": "Interview five operators",
+      "body": "Five half-hour conversations, no script past the first question. Ask what they did yesterday, not what they wish the tool did.",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-10T08:00:00.000Z",
       "updated_at": "2026-11-10T09:00:00Z",
       "archived_at": null,
@@ -984,6 +1251,7 @@
       "attempts": [
         {
           "attempt_id": "att_0004",
+          "ordinal": 4,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 0,
@@ -991,7 +1259,11 @@
           "launched_at": "2026-11-24T14:40:00.000Z",
           "ended_at": "2026-11-24T15:00:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": "ok",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -1006,6 +1278,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Write the findings",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-22T22:00:00.000Z",
       "updated_at": "2026-11-25T05:49:00.000Z",
       "archived_at": null,
@@ -1023,6 +1298,14 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Shape the recommendation",
+      "body": "Turn the interview notes into one recommendation with its cost and its risk.\n\nIf the answer is \"do nothing\", say that plainly and show what it costs.",
+      "conditions": [
+        {
+          "kind": "answer",
+          "field": "recommendation"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-22T21:00:00.000Z",
       "updated_at": "2026-11-25T05:42:00.000Z",
       "archived_at": null,
@@ -1040,6 +1323,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Review the recommendation",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-20T09:00:00.000Z",
       "updated_at": "2026-11-20T10:00:00Z",
       "archived_at": null,
@@ -1048,6 +1334,7 @@
       "attempts": [
         {
           "attempt_id": "att_0005",
+          "ordinal": 5,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 1,
@@ -1055,7 +1342,11 @@
           "launched_at": "2026-11-20T09:40:00.000Z",
           "ended_at": "2026-11-20T10:00:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": "ok",
+          "attested_by": null,
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],
@@ -1070,6 +1361,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Book the follow-up interviews",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-22T19:00:00.000Z",
       "updated_at": "2026-11-25T05:28:00.000Z",
       "archived_at": null,
@@ -1087,6 +1381,9 @@
       "slot": null,
       "slot_limit": 4,
       "title": "Summarise the themes",
+      "body": "",
+      "conditions": [],
+      "mirror": null,
       "created_at": "2026-11-22T18:00:00.000Z",
       "updated_at": "2026-11-25T05:21:00.000Z",
       "archived_at": null,
@@ -1104,6 +1401,13 @@
       "slot": 2,
       "slot_limit": 4,
       "title": "Approve the colour contrast pass",
+      "body": "The contrast pass is done. A person has to look at the four changed screens and approve them before this closes.",
+      "conditions": [
+        {
+          "kind": "verdict"
+        }
+      ],
+      "mirror": null,
       "created_at": "2026-11-22T17:00:00.000Z",
       "updated_at": "2026-11-25T05:14:00.000Z",
       "archived_at": null,
@@ -1112,6 +1416,7 @@
       "attempts": [
         {
           "attempt_id": "att_0003",
+          "ordinal": 3,
           "phase": "ended",
           "runner_id": "rnr_demo_1",
           "runner_slot": 1,
@@ -1119,7 +1424,11 @@
           "launched_at": "2026-11-25T11:10:00.000Z",
           "ended_at": "2026-11-25T11:30:00Z",
           "end_reason": "ok",
+          "end_evidence": null,
           "outcome": "ok",
+          "attested_by": "person:local",
+          "approved_by": null,
+          "principal": "agent:demo",
           "launch_count": 1
         }
       ],

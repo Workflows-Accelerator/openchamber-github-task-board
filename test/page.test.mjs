@@ -57,9 +57,51 @@ function snapshot() {
         { task_id: 'e1', node_key: 'empty/old-1', rest_state: 'done', parent_task_id: 'empty', title: 'Empty old one', archived_at: ARCHIVED_AT },
         { task_id: 'e2', node_key: 'empty/old-2', rest_state: 'done', parent_task_id: 'empty', title: 'Empty old two', archived_at: ARCHIVED_AT },
       ],
-      edges: [],
+      edges: [
+        { from: 'a', to: 'b', kind: 'blocked_by' },
+        // A boundary edge: `box` owns the level, it is not drawn in it.
+        { from: 'box', to: 'a', kind: 'blocked_by' },
+      ],
     },
-    statuses: [],
+    statuses: [
+      {
+        task_id: 'a',
+        rest_state: 'done',
+        phase: 'ended',
+        slot: 0,
+        title: 'Alpha',
+        body:
+          'Alpha opens with a sentence someone wrote.\n\nAlpha closes with a second paragraph.',
+        conditions: [
+          { kind: 'check', name: 'alpha-check' },
+          { kind: 'verdict' },
+          { kind: 'answer', field: 'ok', equals: true },
+          { kind: 'child', settle: 'all_done' },
+        ],
+        mirror: 'issue #7',
+        attempts: [
+          {
+            attempt_id: 'att_a1',
+            ordinal: 1,
+            phase: 'ended',
+            end_reason: 'ok',
+            outcome: 'ok',
+            attested_by: 'person:local',
+          },
+        ],
+        handoff_revision: 1,
+      },
+      {
+        task_id: 'b',
+        rest_state: 'skipped',
+        phase: null,
+        slot: null,
+        title: 'Beta',
+        body: '',
+        conditions: [],
+        handoff_revision: 1,
+      },
+    ],
     tree_key: 'tree',
     root_task_id: 'root',
   };
@@ -271,6 +313,14 @@ test(
         rootChips: document.querySelectorAll('#board-root .scope-head .chip').length,
         level: document.querySelector('#board-root .level').textContent,
         progress: document.querySelector('.progress-line').textContent,
+        edges: document.querySelectorAll('#board-root .edge-layer path').length,
+        home: (function () {
+          var link = document.querySelector('a.brand');
+          return link
+            ? { text: link.textContent, href: link.getAttribute('href') }
+            : null;
+        })(),
+        title: document.title,
       };
     })()`);
     assert.equal(loaded.cards, 3, 'one card per top-level child');
@@ -278,6 +328,10 @@ test(
     assert.equal(loaded.rootChips, 0, 'no root task count chip');
     assert.equal(loaded.level, '3 live in this level · 7 lanes empty');
     assert.equal(loaded.progress, '1 of 5 done · 1 skipped · 4 archived');
+    // Slice 8: the top level draws no line, and the word at top left is home.
+    assert.equal(loaded.edges, 0, 'no in-level edge at the top');
+    assert.deepEqual(loaded.home, { text: 'Engine board', href: 'index.html#board' });
+    assert.equal(loaded.title, 'All work · Engine board');
 
     // Slice 6: the reading surface is human, the machine record is folded.
     // Slice 7: the lanes and the header speak the reader's vocabulary.
@@ -502,6 +556,141 @@ test(
     // there for the row the List view will show when it is opened.
     assert.equal(scope.here, 'box');
 
+    // Ruling 1: the breadcrumb is a named navigation directly above the level
+    // title, with a keyboard-reachable link for the ancestor and the current
+    // level as text.
+    const crumb = await page.evaluate(`(function () {
+      var nav = document.querySelector('#board-root nav.crumbs');
+      if (!nav) return null;
+      var heading = document.querySelector('#board-root .scope-head h1');
+      var current = nav.querySelector('[aria-current="page"]');
+      var links = Array.prototype.slice.call(nav.querySelectorAll('a'));
+      var first = links[0];
+      var reachable = false;
+      if (first) {
+        first.focus();
+        reachable = document.activeElement === first;
+      }
+      return {
+        name: nav.getAttribute('aria-label'),
+        before: !!(heading && (nav.compareDocumentPosition(heading) & 4)),
+        current: current ? current.textContent : null,
+        currentWeight: current ? getComputedStyle(current).fontWeight : null,
+        links: links.map(function (link) { return link.textContent; }),
+        href: first ? first.getAttribute('href') : null,
+        reachable: reachable,
+      };
+    })()`);
+    assert.ok(crumb, 'the breadcrumb is rendered');
+    assert.equal(crumb.name, 'Breadcrumb');
+    assert.equal(crumb.before, true, 'the trail precedes the level title');
+    assert.equal(crumb.current, 'Box of work');
+    assert.equal(crumb.currentWeight, '400', 'the current level is normal weight');
+    assert.deepEqual(crumb.links, ['All work']);
+    assert.equal(crumb.href, '#board');
+    assert.equal(crumb.reachable, true, 'the ancestor link takes focus');
+    assert.equal(
+      await page.evaluate('document.title'),
+      'Box of work · Engine board',
+      'the browser title follows the scope',
+    );
+
+    // Ruling 3: one in-level edge is drawn; the boundary edge is not.
+    const lines = await page.evaluate(`(function () {
+      var layer = document.querySelector('#board-root .edge-layer');
+      var paths = layer ? Array.prototype.slice.call(layer.querySelectorAll('path')) : [];
+      return {
+        count: paths.length,
+        from: paths[0] ? paths[0].getAttribute('data-from') : null,
+        to: paths[0] ? paths[0].getAttribute('data-to') : null,
+      };
+    })()`);
+    assert.equal(lines.count, 1, 'only the edge whose ends are both in the level');
+    assert.equal(lines.from, 'a');
+    assert.equal(lines.to, 'b');
+
+    // Ruling 4-7: a real task's panel leads with its body and conditions, then
+    // its history and where the conversation lives.
+    await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var alpha = cards.filter(function (card) {
+        return card.textContent.indexOf('Alpha') !== -1;
+      })[0];
+      alpha.querySelector('.card-title .enter').click();
+    })()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the Alpha panel opens',
+    );
+    const reading = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      function texts(selector) {
+        return Array.prototype.map.call(
+          sheet.querySelectorAll(selector),
+          function (node) { return node.textContent; },
+        );
+      }
+      return {
+        paragraphs: texts('.sheet-description .sheet-paragraph'),
+        conditions: texts('.sheet-conditions .sheet-list li'),
+        history: texts('.sheet-history .sheet-history-line'),
+        conversation: (sheet.querySelector('.sheet-conversation') || {}).textContent || '',
+        hasCommentBox: !!sheet.querySelector('textarea, input[type="text"]'),
+      };
+    })()`);
+    assert.deepEqual(reading.paragraphs, [
+      'Alpha opens with a sentence someone wrote.',
+      'Alpha closes with a second paragraph.',
+    ]);
+    assert.deepEqual(reading.conditions, [
+      'A check passes: alpha-check',
+      'A person approves it',
+      'An answer is recorded for ok (true)',
+      'All of its child tasks are done',
+    ]);
+    assert.equal(reading.history[0], 'Attempted once.');
+    assert.ok(reading.history.includes('The last attempt ended well.'));
+    assert.ok(reading.history.includes('The last attempt was attested by person:local.'));
+    assert.ok(reading.conversation.includes('issue #7'), reading.conversation);
+    assert.equal(reading.hasCommentBox, false, 'no comment box is invented');
+    await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
+      'the Alpha panel closes',
+    );
+
+    // The empty body is a sentence, not an empty space.
+    await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var beta = cards.filter(function (card) {
+        return card.textContent.indexOf('Beta') !== -1;
+      })[0];
+      beta.querySelector('.card-title .enter').click();
+    })()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the Beta panel opens',
+    );
+    assert.equal(
+      await page.evaluate(
+        "document.querySelector('dialog.sheet[open] .sheet-description .sheet-empty').textContent",
+      ),
+      'No description yet',
+    );
+    await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
+      'the Beta panel closes',
+    );
+
     await page.evaluate(`document.querySelector('#board-root .details').click()`);
     await until(
       page,
@@ -644,6 +833,7 @@ test(
         level: document.querySelector('#board-root .level').textContent,
         progress: document.querySelector('.progress-line').textContent,
         here: tag ? tag.closest('li').getAttribute('data-key') : null,
+        title: document.title,
       };
     })()`);
     assert.equal(cold.hash, '#board/box');
@@ -652,6 +842,7 @@ test(
     assert.equal(cold.level, '2 live · 2 archived in this level · 6 lanes empty');
     assert.equal(cold.progress, '1 of 5 done · 1 skipped · 4 archived');
     assert.equal(cold.here, 'box');
+    assert.equal(cold.title, 'Box of work · Engine board');
     const coldSkin = await page.evaluate(`(function () {
       var provenance = document.querySelector('details.provenance');
       var focus = document.querySelector('#board-root .focus-line');
@@ -795,6 +986,33 @@ test(
         runningInCanStart: document.querySelectorAll(
           '#board-root .lane[data-lane="can-start"] .card[data-phase="live"]',
         ).length,
+        edge: (function () {
+          var layer = document.querySelector('#board-root .edge-layer');
+          var paths = layer ? layer.querySelectorAll('path') : [];
+          var path = paths[0];
+          function cardTitle(id) {
+            var card = id
+              ? document.querySelector('#board-root .card[data-task="' + id + '"]')
+              : null;
+            var title = card ? card.querySelector('.card-title') : null;
+            return title ? title.textContent : null;
+          }
+          return {
+            count: paths.length,
+            from: path ? path.getAttribute('data-from') : null,
+            to: path ? path.getAttribute('data-to') : null,
+            fromTitle: path ? cardTitle(path.getAttribute('data-from')) : null,
+            toTitle: path ? cardTitle(path.getAttribute('data-to')) : null,
+            d: path ? path.getAttribute('d') : '',
+            height: layer ? Number(layer.getAttribute('height')) : 0,
+            laneHeight: (function () {
+              var lane = document.querySelector(
+                '#board-root .lane[data-lane="can-start"]',
+              );
+              return lane ? lane.offsetHeight : 0;
+            })(),
+          };
+        })(),
         cardLanes: cards.map(function (card) {
           return {
             state: card.getAttribute('data-state'),
@@ -815,6 +1033,19 @@ test(
     assert.equal(crowded.lanes.done, 1);
     assert.equal(crowded.runningInCanStart, 0, 'a running row is never in Can start now');
     assert.equal(crowded.focus, '12 can start · 2 in progress · 1 waiting');
+    // R3: the line survives the twelve-card lane: it is drawn from the card in
+    // that lane to the waiting card, over the lane's full height, with no NaN
+    // coordinate from a zero-size measurement.
+    assert.equal(crowded.edge.count, 1);
+    assert.equal(crowded.edge.fromTitle, 'Render the tree from the read');
+    assert.equal(crowded.edge.toTitle, 'Prove it in a real browser');
+    assert.match(crowded.edge.d, /^M [\d.]+ [\d.]+ C /);
+    assert.equal(/NaN/.test(crowded.edge.d), false);
+    assert.ok(
+      crowded.edge.height >= crowded.edge.laneHeight - 2,
+      `the layer spans the twelve-card lane (height ${crowded.edge.height}, lane ${crowded.edge.laneHeight})`,
+    );
+    assert.ok(crowded.edge.laneHeight > 800, 'the crowded lane really is twelve deep');
     assert.equal(crowded.cardStatesHidden, true);
     for (const card of crowded.cardLanes) {
       assert.equal(card.lane, laneOf(card.state, card.phase));

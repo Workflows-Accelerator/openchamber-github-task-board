@@ -19,13 +19,16 @@ import {
   laneGroups,
   laneOf,
   lanePlan,
+  levelEdges,
   progress,
   progressText,
 } from '../engine-board/rollup.ts';
 import {
   boardData,
+  conversationStatement,
   detailFields,
   detailSections,
+  historyLines,
   humanMoment,
   humanTime,
   renderBoardPage,
@@ -349,6 +352,9 @@ test('the fixture read model reports which fields the payloads do not carry', ()
     tree_key_from_read: false,
     slot_limit: false,
     ended_attempt: false,
+    task_body: false,
+    contract_conditions: false,
+    mirror_link: false,
   });
   const statuses = readJson('status.json');
   for (const status of statuses.tasks) {
@@ -651,6 +657,9 @@ test('capabilities come from the payloads, and the panel reads them', () => {
     tree_key_from_read: true,
     slot_limit: true,
     ended_attempt: true,
+    task_body: false,
+    contract_conditions: false,
+    mirror_link: false,
   });
 
   const fields = detailFields(model.roots[0], model);
@@ -1888,4 +1897,275 @@ test('the provenance details is closed and the reading surface carries no ISO te
     (html.match(/>[^<]*\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ[^<]*</g) ?? []).length,
     0,
   );
+});
+
+// ---------------------------------------------------------------- slice 8
+// The reading half: what is inside a task, and how tasks connect.
+
+test('the breadcrumb has a name and sits above the level title', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('root', '$root', 'ready', null),
+        node('b', 'build', 'ready', 'root', { title: 'Build the engine' }),
+        node('r', 'build/render', 'ready', 'b', { title: 'Render the tree' }),
+      ],
+      treeKey: 'tree',
+      rootTaskId: 'root',
+    }),
+  );
+  const html = renderBoardPage(model);
+  // The trail is a named navigation, built on every scope render.
+  assert.ok(html.includes("nav.setAttribute('aria-label', 'Breadcrumb')"));
+  assert.ok(html.includes("nav.className = 'crumbs'"));
+  assert.ok(html.includes('aria-current'));
+  // Every ancestor is an anchor to that scope; the current level is text.
+  assert.ok(html.includes("anchor.href = '#board' + encodeKey(key)"));
+  assert.ok(html.includes("mark.setAttribute('aria-current', 'page')"));
+});
+
+test('the top-left word is a link home on both views', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [node('b', 'build', 'ready', null, { title: 'Build the engine' })],
+    }),
+  );
+  for (const html of [renderBoardPage(model), renderListPage(model)]) {
+    assert.ok(
+      html.includes('<a class="brand" href="index.html#board" data-home-link="board">Engine board</a>'),
+    );
+  }
+});
+
+test('the document title follows the default scope', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [node('b', 'build', 'ready', null, { title: 'Build the engine' })],
+    }),
+  );
+  assert.ok(
+    renderBoardPage(model).includes('<title>Build the engine · Engine board</title>'),
+  );
+  assert.ok(
+    renderListPage(model).includes(
+      '<title>Build the engine · Engine board — everything</title>',
+    ),
+  );
+  // The inline script rewrites it when the hash changes.
+  const html = renderBoardPage(model);
+  assert.ok(html.includes("var suffix = page === 'list' ? 'Engine board — everything' : 'Engine board'"));
+  assert.ok(html.includes('document.title = name + \' · \' + suffix'));
+});
+
+test('only an edge with both ends in the level is drawable', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('p', 'plan', 'ready', null),
+        node('a', 'plan/a', 'done', 'p'),
+        node('b', 'plan/b', 'blocked', 'p'),
+        node('c', 'plan/c', 'blocked', 'p'),
+        node('outside', 'other', 'done', null),
+      ],
+      edges: [
+        { from: 'a', to: 'b', kind: 'blocked_by' },
+        { from: 'p', to: 'c', kind: 'blocked_by' },
+        { from: 'b', to: 'c', kind: 'after' },
+        { from: 'outside', to: 'a', kind: 'blocked_by' },
+      ],
+    }),
+  );
+  // The level's own edges are the two that connect a, b and c.
+  assert.deepEqual(levelEdges(model.roots[0].children), [
+    { from: 'a', to: 'b', kind: 'blocked_by' },
+    { from: 'b', to: 'c', kind: 'after' },
+  ]);
+  assert.deepEqual(boardData(model).scopes.plan.edges, [
+    { from: 'a', to: 'b', kind: 'blocked_by' },
+    { from: 'b', to: 'c', kind: 'after' },
+  ]);
+  // The boundary edge is absent from the data the page draws from, so it
+  // cannot become a line to nothing.
+  assert.equal(
+    boardData(model).scopes.plan.edges.some((edge) => edge.to === 'a'),
+    false,
+  );
+  // The sentence for a boundary dependency is still the card's.
+  assert.ok(renderBoardPage(model).includes("path.setAttribute('data-kind', edge.kind)"));
+});
+
+test('a body is plain paragraphs, and empty is a sentence', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('full', 'full', 'ready', null, { title: 'Has a body' }),
+        node('blank', 'blank', 'ready', null, { title: 'Empty body' }),
+        node('missing', 'missing', 'ready', null, { title: 'Body not read' }),
+      ],
+      statuses: [
+        statusOf('full', 'ready', {
+          body: 'The first paragraph is a sentence someone wrote.\nIt continues on the next line.\n\nA second paragraph says why it matters.',
+        }),
+        statusOf('blank', 'ready', { body: '' }),
+        statusOf('missing', 'ready', {}),
+      ],
+    }),
+  );
+  const rows = model.roots;
+  const full = detailSections(rows[0], model).body;
+  assert.equal(full.state, 'ok');
+  assert.deepEqual(full.paragraphs, [
+    'The first paragraph is a sentence someone wrote.\nIt continues on the next line.',
+    'A second paragraph says why it matters.',
+  ]);
+  const blank = detailSections(rows[1], model).body;
+  assert.equal(blank.state, 'empty');
+  assert.deepEqual(blank.paragraphs, []);
+  const missing = detailSections(rows[2], model).body;
+  assert.equal(missing.state, 'not-read');
+  // No markdown machinery: a `#` or `**` is just characters.
+  const html = renderBoardPage(model);
+  assert.ok(html.includes("textNode('sheet-empty', 'No description yet')"));
+  assert.equal(html.includes('marked'), false);
+});
+
+test('each contract condition kind reads in plain words', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [node('t', 'task', 'ready', null)],
+      statuses: [
+        statusOf('t', 'ready', {
+          conditions: [
+            { kind: 'check', name: 'tests-pass' },
+            { kind: 'verdict' },
+            { kind: 'answer', field: 'ok', equals: true },
+            { kind: 'child', settle: 'all_done' },
+            { kind: 'evidence', evidence_kind: 'signed-build' },
+            { kind: 'mystery' },
+          ],
+        }),
+      ],
+    }),
+  );
+  const conditions = detailSections(model.roots[0], model).conditions;
+  assert.equal(conditions.state, 'ok');
+  assert.deepEqual(conditions.lines, [
+    'A check passes: tests-pass',
+    'A person approves it',
+    'An answer is recorded for ok (true)',
+    'All of its child tasks are done',
+    'Evidence is attached: signed-build',
+    'A condition this page cannot describe (mystery)',
+  ]);
+});
+
+test('an unreadable contract says so instead of showing an empty list', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [node('t', 'task', 'ready', null)],
+      statuses: [statusOf('t', 'ready', {})],
+    }),
+  );
+  const conditions = detailSections(model.roots[0], model).conditions;
+  assert.equal(conditions.state, 'unread');
+  assert.deepEqual(conditions.lines, []);
+  assert.ok(
+    renderBoardPage(model).includes(
+      "The pinned contract is not readable through this engine's read commands.",
+    ),
+  );
+});
+
+test('the history says how many attempts and how the last one ended', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [node('t', 'task', 'failed', null)],
+      statuses: [
+        statusOf('t', 'failed', {
+          attempts: [
+            {
+              attempt_id: 'att_1',
+              ordinal: 1,
+              phase: 'ended',
+              end_reason: 'failed',
+              end_evidence: 'exit 1: the lock was still held',
+              outcome: 'failed',
+            },
+            {
+              attempt_id: 'att_2',
+              ordinal: 2,
+              phase: 'ended',
+              end_reason: 'failed',
+              end_evidence: 'exit 1: the lock was still held',
+              outcome: 'failed',
+              attested_by: 'person:local',
+              approved_by: 'person:lead',
+            },
+          ],
+        }),
+      ],
+    }),
+  );
+  assert.deepEqual(historyLines(model.roots[0]), [
+    'Attempted twice.',
+    'The last attempt failed.',
+    'The engine recorded: exit 1: the lock was still held.',
+    'The last attempt was attested by person:local.',
+    'It was approved by person:lead.',
+  ]);
+  const render = renderBoardPage(model);
+  assert.ok(render.includes("sectionNode('What has happened', 'sheet-history')"));
+  // The machine enums are folded into More, not the history sentence.
+  assert.equal(
+    historyLines(model.roots[0]).some((line) => line.includes('end_reason')),
+    false,
+  );
+});
+
+test('the conversation names the mirror, or says none is linked', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('linked', 'linked', 'ready', null),
+        node('quiet', 'quiet', 'ready', null),
+      ],
+      statuses: [
+        statusOf('linked', 'ready', { mirror: 'issue #482' }),
+        statusOf('quiet', 'ready', {}),
+      ],
+    }),
+  );
+  assert.equal(
+    conversationStatement(model.roots[0]),
+    'The conversation lives on the issue mirror: issue #482. The engine itself keeps no comments.',
+  );
+  assert.equal(
+    conversationStatement(model.roots[1]),
+    'Comments and discussions live on the issue mirror, not in the engine. This task has no conversation linked to it.',
+  );
+  const render = renderBoardPage(model);
+  assert.ok(render.includes("sectionNode('Conversation', 'sheet-conversation')"));
+  // No comment box: the panel does not ship an input or a textarea.
+  assert.equal(/<textarea/.test(render), false);
+});
+
+test('capabilities report the reading fields the payloads carry', () => {
+  const model = buildTree(
+    snapshotOf({
+      nodes: [node('t', 'task', 'ready', null)],
+      statuses: [
+        statusOf('t', 'ready', {
+          body: 'A description.',
+          conditions: [{ kind: 'check', name: 'tests-pass' }],
+          mirror: 'issue #1',
+        }),
+      ],
+    }),
+  );
+  assert.equal(model.capabilities.task_body, true);
+  assert.equal(model.capabilities.contract_conditions, true);
+  assert.equal(model.capabilities.mirror_link, true);
+  assert.equal(model.roots[0].body, 'A description.');
+  assert.equal(model.roots[0].conditions.length, 1);
+  assert.equal(model.roots[0].mirror, 'issue #1');
 });

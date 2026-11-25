@@ -8,7 +8,7 @@
 // question from "what is under this task".
 // ==========================================
 
-import type { RestState, TreeRow } from './model.ts';
+import type { EdgeKind, RestState, TreeRow } from './model.ts';
 
 export interface Containment {
   // Live descendants, not including the row itself. An archived descendant is
@@ -234,6 +234,42 @@ export function lanePlan(rows: readonly TreeRow[]): LanePlan {
     })),
     empty: grouped.empty,
   };
+}
+
+// Ruling 3: an edge is drawable inside a level only when both of its ends are
+// drawn there. The edge data is the read's own `blocked_by` / `after` refs; a
+// ref to a task outside the level is left to the card's sentence, never turned
+// into a line to nothing.
+export interface LevelEdge {
+  from: string;
+  to: string;
+  kind: EdgeKind;
+}
+
+export function levelEdges(rows: readonly TreeRow[]): LevelEdge[] {
+  const ids = new Set(rows.map((row) => row.task_id));
+  const edges: LevelEdge[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const refs: [EdgeKind, TreeRow['blocked_by']][] = [
+      ['blocked_by', row.blocked_by],
+      ['after', row.after],
+    ];
+    for (const [kind, list] of refs) {
+      for (const ref of list) {
+        if (!ids.has(ref.task_id)) {
+          continue;
+        }
+        const key = `${kind}:${ref.task_id}:${row.task_id}`;
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        edges.push({ from: ref.task_id, to: row.task_id, kind });
+      }
+    }
+  }
+  return edges;
 }
 
 // Blockers the read can see and whose own state is not one this edge accepts.

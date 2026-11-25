@@ -90,10 +90,26 @@ export interface StatusPayload {
   [field: string]: unknown;
 }
 
+// One condition of the pinned contract, as the read prints it. The engine
+// accepts `evidence`, `answer`, `verdict`, `check` and `child`; an unknown kind
+// is kept so the panel can say it cannot describe it rather than dropping it.
+export interface ContractCondition {
+  kind: string;
+  name: string | null;
+  field: string | null;
+  equals: unknown;
+  settle: string | null;
+  verdict: string | null;
+  evidence_kind: string | null;
+}
+
 // One attempt row as `task status` prints it. Only the fields the board shows;
-// everything else stays in the payload for a later panel.
+// everything else stays in the payload for a later panel. The note fields
+// (`end_evidence`, `attested_by`, `approved_by`, `principal`) are what ruling 6
+// turns into a plain sentence.
 export interface AttemptRecord {
   attempt_id: string | null;
+  ordinal: number | null;
   phase: AttemptPhase | null;
   runner_id: string | null;
   runner_slot: number | null;
@@ -101,7 +117,11 @@ export interface AttemptRecord {
   launched_at: string | null;
   ended_at: string | null;
   end_reason: string | null;
+  end_evidence: string | null;
   outcome: string | null;
+  attested_by: string | null;
+  approved_by: string | null;
+  principal: string | null;
   launch_count: number | null;
 }
 
@@ -215,6 +235,19 @@ export interface TreeRow {
   updated_at: string | null;
   // Attempt history, newest last. Empty when the read printed none.
   attempts: AttemptRecord[];
+  // The task's own description. null means the read carried no usable string;
+  // `body_read` says whether the field was present at all.
+  body: string | null;
+  body_read: boolean;
+  // The pinned contract's conditions. Empty with `conditions_read` true means
+  // the contract pins none; `conditions_read` false means no read verb printed
+  // the contract and the panel must say so instead of showing an empty list.
+  conditions: ContractCondition[];
+  conditions_read: boolean;
+  // The issue-mirror reference the read carried, if any. The engine keeps no
+  // comments; the panel names where a conversation lives rather than inventing
+  // one. Live reads carry null because no read verb prints a mirror link.
+  mirror: string | null;
   // Null means "no value"; `*_reported` says whether the field was present at
   // all. null with reported false is "unreadable", not "no runner".
   runner_slot: number | null;
@@ -250,6 +283,13 @@ export interface ReadModelCapabilities {
   // True when the status payload carries attempt history (`attempts` or
   // `ended_attempt`). No read verb does at schema revision 7.
   ended_attempt: boolean;
+  // The status payload carries a description.
+  task_body: boolean;
+  // The status payload carries the pinned contract's conditions. No read verb
+  // does today (GAPS G18), so a live read falls back to the panel's sentence.
+  contract_conditions: boolean;
+  // The status payload names an issue-mirror conversation.
+  mirror_link: boolean;
 }
 
 export type TreeDefectKind = 'duplicate' | 'cycle' | 'unreachable' | 'rerooted';
@@ -338,6 +378,9 @@ function deriveCapabilities(
     ended_attempt:
       reports(snapshot.statuses, 'attempts') ||
       reports(snapshot.statuses, 'ended_attempt'),
+    task_body: reports(snapshot.statuses, 'body'),
+    contract_conditions: reports(snapshot.statuses, 'conditions'),
+    mirror_link: reports(snapshot.statuses, 'mirror'),
   };
 }
 
@@ -383,6 +426,7 @@ function parseAttempt(value: unknown): AttemptRecord | null {
   const phase = record.phase;
   return {
     attempt_id: stringField(record, 'attempt_id'),
+    ordinal: numberField(record, 'ordinal'),
     phase: isAttemptPhase(phase) ? phase : null,
     runner_id: stringField(record, 'runner_id'),
     runner_slot: numberField(record, 'runner_slot'),
@@ -390,7 +434,11 @@ function parseAttempt(value: unknown): AttemptRecord | null {
     launched_at: stringField(record, 'launched_at'),
     ended_at: stringField(record, 'ended_at'),
     end_reason: stringField(record, 'end_reason'),
+    end_evidence: stringField(record, 'end_evidence'),
     outcome: stringField(record, 'outcome'),
+    attested_by: stringField(record, 'attested_by'),
+    approved_by: stringField(record, 'approved_by'),
+    principal: stringField(record, 'principal'),
     launch_count: numberField(record, 'launch_count'),
   };
 }
@@ -402,6 +450,37 @@ function parseAttempts(value: unknown): AttemptRecord[] {
   return value
     .map(parseAttempt)
     .filter((attempt): attempt is AttemptRecord => attempt !== null);
+}
+
+// A condition the read carried but this build cannot name is still a
+// condition: its `kind` is kept and the panel says it cannot describe it.
+function parseCondition(value: unknown): ContractCondition | null {
+  if (value === null || typeof value !== 'object') {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const kind = stringField(record, 'kind');
+  if (kind === null) {
+    return null;
+  }
+  return {
+    kind,
+    name: stringField(record, 'name'),
+    field: stringField(record, 'field'),
+    equals: record.equals,
+    settle: stringField(record, 'settle'),
+    verdict: stringField(record, 'verdict'),
+    evidence_kind: stringField(record, 'evidence_kind'),
+  };
+}
+
+function parseConditions(value: unknown): ContractCondition[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map(parseCondition)
+    .filter((condition): condition is ContractCondition => condition !== null);
 }
 
 function edgeRefs(
@@ -613,12 +692,19 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
       updated_at:
         stringField(statusRecord, 'updated_at') ?? stringField(node, 'updated_at'),
       attempts: parseAttempts(statusRecord.attempts),
+      body: stringField(statusRecord, 'body'),
+      body_read: reports([statusRecord], 'body'),
+      conditions: parseConditions(statusRecord.conditions),
+      conditions_read:
+        reports([statusRecord], 'conditions') &&
+        Array.isArray(statusRecord.conditions),
+      mirror: stringField(statusRecord, 'mirror'),
       runner_slot: numberField(statusRecord, 'runner_slot'),
       runner_slot_reported: reports([statusRecord], 'runner_slot'),
       runner_id: stringField(statusRecord, 'runner_id'),
       runner_id_reported: reports([statusRecord], 'runner_id'),
-      wait: status ? status.wait : null,
-      hold: status ? status.hold : null,
+      wait: status ? (status.wait ?? null) : null,
+      hold: status ? (status.hold ?? null) : null,
       handoff_revision: status ? status.handoff_revision : null,
       blocked_by: edgeRefs(
         node.task_id,

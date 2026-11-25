@@ -13,6 +13,7 @@
 
 import {
   flattenTree,
+  type ContractCondition,
   type ReadProvenance,
   type RestState,
   type TreeModel,
@@ -28,11 +29,13 @@ import {
   laneGroups,
   laneOf,
   lanePlan,
+  levelEdges,
   progress,
   progressText,
   type LaneId,
+  type LevelEdge,
 } from './rollup.ts';
-import { scopeHref, type BoardView } from './scope.ts';
+import { findRowByKey, scopeHref, type BoardView } from './scope.ts';
 
 const ENTITIES: Record<string, string> = {
   '&': '&amp;',
@@ -238,6 +241,18 @@ export function humanMoment(value: string | null | undefined): string {
 }
 
 export interface DetailSections {
+  // Ruling 4: the task's own words, split into plain paragraphs. No markdown
+  // is interpreted; a blank line is the only paragraph boundary.
+  body: BodyContent;
+  // Ruling 5: the pinned contract's conditions in plain language. `unread`
+  // means no read verb printed the contract, which is not the same as a
+  // contract that pins nothing.
+  conditions: ConditionsContent;
+  // Ruling 6: attempt count, how the last one ended, and any note the engine
+  // recorded. Plain sentences; the raw enums stay behind More.
+  history: string[];
+  // Ruling 7: where a conversation lives, or that this task has none.
+  conversation: string;
   // The first screen: what it is, its state in human words, what it waits for
   // by title, what is doing it, and when it last changed.
   primary: DetailField[];
@@ -245,6 +260,155 @@ export interface DetailSections {
   more: DetailField[];
   // The plain sentence that replaces a column of `not reported` rows.
   notes: string[];
+}
+
+export interface BodyContent {
+  state: 'ok' | 'empty' | 'unread' | 'not-read';
+  paragraphs: string[];
+}
+
+export interface ConditionsContent {
+  state: 'ok' | 'empty' | 'unread';
+  lines: string[];
+}
+
+// A blank line separates paragraphs; a single newline does not. Nothing else
+// is syntax on this surface.
+export function bodyParagraphs(text: string | null): string[] {
+  if (text === null) {
+    return [];
+  }
+  return text
+    .split(/\r?\n[ \t]*\r?\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph !== '');
+}
+
+export function bodyContent(row: TreeRow): BodyContent {
+  if (!row.body_read) {
+    return { state: 'not-read', paragraphs: [] };
+  }
+  if (row.body === null) {
+    return { state: 'unread', paragraphs: [] };
+  }
+  const paragraphs = bodyParagraphs(row.body);
+  return paragraphs.length === 0
+    ? { state: 'empty', paragraphs: [] }
+    : { state: 'ok', paragraphs };
+}
+
+// One condition, one sentence a reader can act on. An unknown kind is named as
+// undescribable rather than hidden.
+export function conditionText(condition: ContractCondition): string {
+  switch (condition.kind) {
+    case 'check':
+      return condition.name === null
+        ? 'A recorded check passes'
+        : `A check passes: ${condition.name}`;
+    case 'verdict':
+      return 'A person approves it';
+    case 'answer': {
+      let line =
+        condition.field === null
+          ? 'An answer is recorded'
+          : `An answer is recorded for ${condition.field}`;
+      const equals = condition.equals;
+      if (
+        equals !== undefined &&
+        equals !== null &&
+        typeof equals !== 'object'
+      ) {
+        line += ` (${String(equals)})`;
+      }
+      return line;
+    }
+    case 'child':
+      return condition.settle === 'all_terminal'
+        ? 'All of its child tasks have finished'
+        : 'All of its child tasks are done';
+    case 'evidence':
+      return condition.evidence_kind === null
+        ? 'Evidence is attached'
+        : `Evidence is attached: ${condition.evidence_kind}`;
+    default:
+      return `A condition this page cannot describe (${condition.kind})`;
+  }
+}
+
+export function conditionsContent(row: TreeRow): ConditionsContent {
+  if (!row.conditions_read) {
+    return { state: 'unread', lines: [] };
+  }
+  if (row.conditions.length === 0) {
+    return { state: 'empty', lines: [] };
+  }
+  return { state: 'ok', lines: row.conditions.map(conditionText) };
+}
+
+// Counts in words on the first screen: "Attempted twice" reads, "2 attempts"
+// is a metric.
+function attemptCount(count: number): string {
+  if (count === 1) return 'Attempted once.';
+  if (count === 2) return 'Attempted twice.';
+  return `Attempted ${count} times.`;
+}
+
+export function historyLines(row: TreeRow): string[] {
+  if (row.status_missing) {
+    return ['No attempt history came back for this task.'];
+  }
+  if (row.attempts.length === 0) {
+    return ['Not attempted yet.'];
+  }
+  const lines: string[] = [attemptCount(row.attempts.length)];
+  const last = row.attempts[row.attempts.length - 1];
+  switch (last.end_reason) {
+    case 'ok':
+      lines.push('The last attempt ended well.');
+      break;
+    case 'failed':
+      lines.push('The last attempt failed.');
+      break;
+    case 'skipped':
+      lines.push('The last attempt was skipped.');
+      break;
+    case 'cancelled':
+      lines.push('The last attempt was cancelled.');
+      break;
+    case 'launch_refused':
+      lines.push('The last attempt could not start.');
+      break;
+    case null:
+      lines.push('How the last attempt ended was not recorded.');
+      break;
+    default:
+      // The enum itself is a machine word; More prints it. The first screen
+      // says only that a reason exists.
+      lines.push('The last attempt ended for a recorded reason.');
+  }
+  if (last.end_evidence !== null) {
+    lines.push(`The engine recorded: ${last.end_evidence}.`);
+  }
+  if (last.outcome !== null && last.outcome !== last.end_reason) {
+    lines.push(`Its recorded verdict was ${last.outcome}.`);
+  }
+  if (last.attested_by !== null) {
+    lines.push(`The last attempt was attested by ${last.attested_by}.`);
+  }
+  if (last.approved_by !== null) {
+    lines.push(`It was approved by ${last.approved_by}.`);
+  }
+  return lines;
+}
+
+// Ruling 7: the engine has no comment store. The panel says where a
+// conversation does live, or that none is linked, and offers no box that would
+// go nowhere.
+export function conversationStatement(row: TreeRow): string {
+  if (row.mirror !== null) {
+    return `The conversation lives on the issue mirror: ${row.mirror}. The engine itself keeps no comments.`;
+  }
+  return 'Comments and discussions live on the issue mirror, not in the engine. This task has no conversation linked to it.';
 }
 
 // A value the read actually carried. An opaque member (a number where the
@@ -351,6 +515,40 @@ export function detailSections(
     if (last?.attempt_id) {
       more.push({ label: 'Attempt id', value: last.attempt_id, mono: true });
     }
+    if (last?.ordinal !== null && last?.ordinal !== undefined) {
+      more.push({
+        label: 'Attempt number',
+        value: String(last.ordinal),
+        mono: true,
+      });
+    }
+    if (last?.end_evidence) {
+      more.push({
+        label: 'End evidence',
+        value: last.end_evidence,
+        mono: true,
+      });
+    }
+    if (last?.outcome) {
+      more.push({ label: 'Outcome', value: last.outcome, mono: true });
+    }
+    if (last?.principal) {
+      more.push({ label: 'Principal', value: last.principal, mono: true });
+    }
+    if (last?.attested_by) {
+      more.push({
+        label: 'Attested by',
+        value: last.attested_by,
+        mono: true,
+      });
+    }
+    if (last?.approved_by) {
+      more.push({
+        label: 'Approved by',
+        value: last.approved_by,
+        mono: true,
+      });
+    }
   }
   const wait = row.wait;
   let waitOpenedRaw = '';
@@ -376,12 +574,6 @@ export function detailSections(
   const notes: string[] = [];
   if (row.status_missing) {
     notes.push('No status row came back for this task.');
-  } else if (
-    row.attempts.length === 0 &&
-    row.runner_id === null &&
-    row.phase === null
-  ) {
-    notes.push('This task has no run yet.');
   }
   if (wait !== null) {
     const missing: string[] = [];
@@ -395,7 +587,15 @@ export function detailSections(
       );
     }
   }
-  return { primary, more, notes };
+  return {
+    body: bodyContent(row),
+    conditions: conditionsContent(row),
+    history: historyLines(row),
+    conversation: conversationStatement(row),
+    primary,
+    more,
+    notes,
+  };
 }
 
 // Kept for callers that need one flat list; the page uses the two sections.
@@ -426,8 +626,12 @@ function progressBlock(model: TreeModel): string {
 function topBar(view: BoardView, defaultKey: string | null): string {
   const boardHref = `${viewFile('board')}${scopeHref('board', defaultKey)}`;
   const listHref = `${viewFile('list')}${scopeHref('list', defaultKey)}`;
+  // Ruling 2: the word at the top left is the way home on every view. It is a
+  // link to the root scope even when the page is already there, so the control
+  // never depends on where the reader happens to be.
+  const homeHref = `${viewFile('board')}${scopeHref('board', null)}`;
   return `<header class="top">
-    <p class="brand">Engine board</p>
+    <a class="brand" href="${homeHref}" data-home-link="board">Engine board</a>
     <nav class="views" aria-label="View">
       <a class="view${view === 'board' ? ' is-on' : ''}" href="${boardHref}" data-view-link="board"${
         view === 'board' ? ' aria-current="page"' : ''
@@ -565,6 +769,9 @@ export interface BoardScopeData {
   lanes: { lane: string; tasks: string[] }[];
   // Vocabulary lanes that hold nothing, stated once under the level.
   empty: number;
+  // Ruling 3: the read's own edges whose two ends are both drawn in this
+  // level. Boundary edges are absent; the card keeps its sentence.
+  edges: LevelEdge[];
   // The row that owns this scope, for its own `Details` control. null for the
   // tree's top scope, which no task owns.
   details: { dialog: string; task: string } | null;
@@ -572,6 +779,12 @@ export interface BoardScopeData {
 
 export interface BoardRowData {
   dialog: string;
+  // Rulings 4-7: the reading half of the panel. Each is computed once so the
+  // page and the tests read the same words.
+  body: BodyContent;
+  conditions: ConditionsContent;
+  history: string[];
+  conversation: string;
   // The first screen and the folded rest, computed once so the page and the
   // tests read the same split.
   primary: DetailField[];
@@ -612,6 +825,7 @@ export function boardData(model: TreeModel): BoardData {
         tasks: lane.cards.map((card) => card.task_id),
       })),
       empty: plan.empty,
+      edges: levelEdges(children),
       details:
         owner === null
           ? null
@@ -623,6 +837,10 @@ export function boardData(model: TreeModel): BoardData {
     const sections = detailSections(row, model);
     const data: BoardRowData = {
       dialog: dialogId(row),
+      body: sections.body,
+      conditions: sections.conditions,
+      history: sections.history,
+      conversation: sections.conversation,
       primary: sections.primary,
       more: sections.more,
       notes: sections.notes,
@@ -651,6 +869,18 @@ export function boardData(model: TreeModel): BoardData {
 
 function defaultKeyOf(model: TreeModel): string | null {
   return model.roots.length === 1 ? model.roots[0].node_key : null;
+}
+
+// Ruling 2: a person with three tabs open can tell them apart. The static title
+// names the default scope; the inline script rewrites it as the hash changes.
+function pageTitleOf(
+  model: TreeModel,
+  view: BoardView,
+  defaultKey: string | null,
+): string {
+  const word = view === 'list' ? 'Engine board — everything' : 'Engine board';
+  const row = findRowByKey(model.roots, defaultKey);
+  return row === null ? word : `${titleOf(row)} · ${word}`;
 }
 
 function containedText(contained: {
@@ -823,7 +1053,14 @@ a { color: inherit; }
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px 18px; flex-wrap: wrap; margin-bottom: 24px;
 }
-.brand { font-family: var(--serif); font-size: 1.02rem; color: var(--muted); }
+.brand {
+  font-family: var(--serif); font-size: 1.02rem; color: var(--muted);
+  text-decoration: none; padding-bottom: 1px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.brand:hover, .brand:focus-visible {
+  color: var(--accent); border-color: currentColor;
+}
 .views {
   display: inline-flex; gap: 2px; padding: 3px;
   border: 1px solid var(--line); border-radius: 999px; background: var(--surface);
@@ -846,12 +1083,21 @@ a { color: inherit; }
 .progress-fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
 .crumbs {
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
-  min-width: 0; font-size: 0.84rem; color: var(--muted);
+  min-width: 0; margin: 0 0 10px; font-size: 0.95rem; color: var(--muted);
 }
-.crumbs a { text-decoration: none; border-bottom: 1px solid transparent; }
-.crumbs a:hover, .crumbs a:focus-visible { color: var(--accent); border-color: currentColor; }
+.crumbs ol {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  list-style: none; margin: 0; padding: 0;
+}
+.crumbs li { display: inline-flex; align-items: center; gap: 8px; }
+.crumbs a {
+  color: var(--accent); text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 0.18em;
+  padding: 2px 0;
+}
+.crumbs a:hover, .crumbs a:focus-visible { color: var(--ink); }
 .crumbs .sep { color: var(--faint); }
-.crumbs [aria-current="page"] { color: var(--ink); }
+.crumbs [aria-current="page"] { color: var(--ink); font-weight: 400; }
 .scope-view { padding-top: 22px; }
 .scope-head {
   display: flex; align-items: flex-end; justify-content: space-between;
@@ -895,8 +1141,17 @@ a { color: inherit; }
   margin: 0 0 16px; color: var(--muted); font-size: 0.84rem;
   font-variant-numeric: tabular-nums;
 }
-.lanes { display: flex; align-items: flex-start; gap: 18px; }
-.lane { flex: 1 1 0; min-width: 0; }
+.lanes { position: relative; display: flex; align-items: flex-start; gap: 18px; }
+.edge-layer {
+  position: absolute; left: 0; top: 0; z-index: 0;
+  pointer-events: none; overflow: visible;
+}
+.edge-layer path {
+  fill: none; stroke: var(--line-strong); stroke-width: 1.6;
+}
+.edge-layer path[data-kind="after"] { stroke-dasharray: 4 4; }
+.edge-layer path[data-kind="blocked_by"] { stroke: #9aa9a0; }
+.lane { position: relative; z-index: 1; flex: 1 1 0; min-width: 0; }
 .lane-head {
   display: flex; align-items: center; gap: 7px; padding-bottom: 8px;
   border-bottom: 1px solid var(--line); font-size: 0.86rem; font-weight: 700; line-height: 1.3;
@@ -1061,6 +1316,26 @@ a { color: inherit; }
   color: var(--muted); font-size: 0.86rem;
 }
 .sheet-state .mono { font-family: var(--mono); font-size: 0.78rem; }
+.sheet-section { margin-top: 18px; }
+.sheet-section h3 {
+  margin: 0 0 6px; color: var(--muted); font-size: 0.72rem;
+  font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
+}
+.sheet-description { margin-top: 16px; }
+.sheet-description .sheet-paragraph {
+  margin: 0 0 0.7em; color: var(--ink); font-size: 0.95rem; line-height: 1.6;
+}
+.sheet-description .sheet-paragraph:last-child { margin-bottom: 0; }
+.sheet-empty { color: var(--muted); font-size: 0.9rem; }
+.sheet-muted { color: var(--muted); font-size: 0.84rem; line-height: 1.5; }
+.sheet-list { margin: 0; padding-left: 1.15rem; }
+.sheet-list li {
+  margin: 0 0 0.35em; color: var(--ink); font-size: 0.9rem; line-height: 1.5;
+}
+.sheet-history p {
+  margin: 0 0 0.35em; color: var(--ink); font-size: 0.86rem; line-height: 1.5;
+}
+.sheet-history p:last-child { margin-bottom: 0; }
 .facts { display: grid; gap: 0; margin-top: 14px; border-top: 1px solid var(--line); }
 .facts-primary .fact { padding: 8px 0; font-size: 0.84rem; }
 .sheet-note {
@@ -1104,6 +1379,8 @@ a { color: inherit; }
   .top { margin-bottom: 18px; }
   .scope-head { align-items: flex-start; }
   .scope-side { width: 100%; }
+  .crumbs { font-size: 0.92rem; }
+  .edge-layer { display: none; }
   .lanes { display: block; }
   .lane { margin-bottom: 6px; }
   .lane-head { display: none; }
@@ -1208,12 +1485,6 @@ const SCRIPT = `(function () {
     });
   }
 
-  function topIsSection() {
-    return treeRows().filter(function (row) {
-      return row.getAttribute('data-root') === '1';
-    }).length !== 1;
-  }
-
   function titleOf(row) {
     return row.getAttribute('data-title') || row.getAttribute('data-key');
   }
@@ -1255,40 +1526,61 @@ const SCRIPT = `(function () {
   }
 
   function crumbs(scope, byTask) {
-    var trail = document.createElement('p');
-    trail.className = 'crumbs';
+    // Ruling 1: a nav with its own name, directly above the level title. The
+    // ancestors are links; the current level is the last crumb in normal
+    // weight. The trail includes the current level so a reader who lands deep
+    // sees the whole path in one line.
+    var nav = document.createElement('nav');
+    nav.className = 'crumbs';
+    nav.setAttribute('aria-label', 'Breadcrumb');
+    var list = document.createElement('ol');
+    function entry() {
+      var item = document.createElement('li');
+      list.appendChild(item);
+      return item;
+    }
+    function current(text) {
+      var item = entry();
+      var mark = document.createElement('span');
+      mark.setAttribute('aria-current', 'page');
+      mark.textContent = text;
+      item.appendChild(mark);
+    }
+    function link(text, key) {
+      var item = entry();
+      item.appendChild(separator());
+      var anchor = document.createElement('a');
+      anchor.href = '#board' + encodeKey(key);
+      anchor.textContent = text;
+      item.appendChild(anchor);
+    }
     if (scope === null) {
-      var currentPage = document.createElement('span');
-      currentPage.setAttribute('aria-current', 'page');
-      currentPage.textContent = 'All work';
-      trail.appendChild(currentPage);
-      return trail;
-    }
-    if (topIsSection()) {
-      var all = document.createElement('a');
-      all.href = '#board';
-      all.textContent = 'All work';
-      trail.appendChild(all);
+      current('All work');
     } else {
-      var root = document.createElement('span');
-      root.textContent = 'All work';
-      trail.appendChild(root);
+      var home = entry();
+      var homeLink = document.createElement('a');
+      homeLink.href = '#board';
+      homeLink.textContent = 'All work';
+      home.appendChild(homeLink);
+      var chain = [];
+      var parent = scope.getAttribute('data-parent');
+      while (parent && byTask[parent]) {
+        var ancestor = byTask[parent];
+        chain.unshift(ancestor);
+        parent = ancestor.getAttribute('data-parent');
+      }
+      chain.forEach(function (row) {
+        link(titleOf(row), row.getAttribute('data-key'));
+      });
+      var here = entry();
+      here.appendChild(separator());
+      var mark = document.createElement('span');
+      mark.setAttribute('aria-current', 'page');
+      appendTitle(mark, scope);
+      here.appendChild(mark);
     }
-    var chain = [];
-    var parent = scope.getAttribute('data-parent');
-    while (parent && byTask[parent]) {
-      var ancestor = byTask[parent];
-      chain.unshift(ancestor);
-      parent = ancestor.getAttribute('data-parent');
-    }
-    chain.forEach(function (row) {
-      trail.appendChild(separator());
-      var link = document.createElement('a');
-      link.href = '#board' + encodeKey(row.getAttribute('data-key'));
-      appendTitle(link, row);
-      trail.appendChild(link);
-    });
-    return trail;
+    nav.appendChild(list);
+    return nav;
   }
 
   function header(scope, cards) {
@@ -1408,6 +1700,7 @@ const SCRIPT = `(function () {
     var lane = laneOf(state, row.getAttribute('data-phase') || null);
     var card = document.createElement('article');
     card.className = 'card';
+    card.setAttribute('data-task', row.getAttribute('data-task'));
     card.setAttribute('data-state', state);
     card.setAttribute('data-lane', lane);
     card.setAttribute('data-phase', row.getAttribute('data-phase') || '');
@@ -1496,6 +1789,139 @@ const SCRIPT = `(function () {
     return wrap;
   }
 
+  // Ruling 3: only an edge whose two ends are cards in this level is drawn.
+  // The line starts at the blocker and ends at the blocked card; it does not
+  // care which lanes they sit in. At phone width the lines are dropped and the
+  // card's own sentence carries the dependency.
+  function drawEdges(wrap, plan) {
+    var old = wrap.querySelector('.edge-layer');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    if (!plan || !plan.edges || plan.edges.length === 0) return;
+    if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) return;
+    var cards = {};
+    Array.prototype.forEach.call(wrap.querySelectorAll('.card[data-task]'), function (card) {
+      cards[card.getAttribute('data-task')] = card;
+    });
+    var box = wrap.getBoundingClientRect();
+    var width = wrap.offsetWidth;
+    var height = wrap.offsetHeight;
+    if (width === 0 || height === 0) return;
+    // One task may block six others. Spreading the attachment points along the
+    // card edges keeps those six lines readable instead of collapsing into a
+    // single bundle that reads as a border.
+    var outCount = {};
+    var inCount = {};
+    plan.edges.forEach(function (edge) {
+      outCount[edge.from] = (outCount[edge.from] || 0) + 1;
+      inCount[edge.to] = (inCount[edge.to] || 0) + 1;
+    });
+    var outSeen = {};
+    var inSeen = {};
+    function port(top, bottom, slot, count) {
+      if (count <= 1) return (top + bottom) / 2;
+      var low = top + (bottom - top) * 0.22;
+      var high = bottom - (bottom - top) * 0.22;
+      return low + ((high - low) * (slot + 1)) / (count + 1);
+    }
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'edge-layer');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('width', String(width));
+    svg.setAttribute('height', String(height));
+    svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+    var drawn = 0;
+    plan.edges.forEach(function (edge) {
+      var from = cards[edge.from];
+      var to = cards[edge.to];
+      if (!from || !to) return;
+      var a = from.getBoundingClientRect();
+      var b = to.getBoundingClientRect();
+      var aLeft = a.left - box.left;
+      var aRight = a.right - box.left;
+      var aTop = a.top - box.top;
+      var aBottom = a.bottom - box.top;
+      var bLeft = b.left - box.left;
+      var bRight = b.right - box.left;
+      var bTop = b.top - box.top;
+      var bBottom = b.bottom - box.top;
+      outSeen[edge.from] = outSeen[edge.from] || 0;
+      inSeen[edge.to] = inSeen[edge.to] || 0;
+      var outSlot = outSeen[edge.from];
+      var inSlot = inSeen[edge.to];
+      outSeen[edge.from] += 1;
+      inSeen[edge.to] += 1;
+      var x1, y1, x2, y2, c1x, c1y, c2x, c2y, gap;
+      if (bLeft >= aRight - 4) {
+        // The blocked card is to the right: leave the blocker's right edge
+        // and arrive at the blocked card's left edge.
+        x1 = aRight;
+        y1 = port(aTop, aBottom, outSlot, outCount[edge.from]);
+        x2 = bLeft;
+        y2 = port(bTop, bBottom, inSlot, inCount[edge.to]);
+        gap = Math.max(16, Math.min(80, (x2 - x1) / 2));
+        c1x = x1 + gap; c1y = y1;
+        c2x = x2 - gap; c2y = y2;
+      } else if (bTop >= aBottom - 4) {
+        // Same column or to the left and below: go down from the blocker and
+        // into the top of the blocked card.
+        x1 = port(aLeft, aRight, outSlot, outCount[edge.from]);
+        y1 = aBottom;
+        x2 = port(bLeft, bRight, inSlot, inCount[edge.to]);
+        y2 = bTop;
+        gap = Math.max(14, Math.min(60, (y2 - y1) / 2));
+        c1x = x1; c1y = y1 + gap;
+        c2x = x2; c2y = y2 - gap;
+      } else if (aTop >= bBottom - 4) {
+        x1 = port(aLeft, aRight, outSlot, outCount[edge.from]);
+        y1 = aTop;
+        x2 = port(bLeft, bRight, inSlot, inCount[edge.to]);
+        y2 = bBottom;
+        gap = Math.max(14, Math.min(60, (y1 - y2) / 2));
+        c1x = x1; c1y = y1 - gap;
+        c2x = x2; c2y = y2 + gap;
+      } else {
+        x1 = port(aLeft, aRight, outSlot, outCount[edge.from]);
+        y1 = port(aTop, aBottom, outSlot, outCount[edge.from]);
+        x2 = port(bLeft, bRight, inSlot, inCount[edge.to]);
+        y2 = port(bTop, bBottom, inSlot, inCount[edge.to]);
+        c1x = x1; c1y = y1; c2x = x2; c2y = y2;
+      }
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute(
+        'd',
+        'M ' + x1 + ' ' + y1 + ' C ' + c1x + ' ' + c1y + ', ' +
+          c2x + ' ' + c2y + ', ' + x2 + ' ' + y2,
+      );
+      path.setAttribute('data-kind', edge.kind);
+      path.setAttribute('data-from', edge.from);
+      path.setAttribute('data-to', edge.to);
+      svg.appendChild(path);
+      drawn += 1;
+    });
+    if (drawn > 0) wrap.insertBefore(svg, wrap.firstChild);
+  }
+
+  function refreshEdges() {
+    var root = document.getElementById('board-root');
+    if (!root) return;
+    var lanes = root.querySelector('.lanes');
+    if (!lanes) return;
+    drawEdges(lanes, SCOPES[root.getAttribute('data-scope') || '']);
+  }
+
+  var edgeTimer = null;
+  window.addEventListener('resize', function () {
+    if (edgeTimer) clearTimeout(edgeTimer);
+    edgeTimer = setTimeout(refreshEdges, 120);
+  });
+
+  function setDocumentTitle(scope) {
+    var page = document.body.getAttribute('data-page');
+    var suffix = page === 'list' ? 'Engine board — everything' : 'Engine board';
+    var name = scope === null ? 'All work' : titleOf(scope);
+    document.title = name + ' · ' + suffix;
+  }
+
   function renderScope(key) {
     var root = document.getElementById('board-root');
     if (!root || !document.getElementById('tree-source')) return;
@@ -1506,7 +1932,7 @@ const SCRIPT = `(function () {
       scope = fallback === null ? null : scopeNode(fallback);
     }
     var scopeKey = scope === null ? '' : scope.getAttribute('data-key');
-    var plan = SCOPES[scopeKey] || { lanes: [], empty: LANES.length };
+    var plan = SCOPES[scopeKey] || { lanes: [], empty: LANES.length, edges: [] };
     var rows = treeRows();
     var cards = childrenOf(scope, rows);
     var byTask = rowsByTask();
@@ -1515,8 +1941,13 @@ const SCRIPT = `(function () {
     root.appendChild(header(scope, cards));
     root.appendChild(level(cards, plan));
     root.appendChild(focusLine(cards));
-    if (cards.length > 0) root.appendChild(lanesNode(plan, byTask));
+    if (cards.length > 0) {
+      var lanes = lanesNode(plan, byTask);
+      root.appendChild(lanes);
+      drawEdges(lanes, plan);
+    }
     root.setAttribute('data-scope', scopeKey);
+    setDocumentTitle(scope);
   }
 
   function markHere(key) {
@@ -1622,6 +2053,95 @@ const SCRIPT = `(function () {
     }
   }
 
+  function sectionNode(title, className) {
+    var section = document.createElement('section');
+    section.className = 'sheet-section ' + className;
+    var heading = document.createElement('h3');
+    heading.textContent = title;
+    section.appendChild(heading);
+    return section;
+  }
+
+  function textNode(className, text) {
+    var node = document.createElement('p');
+    node.className = className;
+    node.textContent = text;
+    return node;
+  }
+
+  // Ruling 4: the body is the reader's words, as paragraphs. No markdown is
+  // interpreted, and empty is a sentence rather than white space.
+  function appendDescription(inner, data) {
+    var body = data.body || { state: 'empty', paragraphs: [] };
+    var section = sectionNode('Description', 'sheet-description');
+    if (body.state === 'ok') {
+      body.paragraphs.forEach(function (text) {
+        section.appendChild(textNode('sheet-paragraph', text));
+      });
+    } else if (body.state === 'empty') {
+      section.appendChild(textNode('sheet-empty', 'No description yet'));
+    } else if (body.state === 'unread') {
+      section.appendChild(
+        textNode('sheet-muted', 'The description could not be read.'),
+      );
+    } else {
+      section.appendChild(
+        textNode(
+          'sheet-muted',
+          "The description was not read through this engine's read commands.",
+        ),
+      );
+    }
+    inner.appendChild(section);
+  }
+
+  // Ruling 5: the pinned contract in plain language, or the honest statement
+  // that this read cannot see it.
+  function appendConditions(inner, data) {
+    var conditions = data.conditions || { state: 'unread', lines: [] };
+    var section = sectionNode('Done when', 'sheet-conditions');
+    if (conditions.state === 'ok') {
+      var list = document.createElement('ul');
+      list.className = 'sheet-list';
+      conditions.lines.forEach(function (line) {
+        var item = document.createElement('li');
+        item.textContent = line;
+        list.appendChild(item);
+      });
+      section.appendChild(list);
+    } else if (conditions.state === 'empty') {
+      section.appendChild(
+        textNode('sheet-muted', "This task's contract pins no conditions."),
+      );
+    } else {
+      section.appendChild(
+        textNode(
+          'sheet-muted',
+          "The pinned contract is not readable through this engine's read commands.",
+        ),
+      );
+    }
+    inner.appendChild(section);
+  }
+
+  // Ruling 6: what has happened, in sentences. The raw enums stay behind More.
+  function appendHistory(inner, data) {
+    var section = sectionNode('What has happened', 'sheet-history');
+    (data.history || []).forEach(function (line) {
+      section.appendChild(textNode('sheet-history-line', line));
+    });
+    inner.appendChild(section);
+  }
+
+  // Ruling 7: where a conversation lives, or that none is linked. No box.
+  function appendConversation(inner, data) {
+    var section = sectionNode('Conversation', 'sheet-conversation');
+    section.appendChild(
+      textNode('sheet-muted', data.conversation || ''),
+    );
+    inner.appendChild(section);
+  }
+
   function buildSheet(taskId) {
     var data = ROWS[taskId];
     if (!data) return null;
@@ -1660,6 +2180,8 @@ const SCRIPT = `(function () {
         ),
       );
     }
+    appendDescription(inner, data);
+    appendConditions(inner, data);
     var facts = document.createElement('dl');
     facts.className = 'facts facts-primary';
     facts.innerHTML = sheetFieldsHtml(data.primary || []);
@@ -1670,6 +2192,8 @@ const SCRIPT = `(function () {
       note.textContent = text;
       inner.appendChild(note);
     });
+    appendHistory(inner, data);
+    appendConversation(inner, data);
     var hasMore =
       (data.more && data.more.length > 0) ||
       (data.wait !== null && data.wait !== undefined) ||
@@ -1728,6 +2252,10 @@ const SCRIPT = `(function () {
   function apply() {
     var here = current();
     renderScope(here.key);
+    // The List has no board root; it still follows the scope in its title.
+    if (!document.getElementById('board-root')) {
+      setDocumentTitle(here.key === null ? null : scopeNode(here.key));
+    }
     markHere(here.key);
     syncViews(here.key);
   }
@@ -1798,7 +2326,7 @@ export function renderBoardPage(model: TreeModel): string {
   <script type="application/json" id="board-data">${data}</script>`;
   return shell(model, {
     view: 'board',
-    pageTitle: 'Engine board',
+    pageTitle: pageTitleOf(model, 'board', defaultKey),
     body,
     defaultKey,
   });
@@ -1811,7 +2339,7 @@ export function renderListPage(model: TreeModel): string {
   <script type="application/json" id="board-data">${data}</script>`;
   return shell(model, {
     view: 'list',
-    pageTitle: 'Engine board — everything',
+    pageTitle: pageTitleOf(model, 'list', defaultKey),
     body,
     defaultKey,
   });

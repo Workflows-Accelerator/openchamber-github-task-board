@@ -156,6 +156,55 @@ test('the demo has the dependency shapes the brief names', () => {
   assert.equal(laneOf('blocked', null), 'waiting-for-other-work');
 });
 
+test('the demo bodies read like work and the conditions span the kinds', () => {
+  const model = modelFor('demo');
+  const row = byKey(model);
+
+  // A paragraph someone would write, with a blank line between paragraphs.
+  const build = row.get('build');
+  assert.ok(build.body.includes('\n\n'), 'the body has more than one paragraph');
+  assert.ok(build.body.split(/\n\s*\n/).length >= 2);
+  assert.ok(row.get('build-engine').body.includes("engine's own verbs"));
+
+  // One task deliberately has no description, so the empty state is exercised.
+  assert.equal(row.get('release-support').body, '');
+  assert.equal(row.get('release-support').body_read, true);
+
+  // Every condition kind the panel knows appears at least once.
+  const kinds = new Set(
+    flattenTree(model.roots).flatMap((item) =>
+      item.conditions.map((condition) => condition.kind),
+    ),
+  );
+  for (const kind of ['check', 'verdict', 'answer', 'child', 'evidence']) {
+    assert.ok(kinds.has(kind), `the demo carries a ${kind} condition`);
+  }
+
+  // The conditions the brief names: a check, an approval, an answer, a child.
+  assert.deepEqual(
+    row.get('build-tests').conditions.map((condition) => condition.kind),
+    ['check', 'verdict'],
+  );
+  assert.deepEqual(
+    row.get('chain-02').conditions.map((condition) => condition.kind),
+    ['verdict'],
+  );
+  assert.deepEqual(
+    row.get('chain-04').conditions.map((condition) => condition.kind),
+    ['answer'],
+  );
+  assert.deepEqual(
+    row.get('build-spec').conditions.map((condition) => condition.kind),
+    ['child', 'check'],
+  );
+
+  // The failed task carries the engine's recorded reason, not just a count.
+  assert.equal(
+    row.get('failed-task').attempts[1].end_evidence,
+    'exit 1: the index lock was still held',
+  );
+});
+
 test('the volume fixture is the ~200 task proof, not a second small demo', () => {
   const model = modelFor('demo-volume');
   const { live } = tally(model);
