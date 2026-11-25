@@ -4,13 +4,15 @@
 // asserts the thing the reader clicks: it loads a real page in a real browser
 // over `file://`, clicks a container's counts button, opens and closes the
 // panel, enters a scope through the hash, and checks that a page whose data
-// block is gone says so while keeping the no-JS tree.
+// block is gone says so while keeping the no-JS tree. A second test loads a
+// hash URL as the first document, the way a pasted deep link does.
 //
-// Obscura is the CDP server; no package is added to the project.
+// Obscura is the CDP server; no package is added to the project. The test
+// fails, rather than skips, when it is not on PATH.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -190,12 +192,39 @@ async function openPage(browser, url) {
   return { send, evaluate, navigate, failedRequests, exceptions };
 }
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 120));
+// The page test fails, loudly, when the browser it needs is not installed. A
+// skip here would be green on every machine without Obscura and would prove
+// nothing.
+function requireObscura() {
+  const probe = spawnSync('obscura', ['--version'], { encoding: 'utf8' });
+  if (probe.error || probe.status !== 0) {
+    throw new Error(
+      'npm run test:page needs obscura on PATH; this test fails rather than skips. ' +
+        (probe.error
+          ? probe.error.message
+          : `obscura --version exited ${probe.status}`),
+    );
+  }
+}
+
+// Every wait is a condition, not a pause: the page ends it by becoming what
+// the next assertion reads, and the timeout names the claim that never held.
+async function until(page, expression, message, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await page.evaluate(expression)) return;
+    if (Date.now() > deadline) {
+      throw new Error(`timed out waiting: ${message}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
 
 test(
   'the Board works from file://: counts open the panel, Escape closes it, a scope restores Here',
   { timeout: 60000 },
   async (t) => {
+    requireObscura();
     const model = buildTree(snapshot());
     const dir = mkdtempSync(join(tmpdir(), 'engine-board-page-'));
     const boardFile = join(dir, 'index.html');
@@ -294,7 +323,11 @@ test(
       })[0];
       box.querySelector('.row-count').click();
     })()`);
-    await settle();
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the counts button opens the panel',
+    );
     const opened = await page.evaluate(`(function () {
       var sheet = document.querySelector('dialog.sheet[open]');
       if (!sheet) return null;
@@ -318,16 +351,19 @@ test(
         new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
       );
     })()`);
-    await settle();
-    assert.equal(
-      await page.evaluate(`document.querySelector('dialog.sheet[open]') === null`),
-      true,
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
       'Escape closes the panel',
     );
 
     // ---- entering a scope -------------------------------------------------
     await page.evaluate(`location.hash = '#board/box'`);
-    await settle();
+    await until(
+      page,
+      "document.getElementById('board-root').getAttribute('data-scope') === 'box'",
+      'the #board/box scope renders',
+    );
     const scope = await page.evaluate(`(function () {
       return {
         cards: document.querySelectorAll('#board-root .card').length,
@@ -350,7 +386,11 @@ test(
     assert.equal(scope.here, 'box');
 
     await page.evaluate(`document.querySelector('#board-root .details').click()`);
-    await settle();
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the scope Details button opens the panel',
+    );
     const detailsPanel = await page.evaluate(`(function () {
       var sheet = document.querySelector('dialog.sheet[open]');
       if (!sheet) return null;
@@ -364,11 +404,19 @@ test(
     assert.ok(detailsPanel, 'the scope header Details button opens the panel');
     assert.equal(detailsPanel.task, 'box');
     await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
-    await settle();
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
+      'the panel closes',
+    );
 
     // ---- back to All work -------------------------------------------------
     await page.evaluate(`location.hash = '#board'`);
-    await settle();
+    await until(
+      page,
+      "document.getElementById('board-root').getAttribute('data-scope') === '' && document.querySelectorAll('#board-root .card').length === 3",
+      'All work renders',
+    );
     assert.equal(
       await page.evaluate(`document.querySelectorAll('#board-root .card').length`),
       3,
@@ -381,6 +429,11 @@ test(
 
     // ---- the List keeps its own Here marker --------------------------------
     await page.navigate(pathToFileURL(listFile).href + '#list/box');
+    await until(
+      page,
+      "document.querySelector('.here-tag:not([hidden])') !== null",
+      'the List restores Here',
+    );
     const list = await page.evaluate(`(function () {
       var tag = document.querySelector('.here-tag:not([hidden])');
       return {
@@ -404,6 +457,11 @@ test(
       ['missing.html', 'the data block is missing'],
     ]) {
       await page.navigate(pathToFileURL(join(dir, file)).href);
+      await until(
+        page,
+        "document.getElementById('board-failure') && document.getElementById('board-failure').hidden === false",
+        `${file} shows the failure line`,
+      );
       const degraded = await page.evaluate(`(function () {
         var line = document.getElementById('board-failure');
         var tree = document.querySelector('.nojs-tree');
@@ -425,5 +483,60 @@ test(
       assert.notEqual(degraded.treeDisplay, 'none', `${file} keeps the tree visible`);
       assert.equal(degraded.boardDisplay, 'none', `${file} does not draw an empty board`);
     }
+  },
+);
+
+test(
+  'a typed deep link renders on a cold load, before any click',
+  { timeout: 60000 },
+  async (t) => {
+    requireObscura();
+    const model = buildTree(snapshot());
+    const dir = mkdtempSync(join(tmpdir(), 'engine-board-deep-'));
+    const boardFile = join(dir, 'index.html');
+    writeFileSync(boardFile, renderBoardPage(model));
+
+    const port = await freePort();
+    const server = spawn(
+      'obscura',
+      ['serve', '--port', String(port), '--allow-file-access'],
+      { stdio: 'ignore' },
+    );
+    let browser;
+    t.after(() => {
+      browser?.close();
+      server.kill('SIGTERM');
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    const version = await waitForJson(`http://127.0.0.1:${port}/json/version`);
+    browser = connect(version.webSocketDebuggerUrl);
+    await browser.open;
+    const page = await openPage(browser, 'about:blank');
+
+    // The first document the page ever loads already carries the scope. No
+    // prior board render, no click, no hashchange: this is the address bar.
+    const url = pathToFileURL(boardFile).href + '#board/box';
+    await page.navigate(url);
+    const cold = await page.evaluate(`(function () {
+      var tag = document.querySelector('.here-tag:not([hidden])');
+      return {
+        hash: location.hash,
+        scope: document.getElementById('board-root').getAttribute('data-scope'),
+        cards: document.querySelectorAll('#board-root .card').length,
+        level: document.querySelector('#board-root .level').textContent,
+        progress: document.querySelector('.progress-line').textContent,
+        here: tag ? tag.closest('li').getAttribute('data-key') : null,
+      };
+    })()`);
+    assert.equal(cold.hash, '#board/box');
+    assert.equal(cold.scope, 'box');
+    assert.equal(cold.cards, 4);
+    assert.equal(cold.level, '2 live · 2 archived in this level · 6 lanes empty');
+    assert.equal(cold.progress, '1 of 5 done · 1 skipped · 4 archived');
+    assert.equal(cold.here, 'box');
+    assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
+    assert.deepEqual(page.exceptions, []);
+    assert.deepEqual(page.failedRequests, []);
   },
 );
