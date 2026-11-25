@@ -1874,6 +1874,74 @@ test(
       'the List title follows the scope',
     );
 
+    // ---- the phone target is 40 px, and the title is not under it ----------
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await until(page, 'window.innerWidth === 390', 'the phone viewport applies');
+    const phoneTarget = await page.evaluate(`(function () {
+      var row = document.querySelector('li[data-key="work"]');
+      var button = row.querySelector('button.disclosure');
+      var title = row.querySelector('.enter');
+      button.scrollIntoView({ block: 'center' });
+      var b = button.getBoundingClientRect();
+      var t = title.getBoundingClientRect();
+      return {
+        button: {
+          left: b.left, top: b.top, right: b.right, bottom: b.bottom,
+          width: b.width, height: b.height,
+        },
+        title: { left: t.left, top: t.top, right: t.right, bottom: t.bottom },
+        expanded: button.getAttribute('aria-expanded'),
+        hash: location.hash,
+      };
+    })()`);
+    assert.ok(
+      phoneTarget.button.width >= 40 && phoneTarget.button.height >= 40,
+      `the phone target is at least 40x40 (${phoneTarget.button.width}x${phoneTarget.button.height})`,
+    );
+    assert.ok(
+      phoneTarget.button.right <= phoneTarget.title.left,
+      `the target does not overlap the title (${phoneTarget.button.right} <= ${phoneTarget.title.left})`,
+    );
+    assert.equal(phoneTarget.expanded, 'false');
+    const edgeX = phoneTarget.button.left + 4;
+    const edgeY = phoneTarget.button.top + phoneTarget.button.height / 2;
+    await page.send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      x: edgeX,
+      y: edgeY,
+      button: 'left',
+      clickCount: 1,
+    });
+    await page.send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      x: edgeX,
+      y: edgeY,
+      button: 'left',
+      clickCount: 1,
+    });
+    await until(
+      page,
+      "document.querySelector('li[data-key=\"work\"] button.disclosure').getAttribute('aria-expanded') === 'true'",
+      'the click inside the button edge toggled the fold',
+    );
+    const phoneAfter = await page.evaluate(`(function () {
+      return {
+        expanded: document
+          .querySelector('li[data-key="work"] button.disclosure')
+          .getAttribute('aria-expanded'),
+        hash: location.hash,
+        dialogOpen: document.querySelector('dialog.sheet[open]') !== null,
+      };
+    })()`);
+    assert.equal(phoneAfter.expanded, 'true');
+    assert.equal(phoneAfter.hash, phoneTarget.hash, 'the edge click did not navigate');
+    assert.equal(phoneAfter.dialogOpen, false, 'the edge click did not open the panel');
+
     // ---- state is per page load -------------------------------------------
     await page.navigate(url);
     await until(

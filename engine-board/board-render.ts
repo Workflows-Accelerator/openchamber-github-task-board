@@ -1637,6 +1637,9 @@ a { color: inherit; }
   .lane-head { display: none; }
   .card-state { display: flex; }
   .node-row { flex-wrap: wrap; }
+  /* The phone target grows to 40 px; the glyph stays the same size. The
+     spacer grows with it so a leaf title lines up under a parent title. */
+  .disclosure, .disclosure-spacer { flex: 0 0 40px; width: 40px; height: 40px; }
   .row-state { flex: 0 0 100%; margin-left: 0; margin-top: 2px; }
   .fact dt { flex-basis: 6rem; }
 }
