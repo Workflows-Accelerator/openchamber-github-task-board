@@ -1,0 +1,33 @@
+{
+  "captured_at": "2026-11-26T09:51:01Z",
+  "container_node_key": "$root",
+  "engine": {
+    "commit": "c4ccf1e",
+    "path": "/tmp/opencode/engine-c4ccf1e",
+    "schema_revision": 8
+  },
+  "notes": [
+    "the store is built by `task playbook apply` over 17 of the 18 scenario manifests; 12 is refused at playbook.yaml:23",
+    "three diagnostics and the summary were run through `task run`, so their ended attempts and runner slots are read, not written through the store port",
+    "the list read is `task status --project engine-board --json`; the engine has no `task list` verb",
+    "contract conditions and an issue-mirror link are not printed by any read verb"
+  ],
+  "port_only_steps": [],
+  "project_id": "engine-board",
+  "read_verbs": [
+    "task graph --project engine-board --tree <root_task_id> --json",
+    "task status <every tree task id> --json",
+    "task project show --project engine-board --json",
+    "task runner list --project engine-board --json",
+    "task store check --json (schema revision only)"
+  ],
+  "root_task_id": "tsk_c4c3aaa99902451a8e78a6f2f1a12d50",
+  "tree_key": "bug-login-timeout",
+  "unobserved_states": [
+    "draft",
+    "waiting",
+    "failed",
+    "cancelled",
+    "skipped"
+  ]
+}

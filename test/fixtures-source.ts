@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import type {
   EngineTreeSnapshot,
   EngineTreeSource,
+  GraphEdge,
   GraphPayload,
   ProjectPayload,
   RestState,
@@ -50,6 +51,37 @@ function readJson<T>(directory: string, name: string): T {
   return JSON.parse(readFileSync(join(directory, name), 'utf8')) as T;
 }
 
+// The committed capture is the verb's own output. At schema 8 `graph` prints
+// `{blocker_task_id, blocked_task_id, …}`; the model reads `{from, to, …}`.
+// The live source folds that shape, so the fixture source does the same instead
+// of handing the model a payload it cannot read.
+function normalizeEdges(payload: GraphPayload): GraphPayload {
+  const edges = (payload.edges as unknown[]).map((value): GraphEdge => {
+    const edge = value as Record<string, unknown>;
+    const from = edge.from ?? edge.blocker_task_id;
+    const to = edge.to ?? edge.blocked_task_id;
+    if (typeof from !== 'string' || typeof to !== 'string') {
+      throw new Error('fixture edge names no both ends');
+    }
+    if (edge.kind !== 'blocked_by' && edge.kind !== 'after') {
+      throw new Error(`fixture edge has an unknown kind: ${String(edge.kind)}`);
+    }
+    const satisfied = edge.satisfied_by;
+    let satisfiedBy: string[] | null = null;
+    if (satisfied !== undefined && satisfied !== null) {
+      if (
+        !Array.isArray(satisfied) ||
+        satisfied.some((state) => typeof state !== 'string')
+      ) {
+        throw new Error(`fixture edge has an unreadable satisfied_by`);
+      }
+      satisfiedBy = [...satisfied];
+    }
+    return { from, to, kind: edge.kind, satisfied_by: satisfiedBy };
+  });
+  return { nodes: payload.nodes, edges };
+}
+
 export function readFixtureMeta(directory: string): FixtureMeta {
   return readJson<FixtureMeta>(directory, 'meta.json');
 }
@@ -73,7 +105,7 @@ export function loadFixtureSnapshot(
     // The fixture capture read the runner list; a failed read would have
     // stopped the capture instead of writing an empty file.
     runners_available: true,
-    graph: readJson<GraphPayload>(directory, 'graph.json'),
+    graph: normalizeEdges(readJson<GraphPayload>(directory, 'graph.json')),
     statuses: readJson<StatusesPayload>(directory, 'status.json').tasks,
     tree_key: meta.tree_key,
     root_task_id: meta.root_task_id,

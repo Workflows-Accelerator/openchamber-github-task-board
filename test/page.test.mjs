@@ -13,7 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -25,6 +25,10 @@ import {
   renderBoardPage,
   renderListPage,
 } from '../engine-board/board-render.ts';
+import {
+  loadFixtureSnapshot,
+  readFixtureMeta,
+} from './fixtures-source.ts';
 
 const ARCHIVED_AT = '2026-11-01T00:00:00Z';
 
@@ -1010,15 +1014,21 @@ test(
 
 
 test(
-  'the committed demo page carries the volume tree, not the seven-task line',
+  'the demo tree renders its nested board, fan and after edge',
   { timeout: 60000 },
   async (t) => {
     requireObscura();
-    const demoFile = join(
-      process.cwd(),
-      'engine-board',
-      'index.html',
+    // The committed page now carries the real incident tree, which is flat.
+    // The nested shapes this test proves — scopes, a six-way fan, a dashed
+    // `after` line — are drawn from the committed demo capture instead, so the
+    // renderer keeps its coverage without inventing tasks in the live page.
+    const demoDir = join(process.cwd(), 'engine-board', 'fixtures', 'demo');
+    const demo = buildTree(
+      loadFixtureSnapshot(demoDir, readFixtureMeta(demoDir)),
     );
+    const dir = mkdtempSync(join(tmpdir(), 'engine-board-demo-page-'));
+    const demoFile = join(dir, 'index.html');
+    writeFileSync(demoFile, renderBoardPage(demo));
     const port = await freePort();
     const server = spawn(
       'obscura',
@@ -1029,6 +1039,7 @@ test(
     t.after(() => {
       browser?.close();
       server.kill('SIGTERM');
+      rmSync(dir, { recursive: true, force: true });
     });
     const version = await waitForJson(`http://127.0.0.1:${port}/json/version`);
     browser = connect(version.webSocketDebuggerUrl);
@@ -1954,6 +1965,243 @@ test(
       'true',
       'a fresh page load starts expanded',
     );
+
+    assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
+    assert.deepEqual(page.exceptions, []);
+    assert.deepEqual(page.failedRequests, []);
+  },
+);
+
+test(
+  'the committed page is the real incident tree at 1280 and 390',
+  { timeout: 60000 },
+  async (t) => {
+    requireObscura();
+    const boardFile = join(process.cwd(), 'engine-board', 'index.html');
+    const listFile = join(process.cwd(), 'engine-board', 'list.html');
+    // The page the owner opens must come from the engine, not from a capture
+    // that drifted. Provenance is how this test can tell.
+    for (const file of [boardFile, listFile]) {
+      const html = readFileSync(file, 'utf8');
+      assert.ok(html.includes('Live read'), `${file} is a live read`);
+      assert.ok(html.includes('c4ccf1e'), `${file} names the engine pin`);
+    }
+
+    const port = await freePort();
+    const server = spawn(
+      'obscura',
+      ['serve', '--port', String(port), '--allow-file-access'],
+      { stdio: 'ignore' },
+    );
+    let browser;
+    t.after(() => {
+      browser?.close();
+      server.kill('SIGTERM');
+    });
+    const version = await waitForJson(`http://127.0.0.1:${port}/json/version`);
+    browser = connect(version.webSocketDebuggerUrl);
+    await browser.open;
+    const page = await openPage(browser, pathToFileURL(boardFile).href);
+    await page.navigate(pathToFileURL(boardFile).href);
+
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    const board = await page.evaluate(`(function () {
+      var laneCount = function (id) {
+        var lane = document.querySelector('#board-root .lane[data-lane="' + id + '"]');
+        return lane ? lane.querySelectorAll('.card').length : 0;
+      };
+      var focus = document.querySelector('#board-root .focus-line');
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var paths = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .edge-layer path'),
+      );
+      return {
+        cards: cards.length,
+        keys: cards.map(function (card) { return card.getAttribute('data-task'); }),
+        titles: cards.map(function (card) {
+          var title = card.querySelector('.card-title');
+          return title ? title.textContent.trim() : null;
+        }),
+        focus: focus ? focus.textContent : null,
+        focusSum: focus
+          ? focus.textContent.split(' · ').reduce(function (sum, part) {
+              return sum + Number(part.split(' ')[0]);
+            }, 0)
+          : 0,
+        live: Number(document.querySelector('#board-root .level strong').textContent),
+        lanes: {
+          waitingSomeone: laneCount('waiting-for-someone'),
+          waitingOther: laneCount('waiting-for-other-work'),
+          done: laneCount('done'),
+        },
+        edges: paths.length,
+        edgeKinds: paths.map(function (path) {
+          return path.getAttribute('data-kind');
+        }),
+        provenanceOpen: document.querySelector('details.provenance').open,
+        isoText: /\d{4}-\d\d-\d\dT/.test(document.body.innerText),
+        cardStatesHidden: cards.every(function (card) {
+          var line = card.querySelector('.card-state');
+          return !line || getComputedStyle(line).display === 'none';
+        }),
+        cardLanes: cards.map(function (card) {
+          return {
+            state: card.getAttribute('data-state'),
+            lane: card.getAttribute('data-lane'),
+          };
+        }),
+      };
+    })()`);
+    assert.equal(board.cards, 7, 'seven top-level tasks, no container row');
+    assert.equal(new Set(board.keys).size, 7, 'one card per task');
+    assert.equal(board.titles.includes('$root'), false, 'the container is hidden');
+    assert.equal(
+      board.titles.includes('Emit the resolved instantiation fragment.'),
+      true,
+      'the engine emit task is real work',
+    );
+    assert.equal(board.focus, '2 waiting · 5 done');
+    assert.equal(board.focusSum, board.live, 'the focus line adds up to the level total');
+    assert.equal(board.live, 7);
+    assert.deepEqual(board.lanes, {
+      waitingSomeone: 1,
+      waitingOther: 1,
+      done: 5,
+    });
+    assert.equal(board.edges, 5, 'five blocked_by lines at 1280');
+    assert.deepEqual(new Set(board.edgeKinds), new Set(['blocked_by']));
+    assert.equal(board.provenanceOpen, false);
+    assert.equal(board.isoText, false);
+    assert.equal(board.cardStatesHidden, true, 'no card repeats its lane at 1280');
+    for (const card of board.cardLanes) {
+      assert.equal(card.lane, laneOf(card.state, null));
+    }
+
+    // The panel on the summary names the three diagnostics it waited for in
+    // the engine's own words, not node keys.
+    await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var summary = cards.filter(function (card) {
+        return card.getAttribute('data-task') !== null &&
+          card.textContent.indexOf('Rank the causes') !== -1;
+      })[0];
+      summary.querySelector('.card-title .enter').click();
+    })()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the summary panel opens',
+    );
+    const summary = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var facts = {};
+      sheet.querySelectorAll('.facts-primary dt').forEach(function (dt) {
+        facts[dt.textContent] = dt.nextElementSibling
+          ? dt.nextElementSibling.textContent
+          : null;
+      });
+      return { facts: facts, firstText: sheet.querySelector('.facts-primary').innerText };
+    })()`);
+    assert.equal(summary.facts['Waits for'].includes('Collect host-level evidence'), true);
+    assert.equal(summary.facts['Waits for'].includes('Collect database evidence'), true);
+    assert.equal(summary.facts['Waits for'].includes('Collect network evidence'), true);
+    assert.equal(/tsk_|rest_state/.test(summary.firstText), false);
+    await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
+
+    // The waiting gate is the one the engine reports as `review`, and the
+    // blocked remediation names it. No card is painted done early.
+    await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var call = cards.filter(function (card) {
+        return card.textContent.indexOf('on-call owner chooses') !== -1;
+      })[0];
+      call.querySelector('.card-title .enter').click();
+    })()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the gate panel opens',
+    );
+    const gate = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var facts = {};
+      sheet.querySelectorAll('.facts-primary dt').forEach(function (dt) {
+        facts[dt.textContent] = dt.nextElementSibling
+          ? dt.nextElementSibling.textContent
+          : null;
+      });
+      var more = {};
+      sheet.querySelectorAll('details.sheet-more dt').forEach(function (dt) {
+        more[dt.textContent] = dt.nextElementSibling
+          ? dt.nextElementSibling.textContent
+          : null;
+      });
+      return { lane: sheet.querySelector('.sheet-state').textContent.trim(), facts: facts, more: more };
+    })()`);
+    assert.equal(gate.lane, 'Waiting for someone');
+    assert.equal(gate.more['Wait reason'], 'review');
+    assert.equal(gate.facts['Waits for'], 'Rank the causes across the three diagnostics and write the incident summary. (done).');
+    await page.evaluate(`document.querySelector('dialog.sheet[open]').close()`);
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
+      'the gate panel closes',
+    );
+
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await until(page, 'window.innerWidth === 390', 'the phone viewport applies');
+    // A phone loads the board at this width, so load it again rather than
+    // resizing a board that already drew its lines.
+    await page.navigate(pathToFileURL(boardFile).href);
+    await until(
+      page,
+      "document.querySelectorAll('#board-root .card').length === 7",
+      'the top level renders at phone width',
+    );
+    const phone = await page.evaluate(`(function () {
+      var cards = Array.prototype.slice.call(
+        document.querySelectorAll('#board-root .card'),
+      );
+      var remediate = cards.filter(function (card) {
+        return card.textContent.indexOf('Carry out the on-call') !== -1;
+      })[0];
+      return {
+        cards: cards.length,
+        paths: document.querySelectorAll('#board-root .edge-layer path').length,
+        remediateSays: remediate
+          ? (remediate.querySelector('.card-wait') || {}).textContent || null
+          : null,
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+        cardStatesVisible: Array.prototype.some.call(
+          document.querySelectorAll('#board-root .card .card-state'),
+          function (line) { return getComputedStyle(line).display !== 'none'; },
+        ),
+      };
+    })()`);
+    assert.equal(phone.cards, 7);
+    assert.equal(phone.paths, 0, 'no line at phone width');
+    assert.ok(
+      phone.remediateSays && phone.remediateSays.includes('Waiting for The on-call owner chooses'),
+      phone.remediateSays,
+    );
+    assert.equal(phone.cardStatesVisible, true, 'the card carries the lane word on a phone');
+    assert.ok(phone.overflow <= 0, `no sideways scroll (${phone.overflow})`);
 
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);

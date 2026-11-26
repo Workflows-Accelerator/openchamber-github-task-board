@@ -16,6 +16,7 @@
 // ==========================================
 
 import { execFile } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type {
@@ -25,9 +26,12 @@ import type {
   GraphNode,
   GraphPayload,
   ProjectPayload,
+  RestState,
+  RunnerRow,
   StatusPayload,
   TreeRequest,
 } from './model.ts';
+import { REST_STATES } from './model.ts';
 
 export interface LiveSourceOptions {
   // The engine repository. Its `bin/task` is the entry point.
@@ -38,6 +42,26 @@ export interface LiveSourceOptions {
   command?: (args: string[]) => Promise<string>;
   readCommit?: () => Promise<string>;
   now?: () => Date;
+}
+
+export interface CliSourceOptions extends LiveSourceOptions {
+  // Where the committed capture lives. A source with no readable store, or no
+  // engine binary, answers from here instead of failing to draw a page.
+  fallbackDirectory: string;
+}
+
+interface FixtureMeta {
+  engine: {
+    commit: string;
+    schema_revision: number;
+  };
+  captured_at: string;
+  project_id: string;
+  tree_key: string;
+  root_task_id: string;
+  read_verbs: string[];
+  port_only_steps: string[];
+  unobserved_states: RestState[];
 }
 
 interface GraphPayloadRead {
@@ -207,6 +231,11 @@ function normalizeStatuses(text: string): StatusPayload[] {
   return [record as unknown as StatusPayload];
 }
 
+function unobservedIn(graph: GraphPayload): RestState[] {
+  const seen = new Set(graph.nodes.map((node) => node.rest_state));
+  return REST_STATES.filter((state) => !seen.has(state));
+}
+
 function normalizeProject(text: string): ProjectPayload {
   const record = recordOf(parseJson(text, 'project'), 'project payload');
   requiredString(record, 'project_id', 'project payload');
@@ -214,6 +243,19 @@ function normalizeProject(text: string): ProjectPayload {
     throw new Error('project payload has no config_revision');
   }
   return record as unknown as ProjectPayload;
+}
+
+function normalizeRunners(text: string): RunnerRow[] {
+  const record = recordOf(parseJson(text, 'runner list'), 'runner list payload');
+  if (!Array.isArray(record.runners)) {
+    throw new Error('runner list payload has no runners array');
+  }
+  return record.runners.map((value) => {
+    const runner = recordOf(value, 'runner row');
+    requiredString(runner, 'runner_id', 'runner row');
+    requiredString(runner, 'kind', 'runner row');
+    return runner as unknown as RunnerRow;
+  });
 }
 
 function schemaOf(text: string): number {
@@ -281,6 +323,9 @@ export function createLiveSource(options: LiveSourceOptions): EngineTreeSource {
       const project = normalizeProject(
         await command(['project', 'show', '--project', request.project_id, '--json']),
       );
+      const runners = normalizeRunners(
+        await command(['runner', 'list', '--project', request.project_id, '--json']),
+      );
       const schemaRevision = schemaOf(await command(['store', 'check', '--json']));
 
       return {
@@ -293,24 +338,116 @@ export function createLiveSource(options: LiveSourceOptions): EngineTreeSource {
             `task graph --project ${request.project_id} --tree ${request.root_task_id} --json`,
             'task status <every tree task id> --json',
             `task project show --project ${request.project_id} --json`,
+            `task runner list --project ${request.project_id} --json`,
             'task store check --json',
           ],
-          // A live read writes nothing and observes whatever the store holds;
-          // an empty count is the store's answer, not a missing capture.
+          // A live read writes nothing and observes whatever the store holds.
+          // It can still say which states this tree did not reach, so the page
+          // is identical whichever source answered.
           port_only_steps: [],
-          unobserved_states: [],
+          unobserved_states: unobservedIn(graph),
         },
         project,
-        // `task runner list` is not read: the detail panel's runner fields come
-        // from `task status`, and `false` keeps an empty list from meaning
-        // "there are none".
-        runners: [],
-        runners_available: false,
+        // `runner list` answers whether a runner exists; `runners_available`
+        // is true because the list was read, so an empty array means none.
+        runners,
+        runners_available: true,
         graph,
         statuses,
         tree_key: request.tree_key,
         root_task_id: request.root_task_id,
       };
+    },
+  };
+}
+
+// ---------------------------------------------------------------- fallback
+
+function readJsonFile<T>(directory: string, name: string): T {
+  return JSON.parse(readFileSync(join(directory, name), 'utf8')) as T;
+}
+
+function readFixtureMeta(directory: string): FixtureMeta {
+  return readJsonFile<FixtureMeta>(directory, 'meta.json');
+}
+
+// The committed capture also names the request it answered, so a build with no
+// store has a tree to draw without a second copy of the project and root ids.
+export function fixtureRequest(directory: string): TreeRequest {
+  const meta = readFixtureMeta(directory);
+  return {
+    project_id: meta.project_id,
+    tree_key: meta.tree_key,
+    root_task_id: meta.root_task_id,
+  };
+}
+
+function loadFixture(
+  directory: string,
+  request: TreeRequest,
+): EngineTreeSnapshot {
+  const meta = readFixtureMeta(directory);
+  if (request.project_id !== '' && meta.project_id !== request.project_id) {
+    throw new Error(
+      `fixture project is ${meta.project_id}, requested ${request.project_id}`,
+    );
+  }
+  if (request.tree_key !== '' && meta.tree_key !== request.tree_key) {
+    throw new Error(
+      `fixture tree_key is ${meta.tree_key}, requested ${request.tree_key}`,
+    );
+  }
+  if (request.root_task_id !== '' && meta.root_task_id !== request.root_task_id) {
+    throw new Error(
+      `fixture root_task_id is ${meta.root_task_id}, requested ${request.root_task_id}`,
+    );
+  }
+  return {
+    provenance: {
+      source_kind: 'fixture',
+      read_at: meta.captured_at,
+      engine_commit: meta.engine.commit,
+      schema_revision: meta.engine.schema_revision,
+      operations: meta.read_verbs,
+      port_only_steps: meta.port_only_steps,
+      unobserved_states: meta.unobserved_states,
+    },
+    project: readJsonFile<ProjectPayload>(directory, 'project.json'),
+    runners: readJsonFile<{ runners: RunnerRow[] }>(directory, 'runners.json').runners,
+    // The capture read the runner list; a failed read would have stopped it
+    // instead of writing an empty file.
+    runners_available: true,
+    graph: normalizeGraph(
+      readFileSync(join(directory, 'graph.json'), 'utf8'),
+    ),
+    statuses: readJsonFile<{ tasks: StatusPayload[] }>(directory, 'status.json').tasks,
+    tree_key: meta.tree_key,
+    root_task_id: meta.root_task_id,
+  };
+}
+
+function storeIsReadable(options: CliSourceOptions): boolean {
+  if (typeof options.command === 'function') {
+    return true;
+  }
+  if (options.dbPath === '' || !existsSync(options.dbPath)) {
+    return false;
+  }
+  return existsSync(join(options.enginePath, 'bin', 'task'));
+}
+
+// A page build should not turn "this machine has no store" into a stack trace.
+// The absence of the CLI or the store is the one condition that falls back: a
+// store that exists but refuses a read still throws, because a wrong page is
+// worse than no page.
+export function createCliSource(options: CliSourceOptions): EngineTreeSource {
+  const live = createLiveSource(options);
+  return {
+    async load(request: TreeRequest): Promise<EngineTreeSnapshot> {
+      if (storeIsReadable(options)) {
+        return live.load(request);
+      }
+      return loadFixture(options.fallbackDirectory, request);
     },
   };
 }

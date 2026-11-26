@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,7 +50,7 @@ import {
   scopeHref,
   scopePath,
 } from '../engine-board/scope.ts';
-import { createLiveSource } from '../engine-board/live-source.ts';
+import { createCliSource, createLiveSource, fixtureRequest } from '../engine-board/live-source.ts';
 import {
   createFixtureSource,
   loadFixtureSnapshot,
@@ -122,21 +130,44 @@ test('the frozen graph, status, project and runner payloads keep the engine keys
   const project = readJson('project.json');
   const runners = readJson('runners.json');
 
-  assert.deepEqual(Object.keys(graph).sort(), ['edges', 'nodes']);
+  assert.deepEqual(Object.keys(graph).sort(), ['edges', 'next_cursor', 'nodes']);
   for (const node of graph.nodes) {
     assert.deepEqual(Object.keys(node).sort(), [
+      'archived_at',
+      'contract_digest',
+      'created_at',
       'node_key',
       'parent_task_id',
+      'priority',
+      'requires',
       'rest_state',
+      'root_task_id',
+      'sequence',
+      'tags',
       'task_id',
+      'title',
+      'tree_key',
+      'updated_at',
     ]);
   }
   for (const edge of graph.edges) {
-    assert.deepEqual(Object.keys(edge).sort(), ['from', 'kind', 'to']);
+    assert.deepEqual(Object.keys(edge).sort(), [
+      'blocked_task_id',
+      'blocker_task_id',
+      'edge_id',
+      'input_name',
+      'kind',
+      'required',
+      'satisfied_by',
+    ]);
   }
 
-  assert.deepEqual(Object.keys(project).sort(), ['config_revision', 'project_id']);
-  assert.equal(runners.runners.length, 1);
+  assert.deepEqual(Object.keys(project).sort(), [
+    'config_revision',
+    'max_concurrency',
+    'project_id',
+  ]);
+  assert.equal(runners.runners.length, 2);
   for (const runner of runners.runners) {
     assert.deepEqual(Object.keys(runner).sort(), [
       'capacity',
@@ -150,16 +181,46 @@ test('the frozen graph, status, project and runner payloads keep the engine keys
       'tags',
     ]);
   }
+  assert.deepEqual(
+    runners.runners.map((runner) => runner.kind).sort(),
+    ['engine', 'stub'],
+  );
 
   assert.equal(statuses.tasks.length, graph.nodes.length);
   for (const status of statuses.tasks) {
     assert.deepEqual(Object.keys(status).sort(), [
+      'approved_by',
+      'archived_at',
+      'attempts',
+      'body',
+      'close_reason',
+      'contract_digest',
+      'created_at',
+      'ended_attempt',
       'handoff_revision',
       'hold',
+      'max_concurrency',
+      'node_key',
+      'outcome',
+      'parent_task_id',
       'phase',
+      'priority',
+      'requires',
       'rest_state',
+      'root_task_id',
+      'runner_id',
+      'runner_slot',
+      'self_approved',
+      'sequence',
+      'skip',
       'slot',
+      'slot_limit',
+      'tags',
       'task_id',
+      'title',
+      'tree_key',
+      'tree_state',
+      'updated_at',
       'wait',
     ]);
   }
@@ -176,6 +237,8 @@ test('the frozen graph, status, project and runner payloads keep the engine keys
     'reason',
     'resume_at',
   ]);
+  assert.equal(waiting.wait.reason, 'review');
+  assert.equal(waiting.wait.cause, 'none');
 });
 
 test('the fixture is pinned to the engine revision and schema the slice targets', () => {
@@ -191,9 +254,17 @@ test('the fixture is pinned to the engine revision and schema the slice targets'
   assert.ok(Number.isInteger(meta.engine.schema_revision));
   assert.ok(meta.engine.schema_revision > 0);
   assert.equal(meta.project_id, 'engine-board');
-  assert.equal(meta.tree_key, 'engine-board-slice-1');
+  assert.equal(meta.tree_key, 'incident-9');
   assert.equal(meta.container_node_key, '$root');
-  assert.ok(meta.port_only_steps.length >= 2);
+  // No store-port writes. Every payload is a read verb's own answer, so the
+  // capture no longer has to mark a shape the CLI could not produce.
+  assert.deepEqual(meta.port_only_steps, []);
+  assert.ok(meta.notes.some((note) => note.includes('17 of the 18')));
+  assert.ok(meta.notes.some((note) => note.includes('playbook.yaml:23')));
+  assert.ok(
+    meta.read_verbs.some((verb) => verb.startsWith('task runner list')),
+    'the capture reads the runner list',
+  );
 });
 
 test('every captured state, phase and edge kind is a frozen INTERFACE §2 value', () => {
@@ -226,17 +297,22 @@ test('every captured state, phase and edge kind is a frozen INTERFACE §2 value'
   }
 });
 
-test('the capture covers more than one rest_state and both edge kinds', () => {
+test('the capture covers the run states, and the second shape covers both edge kinds', () => {
   const graph = readJson('graph.json');
   const states = new Set(graph.nodes.map((node) => node.rest_state));
-  assert.ok(states.size >= 5, [...states].join(','));
-  assert.ok(states.has('draft'));
-  assert.ok(states.has('blocked'));
-  assert.ok(states.has('ready'));
-  assert.ok(states.has('waiting'));
-  assert.ok(states.has('done'));
+  assert.deepEqual([...states].sort(), ['blocked', 'done', 'ready', 'waiting']);
   assert.deepEqual(
     [...new Set(graph.edges.map((edge) => edge.kind))].sort(),
+    ['blocked_by'],
+  );
+
+  const second = readJson(join('second-shape', 'graph.json'));
+  assert.deepEqual(
+    [...new Set(second.nodes.map((node) => node.rest_state))].sort(),
+    ['blocked', 'done', 'ready'],
+  );
+  assert.deepEqual(
+    [...new Set(second.edges.map((edge) => edge.kind))].sort(),
     ['after', 'blocked_by'],
   );
 });
@@ -246,25 +322,20 @@ test('buildTree hides the tree container and nests by parent_task_id', () => {
   const graph = readJson('graph.json');
   const model = fixtureModel();
 
-  // At 41b2170 the top-level node names the root as its parent. A missing
-  // parent would mean the tree read truncated, not an orphan.
+  // A playbook creates every node under the root, so the capture is flat: one
+  // hidden container and seven top-level rows. A missing parent would mean the
+  // tree read truncated, not an orphan.
   const ids = new Set(graph.nodes.map((node) => node.task_id));
-  assert.equal(
-    graph.nodes.find((node) => node.node_key === 'build').parent_task_id,
-    meta.root_task_id,
-  );
   for (const node of graph.nodes) {
     if (node.task_id === meta.root_task_id) continue;
-    assert.ok(ids.has(node.parent_task_id), `${node.node_key} parent missing`);
+    assert.equal(node.parent_task_id, meta.root_task_id, node.node_key);
   }
 
   assert.equal(model.total, 7);
   assert.ok(model.hidden_container);
   assert.equal(model.hidden_container.task_id, meta.root_task_id);
   assert.equal(model.hidden_container.node_key, '$root');
-  assert.equal(model.roots.length, 1);
-  assert.equal(model.roots[0].node_key, 'build');
-  assert.equal(model.roots[0].rerooted, null);
+  assert.equal(model.roots.length, 7);
   assert.equal(model.total, flattenTree(model.roots).length);
   assert.equal(model.nodes_read, 7);
   assert.equal(model.unplaced, 0);
@@ -272,54 +343,114 @@ test('buildTree hides the tree container and nests by parent_task_id', () => {
 
   const flat = flattenTree(model.roots);
   const byKey = new Map(flat.map((row) => [row.node_key, row]));
-  assert.equal(byKey.get('build/render/legend').depth, 2);
-  assert.equal(byKey.get('build/render/legend').rest_state, 'draft');
-  assert.equal(byKey.get('build/render').children.length, 1);
+  assert.deepEqual(
+    [...byKey.keys()].sort(),
+    ['$emit', 'call', 'diag-db', 'diag-host', 'diag-net', 'remediate', 'summarise'],
+  );
+  for (const row of flat) {
+    assert.equal(row.depth, 0, row.node_key);
+    assert.equal(row.rerooted, null, row.node_key);
+    assert.equal(row.children.length, 0, row.node_key);
+  }
+  assert.equal(byKey.get('summarise').rest_state, 'done');
+  assert.equal(byKey.get('call').rest_state, 'waiting');
+  assert.equal(byKey.get('remediate').rest_state, 'blocked');
 });
 
-test('the tree reads rest_state, phase, slot, wait and blocked_by without renaming them', () => {
+test('the tree reads rest_state, attempts, runner slots and dependency directions without renaming them', () => {
   const model = fixtureModel();
   const byKey = new Map(flattenTree(model.roots).map((row) => [row.node_key, row]));
 
-  const readModel = byKey.get('build/read-model');
-  assert.equal(readModel.rest_state, 'done');
-  assert.equal(readModel.phase, null);
-  assert.equal(readModel.slot, null);
-
-  const render = byKey.get('build/render');
-  assert.equal(render.rest_state, 'ready');
-  assert.equal(render.phase, 'live');
-  assert.equal(render.slot, 0);
-  assert.equal(render.runner_slot, null);
-  assert.equal(render.runner_slot_reported, false);
-  assert.equal(render.runner_id, null);
-  assert.equal(render.runner_id_reported, false);
-
-  const verify = byKey.get('build/verify');
-  assert.equal(verify.rest_state, 'waiting');
-  assert.equal(verify.wait.cause, 'settle_rejected');
-  assert.equal(verify.wait.reason, 'rejected:condition:check:unit');
-
-  const integration = byKey.get('build/integration');
-  assert.equal(integration.rest_state, 'blocked');
+  const summary = byKey.get('summarise');
+  assert.equal(summary.rest_state, 'done');
+  assert.equal(summary.phase, 'ended');
+  assert.equal(summary.slot, 0);
+  assert.equal(summary.slot_limit, 2);
+  assert.equal(summary.attempts.length, 1);
+  assert.equal(summary.attempts[0].phase, 'ended');
+  assert.equal(summary.runner_slot, 0);
+  assert.equal(summary.runner_slot_reported, true);
+  assert.ok(summary.runner_id !== null);
+  assert.equal(summary.runner_id_reported, true);
+  assert.equal(summary.body, 'Rank the causes across the three diagnostics and write the incident summary.');
   assert.deepEqual(
-    integration.blocked_by.map((ref) => ref.node_key),
-    ['build/verify'],
+    summary.blocked_by.map((ref) => ref.node_key).sort(),
+    ['diag-db', 'diag-host', 'diag-net'],
   );
+  assert.deepEqual(summary.after, []);
+
+  const gate = byKey.get('call');
+  assert.equal(gate.rest_state, 'waiting');
+  assert.equal(gate.phase, null);
+  assert.equal(gate.slot, null);
+  assert.equal(gate.wait.reason, 'review');
+  assert.equal(gate.wait.cause, 'none');
+  assert.equal(gate.wait.owner, null);
+  assert.equal(gate.attempts.length, 0);
+
+  const remediation = byKey.get('remediate');
+  assert.equal(remediation.rest_state, 'blocked');
   assert.deepEqual(
-    integration.after.map((ref) => ref.node_key),
-    ['build/render'],
+    remediation.blocked_by.map((ref) => ref.node_key),
+    ['call'],
   );
+
+  const emit = byKey.get('$emit');
+  assert.equal(emit.rest_state, 'done');
+  assert.equal(emit.title, 'Emit the resolved instantiation fragment.');
+});
+
+test('the second shape reads after edges beside blocked_by edges', () => {
+  const source = createFixtureSource(join(fixtures, 'second-shape'));
+  const meta = readFixtureMeta(join(fixtures, 'second-shape'));
+  return source
+    .load({
+      project_id: meta.project_id,
+      tree_key: meta.tree_key,
+      root_task_id: meta.root_task_id,
+    })
+    .then((snapshot) => {
+      const model = buildTree(snapshot);
+      const byKey = new Map(
+        flattenTree(model.roots).map((row) => [row.node_key, row]),
+      );
+      const pick = byKey.get('pick');
+      assert.equal(pick.rest_state, 'blocked');
+      assert.deepEqual(
+        pick.after.map((ref) => ref.node_key).sort(),
+        ['probe-a', 'probe-b', 'probe-c'],
+      );
+      assert.deepEqual(
+        byKey.get('fix').blocked_by.map((ref) => ref.node_key),
+        ['pick'],
+      );
+      assert.deepEqual(
+        byKey.get('verify').blocked_by.map((ref) => ref.node_key),
+        ['fix'],
+      );
+      // The edge that carried `satisfied_by` is the engine's own answer; the
+      // model kept it rather than re-deriving "done".
+      assert.deepEqual(
+        snapshot.graph.edges.map((edge) => edge.satisfied_by).sort(),
+        [
+          ['done'],
+          ['done'],
+          ['done', 'failed', 'cancelled', 'skipped'],
+          ['done', 'failed', 'cancelled', 'skipped'],
+          ['done', 'failed', 'cancelled', 'skipped'],
+        ],
+      );
+    });
 });
 
 test('counts are the rest_state enum in order, zero included', () => {
   const model = fixtureModel();
   assert.deepEqual(model.counts, {
-    draft: 2,
+    draft: 0,
     blocked: 1,
-    ready: 2,
+    ready: 0,
     waiting: 1,
-    done: 1,
+    done: 5,
     failed: 0,
     cancelled: 0,
     skipped: 0,
@@ -343,56 +474,33 @@ test('every fixture row has a status and graph and status agree', () => {
 test('the fixture read model reports which fields the payloads do not carry', () => {
   const model = fixtureModel();
   assert.deepEqual(model.capabilities, {
-    runner_slot: false,
-    runner_id: false,
-    task_title: false,
-    task_priority: false,
-    task_tags: false,
-    task_requires: false,
-    tree_key_from_read: false,
-    slot_limit: false,
-    ended_attempt: false,
-    task_body: false,
+    runner_slot: true,
+    runner_id: true,
+    task_title: true,
+    task_priority: true,
+    task_tags: true,
+    task_requires: true,
+    tree_key_from_read: true,
+    slot_limit: true,
+    ended_attempt: true,
+    task_body: true,
     contract_conditions: false,
     mirror_link: false,
   });
   const statuses = readJson('status.json');
   for (const status of statuses.tasks) {
-    assert.ok(!Object.hasOwn(status, 'runner_slot'));
-    assert.ok(!Object.hasOwn(status, 'runner_id'));
+    assert.ok(Object.hasOwn(status, 'runner_slot'));
+    assert.ok(Object.hasOwn(status, 'runner_id'));
+    assert.ok(Object.hasOwn(status, 'body'));
+    assert.ok(Object.hasOwn(status, 'attempts'));
+    assert.equal(Object.hasOwn(status, 'conditions'), false);
   }
   const graph = readJson('graph.json');
   for (const node of graph.nodes) {
-    assert.ok(!Object.hasOwn(node, 'title'));
-    assert.ok(!Object.hasOwn(node, 'tree_key'));
+    assert.ok(Object.hasOwn(node, 'title'));
+    assert.ok(Object.hasOwn(node, 'tree_key'));
+    assert.equal(Object.hasOwn(node, 'conditions'), false);
   }
-});
-
-test('the fixture source is the one seam and refuses a different request', async () => {
-  const meta = readFixtureMeta(fixtures);
-  const source = createFixtureSource(fixtures);
-  const snapshot = await source.load({
-    project_id: meta.project_id,
-    tree_key: meta.tree_key,
-    root_task_id: meta.root_task_id,
-  });
-  assert.equal(snapshot.project.project_id, meta.project_id);
-  assert.equal(snapshot.tree_key, meta.tree_key);
-  assert.equal(snapshot.root_task_id, meta.root_task_id);
-  assert.equal(snapshot.graph.nodes.length, readJson('graph.json').nodes.length);
-  assert.equal(snapshot.runners_available, true);
-  assert.equal(snapshot.provenance.source_kind, 'fixture');
-  assert.equal(snapshot.provenance.read_at, meta.captured_at);
-  assert.deepEqual(snapshot.provenance.operations, meta.read_verbs);
-
-  await assert.rejects(
-    source.load({
-      project_id: 'some-other-project',
-      tree_key: meta.tree_key,
-      root_task_id: meta.root_task_id,
-    }),
-    /fixture project/,
-  );
 });
 
 test('the page escapes node keys and titles', () => {
@@ -745,18 +853,13 @@ test('a null rest_state is a flagged missing value, not a crash', () => {
   );
 });
 
-test('the committed pages are the demo Board and List pages', () => {
-  // Slice 6: the owner-facing demo must carry the generated volume tree, so
-  // the committed pages are rendered from `fixtures/demo`, not from the
-  // seven-task capture. `fixtures/` stays the real capture for model tests.
+test('the committed pages are the live Board and List pages', () => {
+  // The owner opens the real tree, not the demo. The committed pages are built
+  // from the same engine read the capture records, so the no-JS page and the
+  // capture cannot drift into two trees.
   const index = readFileSync(join(board, 'index.html'), 'utf8');
   const list = readFileSync(join(board, 'list.html'), 'utf8');
-  const demo = buildTree(
-    loadFixtureSnapshot(
-      join(fixtures, 'demo'),
-      readFixtureMeta(join(fixtures, 'demo')),
-    ),
-  );
+  const capture = fixtureModel();
 
   assert.ok(index.includes('<body data-page="board">'), 'index.html is the Board');
   assert.ok(list.includes('<body data-page="list">'), 'list.html is the List');
@@ -764,18 +867,20 @@ test('the committed pages are the demo Board and List pages', () => {
     assert.equal(/<script[^>]+src=/.test(html), false, 'no external script');
     assert.equal(/(src|href)="https?:/.test(html), false, 'no network request');
     assert.ok(html.includes('Where this page came from'));
-    assert.ok(html.includes(demo.provenance.engine_commit));
-    assert.ok(html.includes('Fixture capture'));
+    assert.ok(html.includes(capture.provenance.engine_commit));
+    assert.ok(html.includes('Live read'));
   }
   assert.ok(list.includes('Showing everything'));
-  assert.equal(demo.total >= 45, true, `${demo.total} demo tasks`);
-  assert.equal(demo.max_depth + 1, 4);
-  // Every placed demo row is in the no-JS list, so the page really carries the
-  // volume tree and not a smaller sample.
+  assert.equal(capture.total, 7);
+  assert.equal(capture.max_depth, 0);
+  // Every placed row is in the no-JS list, so the page really carries the tree
+  // the capture names and not a smaller sample.
   assert.equal(
     (index.match(/<li data-task="/g) ?? []).length,
-    demo.total,
+    capture.total,
   );
+  assert.ok(index.includes('data-key="summarise"'));
+  assert.ok(index.includes('5 of 7</strong> done'));
 });
 
 // ---------------------------------------------------------------- slice 3
@@ -1091,7 +1196,18 @@ test('scope survives a URL round trip and the breadcrumb is the path', () => {
   assert.doesNotThrow(() => parseHash('#board/%'));
   assert.deepEqual(parseHash('#board/%'), { view: 'board', node_key: null });
 
-  const model = fixtureModel();
+  const model = buildTree(
+    snapshotOf({
+      nodes: [
+        node('tsk_root', '$root', 'ready', null),
+        node('tsk_build', 'build', 'ready', 'tsk_root'),
+        node('tsk_render', 'build/render', 'ready', 'tsk_build'),
+        node('tsk_legend', 'build/render/legend', 'draft', 'tsk_render'),
+        node('tsk_spec', 'build/spec', 'done', 'tsk_build'),
+      ],
+      rootTaskId: 'tsk_root',
+    }),
+  );
   assert.deepEqual(
     scopePath(model.roots, 'build/render/legend').map((row) => row.node_key),
     ['build', 'build/render', 'build/render/legend'],
@@ -1105,16 +1221,13 @@ test('scope survives a URL round trip and the breadcrumb is the path', () => {
   assert.deepEqual(Object.keys(data.scopes).sort(), [
     '',
     'build',
-    'build/integration',
-    'build/read-model',
     'build/render',
     'build/render/legend',
     'build/spec',
-    'build/verify',
   ]);
   assert.deepEqual(
     data.scopes['build/render'].lanes.flatMap((lane) => lane.tasks),
-    ['tsk_cbe8c0538630444191150e5d9f1598ce'],
+    ['tsk_legend'],
   );
 
   const html = renderBoardPage(model);
@@ -1318,7 +1431,7 @@ test('the no-JS page is the whole tree, and no dialog is shipped', () => {
 test('the progress line and no Map tab are on both views', () => {
   const model = fixtureModel();
   for (const html of [renderBoardPage(model), renderListPage(model)]) {
-    assert.ok(html.includes('1 of 7</strong> done'));
+    assert.ok(html.includes('5 of 7</strong> done'));
     assert.ok(html.includes('class="progress-fill'));
     assert.equal(html.includes('>Map<'), false);
     assert.equal(html.includes('data-view-link="map"'), false);
@@ -1372,6 +1485,21 @@ test('the live source reads the CLI, normalizes the edge shape and declares prov
       ],
     }),
     project: JSON.stringify({ project_id: 'p', config_revision: 3, max_concurrency: 2 }),
+    runners: JSON.stringify({
+      runners: [
+        {
+          runner_id: 'rnr_1',
+          project_id: 'p',
+          kind: 'stub',
+          endpoint: null,
+          tags: ['exec:ai'],
+          capacity: 2,
+          enabled: true,
+          heartbeat_at: null,
+          created_at: '2026-06-01T00:00:00Z',
+        },
+      ],
+    }),
     store: JSON.stringify({ schema_revision: 7, indexes: {}, checks: {} }),
   };
   const source = createLiveSource({
@@ -1382,6 +1510,7 @@ test('the live source reads the CLI, normalizes the edge shape and declares prov
       if (args[0] === 'graph') return payloads.graph;
       if (args[0] === 'status') return payloads.status;
       if (args[0] === 'project') return payloads.project;
+      if (args[0] === 'runner') return payloads.runners;
       return payloads.store;
     },
     readCommit: async () => 'abc1234',
@@ -1399,11 +1528,25 @@ test('the live source reads the CLI, normalizes the edge shape and declares prov
   assert.equal(snapshot.provenance.schema_revision, 7);
   assert.equal(snapshot.provenance.read_at, '2026-06-01T00:00:00.000Z');
   assert.deepEqual(snapshot.provenance.port_only_steps, []);
-  assert.deepEqual(snapshot.provenance.unobserved_states, []);
+  // The graph holds only `ready` and `blocked`, and the read says so.
+  assert.deepEqual(snapshot.provenance.unobserved_states, [
+    'draft',
+    'waiting',
+    'done',
+    'failed',
+    'cancelled',
+    'skipped',
+  ]);
+  assert.ok(
+    snapshot.provenance.operations.some((operation) =>
+      operation.startsWith('task runner list --project p'),
+    ),
+  );
   assert.deepEqual(snapshot.graph.edges, [
     { from: 'tsk_b', to: 'tsk_a', kind: 'blocked_by', satisfied_by: ['done'] },
   ]);
-  assert.equal(snapshot.runners_available, false);
+  assert.equal(snapshot.runners_available, true);
+  assert.deepEqual(snapshot.runners.map((runner) => runner.runner_id), ['rnr_1']);
   assert.equal(snapshot.tree_key, 'tree-1');
 
   const graphCall = seen.find((args) => args[0] === 'graph');
@@ -1411,6 +1554,8 @@ test('the live source reads the CLI, normalizes the edge shape and declares prov
   assert.ok(graphCall.includes('tsk_root'));
   const statusCall = seen.find((args) => args[0] === 'status');
   assert.ok(statusCall.includes('tsk_a') && statusCall.includes('tsk_b'));
+  const runnerCall = seen.find((args) => args[0] === 'runner');
+  assert.deepEqual(runnerCall, ['runner', 'list', '--project', 'p', '--json']);
 
   const model = buildTree(snapshot);
   assert.equal(model.roots[0].node_key, 'build');
@@ -1445,6 +1590,9 @@ test('the live source accepts the single-id status shape and refuses a wrong tre
       }
       if (args[0] === 'project') {
         return JSON.stringify({ project_id: 'p', config_revision: 1 });
+      }
+      if (args[0] === 'runner') {
+        return JSON.stringify({ runners: [] });
       }
       return JSON.stringify({ schema_revision: 7 });
     },
@@ -1487,6 +1635,9 @@ function liveSourceWith(graphPayload) {
       }
       if (args[0] === 'project') {
         return JSON.stringify({ project_id: 'p', config_revision: 1 });
+      }
+      if (args[0] === 'runner') {
+        return JSON.stringify({ runners: [] });
       }
       return JSON.stringify({ schema_revision: 7 });
     },
@@ -2537,4 +2688,93 @@ test('an empty section is not drawn, and its machine fact moves to More', () => 
     render.includes('if (!data.conversation) return;'),
     'the Conversation heading is guarded',
   );
+});
+
+// ---------------------------------------------------------------- live fallback
+
+test('a build with no store answers from the committed capture', async () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'board-no-store-'));
+  const source = createCliSource({
+    enginePath: join(scratch, 'no-engine'),
+    dbPath: join(scratch, 'no-store.sqlite3'),
+    fallbackDirectory: fixtures,
+  });
+
+  const snapshot = await source.load(fixtureRequest(fixtures));
+  assert.equal(snapshot.provenance.source_kind, 'fixture');
+  assert.equal(snapshot.provenance.engine_commit, 'c4ccf1e');
+  assert.equal(snapshot.provenance.schema_revision, 8);
+
+  // One renderer, two sources: the fallback must paint the committed pages'
+  // tree exactly, not a smaller or differently-sourced one.
+  const fallback = buildTree(snapshot);
+  const capture = fixtureModel();
+  assert.equal(renderBoardPage(fallback), renderBoardPage(capture));
+  assert.equal(renderListPage(fallback), renderListPage(capture));
+});
+
+test('a build whose store exists but cannot be read fails instead of falling back', async () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'board-broken-store-'));
+  const engine = join(scratch, 'engine');
+  mkdirSync(join(engine, 'bin'), { recursive: true });
+  const task = join(engine, 'bin', 'task');
+  writeFileSync(task, '#!/bin/sh\nexit 9\n');
+  chmodSync(task, 0o755);
+  writeFileSync(join(scratch, 'store.sqlite3'), '');
+
+  const source = createCliSource({
+    enginePath: engine,
+    dbPath: join(scratch, 'store.sqlite3'),
+    fallbackDirectory: fixtures,
+  });
+  await assert.rejects(source.load(fixtureRequest(fixtures)), /exit|failed|code 9/i);
+});
+
+test('the live read and the committed capture render the same page', async () => {
+  const meta = readFixtureMeta(fixtures);
+  const payloads = {
+    graph: readFileSync(join(fixtures, 'graph.json'), 'utf8'),
+    status: readFileSync(join(fixtures, 'status.json'), 'utf8'),
+    project: readFileSync(join(fixtures, 'project.json'), 'utf8'),
+    runners: readFileSync(join(fixtures, 'runners.json'), 'utf8'),
+    store: JSON.stringify({ schema_revision: meta.engine.schema_revision }),
+  };
+  const source = createLiveSource({
+    enginePath: '/engine',
+    dbPath: '/store.sqlite3',
+    command: async (args) => {
+      if (args[0] === 'graph') return payloads.graph;
+      if (args[0] === 'status') return payloads.status;
+      if (args[0] === 'project') return payloads.project;
+      if (args[0] === 'runner') return payloads.runners;
+      return payloads.store;
+    },
+    readCommit: async () => meta.engine.commit,
+    now: () => new Date(meta.captured_at),
+  });
+
+  const snapshot = await source.load(fixtureRequest(fixtures));
+  const capture = fixtureModel();
+  const live = buildTree({
+    ...snapshot,
+    // Provenance is the one honest difference: a live read names itself live,
+    // its own clock and the exact project it read. Everything the Board and
+    // List draw comes from the payloads, which are identical here.
+    provenance: capture.provenance,
+  });
+
+  assert.equal(snapshot.provenance.source_kind, 'live');
+  assert.deepEqual(
+    snapshot.provenance.unobserved_states,
+    capture.provenance.unobserved_states,
+    'a live read names the states this tree did not reach',
+  );
+  assert.deepEqual(live.counts, capture.counts);
+  assert.equal(live.total, capture.total);
+  assert.deepEqual(
+    flattenTree(live.roots).map((row) => [row.node_key, row.rest_state]),
+    flattenTree(capture.roots).map((row) => [row.node_key, row.rest_state]),
+  );
+  assert.equal(renderBoardPage(live), renderBoardPage(capture));
+  assert.equal(renderListPage(live), renderListPage(capture));
 });
