@@ -2157,22 +2157,28 @@ const SCRIPT = `(function () {
             ' H ' + tx;
         }
       } else {
-        // The cards are not neighbours, so the line runs down the source
-        // gutter, across below every card, and up the target gutter.
+        // The cards are not neighbours. The line leaves the source bottom,
+        // runs below every card, and comes back up to the target bottom. It
+        // never runs alongside a card edge, so no card between the two ends
+        // can read as framed or grouped.
+        var underX = (aLeft + aRight) / 2;
+        var underToX = (bLeft + bRight) / 2;
         var routeY = maxBottom + 12;
-        var dir = targetGutter >= sourceGutter ? 1 : -1;
-        var r = Math.min(6, Math.abs(targetGutter - sourceGutter) / 2);
+        var side = underToX >= underX ? 1 : -1;
+        var r = Math.min(
+          10,
+          Math.abs(underToX - underX) / 2,
+          Math.max(2, (routeY - Math.max(aBottom, bBottom)) / 2),
+        );
         d =
-          'M ' + sx + ' ' + sy +
-          ' H ' + sourceGutter +
+          'M ' + underX + ' ' + aBottom +
           ' V ' + (routeY - r) +
-          ' Q ' + sourceGutter + ' ' + routeY + ' ' +
-          (sourceGutter + dir * r) + ' ' + routeY +
-          ' H ' + (targetGutter - dir * r) +
-          ' Q ' + targetGutter + ' ' + routeY + ' ' +
-          targetGutter + ' ' + (routeY - r) +
-          ' V ' + ty +
-          ' H ' + tx;
+          ' Q ' + underX + ' ' + routeY + ' ' +
+          (underX + side * r) + ' ' + routeY +
+          ' H ' + (underToX - side * r) +
+          ' Q ' + underToX + ' ' + routeY + ' ' +
+          underToX + ' ' + (routeY - r) +
+          ' V ' + bBottom;
       }
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', d);

@@ -312,6 +312,94 @@ const PATH_ENDPOINTS = `function pathEndpoints(d) {
   return { start: start, end: end };
 }`;
 
+// The same walk, sampled, so a test can ask where a stroke actually goes:
+// alongside an unrelated card edge, through a card, or around one.
+const PATH_SAMPLES = `function pathPoints(d) {
+  var tokens = d.split(' ');
+  var points = [];
+  var x = 0;
+  var y = 0;
+  var cmd = '';
+  function stepsFor(length) {
+    return Math.max(1, Math.ceil(length / 4));
+  }
+  function line(nx, ny) {
+    var steps = stepsFor(Math.sqrt((nx - x) * (nx - x) + (ny - y) * (ny - y)));
+    for (var s = 1; s <= steps; s += 1) {
+      points.push({ x: x + ((nx - x) * s) / steps, y: y + ((ny - y) * s) / steps });
+    }
+    x = nx;
+    y = ny;
+  }
+  for (var i = 0; i < tokens.length; i += 1) {
+    var token = tokens[i];
+    if (!token) continue;
+    if (token === 'M' || token === 'H' || token === 'V' || token === 'Q' || token === 'C') {
+      cmd = token;
+      continue;
+    }
+    var n = Number(token);
+    if (cmd === 'M') {
+      x = n;
+      y = Number(tokens[i + 1]);
+      i += 1;
+      points.push({ x: x, y: y });
+    } else if (cmd === 'H') {
+      line(n, y);
+    } else if (cmd === 'V') {
+      line(x, n);
+    } else if (cmd === 'Q') {
+      var cx = n;
+      var cy = Number(tokens[i + 1]);
+      var ex = Number(tokens[i + 2]);
+      var ey = Number(tokens[i + 3]);
+      i += 3;
+      var x0 = x;
+      var y0 = y;
+      var qSteps = stepsFor(
+        Math.sqrt((cx - x0) * (cx - x0) + (cy - y0) * (cy - y0)) +
+          Math.sqrt((ex - cx) * (ex - cx) + (ey - cy) * (ey - cy)),
+      );
+      for (var s = 1; s <= qSteps; s += 1) {
+        var q = s / qSteps;
+        var mq = 1 - q;
+        points.push({
+          x: mq * mq * x0 + 2 * mq * q * cx + q * q * ex,
+          y: mq * mq * y0 + 2 * mq * q * cy + q * q * ey,
+        });
+      }
+      x = ex;
+      y = ey;
+    } else if (cmd === 'C') {
+      var c1x = n;
+      var c1y = Number(tokens[i + 1]);
+      var c2x = Number(tokens[i + 2]);
+      var c2y = Number(tokens[i + 3]);
+      var cx2 = Number(tokens[i + 4]);
+      var cy2 = Number(tokens[i + 5]);
+      i += 5;
+      var bx = x;
+      var by = y;
+      var cSteps = stepsFor(
+        Math.sqrt((c1x - bx) * (c1x - bx) + (c1y - by) * (c1y - by)) +
+          Math.sqrt((c2x - c1x) * (c2x - c1x) + (c2y - c1y) * (c2y - c1y)) +
+          Math.sqrt((cx2 - c2x) * (cx2 - c2x) + (cy2 - c2y) * (cy2 - c2y)),
+      );
+      for (var s = 1; s <= cSteps; s += 1) {
+        var c = s / cSteps;
+        var mc = 1 - c;
+        points.push({
+          x: mc * mc * mc * bx + 3 * mc * mc * c * c1x + 3 * mc * c * c * c2x + c * c * c * cx2,
+          y: mc * mc * mc * by + 3 * mc * mc * c * c1y + 3 * mc * c * c * c2y + c * c * c * cy2,
+        });
+      }
+      x = cx2;
+      y = cy2;
+    }
+  }
+  return points;
+}`;
+
 // Obscura occasionally updates the URL for a hash assignment without
 // delivering `hashchange`. The page follows the event, so deliver it once the
 // URL has moved; the cold deep-link test still proves a real load at a hashed
@@ -2056,6 +2144,7 @@ test(
         return (nearSide && withinY) || (nearCap && withinX);
       }
       ${PATH_ENDPOINTS}
+      ${PATH_SAMPLES}
       var edgeGeometry = paths.map(function (path) {
         var from = document.querySelector(
           '#board-root .card[data-task="' + path.getAttribute('data-from') + '"]',
@@ -2069,6 +2158,49 @@ test(
           startOnCard: from ? onCardEdge(points.start, relRect(from)) : false,
           endOnCard: to ? onCardEdge(points.end, relRect(to)) : false,
         };
+      });
+      var framed = [];
+      paths.forEach(function (path) {
+        var fromId = path.getAttribute('data-from');
+        var toId = path.getAttribute('data-to');
+        var points = pathPoints(path.getAttribute('d'));
+        var minX = Infinity;
+        var maxX = -Infinity;
+        var minY = Infinity;
+        var maxY = -Infinity;
+        points.forEach(function (point) {
+          if (point.x < minX) minX = point.x;
+          if (point.x > maxX) maxX = point.x;
+          if (point.y < minY) minY = point.y;
+          if (point.y > maxY) maxY = point.y;
+        });
+        cards.forEach(function (card) {
+          var id = card.getAttribute('data-task');
+          if (id === fromId || id === toId) return;
+          var r = relRect(card);
+          var near = 0;
+          var inside = 0;
+          points.forEach(function (point) {
+            if (point.x > r.left && point.x < r.right && point.y > r.top && point.y < r.bottom) {
+              inside += 1;
+              return;
+            }
+            var dx = point.x < r.left ? r.left - point.x : point.x > r.right ? point.x - r.right : 0;
+            var dy = point.y < r.top ? r.top - point.y : point.y > r.bottom ? point.y - r.bottom : 0;
+            if (Math.sqrt(dx * dx + dy * dy) <= 12) near += 1;
+          });
+          if (near > 5 || inside > 0) {
+            framed.push({ card: id, near: near, inside: inside });
+          }
+          if (
+            minX <= r.left + 2 &&
+            maxX >= r.right - 2 &&
+            minY <= r.top + 2 &&
+            maxY >= r.bottom - 2
+          ) {
+            framed.push({ card: id, enclosed: true });
+          }
+        });
       });
       return {
         cards: cards.length,
@@ -2095,6 +2227,7 @@ test(
           return path.getAttribute('data-kind');
         }),
         edgeGeometry: edgeGeometry,
+        framed: framed,
         sameLaneEdges: paths.filter(function (path) {
           var from = document.querySelector(
             '#board-root .card[data-task="' + path.getAttribute('data-from') + '"]',
@@ -2170,6 +2303,14 @@ test(
       assert.equal(edge.startOnCard, true, `starts on the blocker: ${edge.d}`);
       assert.equal(edge.endOnCard, true, `ends on the blocked card: ${edge.d}`);
     }
+    // A line may not hug a third card's edge for a run, pass through a third
+    // card, or have a bounding box that contains one. This is the check that
+    // catches a connector which frames the card between its two ends.
+    assert.deepEqual(
+      board.framed,
+      [],
+      `no line frames a card: ${JSON.stringify(board.framed)}`,
+    );
     assert.equal(board.provenanceOpen, false);
     assert.equal(board.isoText, false);
     assert.equal(board.cardStatesHidden, true, 'no card repeats its lane at 1280');
