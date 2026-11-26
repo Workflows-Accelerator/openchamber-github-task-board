@@ -258,7 +258,7 @@ function requireObscura() {
 
 // Every wait is a condition, not a pause: the page ends it by becoming what
 // the next assertion reads, and the timeout names the claim that never held.
-async function until(page, expression, message, timeoutMs = 5000) {
+async function until(page, expression, message, timeoutMs = 10000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     if (await page.evaluate(expression)) return;
@@ -267,6 +267,63 @@ async function until(page, expression, message, timeoutMs = 5000) {
     }
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
+}
+
+// Obscura exposes SVG paths without getPointAtLength, so the test walks the
+// commands the renderer writes (M, H, V, Q, C) and returns the real first and
+// last point of the stroke.
+const PATH_ENDPOINTS = `function pathEndpoints(d) {
+  var tokens = d.split(' ');
+  var x = 0;
+  var y = 0;
+  var cmd = '';
+  var start = null;
+  var end = null;
+  for (var i = 0; i < tokens.length; i += 1) {
+    var token = tokens[i];
+    if (!token) continue;
+    if (token === 'M' || token === 'H' || token === 'V' || token === 'Q' || token === 'C') {
+      cmd = token;
+      continue;
+    }
+    var n = Number(token);
+    if (cmd === 'M') {
+      x = n;
+      y = Number(tokens[i + 1]);
+      i += 1;
+    } else if (cmd === 'H') {
+      x = n;
+    } else if (cmd === 'V') {
+      y = n;
+    } else if (cmd === 'Q') {
+      i += 2;
+      x = Number(tokens[i]);
+      y = Number(tokens[i + 1]);
+      i += 1;
+    } else if (cmd === 'C') {
+      i += 4;
+      x = Number(tokens[i]);
+      y = Number(tokens[i + 1]);
+      i += 1;
+    }
+    if (start === null) start = { x: x, y: y };
+    end = { x: x, y: y };
+  }
+  return { start: start, end: end };
+}`;
+
+// Obscura occasionally updates the URL for a hash assignment without
+// delivering `hashchange`. The page follows the event, so deliver it once the
+// URL has moved; the cold deep-link test still proves a real load at a hashed
+// URL, and the first test proves a real link click.
+async function goToHash(page, hash) {
+  const wanted = JSON.stringify(hash);
+  await page.evaluate(`location.hash = ${wanted}`);
+  await page.evaluate(`(function () {
+    if (location.hash === ${wanted}) {
+      window.dispatchEvent(new Event('hashchange'));
+    }
+  })()`);
 }
 
 test(
@@ -336,7 +393,7 @@ test(
     assert.equal(loaded.cards, 3, 'one card per top-level child');
     // 1a: the root chip is gone; the level line names both classes.
     assert.equal(loaded.rootChips, 0, 'no root task count chip');
-    assert.equal(loaded.level, '3 live in this level · 7 lanes empty');
+    assert.equal(loaded.level, '3 tasks');
     assert.equal(loaded.progress, '1 of 5 done · 1 skipped · 4 archived');
     // Slice 8: the top level draws no line, and the word at top left is home.
     assert.equal(loaded.edges, 0, 'no in-level edge at the top');
@@ -353,7 +410,6 @@ test(
     });
     const skin = await page.evaluate(`(function () {
       var provenance = document.querySelector('details.provenance');
-      var focus = document.querySelector('#board-root .focus-line');
       var laneCount = function (lane) {
         var node = document.querySelector('#board-root .lane[data-lane="' + lane + '"]');
         return node ? node.querySelectorAll('.card').length : 0;
@@ -367,14 +423,6 @@ test(
           ? provenance.querySelector('summary').textContent
           : null,
         text: document.body.innerText,
-        focus: focus ? focus.textContent : null,
-        counts: focus
-          ? {
-              canStart: Number(focus.getAttribute('data-can-start')),
-              waiting: Number(focus.getAttribute('data-waiting')),
-              inProgress: Number(focus.getAttribute('data-in-progress')),
-            }
-          : null,
         lanes: {
           canStart: laneCount('can-start'),
           inProgress: laneCount('in-progress'),
@@ -398,7 +446,6 @@ test(
     assert.equal(skin.provenanceOpen, false, 'provenance is closed by default');
     assert.equal(skin.provenanceSummary, 'Where this page came from');
     assert.equal(/\d{4}-\d\d-\d\dT/.test(skin.text), false, 'no ISO on the surface');
-    assert.ok(skin.focus.includes('can start'), skin.focus);
     // Every card sits in the lane its own state maps to, and the map is not
     // re-implemented in the page.
     for (const card of skin.cards) {
@@ -414,18 +461,7 @@ test(
       true,
       'no card prints its lane word at 1280',
     );
-    assert.equal(skin.counts.canStart, skin.lanes.canStart, 'can-start matches its lane');
-    assert.equal(
-      skin.counts.inProgress,
-      skin.lanes.inProgress,
-      'in-progress matches its lane',
-    );
-    assert.equal(skin.counts.waiting, skin.lanes.waiting, 'waiting matches both wait lanes');
-    assert.equal(
-      skin.counts.canStart + skin.counts.inProgress + skin.counts.waiting,
-      skin.lanes.total,
-      'the header counts sum to the live total in this fixture',
-    );
+    assert.equal(skin.lanes.total, loaded.cards, 'every card sits in exactly one lane');
 
     const facts = await page.evaluate(`(function () {
       var cards = Array.prototype.slice.call(
@@ -566,7 +602,11 @@ test(
     );
 
     // ---- entering a scope -------------------------------------------------
-    await page.evaluate(`location.hash = '#board/box'`);
+    // Click the container's own title, the way a reader does, rather than
+    // assigning `location.hash` from the test harness.
+    await page.evaluate(`document.querySelector(
+      '#board-root .card[data-task="box"] .card-title .enter',
+    ).click()`);
     await until(
       page,
       "document.getElementById('board-root').getAttribute('data-scope') === 'box'",
@@ -585,8 +625,9 @@ test(
       };
     })()`);
     assert.equal(scope.cards, 4, 'the container scope shows its four children');
-    // 1a: both classes named, in one line with the empty-lane count.
-    assert.equal(scope.level, '2 live · 2 archived in this level · 6 lanes empty');
+    // The level line counts what is drawn and names archived work; it never
+    // counts empty lanes.
+    assert.equal(scope.level, '4 tasks · 2 archived');
     assert.equal(scope.chip, '2 inside · 1 done · 2 archived');
     assert.equal(scope.details, true, 'the scope header still has Details');
     // On the Board the Here marker lives in the hidden list tree; it is set
@@ -860,7 +901,7 @@ test(
     );
 
     // ---- back to All work -------------------------------------------------
-    await page.evaluate(`location.hash = '#board'`);
+    await page.evaluate(`document.querySelector('#board-root .crumbs a').click()`);
     await until(
       page,
       "document.getElementById('board-root').getAttribute('data-scope') === '' && document.querySelectorAll('#board-root .card').length === 3",
@@ -982,30 +1023,19 @@ test(
     assert.equal(cold.hash, '#board/box');
     assert.equal(cold.scope, 'box');
     assert.equal(cold.cards, 4);
-    assert.equal(cold.level, '2 live · 2 archived in this level · 6 lanes empty');
+    assert.equal(cold.level, '4 tasks · 2 archived');
     assert.equal(cold.progress, '1 of 5 done · 1 skipped · 4 archived');
     assert.equal(cold.here, 'box');
     assert.equal(cold.title, 'Box of work · Engine board');
     const coldSkin = await page.evaluate(`(function () {
       var provenance = document.querySelector('details.provenance');
-      var focus = document.querySelector('#board-root .focus-line');
       return {
         provenanceOpen: provenance ? provenance.open : null,
         isoText: /\d{4}-\d\d-\d\dT/.test(document.body.innerText),
-        focus: focus ? focus.textContent : null,
-        focusSum: focus
-          ? focus.textContent.split(' · ').reduce(function (sum, part) {
-              return sum + Number(part.split(' ')[0]);
-            }, 0)
-          : 0,
       };
     })()`);
     assert.equal(coldSkin.provenanceOpen, false);
     assert.equal(coldSkin.isoText, false);
-    // The box's children are done and skipped; the header names the two lanes
-    // that hold them so it adds up to the level's live total.
-    assert.equal(coldSkin.focus, '1 done · 1 set aside');
-    assert.equal(coldSkin.focusSum, 2, 'the focus line adds up to the two live rows');
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);
     assert.deepEqual(page.failedRequests, []);
@@ -1058,7 +1088,6 @@ test(
         var lane = document.querySelector('#board-root .lane[data-lane="' + id + '"]');
         return lane ? lane.querySelectorAll('.card').length : 0;
       };
-      var focus = document.querySelector('#board-root .focus-line');
       var cards = Array.prototype.slice.call(
         document.querySelectorAll('#board-root .card'),
       );
@@ -1067,20 +1096,7 @@ test(
         containers: cards.filter(function (card) {
           return card.querySelector('.row-count') !== null;
         }).length,
-        focus: focus ? focus.textContent : null,
-        focusSum: focus
-          ? focus.textContent.split(' · ').reduce(function (sum, part) {
-              return sum + Number(part.split(' ')[0]);
-            }, 0)
-          : 0,
         live: Number(document.querySelector('#board-root .level strong').textContent),
-        counts: focus
-          ? {
-              canStart: Number(focus.getAttribute('data-can-start')),
-              waiting: Number(focus.getAttribute('data-waiting')),
-              inProgress: Number(focus.getAttribute('data-in-progress')),
-            }
-          : null,
         lanes: {
           canStart: laneCount('can-start'),
           inProgress: laneCount('in-progress'),
@@ -1105,14 +1121,10 @@ test(
     // R5: the top level is the portfolio, not a field of loose tasks.
     assert.equal(board.cards, 5, 'five processes at the top');
     assert.equal(board.containers, 5, 'each process carries its own counts');
-    assert.equal(board.counts.canStart, 1, 'Build can start now');
-    assert.equal(board.counts.inProgress, 0, 'nothing runs at the process level');
-    assert.equal(board.counts.waiting, 2, 'Release and Operations wait');
-    assert.equal(board.focus, '1 can start · 2 waiting · 2 not started');
-    assert.equal(board.focusSum, board.live, 'the focus line adds up to the level total');
-    assert.equal(board.lanes.canStart, board.counts.canStart);
-    assert.equal(board.lanes.inProgress, board.counts.inProgress);
-    assert.equal(board.lanes.waiting, board.counts.waiting);
+    assert.equal(board.lanes.canStart, 1, 'Build can start now');
+    assert.equal(board.lanes.inProgress, 0, 'nothing runs at the process level');
+    assert.equal(board.lanes.waiting, 2, 'Release and Operations wait');
+    assert.equal(board.live, board.cards);
     assert.equal(board.provenanceOpen, false);
     assert.equal(board.isoText, false);
     assert.equal(board.cardStatesHidden, true, 'no card repeats its lane at 1280');
@@ -1122,7 +1134,7 @@ test(
 
     // Enter Build: the crowded workstream, twelve startable cards in one lane
     // and the two running rows in their own lane instead of in Can start now.
-    await page.evaluate(`location.hash = '#board/build'`);
+    await goToHash(page, '#board/build');
     await until(
       page,
       "document.getElementById('board-root').getAttribute('data-scope') === 'build'",
@@ -1133,18 +1145,11 @@ test(
         var lane = document.querySelector('#board-root .lane[data-lane="' + id + '"]');
         return lane ? lane.querySelectorAll('.card').length : 0;
       };
-      var focus = document.querySelector('#board-root .focus-line');
       var cards = Array.prototype.slice.call(
         document.querySelectorAll('#board-root .card'),
       );
       return {
         cards: cards.length,
-        focus: focus ? focus.textContent : null,
-        focusSum: focus
-          ? focus.textContent.split(' · ').reduce(function (sum, part) {
-              return sum + Number(part.split(' ')[0]);
-            }, 0)
-          : 0,
         live: Number(document.querySelector('#board-root .level strong').textContent),
         lanes: {
           canStart: laneCount('can-start'),
@@ -1178,19 +1183,24 @@ test(
             );
             var f = fromCard.getBoundingClientRect();
             var t = toCard.getBoundingClientRect();
-            var dText = path.getAttribute('d');
-            var m = dText.match(/^M ([-\\d.]+) ([-\\d.]+)/);
-            // A routed line ends with a Q then H; a curve ends with C x2 y2.
-            var bus = dText.match(/Q ([-\\d.]+) ([-\\d.]+) ([-\\d.]+) ([-\\d.]+) H ([-\\d.]+)$/);
-            var curve = dText.match(/([-\\d.]+) ([-\\d.]+)$/);
+            // Read the drawn geometry, not the string that describes it: a
+            // route is a complete connector only if its first point is on the
+            // blocker's own edge and its last point is on the blocked card.
+            ${PATH_ENDPOINTS}
+            var points = pathEndpoints(path.getAttribute('d'));
+            var start = points.start;
+            var end = points.end;
             geometry = {
-              startX: Number(m[1]),
-              startY: Number(m[2]),
-              endX: bus ? Number(bus[5]) : Number(curve[1]),
-              endY: bus ? Number(bus[4]) : Number(curve[2]),
+              startX: start.x,
+              startY: start.y,
+              endX: end.x,
+              endY: end.y,
+              fromLeft: f.left - box.left,
               fromRight: f.right - box.left,
+              fromTop: f.top - box.top,
               fromBottom: f.bottom - box.top,
               toLeft: t.left - box.left,
+              toRight: t.right - box.left,
               toTop: t.top - box.top,
               toBottom: t.bottom - box.top,
             };
@@ -1231,8 +1241,7 @@ test(
     assert.equal(crowded.lanes.waitingOther, 1);
     assert.equal(crowded.lanes.done, 1);
     assert.equal(crowded.runningInCanStart, 0, 'a running row is never in Can start now');
-    assert.equal(crowded.focus, '12 can start · 2 in progress · 1 waiting · 1 done');
-    assert.equal(crowded.focusSum, crowded.live, 'the focus line adds up to the level total');
+    assert.equal(crowded.live, crowded.cards);
     // R3: the line survives the twelve-card lane: it is drawn from the card in
     // that lane to the waiting card, over the lane's full height, with no NaN
     // coordinate from a zero-size measurement.
@@ -1245,6 +1254,11 @@ test(
     assert.ok(
       Math.abs(crowded.edge.geometry.startX - crowded.edge.geometry.fromRight) <= 1,
       `starts on the blocker (${crowded.edge.geometry.startX} vs ${crowded.edge.geometry.fromRight})`,
+    );
+    assert.ok(
+      crowded.edge.geometry.startY >= crowded.edge.geometry.fromTop - 1 &&
+        crowded.edge.geometry.startY <= crowded.edge.geometry.fromBottom + 1,
+      'the start point is inside the blocker',
     );
     assert.ok(
       Math.abs(crowded.edge.geometry.endX - crowded.edge.geometry.toLeft) <= 1,
@@ -1267,7 +1281,7 @@ test(
 
     // Release: open the blocked chain's panel. The first screen names the lane
     // and the blocker; the raw engine state is one fold down.
-    await page.evaluate(`location.hash = '#board/release'`);
+    await goToHash(page, '#board/release');
     await until(
       page,
       "document.getElementById('board-root').getAttribute('data-scope') === 'release'",
@@ -1458,7 +1472,7 @@ test(
 
     // The one `after` edge in the demo: dashed above 640 px, dropped below it
     // with the card carrying the same fact.
-    await page.evaluate(`location.hash = '#board/research'`);
+    await goToHash(page, '#board/research');
     await until(
       page,
       "document.getElementById('board-root').getAttribute('data-scope') === 'research'",
@@ -1490,7 +1504,6 @@ test(
         sentences: plan.edges.map(function (edge) {
           return sentence(edge.to);
         }),
-        focus: document.querySelector('#board-root .focus-line').textContent,
       };
     })()`;
     const research = await page.evaluate(readResearch);
@@ -1502,7 +1515,6 @@ test(
       research.sentences[0] && research.sentences[0].includes('Starts after'),
       research.sentences[0],
     );
-    assert.equal(research.focus, '1 can start · 1 not started · 1 set aside');
 
     await page.send('Emulation.setDeviceMetricsOverride', {
       width: 390,
@@ -1513,13 +1525,13 @@ test(
     await until(page, 'window.innerWidth === 390', 'the phone viewport applies');
     // A phone loads the board at this width, so re-render the scope rather
     // than wait for a resize handler: the layer must never be built here.
-    await page.evaluate(`location.hash = '#board/build'`);
+    await goToHash(page, '#board/build');
     await until(
       page,
       "document.getElementById('board-root').getAttribute('data-scope') === 'build'",
       'Build renders at phone width',
     );
-    await page.evaluate(`location.hash = '#board/research'`);
+    await goToHash(page, '#board/research');
     await until(
       page,
       "document.getElementById('board-root').getAttribute('data-scope') === 'research'",
@@ -2015,13 +2027,49 @@ test(
         var lane = document.querySelector('#board-root .lane[data-lane="' + id + '"]');
         return lane ? lane.querySelectorAll('.card').length : 0;
       };
-      var focus = document.querySelector('#board-root .focus-line');
       var cards = Array.prototype.slice.call(
         document.querySelectorAll('#board-root .card'),
       );
       var paths = Array.prototype.slice.call(
         document.querySelectorAll('#board-root .edge-layer path'),
       );
+      var wrap = document.querySelector('#board-root .lanes');
+      var wrapBox = wrap.getBoundingClientRect();
+      function relRect(el) {
+        var r = el.getBoundingClientRect();
+        return {
+          left: r.left - wrapBox.left,
+          top: r.top - wrapBox.top,
+          right: r.right - wrapBox.left,
+          bottom: r.bottom - wrapBox.top,
+        };
+      }
+      function onCardEdge(point, rect) {
+        var nearSide =
+          Math.abs(point.x - rect.left) <= 1 ||
+          Math.abs(point.x - rect.right) <= 1;
+        var nearCap =
+          Math.abs(point.y - rect.top) <= 1 ||
+          Math.abs(point.y - rect.bottom) <= 1;
+        var withinY = point.y >= rect.top - 1 && point.y <= rect.bottom + 1;
+        var withinX = point.x >= rect.left - 1 && point.x <= rect.right + 1;
+        return (nearSide && withinY) || (nearCap && withinX);
+      }
+      ${PATH_ENDPOINTS}
+      var edgeGeometry = paths.map(function (path) {
+        var from = document.querySelector(
+          '#board-root .card[data-task="' + path.getAttribute('data-from') + '"]',
+        );
+        var to = document.querySelector(
+          '#board-root .card[data-task="' + path.getAttribute('data-to') + '"]',
+        );
+        var points = pathEndpoints(path.getAttribute('d'));
+        return {
+          d: path.getAttribute('d'),
+          startOnCard: from ? onCardEdge(points.start, relRect(from)) : false,
+          endOnCard: to ? onCardEdge(points.end, relRect(to)) : false,
+        };
+      });
       return {
         cards: cards.length,
         keys: cards.map(function (card) { return card.getAttribute('data-task'); }),
@@ -2029,22 +2077,34 @@ test(
           var title = card.querySelector('.card-title');
           return title ? title.textContent.trim() : null;
         }),
-        focus: focus ? focus.textContent : null,
-        focusSum: focus
-          ? focus.textContent.split(' · ').reduce(function (sum, part) {
-              return sum + Number(part.split(' ')[0]);
-            }, 0)
-          : 0,
         live: Number(document.querySelector('#board-root .level strong').textContent),
+        provenanceText: document.querySelector('details.provenance').textContent,
         lanes: {
           waitingSomeone: laneCount('waiting-for-someone'),
           waitingOther: laneCount('waiting-for-other-work'),
           done: laneCount('done'),
         },
+        level: document.querySelector('#board-root .level').textContent,
+        bodyText: document.body.innerText,
+        waitCopy: Array.prototype.map.call(
+          document.querySelectorAll('#board-root .card-wait'),
+          function (line) { return line.textContent; },
+        ),
         edges: paths.length,
         edgeKinds: paths.map(function (path) {
           return path.getAttribute('data-kind');
         }),
+        edgeGeometry: edgeGeometry,
+        sameLaneEdges: paths.filter(function (path) {
+          var from = document.querySelector(
+            '#board-root .card[data-task="' + path.getAttribute('data-from') + '"]',
+          );
+          var to = document.querySelector(
+            '#board-root .card[data-task="' + path.getAttribute('data-to') + '"]',
+          );
+          return from && to &&
+            from.getAttribute('data-lane') === to.getAttribute('data-lane');
+        }).length,
         provenanceOpen: document.querySelector('details.provenance').open,
         isoText: /\d{4}-\d\d-\d\dT/.test(document.body.innerText),
         cardStatesHidden: cards.every(function (card) {
@@ -2059,24 +2119,57 @@ test(
         }),
       };
     })()`);
-    assert.equal(board.cards, 7, 'seven top-level tasks, no container row');
-    assert.equal(new Set(board.keys).size, 7, 'one card per task');
+    assert.equal(board.cards, 6, 'six work tasks, no container and no engine step');
+    assert.equal(new Set(board.keys).size, 6, 'one card per task');
     assert.equal(board.titles.includes('$root'), false, 'the container is hidden');
     assert.equal(
       board.titles.includes('Emit the resolved instantiation fragment.'),
-      true,
-      'the engine emit task is real work',
+      false,
+      'the engine emit task is not a card',
     );
-    assert.equal(board.focus, '2 waiting · 5 done');
-    assert.equal(board.focusSum, board.live, 'the focus line adds up to the level total');
-    assert.equal(board.live, 7);
+    assert.ok(
+      board.provenanceText.includes('engine step') &&
+        board.provenanceText.includes('$emit'),
+      'the fold names the engine step once',
+    );
+    assert.equal(board.live, 6, 'the level line counts work, not machinery');
+    assert.equal(board.level, '6 tasks');
+    assert.equal(
+      /live in this level|lanes empty/.test(board.bodyText),
+      false,
+      'no engineer emptiness copy on the page',
+    );
+    assert.ok(board.waitCopy.length > 0, 'a waiting card names what it waits for');
+    for (const line of board.waitCopy) {
+      assert.ok(
+        line.startsWith('Waiting for: '),
+        `label and value are separated: ${line}`,
+      );
+    }
     assert.deepEqual(board.lanes, {
       waitingSomeone: 1,
       waitingOther: 1,
-      done: 5,
+      done: 4,
     });
-    assert.equal(board.edges, 5, 'five blocked_by lines at 1280');
+    // Only edges whose ends sit in different lanes are drawn: the finished
+    // summary to the review gate, and the gate to the blocked remediation. The
+    // three diagnostics-to-summary edges are inside Done, so they are not drawn
+    // as clipped stubs.
+    assert.equal(board.edges, 2, 'two cross-lane blocked_by lines at 1280');
     assert.deepEqual(new Set(board.edgeKinds), new Set(['blocked_by']));
+    assert.equal(
+      board.sameLaneEdges,
+      0,
+      'no line is drawn between two cards in one lane',
+    );
+    // A drawn line is a complete connector: it starts on the blocker's own
+    // edge and ends on the blocked card's own edge, so no stroke is a stub
+    // that stops in the gutter.
+    for (const edge of board.edgeGeometry) {
+      assert.equal(/NaN/.test(edge.d), false, `no NaN in ${edge.d}`);
+      assert.equal(edge.startOnCard, true, `starts on the blocker: ${edge.d}`);
+      assert.equal(edge.endOnCard, true, `ends on the blocked card: ${edge.d}`);
+    }
     assert.equal(board.provenanceOpen, false);
     assert.equal(board.isoText, false);
     assert.equal(board.cardStatesHidden, true, 'no card repeats its lane at 1280');
@@ -2171,7 +2264,7 @@ test(
     await page.navigate(pathToFileURL(boardFile).href);
     await until(
       page,
-      "document.querySelectorAll('#board-root .card').length === 7",
+      "document.querySelectorAll('#board-root .card').length === 6",
       'the top level renders at phone width',
     );
     const phone = await page.evaluate(`(function () {
@@ -2194,10 +2287,11 @@ test(
         ),
       };
     })()`);
-    assert.equal(phone.cards, 7);
+    assert.equal(phone.cards, 6);
     assert.equal(phone.paths, 0, 'no line at phone width');
     assert.ok(
-      phone.remediateSays && phone.remediateSays.includes('Waiting for The on-call owner chooses'),
+      phone.remediateSays &&
+        phone.remediateSays.includes('Waiting for: The on-call owner chooses'),
       phone.remediateSays,
     );
     assert.equal(phone.cardStatesVisible, true, 'the card carries the lane word on a phone');

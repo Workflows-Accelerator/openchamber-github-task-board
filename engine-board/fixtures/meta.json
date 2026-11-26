@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-11-26T09:51:01Z",
+  "captured_at": "2026-11-26T10:17:09Z",
   "container_node_key": "$root",
   "engine": {
     "commit": "c4ccf1e",
@@ -21,7 +21,7 @@
     "task runner list --project engine-board --json",
     "task store check --json (schema revision only)"
   ],
-  "root_task_id": "tsk_1db01d280ef24dceb68ead294e5fbcb8",
+  "root_task_id": "tsk_409a676c643c44f49e2c280e62be36ca",
   "tree_key": "incident-9",
   "unobserved_states": [
     "draft",

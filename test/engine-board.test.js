@@ -323,21 +323,22 @@ test('buildTree hides the tree container and nests by parent_task_id', () => {
   const model = fixtureModel();
 
   // A playbook creates every node under the root, so the capture is flat: one
-  // hidden container and seven top-level rows. A missing parent would mean the
-  // tree read truncated, not an orphan.
+  // hidden container, one reserved `$emit` row, and six work rows. A missing
+  // parent would mean the tree read truncated, not an orphan.
   const ids = new Set(graph.nodes.map((node) => node.task_id));
   for (const node of graph.nodes) {
     if (node.task_id === meta.root_task_id) continue;
     assert.equal(node.parent_task_id, meta.root_task_id, node.node_key);
   }
 
-  assert.equal(model.total, 7);
+  assert.equal(model.total, 6);
   assert.ok(model.hidden_container);
   assert.equal(model.hidden_container.task_id, meta.root_task_id);
   assert.equal(model.hidden_container.node_key, '$root');
-  assert.equal(model.roots.length, 7);
+  assert.deepEqual(model.engine_steps, [{ node_key: '$emit', count: 1 }]);
+  assert.equal(model.roots.length, 6);
   assert.equal(model.total, flattenTree(model.roots).length);
-  assert.equal(model.nodes_read, 7);
+  assert.equal(model.nodes_read, 6);
   assert.equal(model.unplaced, 0);
   assert.deepEqual(model.defects, []);
 
@@ -345,7 +346,7 @@ test('buildTree hides the tree container and nests by parent_task_id', () => {
   const byKey = new Map(flat.map((row) => [row.node_key, row]));
   assert.deepEqual(
     [...byKey.keys()].sort(),
-    ['$emit', 'call', 'diag-db', 'diag-host', 'diag-net', 'remediate', 'summarise'],
+    ['call', 'diag-db', 'diag-host', 'diag-net', 'remediate', 'summarise'],
   );
   for (const row of flat) {
     assert.equal(row.depth, 0, row.node_key);
@@ -395,9 +396,40 @@ test('the tree reads rest_state, attempts, runner slots and dependency direction
     ['call'],
   );
 
-  const emit = byKey.get('$emit');
-  assert.equal(emit.rest_state, 'done');
-  assert.equal(emit.title, 'Emit the resolved instantiation fragment.');
+  // The reserved `$emit` row is engine machinery. It is in the read, and the
+  // model names it once, but it is not a task row, a card or a count.
+  assert.equal(byKey.has('$emit'), false);
+  assert.deepEqual(model.engine_steps, [{ node_key: '$emit', count: 1 }]);
+});
+
+test('a reserved $emit row changes no count, and the fold still names it', () => {
+  const work = [
+    node('r', '$root', 'ready', null),
+    node('a', 'diag', 'done', 'r'),
+    node('b', 'summarise', 'done', 'r'),
+  ];
+  const without = buildTree(snapshotOf({ nodes: work, rootTaskId: 'r' }));
+  const emit = node('e', '$emit', 'done', 'r');
+  const withEmit = buildTree(
+    snapshotOf({
+      nodes: [...work, emit],
+      rootTaskId: 'r',
+      statuses: [statusOf('e', 'done')],
+    }),
+  );
+
+  // The reserved row is read, but it is not a task: no card, no lane, no
+  // count, no progress denominator. The two trees render the same numbers.
+  assert.deepEqual(withEmit.counts, without.counts);
+  assert.equal(withEmit.total, without.total);
+  assert.equal(withEmit.nodes_read, without.nodes_read);
+  assert.equal(withEmit.engine_steps.length, 1);
+  assert.equal(
+    renderBoardPage(withEmit).includes('data-key="$emit"'),
+    false,
+  );
+  assert.ok(renderBoardPage(withEmit).includes('engine step'));
+  assert.ok(renderBoardPage(withEmit).includes('$emit'));
 });
 
 test('the second shape reads after edges beside blocked_by edges', () => {
@@ -450,7 +482,7 @@ test('counts are the rest_state enum in order, zero included', () => {
     blocked: 1,
     ready: 0,
     waiting: 1,
-    done: 5,
+    done: 4,
     failed: 0,
     cancelled: 0,
     skipped: 0,
@@ -691,7 +723,7 @@ test('a subtree under an outside parent is flagged as a whole, not just its top'
   assert.ok(html.includes('<span class="mono">x</span>'));
 });
 
-test('the container is hidden by task_id, so a second tree keeps its own $root row', () => {
+test('every reserved $ row is folded, so a second tree keeps no $root card', () => {
   const snapshot = snapshotOf({
     nodes: [
       node('r2', '$root', 'ready', null),
@@ -703,13 +735,16 @@ test('the container is hidden by task_id, so a second tree keeps its own $root r
   });
   const model = buildTree(snapshot);
 
+  // The requested container is hidden as before; the other tree's container is
+  // reserved machinery too and is folded the same way. Its children take its
+  // place rather than disappearing with it.
   assert.equal(model.hidden_container.task_id, 'r');
   const keys = flattenTree(model.roots).map((row) => row.node_key);
-  assert.deepEqual(keys, ['$root', 'beta', 'alpha']);
-  assert.equal(flattenTree(model.roots)[0].task_id, 'r2');
+  assert.deepEqual(keys, ['alpha', 'beta']);
+  assert.deepEqual(model.engine_steps, [{ node_key: '$root', count: 1 }]);
 
   const html = renderBoardPage(model);
-  assert.equal(html.split('data-key="$root"').length - 1, 1);
+  assert.equal(html.includes('data-key="$root"'), false);
 });
 
 test('the pages escape phase', () => {
@@ -871,7 +906,7 @@ test('the committed pages are the live Board and List pages', () => {
     assert.ok(html.includes('Live read'));
   }
   assert.ok(list.includes('Showing everything'));
-  assert.equal(capture.total, 7);
+  assert.equal(capture.total, 6);
   assert.equal(capture.max_depth, 0);
   // Every placed row is in the no-JS list, so the page really carries the tree
   // the capture names and not a smaller sample.
@@ -880,7 +915,7 @@ test('the committed pages are the live Board and List pages', () => {
     capture.total,
   );
   assert.ok(index.includes('data-key="summarise"'));
-  assert.ok(index.includes('5 of 7</strong> done'));
+  assert.ok(index.includes('4 of 6</strong> done'));
 });
 
 // ---------------------------------------------------------------- slice 3
@@ -969,7 +1004,8 @@ test('a genuinely empty scope says it has no subtasks, not "lanes empty"', () =>
   // The leaf's own scope is empty and must not claim eight empty lanes.
   assert.equal(boardData(model).scopes['root/leaf'].lanes.length, 0);
   assert.equal(boardData(model).scopes['root/leaf'].empty, LANE_ORDER.length);
-  assert.equal((html.match(/lanes empty/g) ?? []).length, 1);
+  // B-3: emptiness is never announced anywhere on the page.
+  assert.equal((html.match(/lanes empty/g) ?? []).length, 0);
 });
 
 test('the lane map is total over the engine states and has one many-to-one entry', () => {
@@ -1056,7 +1092,9 @@ test('an unknown state is named Unknown state with the engine string, before scr
       ],
     }),
   );
-  const row = model.roots[0].children[0];
+  const row = flattenTree(model.roots).find(
+    (candidate) => candidate.node_key === 'root/odd',
+  );
   assert.equal(row.rest_state_known, false);
   const html = renderListPage(model);
   // The row's state is a label, never blank: a state this build does not know
@@ -1095,7 +1133,7 @@ test('a blocked card names a blocker outside its own level by title', () => {
   );
   const html = renderBoardPage(model);
   assert.ok(
-    html.includes('Waiting for Check the unit tests'),
+    html.includes('Waiting for: Check the unit tests'),
     'the scope node is not a card in its own level, so the title must be read from the tree',
   );
   assert.equal(/Waiting for [^<]*tsk_/.test(html), false, 'no task id on a card');
@@ -1431,11 +1469,47 @@ test('the no-JS page is the whole tree, and no dialog is shipped', () => {
 test('the progress line and no Map tab are on both views', () => {
   const model = fixtureModel();
   for (const html of [renderBoardPage(model), renderListPage(model)]) {
-    assert.ok(html.includes('5 of 7</strong> done'));
+    assert.ok(html.includes('4 of 6</strong> done'));
     assert.ok(html.includes('class="progress-fill'));
     assert.equal(html.includes('>Map<'), false);
     assert.equal(html.includes('data-view-link="map"'), false);
   }
+});
+
+test('the live source refuses a status read that omits a tree task', async () => {
+  const source = createLiveSource({
+    enginePath: '/engine',
+    dbPath: '/db.sqlite3',
+    command: async (args) => {
+      if (args[0] === 'graph') {
+        return JSON.stringify({
+          nodes: [
+            { task_id: 'tsk_root', node_key: '$root', rest_state: 'ready', parent_task_id: null },
+            { task_id: 'tsk_a', node_key: 'build', rest_state: 'ready', parent_task_id: 'tsk_root' },
+          ],
+          edges: [],
+          next_cursor: null,
+        });
+      }
+      if (args[0] === 'status') {
+        return JSON.stringify({
+          tasks: [
+            { task_id: 'tsk_root', rest_state: 'ready', phase: null, wait: null, hold: null },
+          ],
+        });
+      }
+      throw new Error(`unexpected ${args[0]}`);
+    },
+    readCommit: async () => 'abc1234',
+  });
+  await assert.rejects(
+    source.load({
+      project_id: 'p',
+      tree_key: 'tree-1',
+      root_task_id: 'tsk_root',
+    }),
+    /status read omitted 1 tree task/,
+  );
 });
 
 test('the live source reads the CLI, normalizes the edge shape and declares provenance', async () => {
@@ -1566,7 +1640,6 @@ test('the live source accepts the single-id status shape and refuses a wrong tre
   const graph = JSON.stringify({
     nodes: [
       { task_id: 'tsk_root', node_key: '$root', rest_state: 'ready', parent_task_id: null },
-      { task_id: 'tsk_a', node_key: 'build', rest_state: 'ready', parent_task_id: 'tsk_root' },
     ],
     edges: [],
     next_cursor: null,
@@ -1854,12 +1927,12 @@ test('progress is done plus the settled states, never one word for both', () => 
     failed: 0,
     cancelled: 0,
     skipped: 1,
-    total: 3,
+    total: 2,
     archived: 0,
   });
   // The denominator includes skipped work; the numerator does not absorb it.
   const html = renderBoardPage(model);
-  assert.ok(html.includes('0 of 3</strong> done · 1 skipped'));
+  assert.ok(html.includes('0 of 2</strong> done · 1 skipped'));
 });
 
 test('every settled row is accounted for, and every open row is visibly left over', () => {
@@ -1919,7 +1992,7 @@ test('one text builder prints the same buckets on the Board and the List', () =>
     }),
   );
   const p = progress(model.roots);
-  const line = '1 of 5 done · 1 failed · 1 cancelled · 1 skipped';
+  const line = '1 of 4 done · 1 failed · 1 cancelled · 1 skipped';
   assert.equal(progressText(p), line);
   assert.ok(renderBoardPage(model).includes(line));
   assert.ok(renderListPage(model).includes(line));
@@ -1937,7 +2010,9 @@ test('a container with only archived work leads with the archived count', () => 
       ],
     }),
   );
-  const row = model.roots[0].children[0];
+  const row = flattenTree(model.roots).find(
+    (candidate) => candidate.node_key === 'box',
+  );
   assert.equal(containment(row).inside, 0);
   assert.equal(
     detailFields(row, model).find((field) => field.label === 'Inside').value,
@@ -1988,7 +2063,8 @@ test('the page data carries the title fact and the scope facts target', () => {
   // A missing title is a fact in the data, not an attribute the script reads.
   assert.equal(data.rows.a.title_missing, true);
   assert.equal(data.rows.box.title_missing, true);
-  assert.equal(data.rows.r.title_missing, true);
+  // The reserved `$root` row is not a card, so it is not in the page data.
+  assert.equal('r' in data.rows, false);
   // The scope's own row is where its Details control points.
   assert.deepEqual(data.scopes.box.details, { dialog: 'd-box', task: 'box' });
   assert.deepEqual(data.scopes['box/alpha'].details, {
@@ -2246,7 +2322,7 @@ test('an after edge keeps its sentence on the card the line would leave', () => 
   const list = renderListPage(model);
   assert.ok(list.includes('card-after'), 'the card carries the after sentence');
   assert.ok(
-    list.includes('Starts after Try the optional provider'),
+    list.includes('Starts after: Try the optional provider'),
     'the sentence names the task it follows',
   );
 });

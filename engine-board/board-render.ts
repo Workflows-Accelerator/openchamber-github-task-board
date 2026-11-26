@@ -25,7 +25,6 @@ import {
   STATE_WORDS,
   containment,
   engineDisagreement,
-  focusCounts,
   laneGroups,
   laneOf,
   lanePlan,
@@ -232,17 +231,27 @@ function holdEntries(row: TreeRow, model: TreeModel): DependencyEntry[] {
   return [...entries.values()];
 }
 
+// A title may already be a sentence. Appending a full stop to one that ends
+// its own is how "wait-and-watch.." happens, so the period is only added when
+// the text does not already end in one.
+function endSentence(text: string): string {
+  const trimmed = text.trim();
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
 function waitsText(entries: readonly DependencyEntry[]): string {
   // The field label already says "Waits for", so the value names the task and,
   // when the read's edge accepts its state, says so in the same breath. A
   // value that repeated the verb would read "Waits for / Waits for X".
-  return `${joinWords(
-    entries.map((entry) =>
-      entry.satisfied && entry.state !== null
-        ? `${entry.title} (${entry.state})`
-        : entry.title,
+  return endSentence(
+    joinWords(
+      entries.map((entry) =>
+        entry.satisfied && entry.state !== null
+          ? `${entry.title} (${entry.state})`
+          : entry.title,
+      ),
     ),
-  )}.`;
+  );
 }
 
 function holdsText(entries: readonly DependencyEntry[]): string {
@@ -252,7 +261,9 @@ function holdsText(entries: readonly DependencyEntry[]): string {
       ? `${entry.title} (${entry.state})`
       : entry.title,
   );
-  return `${count} task${count === 1 ? '' : 's'}: ${joinWords(names)}.`;
+  return endSentence(
+    `${count} task${count === 1 ? '' : 's'}: ${joinWords(names)}`,
+  );
 }
 
 function joinWords(words: readonly string[]): string {
@@ -902,6 +913,26 @@ function provenanceBlock(model: TreeModel): string {
           .map((state) => esc(stateWord(state).toLowerCase()))
           .join(', ')}.</p>`
       : '';
+  const stepCount = model.engine_steps.reduce(
+    (sum, step) => sum + step.count,
+    0,
+  );
+  const engineSteps =
+    stepCount > 0
+      ? `<p>Built from a playbook manifest: ${plural(
+          stepCount,
+          'engine step',
+        )} (${model.engine_steps
+          .map(
+            (step) =>
+              `<span class="mono">${esc(step.node_key)}</span>${
+                step.count > 1 ? ` × ${step.count}` : ''
+              }`,
+          )
+          .join(', ')}) ${stepCount === 1 ? 'is' : 'are'} created with the tree, not work, and the lanes and counts leave ${
+          stepCount === 1 ? 'it' : 'them'
+        } out.</p>`
+      : '';
   return `<footer class="foot">
   <details class="provenance">
     <summary>Where this page came from</summary>
@@ -918,6 +949,7 @@ function provenanceBlock(model: TreeModel): string {
         : ''
     }
     ${commands ? `<p>Read with: ${commands}</p>` : ''}
+    ${engineSteps}
     ${portOnly}
     ${unobserved}
   </details>
@@ -1104,14 +1136,14 @@ function listRow(
   const blockers = blockerLabels(row, rows);
   const wait =
     row.rest_state === 'blocked' && blockers.length > 0
-      ? `<p class="card-wait">Waiting for ${esc(joinWords(blockers))}</p>`
+      ? `<p class="card-wait">Waiting for: ${esc(joinWords(blockers))}</p>`
       : '';
   // An `after` edge is drawn as a dashed line at wide widths. At phone width
   // the line is dropped, so the card has to carry the same fact or the
   // dependency disappears with the layer.
   const after =
     row.after.length > 0
-      ? `<p class="card-after">Starts after ${esc(
+      ? `<p class="card-after">Starts after: ${esc(
           joinWords(row.after.map((ref) => refLabel(ref, rows))),
         )}</p>`
       : '';
@@ -1358,10 +1390,6 @@ a { color: inherit; }
   font-variant-numeric: tabular-nums;
 }
 .level strong { color: var(--ink); font-weight: 700; }
-.focus-line {
-  margin: 0 0 16px; color: var(--muted); font-size: 0.84rem;
-  font-variant-numeric: tabular-nums;
-}
 .lanes { position: relative; display: flex; align-items: flex-start; gap: 18px; }
 .edge-layer {
   position: absolute; left: 0; top: 0; z-index: 0;
@@ -1906,76 +1934,19 @@ const SCRIPT = `(function () {
     cards.forEach(function (card) {
       if (card.getAttribute('data-archived-self') === '1') archived += 1;
     });
-    var live = cards.length - archived;
     var strong = document.createElement('strong');
-    strong.textContent = String(live);
+    strong.textContent = String(cards.length);
     line.appendChild(strong);
     line.appendChild(
       document.createTextNode(
-        ' live' +
-          (archived > 0 ? ' · ' + archived + ' archived' : '') +
-          ' in this level' +
-          (plan.empty > 0 ? ' · ' + plan.empty + ' lanes empty' : ''),
+        cards.length === 1 ? ' task' : ' tasks'
       ),
     );
-    return line;
-  }
-
-  ${focusCounts.toString()}
-
-  // The answer to "where do I start", in counts and in the lanes' own words.
-  // A running task is not also "ready to start", so the three counts never
-  // double-count a row. The wording reuses the lane vocabulary instead of
-  // naming a state the page does not have.
-  function focusLine(cards) {
-    // Archived rows are named by the level line above; they are not live work
-    // and must not be counted into a live total.
-    var liveRows = cards.filter(function (row) {
-      return row.getAttribute('data-archived-self') !== '1';
-    });
-    var counts = focusCounts(liveRows.map(function (row) {
-      return {
-        rest_state: row.getAttribute('data-state'),
-        phase: row.getAttribute('data-phase') || null,
-      };
-    }));
-    var tally = {};
-    liveRows.forEach(function (row) {
-      var lane = laneOf(
-        row.getAttribute('data-state'),
-        row.getAttribute('data-phase') || null,
+    if (archived > 0) {
+      line.appendChild(
+        document.createTextNode(' · ' + archived + ' archived'),
       );
-      tally[lane] = (tally[lane] || 0) + 1;
-    });
-    var line = document.createElement('p');
-    line.className = 'focus-line';
-    line.setAttribute('data-can-start', String(counts.canStart));
-    line.setAttribute('data-in-progress', String(counts.inProgress));
-    line.setAttribute('data-waiting', String(counts.waiting));
-    // Three clauses, in the order a reader can act on them. A zero clause is
-    // omitted rather than printed as "0 waiting".
-    var parts = [];
-    if (counts.canStart > 0) parts.push(counts.canStart + ' can start');
-    if (counts.inProgress > 0) parts.push(counts.inProgress + ' in progress');
-    if (counts.waiting > 0) parts.push(counts.waiting + ' waiting');
-    // Everything the three clauses leave out is named, so the line adds up to
-    // the level's live total instead of stopping one short of it.
-    var rest = [
-      ['not-started', 'not started'],
-      ['needs-attention', 'failed'],
-      ['done', 'done'],
-      ['set-aside', 'set aside'],
-      ['unknown', 'unknown'],
-    ];
-    var other = liveRows.length - counts.canStart - counts.inProgress - counts.waiting;
-    if (other > 0) {
-      rest.forEach(function (pair) {
-        var count = tally[pair[0]] || 0;
-        if (count > 0) parts.push(count + ' ' + pair[1]);
-      });
     }
-    line.setAttribute('data-live', String(liveRows.length));
-    line.textContent = parts.join(' · ');
     return line;
   }
 
@@ -2087,26 +2058,39 @@ const SCRIPT = `(function () {
     Array.prototype.forEach.call(wrap.querySelectorAll('.card[data-task]'), function (card) {
       cards[card.getAttribute('data-task')] = card;
     });
+    // Two cards in one lane are stacked; a line between them can only pass
+    // behind the cards between them, leaving clipped punctuation in the
+    // gutters. Such an edge is not drawn; the panel names the dependency and
+    // the card carries it at phone width, where all lines are dropped.
+    plan = {
+      lanes: plan.lanes,
+      empty: plan.empty,
+      edges: plan.edges.filter(function (edge) {
+        var from = cards[edge.from];
+        var to = cards[edge.to];
+        if (!from || !to) return false;
+        return from.getAttribute('data-lane') !== to.getAttribute('data-lane');
+      }),
+    };
+    if (plan.edges.length === 0) return;
     var box = wrap.getBoundingClientRect();
     var width = wrap.offsetWidth;
     var height = wrap.offsetHeight;
     if (width === 0 || height === 0) return;
-    // One task may block six others. Spreading the attachment points along the
-    // card edges keeps those six lines readable instead of collapsing into a
-    // single bundle that reads as a border.
-    var outCount = {};
-    var inCount = {};
-    plan.edges.forEach(function (edge) {
-      outCount[edge.from] = (outCount[edge.from] || 0) + 1;
-      inCount[edge.to] = (inCount[edge.to] || 0) + 1;
+    var laneNodes = Array.prototype.slice.call(wrap.querySelectorAll('.lane'));
+    function laneIndexOf(card) {
+      var lane = card.closest ? card.closest('.lane') : null;
+      return lane ? laneNodes.indexOf(lane) : -1;
+    }
+    var laneBoxes = laneNodes.map(function (lane) {
+      var rect = lane.getBoundingClientRect();
+      return { left: rect.left - box.left, right: rect.right - box.left };
     });
-    var outSeen = {};
-    var inSeen = {};
-    function port(top, bottom, slot, count) {
-      if (count <= 1) return (top + bottom) / 2;
-      var low = top + (bottom - top) * 0.22;
-      var high = bottom - (bottom - top) * 0.22;
-      return low + ((high - low) * (slot + 1)) / (count + 1);
+    function gutterRight(index) {
+      return (laneBoxes[index].right + laneBoxes[index + 1].left) / 2;
+    }
+    function gutterLeft(index) {
+      return (laneBoxes[index - 1].right + laneBoxes[index].left) / 2;
     }
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'edge-layer');
@@ -2115,10 +2099,23 @@ const SCRIPT = `(function () {
     svg.setAttribute('height', String(height));
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
     var drawn = 0;
+    var maxBottom = 0;
+    Object.keys(cards).forEach(function (key) {
+      var rect = cards[key].getBoundingClientRect();
+      maxBottom = Math.max(maxBottom, rect.bottom - box.top);
+    });
+    // A line that crosses lanes runs below the lowest card, so the layer is
+    // taller than the lanes when one needs that space. The page has room below.
+    var svgHeight = Math.max(height, maxBottom + 24);
+    svg.setAttribute('height', String(svgHeight));
+    svg.setAttribute('viewBox', '0 0 ' + width + ' ' + svgHeight);
     plan.edges.forEach(function (edge) {
       var from = cards[edge.from];
       var to = cards[edge.to];
       if (!from || !to) return;
+      var sourceLane = laneIndexOf(from);
+      var targetLane = laneIndexOf(to);
+      if (sourceLane < 0 || targetLane < 0 || sourceLane === targetLane) return;
       var a = from.getBoundingClientRect();
       var b = to.getBoundingClientRect();
       var aLeft = a.left - box.left;
@@ -2129,75 +2126,53 @@ const SCRIPT = `(function () {
       var bRight = b.right - box.left;
       var bTop = b.top - box.top;
       var bBottom = b.bottom - box.top;
-      outSeen[edge.from] = outSeen[edge.from] || 0;
-      inSeen[edge.to] = inSeen[edge.to] || 0;
-      var outSlot = outSeen[edge.from];
-      var inSlot = inSeen[edge.to];
-      outSeen[edge.from] += 1;
-      inSeen[edge.to] += 1;
-      var x1, y1, x2, y2, c1x, c1y, c2x, c2y, gap;
-      var d = '';
-      if (bLeft >= aRight - 4) {
-        // The blocked card is to the right: leave the blocker's right edge
-        // and arrive at the blocked card's left edge.
-        x1 = aRight;
-        y1 = port(aTop, aBottom, outSlot, outCount[edge.from]);
-        x2 = bLeft;
-        y2 = port(bTop, bBottom, inSlot, inCount[edge.to]);
-        if (x2 - x1 < 64) {
-          // Adjacent lanes leave an 18 px gutter. A curve between two ports
-          // that close together spends hundreds of pixels of travel inside
-          // 18 px of width and reads as a stripe along the lane edge. Route
-          // it as stub, trunk, branch instead, and start every edge from the
-          // same middle port so six edges from one blocker share one trunk
-          // and visibly split, rather than leaving as a comb of six.
-          var trunkY = (aTop + aBottom) / 2;
-          var trunkX = x1 + (x2 - x1) / 2;
-          var dy = y2 - trunkY;
-          var r = Math.min(6, (x2 - x1) / 4, Math.abs(dy) / 2);
-          var down = dy >= 0 ? 1 : -1;
-          d =
-            'M ' + x1 + ' ' + trunkY +
-            ' H ' + (trunkX - r) +
-            ' Q ' + trunkX + ' ' + trunkY + ' ' + trunkX + ' ' + (trunkY + down * r) +
-            ' V ' + (y2 - down * r) +
-            ' Q ' + trunkX + ' ' + y2 + ' ' + (trunkX + r) + ' ' + y2 +
-            ' H ' + x2;
-          y1 = trunkY;
+      var rightward = targetLane > sourceLane;
+      var sx = rightward ? aRight : aLeft;
+      var tx = rightward ? bLeft : bRight;
+      var sy = (aTop + aBottom) / 2;
+      var ty = (bTop + bBottom) / 2;
+      // The vertical leg of every connector runs in the 18 px gutter between
+      // two lanes: empty space, never behind a card. A fragment emerging in
+      // the 8 px gap between two stacked cards would read as a stray dash.
+      var sourceGutter = rightward
+        ? gutterRight(sourceLane)
+        : gutterLeft(sourceLane);
+      var targetGutter = rightward
+        ? gutterLeft(targetLane)
+        : gutterRight(targetLane);
+      var d;
+      var overlapTop = Math.max(aTop, bTop);
+      var overlapBottom = Math.min(aBottom, bBottom);
+      if (Math.abs(targetLane - sourceLane) === 1) {
+        if (overlapBottom > overlapTop) {
+          // Two cards beside one gutter: one straight join between their
+          // facing edges. A bend in 18 px reads as a stray bracket.
+          var joinY = (overlapTop + overlapBottom) / 2;
+          d = 'M ' + sx + ' ' + joinY + ' H ' + tx;
         } else {
-          gap = Math.max(16, Math.min(80, (x2 - x1) / 2));
-          c1x = x1 + gap; c1y = y1;
-          c2x = x2 - gap; c2y = y2;
+          d =
+            'M ' + sx + ' ' + sy +
+            ' H ' + sourceGutter +
+            ' V ' + ty +
+            ' H ' + tx;
         }
-      } else if (bTop >= aBottom - 4) {
-        // Same column or to the left and below: go down from the blocker and
-        // into the top of the blocked card.
-        x1 = port(aLeft, aRight, outSlot, outCount[edge.from]);
-        y1 = aBottom;
-        x2 = port(bLeft, bRight, inSlot, inCount[edge.to]);
-        y2 = bTop;
-        gap = Math.max(14, Math.min(60, (y2 - y1) / 2));
-        c1x = x1; c1y = y1 + gap;
-        c2x = x2; c2y = y2 - gap;
-      } else if (aTop >= bBottom - 4) {
-        x1 = port(aLeft, aRight, outSlot, outCount[edge.from]);
-        y1 = aTop;
-        x2 = port(bLeft, bRight, inSlot, inCount[edge.to]);
-        y2 = bBottom;
-        gap = Math.max(14, Math.min(60, (y1 - y2) / 2));
-        c1x = x1; c1y = y1 - gap;
-        c2x = x2; c2y = y2 + gap;
       } else {
-        x1 = port(aLeft, aRight, outSlot, outCount[edge.from]);
-        y1 = port(aTop, aBottom, outSlot, outCount[edge.from]);
-        x2 = port(bLeft, bRight, inSlot, inCount[edge.to]);
-        y2 = port(bTop, bBottom, inSlot, inCount[edge.to]);
-        c1x = x1; c1y = y1; c2x = x2; c2y = y2;
-      }
-      if (d === '') {
+        // The cards are not neighbours, so the line runs down the source
+        // gutter, across below every card, and up the target gutter.
+        var routeY = maxBottom + 12;
+        var dir = targetGutter >= sourceGutter ? 1 : -1;
+        var r = Math.min(6, Math.abs(targetGutter - sourceGutter) / 2);
         d =
-          'M ' + x1 + ' ' + y1 + ' C ' + c1x + ' ' + c1y + ', ' +
-          c2x + ' ' + c2y + ', ' + x2 + ' ' + y2;
+          'M ' + sx + ' ' + sy +
+          ' H ' + sourceGutter +
+          ' V ' + (routeY - r) +
+          ' Q ' + sourceGutter + ' ' + routeY + ' ' +
+          (sourceGutter + dir * r) + ' ' + routeY +
+          ' H ' + (targetGutter - dir * r) +
+          ' Q ' + targetGutter + ' ' + routeY + ' ' +
+          targetGutter + ' ' + (routeY - r) +
+          ' V ' + ty +
+          ' H ' + tx;
       }
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', d);
@@ -2249,7 +2224,6 @@ const SCRIPT = `(function () {
     if (scope !== null) root.appendChild(crumbs(scope, byTask));
     root.appendChild(header(scope, cards));
     root.appendChild(level(cards, plan));
-    root.appendChild(focusLine(cards));
     if (cards.length > 0) {
       var lanes = lanesNode(plan, byTask);
       root.appendChild(lanes);
@@ -2555,6 +2529,18 @@ const SCRIPT = `(function () {
       taskId = host ? host.getAttribute('data-task') : null;
     }
     if (taskId) openSheet(taskId);
+  });
+
+  // An in-page link is a scope change. Render from the hash on the next task
+  // as well as on hashchange: the click is the user's intent, and the page
+  // must not sit on the old scope if the same-document event is delivered late.
+  document.addEventListener('click', function (event) {
+    var link =
+      event.target && event.target.closest
+        ? event.target.closest('a[href^="#"]')
+        : null;
+    if (!link) return;
+    setTimeout(apply, 0);
   });
 
   // Ruling 3: a row with children opens and closes in place. This is a real

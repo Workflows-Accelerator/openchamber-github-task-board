@@ -307,6 +307,11 @@ export interface TreeDefect {
   keys: string[];
 }
 
+export interface EngineStep {
+  node_key: string;
+  count: number;
+}
+
 export interface TreeModel {
   project_id: string;
   config_revision: number;
@@ -325,7 +330,12 @@ export interface TreeModel {
   unknown_rest_states: number;
   // Rows placed in the tree.
   total: number;
-  // Non-container nodes the read returned, placed or not.
+  // Reserved engine rows (`$root`, `$emit`, any `$`-prefixed key) that the
+  // read returned, by key with how many the tree carries. They are created
+  // with the tree, not work, so they are not lanes, counts or progress; the
+  // provenance names them once.
+  engine_steps: EngineStep[];
+  // Work nodes the read returned, placed or not. Reserved rows are not work.
   nodes_read: number;
   // nodes_read - total, by construction. Never silently zero.
   unplaced: number;
@@ -601,8 +611,30 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
   // payload that does.
   const seenNodeIds = new Set<string>();
   const duplicateKeys: string[] = [];
+  // The spec reserves `$root` and `$emit`, and the engine may add more. A key
+  // that begins with `$` is machinery, never a person's task: it stays out of
+  // the lanes, the counts and the progress bar.
+  const reservedIds = new Set(
+    snapshot.graph.nodes
+      .filter((node) => node.node_key.startsWith('$'))
+      .map((node) => node.task_id),
+  );
+  const engineStepCounts = new Map<string, number>();
+  for (const node of snapshot.graph.nodes) {
+    if (!reservedIds.has(node.task_id) || node.task_id === snapshot.root_task_id) {
+      continue;
+    }
+    engineStepCounts.set(
+      node.node_key,
+      (engineStepCounts.get(node.node_key) ?? 0) + 1,
+    );
+  }
+  const engineSteps: EngineStep[] = [...engineStepCounts].map(
+    ([node_key, count]) => ({ node_key, count }),
+  );
+
   const nodes = snapshot.graph.nodes.filter((node) => {
-    if (node === hiddenContainer) {
+    if (reservedIds.has(node.task_id)) {
       seenNodeIds.add(node.task_id);
       return false;
     }
@@ -613,6 +645,19 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
     seenNodeIds.add(node.task_id);
     return true;
   });
+  // Every node in the read, reserved rows included. Placement walks through a
+  // reserved row so its children keep the same visible parent a person would
+  // expect; the reserved row itself never becomes a row.
+  const rawParentOf = new Map<string, string | null>(
+    snapshot.graph.nodes.map((node) => [node.task_id, node.parent_task_id]),
+  );
+  const visibleParentOf = (taskId: string): string | null => {
+    let parent = rawParentOf.get(taskId) ?? null;
+    while (parent !== null && reservedIds.has(parent)) {
+      parent = rawParentOf.get(parent) ?? null;
+    }
+    return parent;
+  };
   const nodeById = new Map(nodes.map((node) => [node.task_id, node]));
   const nodeKeyById = new Map(nodes.map((node) => [node.task_id, node.node_key]));
   const parentOf = new Map<string, string | null>(
@@ -637,7 +682,7 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
     if (cycle.has(node.task_id) || unreachable.has(node.task_id)) {
       continue;
     }
-    const parent = node.parent_task_id;
+    const parent = visibleParentOf(node.task_id);
     if (parent !== null && nodeById.has(parent)) {
       const siblings = childrenByParent.get(parent);
       if (siblings) {
@@ -670,7 +715,7 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
       unknownRestStates += 1;
     }
 
-    const parent = node.parent_task_id;
+    const parent = visibleParentOf(node.task_id);
     const parentInRead = parent !== null && nodeById.has(parent);
     const parentIsContainer = parent === snapshot.root_task_id;
     const lifted = parent !== null && !parentInRead && !parentIsContainer;
@@ -800,6 +845,7 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
     counts,
     unknown_rest_states: unknownRestStates,
     total: emitted.size,
+    engine_steps: engineSteps,
     nodes_read: nodes.length,
     unplaced: nodes.length - emitted.size,
     max_depth: maxDepth,

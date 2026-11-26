@@ -216,7 +216,12 @@ from datetime import datetime, timezone
 out, here, engine, commit, schema_path, root, tree_key, *verbs = sys.argv[1:]
 schema = json.load(open(schema_path, encoding="utf-8"))
 graph = json.load(open(here + "/graph.json", encoding="utf-8"))
-states = {node["rest_state"] for node in graph["nodes"]}
+status = json.load(open(here + "/status.json", encoding="utf-8"))
+# The model reads `status` first and the graph second, so the states this read
+# did not reach are the ones missing from that same merged view.
+from_status = {row["task_id"]: row["rest_state"] for row in status["tasks"]}
+states = {from_status.get(node["task_id"], node["rest_state"])
+          for node in graph["nodes"]}
 vocabulary = ["draft", "blocked", "ready", "waiting", "done",
               "failed", "cancelled", "skipped"]
 meta = {
@@ -257,7 +262,11 @@ second["root_task_id"] = root
 
 # The second tree's unobserved states are its own.
 graph = json.load(open(graph_path, encoding="utf-8"))
-states = {node["rest_state"] for node in graph["nodes"]}
+status = json.load(open(second_path.replace("meta.json", "status.json"),
+                        encoding="utf-8"))
+from_status = {row["task_id"]: row["rest_state"] for row in status["tasks"]}
+states = {from_status.get(node["task_id"], node["rest_state"])
+          for node in graph["nodes"]}
 vocabulary = ["draft", "blocked", "ready", "waiting", "done",
               "failed", "cancelled", "skipped"]
 second["unobserved_states"] = [s for s in vocabulary if s not in states]

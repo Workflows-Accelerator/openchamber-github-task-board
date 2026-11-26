@@ -231,8 +231,20 @@ function normalizeStatuses(text: string): StatusPayload[] {
   return [record as unknown as StatusPayload];
 }
 
-function unobservedIn(graph: GraphPayload): RestState[] {
-  const seen = new Set(graph.nodes.map((node) => node.rest_state));
+// The model reads a row's state from `status` when the status read carries the
+// row, and from the graph otherwise. The states this read did not reach must be
+// computed from that same merged view: a task that changed between the two
+// reads must not make the provenance contradict the page.
+function unobservedIn(
+  graph: GraphPayload,
+  statuses: readonly StatusPayload[],
+): RestState[] {
+  const fromStatus = new Map(
+    statuses.map((status) => [status.task_id, status.rest_state]),
+  );
+  const seen = new Set(
+    graph.nodes.map((node) => fromStatus.get(node.task_id) ?? node.rest_state),
+  );
   return REST_STATES.filter((state) => !seen.has(state));
 }
 
@@ -320,6 +332,17 @@ export function createLiveSource(options: LiveSourceOptions): EngineTreeSource {
           : normalizeStatuses(
               await command(['status', ...ids, '--json']),
             );
+      // The model reads a row's state from the status read when it is there.
+      // A status answer that silently omits a tree row would draw that row
+      // without its attempts, wait or runner, so a partial answer is refused
+      // rather than rendered as a poorer task.
+      const statusIds = new Set(statuses.map((status) => status.task_id));
+      const missing = ids.filter((id) => !statusIds.has(id));
+      if (missing.length > 0) {
+        throw new Error(
+          `status read omitted ${missing.length} tree task(s): ${missing.join(', ')}`,
+        );
+      }
       const project = normalizeProject(
         await command(['project', 'show', '--project', request.project_id, '--json']),
       );
@@ -345,7 +368,7 @@ export function createLiveSource(options: LiveSourceOptions): EngineTreeSource {
           // It can still say which states this tree did not reach, so the page
           // is identical whichever source answered.
           port_only_steps: [],
-          unobserved_states: unobservedIn(graph),
+          unobserved_states: unobservedIn(graph, statuses),
         },
         project,
         // `runner list` answers whether a runner exists; `runners_available`
