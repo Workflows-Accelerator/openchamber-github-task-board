@@ -8,10 +8,17 @@ engine's rest states to the reader's lanes and rolls up the counts over
 
 ```sh
 node engine-board/main.ts --db <store> --project <id> --tree-key <key> --root <task id>
+node engine-board/main.ts --snapshot <abs path> --out <abs dir>
 npm run typecheck
 npm test
 npm run test:page   # real browser over file://, Obscura CDP on PATH
 ```
+
+`--snapshot` renders the one file the serve layer wrote (the live read's shape
+plus `served: true` and per-node `actions`) instead of reading the engine. A
+missing or unreadable file exits non-zero naming the path; it never falls back
+to the capture. `--out` writes `index.html` and `list.html` into that directory,
+creating it if absent; with neither flag the repo pages are built as before.
 
 The committed `engine-board/index.html` and `engine-board/list.html` are the
 demo pages: they render `fixtures/demo`, the generated 52-live-task tree. The

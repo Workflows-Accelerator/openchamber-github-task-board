@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
   existsSync,
@@ -2859,4 +2860,80 @@ test('the live read and the committed capture render the same page', async () =>
   );
   assert.equal(renderBoardPage(live), renderBoardPage(capture));
   assert.equal(renderListPage(live), renderListPage(capture));
+});
+
+// ---------------------------------------------------------- snapshot handover
+
+test('a snapshot builds both served pages into --out and leaves the repo alone', () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'board-snapshot-'));
+  const snapshot = loadFixtureSnapshot(fixtures, readFixtureMeta(fixtures));
+  const target = snapshot.graph.nodes.find(
+    (node) => !node.node_key.startsWith('$'),
+  );
+  assert.ok(target, 'the capture has a work node to serve an action for');
+  // The serve layer's two additions to the live shape: `served` on the file
+  // and the actions it computed for a row.
+  target.actions = [
+    {
+      verb: 'complete',
+      label: 'Mark done',
+      path: `/api/tasks/${target.task_id}/complete`,
+      fields: { outcome: 'approve' },
+    },
+  ];
+  const snapshotPath = join(scratch, 'snapshot.json');
+  writeFileSync(snapshotPath, JSON.stringify({ ...snapshot, served: true }));
+
+  const repoBefore = {
+    index: readFileSync(join(board, 'index.html')),
+    list: readFileSync(join(board, 'list.html')),
+  };
+  // A nested path that does not exist yet: --out creates it.
+  const out = join(scratch, 'pages', 'nested');
+  const run = spawnSync(
+    process.execPath,
+    [join(board, 'main.ts'), '--snapshot', snapshotPath, '--out', out],
+    { encoding: 'utf8' },
+  );
+
+  assert.equal(run.status, 0, run.stderr);
+  const index = readFileSync(join(out, 'index.html'), 'utf8');
+  const list = readFileSync(join(out, 'list.html'), 'utf8');
+  for (const html of [index, list]) {
+    assert.ok(html.includes('function wireAuthoring'), 'the authoring client is on');
+    assert.ok(html.includes('class="add-line"'), 'the add line is drawn');
+    assert.ok(html.includes('.page-line {'), 'the authoring styles are drawn');
+    assert.ok(
+      html.includes(`"/api/tasks/${target.task_id}/complete"`),
+      'the server action reaches the page data',
+    );
+    assert.ok(html.includes('"outcome":"approve"'), 'the declared field reaches it too');
+  }
+  // Served pages differ from the committed artefact, and the artefact is
+  // byte-for-byte what it was before the run.
+  assert.notEqual(index, repoBefore.index.toString('utf8'));
+  assert.deepEqual(readFileSync(join(board, 'index.html')), repoBefore.index);
+  assert.deepEqual(readFileSync(join(board, 'list.html')), repoBefore.list);
+});
+
+test('a missing snapshot exits non-zero, names the path, and writes nothing', () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'board-snapshot-missing-'));
+  const missing = join(scratch, 'not-here.json');
+  const out = join(scratch, 'pages');
+  const run = spawnSync(
+    process.execPath,
+    [join(board, 'main.ts'), '--snapshot', missing, '--out', out],
+    { encoding: 'utf8' },
+  );
+
+  assert.notEqual(run.status, 0, 'a missing snapshot is not a build');
+  const lines = run.stderr
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '');
+  assert.equal(lines.length, 1, `one line naming the path, got: ${run.stderr}`);
+  assert.ok(lines[0].includes(missing), 'the path is named');
+  assert.equal(run.stdout, '', 'nothing claims a page was written');
+  assert.equal(existsSync(out), false, 'no output directory is created');
+  assert.equal(existsSync(join(out, 'index.html')), false);
 });
