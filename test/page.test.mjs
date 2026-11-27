@@ -2649,7 +2649,10 @@ test(
     await page.evaluate(`(function () {
       var input = document.querySelector('form.add-line input[name="title"]');
       input.value = 'Chase the bank';
-      document.querySelector('form.add-line button[type="submit"]').click();
+      var button = document.querySelector('form.add-line button[type="submit"]');
+      // A double click: the second one must not send a second task.
+      button.click();
+      button.click();
     })()`);
     await new Promise((resolve) => setTimeout(resolve, 200));
     const inFlight = await page.evaluate(`(function () {
