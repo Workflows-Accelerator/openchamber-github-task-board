@@ -1,9 +1,10 @@
 // A tiny stand-in for the engine's board server, used by tests only.
 //
-// It implements exactly the writes in `.agents` serve-contract v1: the four
-// POST paths, both encodings, a `303` with a notice or refusal line for a form
-// post and JSON for an XHR post. It records what arrived so a test can prove a
-// form post and an XHR post of the same content are the same call.
+// It implements exactly the writes in serve-contract v1.1: the four POST paths,
+// both encodings, a 303 with a notice or refusal line for a form post and
+// JSON for an XHR post. Every success carries the server's own sentence; it
+// records what arrived so a test can prove a form post and an XHR post of the
+// same content are the same call.
 //
 // Not a product server. No store, no validation beyond the contract's own
 // names, and no port of its own choosing beyond an ephemeral loopback one.
@@ -72,7 +73,12 @@ function answerFor(pathname, fields) {
         notice: '',
       };
     }
-    return { status: 201, taskId: TASK_ID, notice: 'Task added. It is a draft.' };
+    return {
+      status: 201,
+      taskId: TASK_ID,
+      // Serve v1.1: the server writes the sentence, with the stored title.
+      notice: `Added as a draft: ${title}`,
+    };
   }
   const match = /^\/api\/tasks\/([^/]+)\/(notes|complete|start)$/.exec(pathname);
   if (match === null) {
@@ -90,6 +96,25 @@ function answerFor(pathname, fields) {
       status: 404,
       refusal: 'unknown-task',
       message: 'There is no task with that name.',
+      notice: '',
+    };
+  }
+  // The engine has no human sentence for these two settle refusals; the serve
+  // layer must keep the name and write the sentence. These cases pin that
+  // shape without changing the engine's verdict.
+  if (taskId === 'tsk_unowned' && verb === 'complete') {
+    return {
+      status: 403,
+      refusal: 'settle-no-owner',
+      message: 'Nobody is named to settle this task, so it cannot be marked done here.',
+      notice: '',
+    };
+  }
+  if (taskId === 'tsk_someone_else' && verb === 'complete') {
+    return {
+      status: 403,
+      refusal: 'settle-not-owner',
+      message: 'This task is signed off by someone else.',
       notice: '',
     };
   }
@@ -111,12 +136,12 @@ function answerFor(pathname, fields) {
         notice: '',
       };
     }
-    return { status: 204, notice: 'Note added under the description.' };
+    return { status: 200, notice: 'Note added.' };
   }
   if (verb === 'complete') {
-    return { status: 204, notice: 'Marked done.' };
+    return { status: 200, notice: 'Marked done.' };
   }
-  return { status: 204, notice: 'Started now.' };
+  return { status: 200, notice: 'Started.' };
 }
 
 // `render({notice, refusal})` returns the page the stub serves for a GET.
@@ -198,10 +223,12 @@ export async function startBoardStub({ render, holdMs = 0 }) {
           return;
         }
         if (answer.taskId) {
-          sendJson(response, answer.status, { task_id: answer.taskId });
+          sendJson(response, answer.status, {
+            task_id: answer.taskId,
+            notice: answer.notice,
+          });
         } else {
-          response.writeHead(answer.status, { 'Cache-Control': 'no-store' });
-          response.end();
+          sendJson(response, answer.status, { notice: answer.notice });
         }
       };
       if (delay > 0) {

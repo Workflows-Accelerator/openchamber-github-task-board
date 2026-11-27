@@ -805,23 +805,30 @@ html.js .nojs-tree { display: none; }
   );
 }
 
-  // One JSON post for every form on the page. A rejection keeps the engine's
-  // own sentence; an unreadable answer is still an error, never silence.
+  // One JSON post for every form on the page. Serve v1.1: a success carries
+  // the sentence the server wrote, and the caller navigates to it. A rejection
+  // keeps the engine's own sentence; an unreadable answer is still an error,
+  // never silence.
   function postJson(path, body) {
     return fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }).then(function (response) {
-      if (response.status >= 200 && response.status < 300) {
-        return response;
-      }
       return response.text().then(function (raw) {
         var payload = null;
         try {
-          payload = JSON.parse(raw);
+          payload = raw ? JSON.parse(raw) : null;
         } catch (error) {
           payload = null;
+        }
+        if (response.status >= 200 && response.status < 300) {
+          return {
+            notice:
+              payload && typeof payload.notice === 'string'
+                ? payload.notice
+                : '',
+          };
         }
         var message =
           payload && typeof payload.message === 'string' && payload.message
@@ -832,6 +839,16 @@ html.js .nojs-tree { display: none; }
         throw failure;
       });
     });
+  }
+
+  // The address the engine's sentence lives at. A success always lands on it,
+  // so a stale ?notice or ?refusal from an earlier page is replaced rather
+  // than reloaded. A success with no sentence (a server that broke v1.1) still
+  // goes to a clean page: the write happened, and retrying would duplicate it.
+  function noticeUrl(notice) {
+    return typeof notice === 'string' && notice !== ''
+      ? '/?notice=' + encodeURIComponent(notice)
+      : '/';
   }
 
   function formBody(form) {
@@ -1772,7 +1789,9 @@ html.js .nojs-tree { display: none; }
   // B2: with scripting on every form posts the same JSON its fields describe,
   // and one line reports the engine's answer. A double click is one send: the
   // form stays busy until the answer arrives, and the control stays disabled
-  // only while it is in flight.
+  // only while it is in flight. A success follows the server's own notice
+  // address instead of reloading the current one, so the line is the server's
+  // sentence and an old one cannot survive.
   function wireAuthoring() {
     if (!SERVED) return;
     document.addEventListener('submit', function (event) {
@@ -1788,8 +1807,8 @@ html.js .nojs-tree { display: none; }
       );
       if (control) control.disabled = true;
       postJson(form.getAttribute('action'), formBody(form)).then(
-        function () {
-          location.reload();
+        function (answer) {
+          location.assign(noticeUrl(answer && answer.notice));
         },
         function (error) {
           form.removeAttribute('data-busy');

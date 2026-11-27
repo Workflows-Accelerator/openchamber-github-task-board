@@ -17,7 +17,7 @@ import {
   taskActionsHtml,
   taskNoteHtml,
 } from '../engine-board/board-render.ts';
-import { startBoardStub } from './board-stub-server.mjs';
+import { startBoardStub, STUB_TASK_ID } from './board-stub-server.mjs';
 
 function node(task_id, node_key, rest_state, parent_task_id, extra = {}) {
   return { task_id, node_key, rest_state, parent_task_id, ...extra };
@@ -164,6 +164,17 @@ test('the served board carries the add line and the row actions', () => {
   assert.match(markup, /<input type="text" name="title"[^>]*placeholder="Add a task"/);
   assert.equal(/onclick/i.test(markup), false, 'no inline handler');
   assert.equal(/href="#"/.test(markup), false, 'no dead link');
+  // v1.1: the success sentences are the server's. The page only carries them
+  // from a response; none is a literal here.
+  for (const sentence of [
+    'Added as a draft',
+    'Note added.',
+    'Marked done.',
+    'Started.',
+  ]) {
+    assert.equal(html.includes(sentence), false, `the page does not write "${sentence}"`);
+  }
+  assert.ok(html.includes('location.assign(noticeUrl('), 'a success follows the notice address');
 
   const data = dataOf(html);
   assert.equal(data.served, true);
@@ -295,15 +306,29 @@ test('a form post and an XHR post reach the stub as the same call', async () => 
       form: { title: 'Write the plan' },
       json: { title: 'Write the plan' },
       status: 201,
+      notice: 'Added as a draft: Write the plan',
     },
     {
       path: '/api/tasks/tsk_abc/notes',
       form: { text: 'The bank called back.' },
       json: { text: 'The bank called back.' },
-      status: 204,
+      status: 200,
+      notice: 'Note added.',
     },
-    { path: '/api/tasks/tsk_abc/complete', form: {}, json: {}, status: 204 },
-    { path: '/api/tasks/tsk_abc/start', form: {}, json: {}, status: 204 },
+    {
+      path: '/api/tasks/tsk_abc/complete',
+      form: {},
+      json: {},
+      status: 200,
+      notice: 'Marked done.',
+    },
+    {
+      path: '/api/tasks/tsk_abc/start',
+      form: {},
+      json: {},
+      status: 200,
+      notice: 'Started.',
+    },
   ];
 
   try {
@@ -316,10 +341,12 @@ test('a form post and an XHR post reach the stub as the same call', async () => 
         redirect: 'manual',
       });
       assert.equal(form.status, 303, `${call.path} form answers See Other`);
+      const formTarget = new URL(form.headers.get('location'), stub.origin);
+      assert.equal(formTarget.pathname, '/', `${call.path} form returns to the page`);
       assert.equal(
-        new URL(form.headers.get('location'), stub.origin).pathname,
-        '/',
-        `${call.path} form returns to the page`,
+        formTarget.searchParams.get('notice'),
+        call.notice,
+        `${call.path} form carries the server's sentence`,
       );
 
       const xhr = await fetch(stub.origin + call.path, {
@@ -328,6 +355,12 @@ test('a form post and an XHR post reach the stub as the same call', async () => 
         body: JSON.stringify(call.json),
       });
       assert.equal(xhr.status, call.status, `${call.path} XHR status`);
+      const answer = await xhr.json();
+      // v1.1: every success carries the same sentence on both paths.
+      assert.equal(answer.notice, call.notice, `${call.path} XHR notice`);
+      if (call.path === '/api/tasks') {
+        assert.equal(answer.task_id, STUB_TASK_ID);
+      }
 
       const [sentForm, sentJson] = stub.requests.filter(
         (request) => request.method === 'POST',
@@ -366,12 +399,15 @@ test('the scriptless form round trip puts the notice in the page', async () => {
     const location = post.headers.get('location');
     const target = new URL(location, stub.origin);
     assert.equal(target.pathname, '/');
-    assert.equal(target.searchParams.get('notice'), 'Task added. It is a draft.');
+    assert.equal(
+      target.searchParams.get('notice'),
+      'Added as a draft: Chase the bank',
+    );
 
     const page = await fetch(target);
     const html = await page.text();
     assert.ok(
-      html.includes('Task added. It is a draft.'),
+      html.includes('Added as a draft: Chase the bank'),
       'the server-rendered page carries the line with scripting off',
     );
     assert.match(html, /id="page-line"[^>]*>/, 'the line is the same element');
@@ -411,6 +447,8 @@ test('a 4xx refusal keeps the engine name and sentence', async () => {
     const html = await page.text();
     assert.ok(html.includes('You already have a task with this name.'));
     assert.match(html, /class="page-line is-refusal"/);
+    // The machine name stays in the JSON; the page shows only the sentence.
+    assert.equal(html.includes('duplicate-title'), false);
 
     const missing = await fetch(stub.origin + '/api/tasks/tsk_missing/start', {
       method: 'POST',
@@ -419,6 +457,47 @@ test('a 4xx refusal keeps the engine name and sentence', async () => {
     });
     assert.equal(missing.status, 404);
     assert.equal((await missing.json()).refusal, 'unknown-task');
+  } finally {
+    await stub.close();
+  }
+});
+
+test('a settle refusal keeps the engine name and shows the serve sentence', async () => {
+  const model = authoringModel();
+  const stub = await startBoardStub({
+    render: ({ notice, refusal }) =>
+      renderBoardPage(model, { served: true, notice, refusal }),
+  });
+  try {
+    const json = await fetch(stub.origin + '/api/tasks/tsk_unowned/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    assert.equal(json.status, 403);
+    assert.deepEqual(await json.json(), {
+      refusal: 'settle-no-owner',
+      message:
+        'Nobody is named to settle this task, so it cannot be marked done here.',
+    });
+
+    const form = await fetch(stub.origin + '/api/tasks/tsk_unowned/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: '',
+      redirect: 'manual',
+    });
+    assert.equal(form.status, 303);
+    const page = await fetch(
+      new URL(form.headers.get('location'), stub.origin),
+    );
+    const html = await page.text();
+    assert.ok(
+      html.includes(
+        'Nobody is named to settle this task, so it cannot be marked done here.',
+      ),
+    );
+    assert.equal(html.includes('settle-no-owner'), false, 'the code is not copy');
   } finally {
     await stub.close();
   }

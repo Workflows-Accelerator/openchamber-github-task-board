@@ -2545,13 +2545,37 @@ test(
     browser = connect(version.webSocketDebuggerUrl);
     await browser.open;
     const page = await openPage(browser, stub.origin + '/');
-    await page.navigate(stub.origin + '/');
+    // Start on a page that already carries an old line: v1.1's navigation must
+    // replace it, not reload it. A stale refusal key is present too.
+    await page.navigate(
+      stub.origin +
+        '/?notice=' +
+        encodeURIComponent('An old line') +
+        '&refusal=' +
+        encodeURIComponent('An old refusal'),
+    );
 
     await until(
       page,
       "document.querySelector('form.add-line input[name=\"title\"]') !== null",
       'the served page carries the add line',
     );
+    await until(
+      page,
+      "new URL(location.href).searchParams.get('notice') === 'An old line'",
+      'the page opens on the old line',
+    );
+    const opening = await page.evaluate(`(function () {
+      var line = document.getElementById('page-line');
+      return {
+        notice: new URL(location.href).searchParams.get('notice'),
+        refusal: new URL(location.href).searchParams.get('refusal'),
+        line: line ? line.textContent : null,
+      };
+    })()`);
+    assert.equal(opening.notice, 'An old line');
+    assert.equal(opening.refusal, 'An old refusal');
+    assert.ok(opening.line && opening.line.includes('An old refusal'));
 
     // ---- an open dialog carries the note box and only the actions it can keep
     await page.evaluate(
@@ -2613,7 +2637,8 @@ test(
       `document.querySelector('dialog.sheet[open] .sheet-close').click()`,
     );
 
-    // ---- the form posts JSON, disables while in flight, and reloads
+    // ---- the form posts JSON, disables while in flight, and follows the
+    // server's notice address; the old line is gone
     stub.setHold(1200);
     await page.send('Emulation.setDeviceMetricsOverride', {
       width: 1280,
@@ -2638,7 +2663,7 @@ test(
 
     await untilTrue(
       () => stub.pageLoads() >= 2,
-      'the page reloads after the add',
+      'the page navigates after the add',
       8000,
     );
     const posts = stub.requests.filter((request) => request.method === 'POST');
@@ -2647,11 +2672,63 @@ test(
     assert.match(posts[0].contentType, /^application\/json/);
     assert.deepEqual(posts[0].fields, { title: 'Chase the bank' });
 
-    // The reloaded page is live again: the same renderer, the same forms.
+    await until(
+      page,
+      `new URL(location.href).searchParams.get('notice') === 'Added as a draft: Chase the bank'`,
+      'the page lands on the server notice address',
+    );
+    const afterAdd = await page.evaluate(`(function () {
+      var line = document.getElementById('page-line');
+      return {
+        notice: new URL(location.href).searchParams.get('notice'),
+        refusal: new URL(location.href).searchParams.get('refusal'),
+        line: line ? line.textContent : null,
+      };
+    })()`);
+    assert.equal(afterAdd.notice, 'Added as a draft: Chase the bank');
+    assert.equal(afterAdd.refusal, null, 'the stale refusal key is gone');
+    assert.ok(afterAdd.line && afterAdd.line.includes('Added as a draft: Chase the bank'));
+    assert.equal(afterAdd.line.includes('An old line'), false, 'the old line is gone');
+    assert.equal(afterAdd.line.includes('An old refusal'), false, 'the old refusal is gone');
+
+    // The landed page is live again: the same renderer, the same forms.
     await until(
       page,
       "document.querySelector('form.add-line input[name=\"title\"]') !== null",
-      'the reloaded page renders the add line',
+      'the landed page renders the add line',
+    );
+
+    // ---- a Mark done success also lands on its own sentence
+    stub.setHold(0);
+    await page.evaluate(
+      `document.querySelector('#board-root .card[data-task="waiting"] .enter').click()`,
+    );
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the waiting dialog opens for Mark done',
+    );
+    await page.evaluate(
+      `document.querySelector('dialog.sheet[open] form[action="/api/tasks/waiting/complete"] button').click()`,
+    );
+    await until(
+      page,
+      `new URL(location.href).searchParams.get('notice') === 'Marked done.'`,
+      'Mark done lands on its sentence',
+    );
+    const completePost = stub.requests.filter((request) => request.method === 'POST').slice(-1)[0];
+    assert.equal(completePost.path, '/api/tasks/waiting/complete');
+    assert.match(completePost.contentType, /^application\/json/);
+    assert.deepEqual(completePost.fields, {});
+    assert.ok(
+      (await page.evaluate(`document.getElementById('page-line').textContent`)).includes(
+        'Marked done.',
+      ),
+    );
+    await until(
+      page,
+      "document.querySelector('form.add-line input[name=\"title\"]') !== null",
+      'the Mark done landing renders the add line',
     );
 
     // ---- a refusal lands in the same line, in place, and re-enables the control
@@ -2749,11 +2826,24 @@ test(
     await page.evaluate(
       `document.querySelector('li[data-task="waiting"] .enter').click()`,
     );
-    assert.equal(
-      await page.evaluate("document.querySelector('dialog') !== null"),
-      false,
-      'no dialog without scripting',
-    );
+    const floorAuthoring = await page.evaluate(`(function () {
+      return {
+        dialogs: document.querySelectorAll('dialog').length,
+        forms: document.querySelectorAll('form').length,
+        noteForms: document.querySelectorAll('form[action*="/notes"]').length,
+        completeForms: document.querySelectorAll('form[action*="/complete"]').length,
+        startForms: document.querySelectorAll('form[action*="/start"]').length,
+        addForms: document.querySelectorAll('form.add-line').length,
+      };
+    })()`);
+    assert.deepEqual(floorAuthoring, {
+      dialogs: 0,
+      forms: 1,
+      noteForms: 0,
+      completeForms: 0,
+      startForms: 0,
+      addForms: 1,
+    });
 
     // The plain form post, the engine's 303, and the line in the returned page.
     await page.evaluate(`(function () {
@@ -2763,7 +2853,7 @@ test(
     })()`);
     await until(
       page,
-      "document.body.innerText.indexOf('Task added. It is a draft.') !== -1",
+      "document.body.innerText.indexOf('Added as a draft: Chase the bank') !== -1",
       'the returned page carries the notice line',
       8000,
     );
@@ -2775,7 +2865,7 @@ test(
     assert.deepEqual(posts[0].fields, { title: 'Chase the bank' });
     const landing = stub.requests.filter((request) => request.method === 'GET').slice(-1)[0];
     assert.equal(landing.path, '/');
-    assert.equal(landing.query.notice, 'Task added. It is a draft.');
+    assert.equal(landing.query.notice, 'Added as a draft: Chase the bank');
     assert.deepEqual(page.exceptions, []);
   },
 );
