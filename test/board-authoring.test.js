@@ -481,6 +481,19 @@ test('a settle refusal keeps the engine name and shows the serve sentence', asyn
         'Nobody is named to settle this task, so it cannot be marked done here.',
     });
 
+    const other = await fetch(
+      stub.origin + '/api/tasks/tsk_someone_else/complete',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      },
+    );
+    assert.equal(other.status, 403);
+    const otherAnswer = await other.json();
+    assert.equal(otherAnswer.refusal, 'settle-not-owner');
+    assert.equal(otherAnswer.message, 'This task is signed off by someone else.');
+
     const form = await fetch(stub.origin + '/api/tasks/tsk_unowned/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
