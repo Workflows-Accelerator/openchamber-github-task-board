@@ -988,6 +988,100 @@ export function sheetFieldsHtml(fields: readonly DetailField[]): string {
     .join('');
 }
 
+// What a served page may post for one task. The server computes these from the
+// same read the page draws, and the dialog only draws what it is given: a
+// button the engine would refuse is not offered in the first place.
+export interface TaskActions {
+  complete?: boolean;
+  start?: boolean;
+}
+
+// A person settles a task the read says is waiting for one, and only on a live
+// (not archived) row. Starting is offered only on the lane the page calls
+// "Can start now". The tree's own container never reaches a row here, so it
+// cannot be offered. Both are computed here, not in the browser.
+function taskActions(row: TreeRow): TaskActions {
+  if (row.archived_at !== null) {
+    return {};
+  }
+  const actions: TaskActions = {};
+  if (row.rest_state === 'waiting') {
+    actions.complete = true;
+  }
+  if (laneOf(row.rest_state, row.phase) === 'can-start') {
+    actions.start = true;
+  }
+  return actions;
+}
+
+// The dialog's action row. Like `sheetFieldsHtml`, this function's source is
+// embedded in the page, so it escapes its own values and depends on nothing.
+export function taskActionsHtml(taskId: string, actions: TaskActions): string {
+  const entities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  const id = taskId.replace(
+    /[&<>"']/g,
+    (character) => entities[character] ?? character,
+  );
+  const buttons: string[] = [];
+  if (actions.start) {
+    buttons.push(
+      '<form class="sheet-action is-start" method="post" ' +
+        'action="/api/tasks/' +
+        id +
+        '/start" data-post><button type="submit">Start now</button></form>',
+    );
+  }
+  if (actions.complete) {
+    buttons.push(
+      '<form class="sheet-action" method="post" ' +
+        'action="/api/tasks/' +
+        id +
+        '/complete" data-post><button type="submit">Mark done</button></form>',
+    );
+  }
+  if (buttons.length === 0) {
+    return '';
+  }
+  return '<div class="sheet-actions">' + buttons.join('') + '</div>';
+}
+
+// The note box under the description. A note is an append, so the copy says
+// exactly that: the words above it are not touched.
+export function taskNoteHtml(taskId: string): string {
+  const entities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  const id = taskId.replace(
+    /[&<>"']/g,
+    (character) => entities[character] ?? character,
+  );
+  return (
+    '<form class="sheet-note-form" method="post" action="/api/tasks/' +
+    id +
+    '/notes" data-post>' +
+    '<label for="note-' +
+    id +
+    '">Add a note</label>' +
+    '<textarea id="note-' +
+    id +
+    '" name="text" rows="3" placeholder="Write a note" required></textarea>' +
+    '<p class="sheet-hint">A note is added under what is already there. ' +
+    'Nothing above it changes.</p>' +
+    '<button type="submit">Add note</button>' +
+    '</form>'
+  );
+}
+
 export interface BoardScopeData {
   // Only the lanes that hold a task, in LANE_ORDER; an `unknown` lane is last.
   lanes: { lane: string; tasks: string[] }[];
@@ -1023,10 +1117,16 @@ export interface BoardRowData {
   // True when the payload carried no title; the page then says so instead of
   // passing the node key off as one. Absent means the title was read.
   title_missing?: boolean;
+  // Only on a served page: the write controls this row may draw. Absent means
+  // the row has no action, so the file:// artefact cannot show one.
+  actions?: TaskActions;
 }
 
 export interface BoardData {
   tree_state: string;
+  // True only when the engine is serving this page. The artefact built for
+  // `file://` omits it, so no form exists there at all.
+  served?: boolean;
   scopes: Record<string, BoardScopeData>;
   rows: Record<string, BoardRowData>;
 }
@@ -1034,7 +1134,11 @@ export interface BoardData {
 // Everything the inline script needs to draw a scope or a dialog, as data. No
 // scope is pre-rendered and no dialog is pre-built, so the page carries one
 // tree and one JSON block whatever the tree size.
-export function boardData(model: TreeModel): BoardData {
+export function boardData(
+  model: TreeModel,
+  options: { served?: boolean } = {},
+): BoardData {
+  const served = options.served === true;
   const scopes: Record<string, BoardScopeData> = {};
   const rows: Record<string, BoardRowData> = {};
   const record = (
@@ -1079,14 +1183,24 @@ export function boardData(model: TreeModel): BoardData {
     if (row.title === null) {
       data.title_missing = true;
     }
+    if (served) {
+      const actions = taskActions(row);
+      if (actions.complete || actions.start) {
+        data.actions = actions;
+      }
+    }
     rows[row.task_id] = data;
     record(row.node_key, row.children, row);
   }
-  return {
+  const data: BoardData = {
     tree_state: model.tree_state,
     scopes,
     rows,
   };
+  if (served) {
+    data.served = true;
+  }
+  return data;
 }
 
 // ---------------------------------------------------------------- pages
@@ -1127,6 +1241,7 @@ function containedText(contained: {
 function listRow(
   row: TreeRow,
   rows: ReadonlyMap<string, TreeRow>,
+  model: TreeModel,
   view: BoardView,
 ): string {
   const contained = containment(row);
@@ -1134,6 +1249,16 @@ function listRow(
   const hasChildren = row.children.length > 0;
   const kids = childrenId(row);
   const blockers = blockerLabels(row, rows);
+  // B3: a card in "Can start now" says how much work waits on it, using the
+  // same edges the dialog's `Holds up` field counts. Zero draws nothing.
+  const holds =
+    laneOf(row.rest_state, row.phase) === 'can-start'
+      ? holdEntries(row, model).length
+      : 0;
+  const holdsLine =
+    holds > 0
+      ? `<p class="card-count card-holds">holds up ${holds}</p>`
+      : '';
   const wait =
     row.rest_state === 'blocked' && blockers.length > 0
       ? `<p class="card-wait">Waiting for: ${esc(joinWords(blockers))}</p>`
@@ -1210,6 +1335,7 @@ function listRow(
               titleOf(row),
             )}, ${esc(counts)}">${esc(counts)}</button>`
           : ''}
+        ${holdsLine}
         ${wait}
         ${after}
         ${disagreement}
@@ -1228,7 +1354,7 @@ function listRow(
     ${
       hasChildren
         ? `<ul class="children" id="${kids}">${row.children
-            .map((child) => listRow(child, rows, view))
+            .map((child) => listRow(child, rows, model, view))
             .join('')}</ul>`
         : ''
     }
@@ -1252,7 +1378,7 @@ function listBody(model: TreeModel, view: BoardView): string {
     </div>
   </header>
   <ul class="tree">${model.roots
-    .map((row) => listRow(row, rows, view))
+    .map((row) => listRow(row, rows, model, view))
     .join('')}</ul>`;
 }
 
@@ -1323,6 +1449,41 @@ a { color: inherit; }
   font-size: 0.8rem; text-decoration: none; white-space: nowrap;
 }
 .views a.is-on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+/* The served page's one line about what the engine just said. Refusals keep
+   the defect tone; a plain notice stays quiet. */
+.page-line {
+  margin: 0 0 14px; padding: 8px 12px;
+  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+  background: var(--accent-soft); color: var(--ink);
+  font-size: 0.86rem; line-height: 1.5;
+}
+.page-line.is-refusal {
+  border-left-color: var(--warning); background: var(--warning-soft);
+  color: var(--warning);
+}
+.page-line a {
+  margin-left: 8px; color: inherit; text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+/* Adding a task is the page's primary action, so it is the one filled control
+   on the page rather than a debug field beside the title. */
+.add-line { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
+.add-line input {
+  flex: 1 1 auto; min-width: 0; padding: 8px 12px;
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.95rem;
+}
+.add-line input::placeholder { color: var(--faint); }
+.add-line button {
+  flex: none; padding: 8px 16px; border: 1px solid var(--accent);
+  border-radius: 10px; background: var(--accent); color: var(--paper);
+  font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
+}
+.add-line button:hover, .add-line button:focus-visible {
+  background: var(--ink); border-color: var(--ink);
+}
+.add-line button:disabled { opacity: 0.55; cursor: default; }
 .progress { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .progress-line {
   color: var(--muted); font-size: 0.85rem;
@@ -1581,6 +1742,41 @@ a { color: inherit; }
   color: var(--muted); font-size: 0.86rem;
 }
 .sheet-state .mono { font-family: var(--mono); font-size: 0.78rem; }
+/* The actions sit under the state line, where the task is. One is outlined in
+   the accent, the other stays quiet; both are real submit buttons. */
+.sheet-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 14px;
+}
+.sheet-actions form { flex: none; margin: 0; }
+.sheet-actions button, .sheet-note-form button {
+  padding: 6px 13px; border: 1px solid var(--line-strong); border-radius: 9px;
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.84rem; white-space: nowrap; cursor: pointer;
+}
+.sheet-actions .is-start button { border-color: var(--accent); color: var(--accent); }
+.sheet-actions button:hover, .sheet-actions button:focus-visible,
+.sheet-note-form button:hover, .sheet-note-form button:focus-visible {
+  border-color: currentColor;
+}
+.sheet-actions button:disabled, .sheet-note-form button:disabled {
+  opacity: 0.55; cursor: default;
+}
+.sheet-note-form { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sheet-note-form label {
+  display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.02em; text-transform: uppercase;
+}
+.sheet-note-form textarea {
+  display: block; width: 100%; margin-top: 6px; padding: 9px 11px;
+  border: 1px solid var(--line-strong); border-radius: 9px;
+  background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;
+}
+.sheet-note-form .sheet-hint {
+  margin-top: 6px; color: var(--muted); font-size: 0.76rem; line-height: 1.4;
+}
+.sheet-note-form button { margin-top: 8px; }
 .sheet-section { margin-top: 18px; }
 .sheet-section h3 {
   margin: 0 0 6px; color: var(--muted); font-size: 0.72rem;
@@ -1670,6 +1866,10 @@ a { color: inherit; }
   .disclosure, .disclosure-spacer { flex: 0 0 40px; width: 40px; height: 40px; }
   .row-state { flex: 0 0 100%; margin-left: 0; margin-top: 2px; }
   .fact dt { flex-basis: 6rem; }
+  /* One hand: the field and the buttons keep a 40 px target, and the input is
+     16 px so the phone does not zoom on focus. */
+  .add-line input, .sheet-note-form textarea { font-size: 1rem; }
+  .add-line button, .sheet-actions button, .sheet-note-form button { min-height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
@@ -1703,12 +1903,81 @@ const SCRIPT = `(function () {
   }
   var ROWS = (DATA && DATA.rows) || {};
   var SCOPES = (DATA && DATA.scopes) || {};
+  // A served page may post. The artefact built for file:// is not served, so it
+  // draws no control and this script wires none.
+  var SERVED = !!(DATA && DATA.served === true);
 
   ${laneGroups.toString()}
 
   ${laneOf.toString()}
 
   ${sheetFieldsHtml.toString()}
+
+  ${taskActionsHtml.toString()}
+
+  ${taskNoteHtml.toString()}
+
+  // One JSON post for every form on the page. A rejection keeps the engine's
+  // own sentence; an unreadable answer is still an error, never silence.
+  function postJson(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function (response) {
+      if (response.status >= 200 && response.status < 300) {
+        return response;
+      }
+      return response.text().then(function (raw) {
+        var payload = null;
+        try {
+          payload = JSON.parse(raw);
+        } catch (error) {
+          payload = null;
+        }
+        var message =
+          payload && typeof payload.message === 'string' && payload.message
+            ? payload.message
+            : 'The engine refused that.';
+        var failure = new Error(message);
+        failure.refusal = payload && payload.refusal ? payload.refusal : '';
+        throw failure;
+      });
+    });
+  }
+
+  function formBody(form) {
+    var body = {};
+    Array.prototype.forEach.call(form.elements, function (field) {
+      if (!field.name) return;
+      if (field.type === 'checkbox' || field.type === 'radio') {
+        if (!field.checked) return;
+      }
+      body[field.name] = field.value;
+    });
+    return body;
+  }
+
+  // The server's line, reused in place. If the markup somehow lost it, one is
+  // made rather than an error vanishing.
+  function showLine(message, refused) {
+    var line = document.getElementById('page-line');
+    if (!line) {
+      line = document.createElement('p');
+      line.className = 'page-line';
+      line.id = 'page-line';
+      line.setAttribute('role', 'status');
+      var text = document.createElement('span');
+      text.className = 'page-line-text';
+      line.appendChild(text);
+      var page = document.querySelector('.page') || document.body;
+      page.insertBefore(line, page.firstChild);
+    }
+    var span = line.querySelector('.page-line-text');
+    if (span) span.textContent = message;
+    line.hidden = false;
+    line.classList.toggle('is-refusal', !!refused);
+  }
 
   function current() {
     var raw = location.hash.replace(/^#/, '');
@@ -1988,6 +2257,7 @@ const SCRIPT = `(function () {
       ? Array.prototype.filter.call(ownMain.children, function (part) {
           return (
             part.classList.contains('row-count') ||
+            part.classList.contains('card-count') ||
             part.classList.contains('card-wait') ||
             part.classList.contains('card-after') ||
             part.classList.contains('card-defect')
@@ -2424,6 +2694,26 @@ const SCRIPT = `(function () {
     mountSection(inner, section);
   }
 
+  function mountHtml(inner, html) {
+    if (!html) return;
+    var holder = document.createElement('div');
+    holder.innerHTML = html;
+    var made = holder.firstElementChild;
+    if (made) inner.appendChild(made);
+  }
+
+  // The write controls are drawn only on a served page, from the actions the
+  // server computed for this row. The dialog never decides for itself.
+  function appendActions(inner, data, taskId) {
+    if (!SERVED || !data.actions) return;
+    mountHtml(inner, taskActionsHtml(taskId, data.actions));
+  }
+
+  function appendNote(inner, taskId) {
+    if (!SERVED) return;
+    mountHtml(inner, taskNoteHtml(taskId));
+  }
+
   function buildSheet(taskId) {
     var data = ROWS[taskId];
     if (!data) return null;
@@ -2462,7 +2752,9 @@ const SCRIPT = `(function () {
         ),
       );
     }
+    appendActions(inner, data, taskId);
     appendDescription(inner, data);
+    appendNote(inner, taskId);
     appendConditions(inner, data);
     // Ruling 2: no facts means no facts block, not an empty bordered list.
     if (data.primary && data.primary.length > 0) {
@@ -2589,6 +2881,42 @@ const SCRIPT = `(function () {
     syncViews(here.key);
   }
 
+  // B2: with scripting on every form posts the same JSON its fields describe,
+  // and one line reports the engine's answer. A double click is one send: the
+  // form stays busy until the answer arrives, and the control stays disabled
+  // only while it is in flight.
+  function wireAuthoring() {
+    if (!SERVED) return;
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (!form || form.tagName !== 'FORM' || !form.hasAttribute('data-post')) {
+        return;
+      }
+      event.preventDefault();
+      if (form.getAttribute('data-busy') === '1') return;
+      form.setAttribute('data-busy', '1');
+      var control = form.querySelector(
+        'button[type="submit"], input[type="submit"]',
+      );
+      if (control) control.disabled = true;
+      postJson(form.getAttribute('action'), formBody(form)).then(
+        function () {
+          location.reload();
+        },
+        function (error) {
+          form.removeAttribute('data-busy');
+          if (control) control.disabled = false;
+          showLine(
+            error && error.message
+              ? error.message
+              : 'The engine did not answer.',
+            true,
+          );
+        },
+      );
+    });
+  }
+
   var boardRoot = document.getElementById('board-root');
   var stopped = FAILED;
   if (boardRoot && !stopped && !document.getElementById('tree-source')) {
@@ -2600,8 +2928,40 @@ const SCRIPT = `(function () {
     window.addEventListener('hashchange', apply);
     apply();
     wireDisclosures();
+    wireAuthoring();
   }
 })();`;
+
+// The page's authoring surface, rendered on the server. Empty unless the engine
+// is serving this page: the file:// artefact carries no control that cannot
+// work, which is the floor the page already had.
+export interface PageOptions {
+  served?: boolean;
+  notice?: string;
+  refusal?: string;
+}
+
+function pageLine(options: {
+  served: boolean;
+  notice: string;
+  refusal: string;
+}): string {
+  if (!options.served) {
+    return '';
+  }
+  const refused = options.refusal !== '';
+  const text = refused ? options.refusal : options.notice;
+  return `<p class="page-line${refused ? ' is-refusal' : ''}" id="page-line" role="status"${
+    text === '' ? ' hidden' : ''
+  }><span class="page-line-text">${esc(text)}</span><a href="/">Dismiss</a></p>`;
+}
+
+function addLine(): string {
+  return `<form class="add-line" method="post" action="/api/tasks" data-post>
+  <input type="text" name="title" maxlength="200" required autocomplete="off" placeholder="Add a task" aria-label="Add a task">
+  <button type="submit">Add</button>
+</form>`;
+}
 
 function shell(
   model: TreeModel,
@@ -2610,10 +2970,19 @@ function shell(
     pageTitle: string;
     body: string;
     defaultKey: string | null;
+    served?: boolean;
+    notice?: string;
+    refusal?: string;
   },
 ): string {
   const { done, total } = progress(model.roots);
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+  const served = options.served === true;
+  const line = pageLine({
+    served,
+    notice: options.notice ?? '',
+    refusal: options.refusal ?? '',
+  });
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2633,6 +3002,8 @@ html.js .nojs-tree { display: none; }
 <body data-page="${options.view}">
 <main class="page">
   ${topBar(options.view, options.defaultKey)}
+  ${line}
+  ${served ? addLine() : ''}
   ${progressBlock(model)}
   ${defectBlock(model)}
   <p class="board-failure" id="board-failure" hidden></p>
@@ -2646,9 +3017,14 @@ html.js .nojs-tree { display: none; }
 `;
 }
 
-export function renderBoardPage(model: TreeModel): string {
+export function renderBoardPage(
+  model: TreeModel,
+  options: PageOptions = {},
+): string {
   const defaultKey = defaultKeyOf(model);
-  const data = JSON.stringify(boardData(model)).replace(/</g, '\\u003c');
+  const data = JSON.stringify(
+    boardData(model, { served: options.served === true }),
+  ).replace(/</g, '\\u003c');
   const body = `<div class="board-scope" id="board-root" data-default="${esc(
     defaultKey ?? '',
   )}" data-tree-state="${esc(model.tree_state)}"></div>
@@ -2659,12 +3035,20 @@ export function renderBoardPage(model: TreeModel): string {
     pageTitle: pageTitleOf(model, 'board', defaultKey),
     body,
     defaultKey,
+    served: options.served,
+    notice: options.notice,
+    refusal: options.refusal,
   });
 }
 
-export function renderListPage(model: TreeModel): string {
+export function renderListPage(
+  model: TreeModel,
+  options: PageOptions = {},
+): string {
   const defaultKey = defaultKeyOf(model);
-  const data = JSON.stringify(boardData(model)).replace(/</g, '\\u003c');
+  const data = JSON.stringify(
+    boardData(model, { served: options.served === true }),
+  ).replace(/</g, '\\u003c');
   const body = `${listBody(model, 'list')}
   <script type="application/json" id="board-data">${data}</script>`;
   return shell(model, {
@@ -2672,5 +3056,8 @@ export function renderListPage(model: TreeModel): string {
     pageTitle: pageTitleOf(model, 'list', defaultKey),
     body,
     defaultKey,
+    served: options.served,
+    notice: options.notice,
+    refusal: options.refusal,
   });
 }

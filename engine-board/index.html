@@ -71,6 +71,41 @@ a { color: inherit; }
   font-size: 0.8rem; text-decoration: none; white-space: nowrap;
 }
 .views a.is-on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+/* The served page's one line about what the engine just said. Refusals keep
+   the defect tone; a plain notice stays quiet. */
+.page-line {
+  margin: 0 0 14px; padding: 8px 12px;
+  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+  background: var(--accent-soft); color: var(--ink);
+  font-size: 0.86rem; line-height: 1.5;
+}
+.page-line.is-refusal {
+  border-left-color: var(--warning); background: var(--warning-soft);
+  color: var(--warning);
+}
+.page-line a {
+  margin-left: 8px; color: inherit; text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+/* Adding a task is the page's primary action, so it is the one filled control
+   on the page rather than a debug field beside the title. */
+.add-line { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
+.add-line input {
+  flex: 1 1 auto; min-width: 0; padding: 8px 12px;
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.95rem;
+}
+.add-line input::placeholder { color: var(--faint); }
+.add-line button {
+  flex: none; padding: 8px 16px; border: 1px solid var(--accent);
+  border-radius: 10px; background: var(--accent); color: var(--paper);
+  font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
+}
+.add-line button:hover, .add-line button:focus-visible {
+  background: var(--ink); border-color: var(--ink);
+}
+.add-line button:disabled { opacity: 0.55; cursor: default; }
 .progress { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .progress-line {
   color: var(--muted); font-size: 0.85rem;
@@ -329,6 +364,41 @@ a { color: inherit; }
   color: var(--muted); font-size: 0.86rem;
 }
 .sheet-state .mono { font-family: var(--mono); font-size: 0.78rem; }
+/* The actions sit under the state line, where the task is. One is outlined in
+   the accent, the other stays quiet; both are real submit buttons. */
+.sheet-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 14px;
+}
+.sheet-actions form { flex: none; margin: 0; }
+.sheet-actions button, .sheet-note-form button {
+  padding: 6px 13px; border: 1px solid var(--line-strong); border-radius: 9px;
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.84rem; white-space: nowrap; cursor: pointer;
+}
+.sheet-actions .is-start button { border-color: var(--accent); color: var(--accent); }
+.sheet-actions button:hover, .sheet-actions button:focus-visible,
+.sheet-note-form button:hover, .sheet-note-form button:focus-visible {
+  border-color: currentColor;
+}
+.sheet-actions button:disabled, .sheet-note-form button:disabled {
+  opacity: 0.55; cursor: default;
+}
+.sheet-note-form { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sheet-note-form label {
+  display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.02em; text-transform: uppercase;
+}
+.sheet-note-form textarea {
+  display: block; width: 100%; margin-top: 6px; padding: 9px 11px;
+  border: 1px solid var(--line-strong); border-radius: 9px;
+  background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;
+}
+.sheet-note-form .sheet-hint {
+  margin-top: 6px; color: var(--muted); font-size: 0.76rem; line-height: 1.4;
+}
+.sheet-note-form button { margin-top: 8px; }
 .sheet-section { margin-top: 18px; }
 .sheet-section h3 {
   margin: 0 0 6px; color: var(--muted); font-size: 0.72rem;
@@ -418,6 +488,10 @@ a { color: inherit; }
   .disclosure, .disclosure-spacer { flex: 0 0 40px; width: 40px; height: 40px; }
   .row-state { flex: 0 0 100%; margin-left: 0; margin-top: 2px; }
   .fact dt { flex-basis: 6rem; }
+  /* One hand: the field and the buttons keep a 40 px target, and the input is
+     16 px so the phone does not zoom on focus. */
+  .add-line input, .sheet-note-form textarea { font-size: 1rem; }
+  .add-line button, .sheet-actions button, .sheet-note-form button { min-height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
@@ -441,6 +515,8 @@ html.js .nojs-tree { display: none; }
       <a class="view" href="list.html#list" data-view-link="list">List</a>
     </nav>
   </header>
+  
+  
   <section class="progress" aria-label="Whole tree progress">
     <p class="progress-line"><strong>4 of 6</strong> done</p>
     <span class="progress-track" role="progressbar" aria-label="Done share" aria-valuemin="0" aria-valuemax="6" aria-valuenow="4"><span class="progress-fill pct-67"></span></span>
@@ -466,6 +542,7 @@ html.js .nojs-tree { display: none; }
         
         
         
+        
       </div>
       <span class="row-state" data-lane="done"><span class="here-tag" data-here="diag-host" hidden>Here</span><span class="dot" aria-hidden="true"></span>Done</span>
     </div>
@@ -475,6 +552,7 @@ html.js .nojs-tree { display: none; }
       <span class="disclosure-spacer" aria-hidden="true"></span>
       <div class="node-main">
         <button class="enter" type="button" data-dialog="d-tsk_a967bb1df53c4df7b44f7f130d31fcc1">Collect database evidence for the alert and record the three most likely causes.</button>
+        
         
         
         
@@ -498,6 +576,7 @@ html.js .nojs-tree { display: none; }
         
         
         
+        
       </div>
       <span class="row-state" data-lane="done"><span class="here-tag" data-here="diag-net" hidden>Here</span><span class="dot" aria-hidden="true"></span>Done</span>
     </div>
@@ -507,6 +586,7 @@ html.js .nojs-tree { display: none; }
       <span class="disclosure-spacer" aria-hidden="true"></span>
       <div class="node-main">
         <button class="enter" type="button" data-dialog="d-tsk_0cb77b7c30df4ac0aabdb4730441da8b">Rank the causes across the three diagnostics and write the incident summary.</button>
+        
         
         
         
@@ -530,6 +610,7 @@ html.js .nojs-tree { display: none; }
         
         
         
+        
       </div>
       <span class="row-state" data-lane="waiting-for-someone"><span class="here-tag" data-here="call" hidden>Here</span><span class="dot" aria-hidden="true"></span>Waiting for someone</span>
     </div>
@@ -539,6 +620,7 @@ html.js .nojs-tree { display: none; }
       <span class="disclosure-spacer" aria-hidden="true"></span>
       <div class="node-main">
         <button class="enter" type="button" data-dialog="d-tsk_84cb8b342f944af094cabdac775193fb">Carry out the on-call owner&#39;s choice and record its effect on the alert; a watch verdict records a no-op.</button>
+        
         
         <p class="card-wait">Waiting for: The on-call owner chooses remediation, rollback or wait-and-watch.</p>
         
@@ -551,13 +633,13 @@ html.js .nojs-tree { display: none; }
     </div>
     
   </li></ul></div>
-  <script type="application/json" id="board-data">{"tree_state":"open","scopes":{"":{"lanes":[{"lane":"waiting-for-someone","tasks":["tsk_c6d6e0acbab24d0b9516cb9334ea7b36"]},{"lane":"waiting-for-other-work","tasks":["tsk_84cb8b342f944af094cabdac775193fb"]},{"lane":"done","tasks":["tsk_a920981a32214910861dea0bf3484121","tsk_a967bb1df53c4df7b44f7f130d31fcc1","tsk_bf8efdb5a1564376b21874861d0ebbba","tsk_0cb77b7c30df4ac0aabdb4730441da8b"]}],"empty":5,"edges":[{"from":"tsk_bf8efdb5a1564376b21874861d0ebbba","to":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","kind":"blocked_by"},{"from":"tsk_a920981a32214910861dea0bf3484121","to":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","kind":"blocked_by"},{"from":"tsk_a967bb1df53c4df7b44f7f130d31fcc1","to":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","kind":"blocked_by"},{"from":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","to":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36","kind":"blocked_by"},{"from":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36","to":"tsk_84cb8b342f944af094cabdac775193fb","kind":"blocked_by"}],"details":null},"diag-host":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_a920981a32214910861dea0bf3484121","task":"tsk_a920981a32214910861dea0bf3484121"}},"diag-db":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_a967bb1df53c4df7b44f7f130d31fcc1","task":"tsk_a967bb1df53c4df7b44f7f130d31fcc1"}},"diag-net":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_bf8efdb5a1564376b21874861d0ebbba","task":"tsk_bf8efdb5a1564376b21874861d0ebbba"}},"summarise":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_0cb77b7c30df4ac0aabdb4730441da8b","task":"tsk_0cb77b7c30df4ac0aabdb4730441da8b"}},"call":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_c6d6e0acbab24d0b9516cb9334ea7b36","task":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36"}},"remediate":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_84cb8b342f944af094cabdac775193fb","task":"tsk_84cb8b342f944af094cabdac775193fb"}}},"rows":{"tsk_a920981a32214910861dea0bf3484121":{"dialog":"d-tsk_a920981a32214910861dea0bf3484121","body":{"state":"ok","paragraphs":["Collect host-level evidence for the alert and record the three most likely causes."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Holds up","value":"1 task: Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"25 minutes ago","title":"2026-11-26T10:17:07.780974Z"}],"more":[{"label":"Task id","value":"tsk_a920981a32214910861dea0bf3484121","mono":true},{"label":"Node key","value":"diag-host","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.584727Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:07.780974Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_a07ecf9d78044f7fb80a354900560303","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_a967bb1df53c4df7b44f7f130d31fcc1":{"dialog":"d-tsk_a967bb1df53c4df7b44f7f130d31fcc1","body":{"state":"ok","paragraphs":["Collect database evidence for the alert and record the three most likely causes."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Holds up","value":"1 task: Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"25 minutes ago","title":"2026-11-26T10:17:08.004774Z"}],"more":[{"label":"Task id","value":"tsk_a967bb1df53c4df7b44f7f130d31fcc1","mono":true},{"label":"Node key","value":"diag-db","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.585088Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.004774Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_27bd5c396c4f480ab917820003bfe4e8","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_bf8efdb5a1564376b21874861d0ebbba":{"dialog":"d-tsk_bf8efdb5a1564376b21874861d0ebbba","body":{"state":"ok","paragraphs":["Collect network evidence for the alert and record the three most likely causes."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Holds up","value":"1 task: Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"25 minutes ago","title":"2026-11-26T10:17:08.216109Z"}],"more":[{"label":"Task id","value":"tsk_bf8efdb5a1564376b21874861d0ebbba","mono":true},{"label":"Node key","value":"diag-net","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.585432Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.216109Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_10d2df6dff13443cad728c117f948936","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_0cb77b7c30df4ac0aabdb4730441da8b":{"dialog":"d-tsk_0cb77b7c30df4ac0aabdb4730441da8b","body":{"state":"ok","paragraphs":["Rank the causes across the three diagnostics and write the incident summary."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Waits for","value":"Collect network evidence for the alert and record the three most likely causes. (done), Collect host-level evidence for the alert and record the three most likely causes. (done) and Collect database evidence for the alert and record the three most likely causes. (done)."},{"label":"Holds up","value":"1 task: The on-call owner chooses remediation, rollback or wait-and-watch. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"25 minutes ago","title":"2026-11-26T10:17:08.438835Z"}],"more":[{"label":"Task id","value":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","mono":true},{"label":"Node key","value":"summarise","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.585786Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.438835Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_0133832f7c6348279e3e76a5fe7dbc7a","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_c6d6e0acbab24d0b9516cb9334ea7b36":{"dialog":"d-tsk_c6d6e0acbab24d0b9516cb9334ea7b36","body":{"state":"ok","paragraphs":["The on-call owner chooses remediation, rollback or wait-and-watch."]},"conditions":{"state":"unread","lines":[]},"history":[],"conversation":"","primary":[{"label":"Waits for","value":"Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Holds up","value":"1 task: Carry out the on-call owner's choice and record its effect on the alert; a watch verdict records a no-op."},{"label":"Last change","value":"25 minutes ago","title":"2026-11-26T10:17:08.438900Z"}],"more":[{"label":"Task id","value":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36","mono":true},{"label":"Node key","value":"call","mono":true},{"label":"Engine state","value":"waiting","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Created","value":"2026-11-26T10:17:06.586829Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.438900Z","mono":true},{"label":"Attempts","value":"0 runs"},{"label":"Wait reason","value":"review","mono":true},{"label":"Wait cause","value":"none","mono":true}],"notes":["The engine did not report an owner and when it started for this wait."],"wait":{"cause":"none","ended_by":null,"escalation_level":null,"expires_at":null,"opened_at":null,"opened_by_attempt":null,"owner":null,"reason":"review","resume_at":null},"hold":null},"tsk_84cb8b342f944af094cabdac775193fb":{"dialog":"d-tsk_84cb8b342f944af094cabdac775193fb","body":{"state":"ok","paragraphs":["Carry out the on-call owner's choice and record its effect on the alert; a watch verdict records a no-op."]},"conditions":{"state":"unread","lines":[]},"history":[],"conversation":"","primary":[{"label":"Waits for","value":"The on-call owner chooses remediation, rollback or wait-and-watch."},{"label":"Last change","value":"25 minutes ago","title":"2026-11-26T10:17:06.587334Z"}],"more":[{"label":"Task id","value":"tsk_84cb8b342f944af094cabdac775193fb","mono":true},{"label":"Node key","value":"remediate","mono":true},{"label":"Engine state","value":"blocked","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Created","value":"2026-11-26T10:17:06.587334Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:06.587334Z","mono":true},{"label":"Attempts","value":"0 runs"}],"notes":[],"wait":null,"hold":null}}}</script>
+  <script type="application/json" id="board-data">{"tree_state":"open","scopes":{"":{"lanes":[{"lane":"waiting-for-someone","tasks":["tsk_c6d6e0acbab24d0b9516cb9334ea7b36"]},{"lane":"waiting-for-other-work","tasks":["tsk_84cb8b342f944af094cabdac775193fb"]},{"lane":"done","tasks":["tsk_a920981a32214910861dea0bf3484121","tsk_a967bb1df53c4df7b44f7f130d31fcc1","tsk_bf8efdb5a1564376b21874861d0ebbba","tsk_0cb77b7c30df4ac0aabdb4730441da8b"]}],"empty":5,"edges":[{"from":"tsk_bf8efdb5a1564376b21874861d0ebbba","to":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","kind":"blocked_by"},{"from":"tsk_a920981a32214910861dea0bf3484121","to":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","kind":"blocked_by"},{"from":"tsk_a967bb1df53c4df7b44f7f130d31fcc1","to":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","kind":"blocked_by"},{"from":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","to":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36","kind":"blocked_by"},{"from":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36","to":"tsk_84cb8b342f944af094cabdac775193fb","kind":"blocked_by"}],"details":null},"diag-host":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_a920981a32214910861dea0bf3484121","task":"tsk_a920981a32214910861dea0bf3484121"}},"diag-db":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_a967bb1df53c4df7b44f7f130d31fcc1","task":"tsk_a967bb1df53c4df7b44f7f130d31fcc1"}},"diag-net":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_bf8efdb5a1564376b21874861d0ebbba","task":"tsk_bf8efdb5a1564376b21874861d0ebbba"}},"summarise":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_0cb77b7c30df4ac0aabdb4730441da8b","task":"tsk_0cb77b7c30df4ac0aabdb4730441da8b"}},"call":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_c6d6e0acbab24d0b9516cb9334ea7b36","task":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36"}},"remediate":{"lanes":[],"empty":8,"edges":[],"details":{"dialog":"d-tsk_84cb8b342f944af094cabdac775193fb","task":"tsk_84cb8b342f944af094cabdac775193fb"}}},"rows":{"tsk_a920981a32214910861dea0bf3484121":{"dialog":"d-tsk_a920981a32214910861dea0bf3484121","body":{"state":"ok","paragraphs":["Collect host-level evidence for the alert and record the three most likely causes."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Holds up","value":"1 task: Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"just now","title":"2026-11-26T10:17:07.780974Z"}],"more":[{"label":"Task id","value":"tsk_a920981a32214910861dea0bf3484121","mono":true},{"label":"Node key","value":"diag-host","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.584727Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:07.780974Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_a07ecf9d78044f7fb80a354900560303","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_a967bb1df53c4df7b44f7f130d31fcc1":{"dialog":"d-tsk_a967bb1df53c4df7b44f7f130d31fcc1","body":{"state":"ok","paragraphs":["Collect database evidence for the alert and record the three most likely causes."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Holds up","value":"1 task: Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"just now","title":"2026-11-26T10:17:08.004774Z"}],"more":[{"label":"Task id","value":"tsk_a967bb1df53c4df7b44f7f130d31fcc1","mono":true},{"label":"Node key","value":"diag-db","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.585088Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.004774Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_27bd5c396c4f480ab917820003bfe4e8","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_bf8efdb5a1564376b21874861d0ebbba":{"dialog":"d-tsk_bf8efdb5a1564376b21874861d0ebbba","body":{"state":"ok","paragraphs":["Collect network evidence for the alert and record the three most likely causes."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Holds up","value":"1 task: Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"just now","title":"2026-11-26T10:17:08.216109Z"}],"more":[{"label":"Task id","value":"tsk_bf8efdb5a1564376b21874861d0ebbba","mono":true},{"label":"Node key","value":"diag-net","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.585432Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.216109Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_10d2df6dff13443cad728c117f948936","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_0cb77b7c30df4ac0aabdb4730441da8b":{"dialog":"d-tsk_0cb77b7c30df4ac0aabdb4730441da8b","body":{"state":"ok","paragraphs":["Rank the causes across the three diagnostics and write the incident summary."]},"conditions":{"state":"unread","lines":[]},"history":["Attempted once.","The last attempt ended well.","The engine recorded: exit:0."],"conversation":"","primary":[{"label":"Waits for","value":"Collect network evidence for the alert and record the three most likely causes. (done), Collect host-level evidence for the alert and record the three most likely causes. (done) and Collect database evidence for the alert and record the three most likely causes. (done)."},{"label":"Holds up","value":"1 task: The on-call owner chooses remediation, rollback or wait-and-watch. (done)."},{"label":"Doing it","value":"No worker is on it"},{"label":"Last change","value":"just now","title":"2026-11-26T10:17:08.438835Z"}],"more":[{"label":"Task id","value":"tsk_0cb77b7c30df4ac0aabdb4730441da8b","mono":true},{"label":"Node key","value":"summarise","mono":true},{"label":"Engine state","value":"done","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Phase","value":"ended","mono":true},{"label":"Slot","value":"0 of 2","mono":true},{"label":"Runner","value":"rnr_abd38237b2d84bb4b8890119bd8fe538 (slot 0)","mono":true},{"label":"Created","value":"2026-11-26T10:17:06.585786Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.438835Z","mono":true},{"label":"Attempts","value":"1 run; last ok"},{"label":"Attempt id","value":"att_0133832f7c6348279e3e76a5fe7dbc7a","mono":true},{"label":"Attempt number","value":"1","mono":true},{"label":"End evidence","value":"exit:0","mono":true},{"label":"Principal","value":"person:local","mono":true}],"notes":[],"wait":null,"hold":null},"tsk_c6d6e0acbab24d0b9516cb9334ea7b36":{"dialog":"d-tsk_c6d6e0acbab24d0b9516cb9334ea7b36","body":{"state":"ok","paragraphs":["The on-call owner chooses remediation, rollback or wait-and-watch."]},"conditions":{"state":"unread","lines":[]},"history":[],"conversation":"","primary":[{"label":"Waits for","value":"Rank the causes across the three diagnostics and write the incident summary. (done)."},{"label":"Holds up","value":"1 task: Carry out the on-call owner's choice and record its effect on the alert; a watch verdict records a no-op."},{"label":"Last change","value":"just now","title":"2026-11-26T10:17:08.438900Z"}],"more":[{"label":"Task id","value":"tsk_c6d6e0acbab24d0b9516cb9334ea7b36","mono":true},{"label":"Node key","value":"call","mono":true},{"label":"Engine state","value":"waiting","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Created","value":"2026-11-26T10:17:06.586829Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:08.438900Z","mono":true},{"label":"Attempts","value":"0 runs"},{"label":"Wait reason","value":"review","mono":true},{"label":"Wait cause","value":"none","mono":true}],"notes":["The engine did not report an owner and when it started for this wait."],"wait":{"cause":"none","ended_by":null,"escalation_level":null,"expires_at":null,"opened_at":null,"opened_by_attempt":null,"owner":null,"reason":"review","resume_at":null},"hold":null},"tsk_84cb8b342f944af094cabdac775193fb":{"dialog":"d-tsk_84cb8b342f944af094cabdac775193fb","body":{"state":"ok","paragraphs":["Carry out the on-call owner's choice and record its effect on the alert; a watch verdict records a no-op."]},"conditions":{"state":"unread","lines":[]},"history":[],"conversation":"","primary":[{"label":"Waits for","value":"The on-call owner chooses remediation, rollback or wait-and-watch."},{"label":"Last change","value":"just now","title":"2026-11-26T10:17:06.587334Z"}],"more":[{"label":"Task id","value":"tsk_84cb8b342f944af094cabdac775193fb","mono":true},{"label":"Node key","value":"remediate","mono":true},{"label":"Engine state","value":"blocked","mono":true},{"label":"Contract","value":"The pinned contract is not readable through this engine's read commands."},{"label":"Conversation","value":"The mirror link was not read through this engine's read commands."},{"label":"Created","value":"2026-11-26T10:17:06.587334Z","mono":true},{"label":"Updated","value":"2026-11-26T10:17:06.587334Z","mono":true},{"label":"Attempts","value":"0 runs"}],"notes":[],"wait":null,"hold":null}}}</script>
   <footer class="foot">
   <details class="provenance">
     <summary>Where this page came from</summary>
-    <p>Live read on <time datetime="2026-11-26T10:42:21.307Z">26 Nov 2026, 10:42</time>.</p>
+    <p>Fixture capture on <time datetime="2026-11-26T10:17:09Z">26 Nov 2026, 10:17</time>.</p>
     <p>Engine <span class="mono">c4ccf1e</span>, schema 8.</p>
-    <p>Read with: <span class="mono">task graph --project engine-board --tree tsk_409a676c643c44f49e2c280e62be36ca --json</span>, <span class="mono">task status &lt;every tree task id&gt; --json</span>, <span class="mono">task project show --project engine-board --json</span>, <span class="mono">task runner list --project engine-board --json</span>, <span class="mono">task store check --json</span></p>
+    <p>Read with: <span class="mono">task graph --project engine-board --tree &lt;root_task_id&gt; --json</span>, <span class="mono">task status &lt;every tree task id&gt; --json</span>, <span class="mono">task project show --project engine-board --json</span>, <span class="mono">task runner list --project engine-board --json</span>, <span class="mono">task store check --json (schema revision only)</span></p>
     <p>Built from a playbook manifest: 1 engine step (<span class="mono">$emit</span>) is created with the tree, not work, and the lanes and counts leave it out.</p>
     
     <p>Not reached in this read: draft, failed, cancelled, skipped.</p>
@@ -589,6 +671,9 @@ html.js .nojs-tree { display: none; }
   }
   var ROWS = (DATA && DATA.rows) || {};
   var SCOPES = (DATA && DATA.scopes) || {};
+  // A served page may post. The artefact built for file:// is not served, so it
+  // draws no control and this script wires none.
+  var SERVED = !!(DATA && DATA.served === true);
 
   function laneGroups(
   lanes                   ,
@@ -655,6 +740,132 @@ html.js .nojs-tree { display: none; }
     )
     .join('');
 }
+
+  function taskActionsHtml(taskId        , actions             )         {
+  const entities                         = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  const id = taskId.replace(
+    /[&<>"']/g,
+    (character) => entities[character] ?? character,
+  );
+  const buttons           = [];
+  if (actions.start) {
+    buttons.push(
+      '<form class="sheet-action is-start" method="post" ' +
+        'action="/api/tasks/' +
+        id +
+        '/start" data-post><button type="submit">Start now</button></form>',
+    );
+  }
+  if (actions.complete) {
+    buttons.push(
+      '<form class="sheet-action" method="post" ' +
+        'action="/api/tasks/' +
+        id +
+        '/complete" data-post><button type="submit">Mark done</button></form>',
+    );
+  }
+  if (buttons.length === 0) {
+    return '';
+  }
+  return '<div class="sheet-actions">' + buttons.join('') + '</div>';
+}
+
+  function taskNoteHtml(taskId        )         {
+  const entities                         = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  const id = taskId.replace(
+    /[&<>"']/g,
+    (character) => entities[character] ?? character,
+  );
+  return (
+    '<form class="sheet-note-form" method="post" action="/api/tasks/' +
+    id +
+    '/notes" data-post>' +
+    '<label for="note-' +
+    id +
+    '">Add a note</label>' +
+    '<textarea id="note-' +
+    id +
+    '" name="text" rows="3" placeholder="Write a note" required></textarea>' +
+    '<p class="sheet-hint">A note is added under what is already there. ' +
+    'Nothing above it changes.</p>' +
+    '<button type="submit">Add note</button>' +
+    '</form>'
+  );
+}
+
+  // One JSON post for every form on the page. A rejection keeps the engine's
+  // own sentence; an unreadable answer is still an error, never silence.
+  function postJson(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function (response) {
+      if (response.status >= 200 && response.status < 300) {
+        return response;
+      }
+      return response.text().then(function (raw) {
+        var payload = null;
+        try {
+          payload = JSON.parse(raw);
+        } catch (error) {
+          payload = null;
+        }
+        var message =
+          payload && typeof payload.message === 'string' && payload.message
+            ? payload.message
+            : 'The engine refused that.';
+        var failure = new Error(message);
+        failure.refusal = payload && payload.refusal ? payload.refusal : '';
+        throw failure;
+      });
+    });
+  }
+
+  function formBody(form) {
+    var body = {};
+    Array.prototype.forEach.call(form.elements, function (field) {
+      if (!field.name) return;
+      if (field.type === 'checkbox' || field.type === 'radio') {
+        if (!field.checked) return;
+      }
+      body[field.name] = field.value;
+    });
+    return body;
+  }
+
+  // The server's line, reused in place. If the markup somehow lost it, one is
+  // made rather than an error vanishing.
+  function showLine(message, refused) {
+    var line = document.getElementById('page-line');
+    if (!line) {
+      line = document.createElement('p');
+      line.className = 'page-line';
+      line.id = 'page-line';
+      line.setAttribute('role', 'status');
+      var text = document.createElement('span');
+      text.className = 'page-line-text';
+      line.appendChild(text);
+      var page = document.querySelector('.page') || document.body;
+      page.insertBefore(line, page.firstChild);
+    }
+    var span = line.querySelector('.page-line-text');
+    if (span) span.textContent = message;
+    line.hidden = false;
+    line.classList.toggle('is-refusal', !!refused);
+  }
 
   function current() {
     var raw = location.hash.replace(/^#/, '');
@@ -934,6 +1145,7 @@ html.js .nojs-tree { display: none; }
       ? Array.prototype.filter.call(ownMain.children, function (part) {
           return (
             part.classList.contains('row-count') ||
+            part.classList.contains('card-count') ||
             part.classList.contains('card-wait') ||
             part.classList.contains('card-after') ||
             part.classList.contains('card-defect')
@@ -1370,6 +1582,26 @@ html.js .nojs-tree { display: none; }
     mountSection(inner, section);
   }
 
+  function mountHtml(inner, html) {
+    if (!html) return;
+    var holder = document.createElement('div');
+    holder.innerHTML = html;
+    var made = holder.firstElementChild;
+    if (made) inner.appendChild(made);
+  }
+
+  // The write controls are drawn only on a served page, from the actions the
+  // server computed for this row. The dialog never decides for itself.
+  function appendActions(inner, data, taskId) {
+    if (!SERVED || !data.actions) return;
+    mountHtml(inner, taskActionsHtml(taskId, data.actions));
+  }
+
+  function appendNote(inner, taskId) {
+    if (!SERVED) return;
+    mountHtml(inner, taskNoteHtml(taskId));
+  }
+
   function buildSheet(taskId) {
     var data = ROWS[taskId];
     if (!data) return null;
@@ -1408,7 +1640,9 @@ html.js .nojs-tree { display: none; }
         ),
       );
     }
+    appendActions(inner, data, taskId);
     appendDescription(inner, data);
+    appendNote(inner, taskId);
     appendConditions(inner, data);
     // Ruling 2: no facts means no facts block, not an empty bordered list.
     if (data.primary && data.primary.length > 0) {
@@ -1535,6 +1769,42 @@ html.js .nojs-tree { display: none; }
     syncViews(here.key);
   }
 
+  // B2: with scripting on every form posts the same JSON its fields describe,
+  // and one line reports the engine's answer. A double click is one send: the
+  // form stays busy until the answer arrives, and the control stays disabled
+  // only while it is in flight.
+  function wireAuthoring() {
+    if (!SERVED) return;
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (!form || form.tagName !== 'FORM' || !form.hasAttribute('data-post')) {
+        return;
+      }
+      event.preventDefault();
+      if (form.getAttribute('data-busy') === '1') return;
+      form.setAttribute('data-busy', '1');
+      var control = form.querySelector(
+        'button[type="submit"], input[type="submit"]',
+      );
+      if (control) control.disabled = true;
+      postJson(form.getAttribute('action'), formBody(form)).then(
+        function () {
+          location.reload();
+        },
+        function (error) {
+          form.removeAttribute('data-busy');
+          if (control) control.disabled = false;
+          showLine(
+            error && error.message
+              ? error.message
+              : 'The engine did not answer.',
+            true,
+          );
+        },
+      );
+    });
+  }
+
   var boardRoot = document.getElementById('board-root');
   var stopped = FAILED;
   if (boardRoot && !stopped && !document.getElementById('tree-source')) {
@@ -1546,6 +1816,7 @@ html.js .nojs-tree { display: none; }
     window.addEventListener('hashchange', apply);
     apply();
     wireDisclosures();
+    wireAuthoring();
   }
 })();</script>
 </body>

@@ -888,10 +888,11 @@ test('a null rest_state is a flagged missing value, not a crash', () => {
   );
 });
 
-test('the committed pages are the live Board and List pages', () => {
+test('the committed pages are the Board and List pages of the capture', () => {
   // The owner opens the real tree, not the demo. The committed pages are built
-  // from the same engine read the capture records, so the no-JS page and the
-  // capture cannot drift into two trees.
+  // from the same capture this suite reads, so the no-JS page and the capture
+  // cannot drift into two trees. The provenance line says which source it was
+  // and when, without pinning the page to a literal.
   const index = readFileSync(join(board, 'index.html'), 'utf8');
   const list = readFileSync(join(board, 'list.html'), 'utf8');
   const capture = fixtureModel();
@@ -903,7 +904,9 @@ test('the committed pages are the live Board and List pages', () => {
     assert.equal(/(src|href)="https?:/.test(html), false, 'no network request');
     assert.ok(html.includes('Where this page came from'));
     assert.ok(html.includes(capture.provenance.engine_commit));
-    assert.ok(html.includes('Live read'));
+    // Shape, not a literal: a live read or a fixture capture, dated.
+    assert.match(html, /(Live read|Fixture capture) on <time datetime="[^"]+">/);
+    assert.match(html, /Engine <span class="mono">[^<]+<\/span>, schema \d+\./);
   }
   assert.ok(list.includes('Showing everything'));
   assert.equal(capture.total, 6);
@@ -2461,8 +2464,11 @@ test('the conversation names the mirror, or says none is linked', () => {
   );
   const render = renderBoardPage(model);
   assert.ok(render.includes("sectionNode('Conversation', 'sheet-conversation')"));
-  // No comment box: the panel does not ship an input or a textarea.
-  assert.equal(/<textarea/.test(render), false);
+  // The authoring decision changed: a note is an append to the body, and a
+  // served page builds the note box on click. The file:// artefact's markup
+  // still carries no textarea and no form of any kind.
+  assert.equal(/<textarea/.test(render.replace(/<script[\s\S]*?<\/script>/g, '')), false);
+  assert.equal(/<form/.test(render.replace(/<script[\s\S]*?<\/script>/g, '')), false);
 });
 
 test('capabilities report the reading fields the payloads carry', () => {

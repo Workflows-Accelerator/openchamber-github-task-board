@@ -29,6 +29,7 @@ import {
   loadFixtureSnapshot,
   readFixtureMeta,
 } from './fixtures-source.ts';
+import { startBoardStub } from './board-stub-server.mjs';
 
 const ARCHIVED_AT = '2026-11-01T00:00:00Z';
 
@@ -113,8 +114,70 @@ function snapshot() {
   };
 }
 
-function freePort() {
-  return new Promise((resolve, reject) => {
+// A small served board: one task a person can start, one waiting for a
+// person's verdict, one blocked by the first.
+function authoringSnapshot() {
+  return {
+    provenance: {
+      source_kind: 'fixture',
+      read_at: '2026-01-01T00:00:00Z',
+      engine_commit: 'page-test',
+      schema_revision: 8,
+      operations: ['task graph --json'],
+      port_only_steps: [],
+      unobserved_states: [],
+    },
+    project: { project_id: 'p', config_revision: 1, max_concurrency: 2 },
+    runners: [],
+    runners_available: false,
+    graph: {
+      nodes: [
+        { task_id: 'root', node_key: '$root', rest_state: 'ready', parent_task_id: null },
+        { task_id: 'ready', node_key: 'write', rest_state: 'ready', parent_task_id: 'root', title: 'Write the plan' },
+        { task_id: 'waiting', node_key: 'sign', rest_state: 'waiting', parent_task_id: 'root', title: 'Sign off the plan' },
+        { task_id: 'blocked', node_key: 'ship', rest_state: 'blocked', parent_task_id: 'root', title: 'Ship the plan' },
+      ],
+      edges: [
+        { from: 'ready', to: 'blocked', kind: 'blocked_by', satisfied_by: ['done'] },
+      ],
+    },
+    statuses: [
+      { task_id: 'ready', rest_state: 'ready', phase: null, slot: null, wait: null, hold: null, handoff_revision: 1, title: 'Write the plan' },
+      {
+        task_id: 'waiting',
+        rest_state: 'waiting',
+        phase: null,
+        slot: null,
+        wait: { reason: 'review', cause: 'none', owner: 'person:local', opened_at: '2026-01-01T00:00:00Z' },
+        hold: null,
+        handoff_revision: 1,
+        title: 'Sign off the plan',
+      },
+      { task_id: 'blocked', rest_state: 'blocked', phase: null, slot: null, wait: null, hold: null, handoff_revision: 1, title: 'Ship the plan' },
+    ],
+    tree_key: 'tree',
+    root_task_id: 'root',
+  };
+}
+
+// A scripting-disabled parser runs no script element. Serving the page with
+// its script blocks removed gives the browser exactly that document; Obscura
+// 0.2.7 accepts `Emulation.setScriptExecutionDisabled` and ignores it, so this
+// is the honest way to exercise the scriptless floor in a real browser.
+function withoutScripts(html) {
+  return html.replace(/<script[\s\S]*?<\/script>/gi, '');
+}
+
+async function untilTrue(predicate, message, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (predicate()) return;
+    if (Date.now() > deadline) throw new Error(`timed out waiting: ${message}`);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
+function freePort() {  return new Promise((resolve, reject) => {
     const server = createServer();
     server.on('error', reject);
     server.listen(0, '127.0.0.1', () => {
@@ -2079,12 +2142,22 @@ test(
     requireObscura();
     const boardFile = join(process.cwd(), 'engine-board', 'index.html');
     const listFile = join(process.cwd(), 'engine-board', 'list.html');
-    // The page the owner opens must come from the engine, not from a capture
-    // that drifted. Provenance is how this test can tell.
+    // The page the owner opens must say what was actually read and when. The
+    // artefact is a fixture capture today; the store it was captured from is
+    // gone, so the test asserts the provenance's shape rather than pretending
+    // to a live read it cannot reproduce.
     for (const file of [boardFile, listFile]) {
       const html = readFileSync(file, 'utf8');
-      assert.ok(html.includes('Live read'), `${file} is a live read`);
-      assert.ok(html.includes('c4ccf1e'), `${file} names the engine pin`);
+      assert.match(
+        html,
+        /(Live read|Fixture capture) on <time datetime="[^"]+">[^<]+<\/time>/,
+        `${file} names its source and when it was read`,
+      );
+      assert.match(
+        html,
+        /Engine <span class="mono">[^<]+<\/span>, schema \d+\./,
+        `${file} names the engine revision`,
+      );
     }
 
     const port = await freePort();
@@ -2441,5 +2514,268 @@ test(
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);
     assert.deepEqual(page.failedRequests, []);
+  },
+);
+
+test(
+  'the served page adds a task and reports a refusal in place',
+  { timeout: 90000 },
+  async (t) => {
+    requireObscura();
+    const model = buildTree(authoringSnapshot());
+    const stub = await startBoardStub({
+      render: ({ notice, refusal }) =>
+        renderBoardPage(model, { served: true, notice, refusal }),
+    });
+
+    const port = await freePort();
+    const server = spawn(
+      'obscura',
+      ['serve', '--port', String(port), '--allow-private-network'],
+      { stdio: 'ignore' },
+    );
+    let browser;
+    t.after(async () => {
+      browser?.close();
+      server.kill('SIGTERM');
+      await stub.close();
+    });
+
+    const version = await waitForJson(`http://127.0.0.1:${port}/json/version`);
+    browser = connect(version.webSocketDebuggerUrl);
+    await browser.open;
+    const page = await openPage(browser, stub.origin + '/');
+    await page.navigate(stub.origin + '/');
+
+    await until(
+      page,
+      "document.querySelector('form.add-line input[name=\"title\"]') !== null",
+      'the served page carries the add line',
+    );
+
+    // ---- an open dialog carries the note box and only the actions it can keep
+    await page.evaluate(
+      `document.querySelector('#board-root .card[data-task="waiting"] .enter').click()`,
+    );
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the detail dialog opens',
+    );
+    const waitingSheet = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      return {
+        note: !!sheet.querySelector('.sheet-note-form textarea[name="text"]'),
+        noteAction: (sheet.querySelector('.sheet-note-form') || {}).getAttribute
+          ? sheet.querySelector('.sheet-note-form').getAttribute('action')
+          : null,
+        complete: !!sheet.querySelector('form[action="/api/tasks/waiting/complete"]'),
+        start: !!sheet.querySelector('form[action="/api/tasks/waiting/start"]'),
+        markDone: (sheet.querySelector('form[action="/api/tasks/waiting/complete"] button') || {}).textContent || null,
+      };
+    })()`);
+    assert.deepEqual(waitingSheet, {
+      note: true,
+      noteAction: '/api/tasks/waiting/notes',
+      complete: true,
+      start: false,
+      markDone: 'Mark done',
+    });
+
+    await page.evaluate(
+      `document.querySelector('dialog.sheet[open] .sheet-close').click()`,
+    );
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') === null",
+      'the dialog closes',
+    );
+
+    // A ready task offers Start now and not Mark done.
+    await page.evaluate(
+      `document.querySelector('#board-root .card[data-task="ready"] .enter').click()`,
+    );
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the ready task dialog opens',
+    );
+    const readySheet = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      return {
+        note: !!sheet.querySelector('.sheet-note-form textarea[name="text"]'),
+        complete: !!sheet.querySelector('form[action="/api/tasks/ready/complete"]'),
+        start: !!sheet.querySelector('form[action="/api/tasks/ready/start"]'),
+      };
+    })()`);
+    assert.deepEqual(readySheet, { note: true, complete: false, start: true });
+    await page.evaluate(
+      `document.querySelector('dialog.sheet[open] .sheet-close').click()`,
+    );
+
+    // ---- the form posts JSON, disables while in flight, and reloads
+    stub.setHold(1200);
+    await page.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await page.evaluate(`(function () {
+      var input = document.querySelector('form.add-line input[name="title"]');
+      input.value = 'Chase the bank';
+      document.querySelector('form.add-line button[type="submit"]').click();
+    })()`);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const inFlight = await page.evaluate(`(function () {
+      var form = document.querySelector('form.add-line');
+      return {
+        busy: form.getAttribute('data-busy'),
+        disabled: form.querySelector('button[type="submit"]').disabled,
+      };
+    })()`);
+    assert.deepEqual(inFlight, { busy: '1', disabled: true });
+
+    await untilTrue(
+      () => stub.pageLoads() >= 2,
+      'the page reloads after the add',
+      8000,
+    );
+    const posts = stub.requests.filter((request) => request.method === 'POST');
+    assert.equal(posts.length, 1, 'one double click is one send');
+    assert.equal(posts[0].path, '/api/tasks');
+    assert.match(posts[0].contentType, /^application\/json/);
+    assert.deepEqual(posts[0].fields, { title: 'Chase the bank' });
+
+    // The reloaded page is live again: the same renderer, the same forms.
+    await until(
+      page,
+      "document.querySelector('form.add-line input[name=\"title\"]') !== null",
+      'the reloaded page renders the add line',
+    );
+
+    // ---- a refusal lands in the same line, in place, and re-enables the control
+    await page.evaluate(
+      `document.querySelector('#board-root .card[data-task="waiting"] .enter').click()`,
+    );
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open]') !== null",
+      'the dialog opens again',
+    );
+    stub.setHold(0);
+    const loadsBefore = stub.pageLoads();
+    await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      sheet.querySelector('.sheet-note-form textarea[name="text"]').value = 'Refuse this';
+      sheet.querySelector('.sheet-note-form button[type="submit"]').click();
+    })()`);
+    await until(
+      page,
+      `(function () {
+        var line = document.getElementById('page-line');
+        return line && !line.hidden &&
+          line.textContent.indexOf('The engine would not keep that note.') !== -1;
+      })()`,
+      'the refusal sentence appears in the line',
+    );
+    const afterRefusal = await page.evaluate(`(function () {
+      var sheet = document.querySelector('dialog.sheet[open]');
+      var form = sheet.querySelector('.sheet-note-form');
+      return {
+        lineTone: document.getElementById('page-line').className,
+        busy: form.getAttribute('data-busy'),
+        disabled: form.querySelector('button[type="submit"]').disabled,
+      };
+    })()`);
+    assert.match(afterRefusal.lineTone, /is-refusal/);
+    assert.equal(afterRefusal.busy, null);
+    assert.equal(afterRefusal.disabled, false);
+    assert.equal(stub.pageLoads(), loadsBefore, 'a refusal does not reload');
+    const refused = stub.requests.filter((request) => request.method === 'POST').slice(-1)[0];
+    assert.equal(refused.path, '/api/tasks/waiting/notes');
+    assert.deepEqual(refused.fields, { text: 'Refuse this' });
+
+    assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
+    assert.deepEqual(page.exceptions, []);
+  },
+);
+
+test(
+  'the served page still adds a task with its scripting off',
+  { timeout: 90000 },
+  async (t) => {
+    requireObscura();
+    const model = buildTree(authoringSnapshot());
+    const stub = await startBoardStub({
+      render: ({ notice, refusal }) =>
+        withoutScripts(renderBoardPage(model, { served: true, notice, refusal })),
+    });
+
+    const port = await freePort();
+    const server = spawn(
+      'obscura',
+      ['serve', '--port', String(port), '--allow-private-network'],
+      { stdio: 'ignore' },
+    );
+    let browser;
+    t.after(async () => {
+      browser?.close();
+      server.kill('SIGTERM');
+      await stub.close();
+    });
+
+    const version = await waitForJson(`http://127.0.0.1:${port}/json/version`);
+    browser = connect(version.webSocketDebuggerUrl);
+    await browser.open;
+    const page = await openPage(browser, stub.origin + '/');
+    await page.navigate(stub.origin + '/');
+
+    await until(
+      page,
+      "document.querySelector('form.add-line input[name=\"title\"]') !== null",
+      'the scriptless page carries the add line',
+    );
+    const floor = await page.evaluate(`(function () {
+      return {
+        jsClass: document.documentElement.classList.contains('js'),
+        tree: getComputedStyle(document.getElementById('tree-source')).display,
+      };
+    })()`);
+    assert.equal(floor.jsClass, false, 'no script marked the document');
+    assert.equal(floor.tree, 'block', 'the no-JS tree is the visible board');
+
+    // The dialog is the one thing scripting adds; the title is inert here.
+    await page.evaluate(
+      `document.querySelector('li[data-task="waiting"] .enter').click()`,
+    );
+    assert.equal(
+      await page.evaluate("document.querySelector('dialog') !== null"),
+      false,
+      'no dialog without scripting',
+    );
+
+    // The plain form post, the engine's 303, and the line in the returned page.
+    await page.evaluate(`(function () {
+      var input = document.querySelector('form.add-line input[name="title"]');
+      input.value = 'Chase the bank';
+      document.querySelector('form.add-line button[type="submit"]').click();
+    })()`);
+    await until(
+      page,
+      "document.body.innerText.indexOf('Task added. It is a draft.') !== -1",
+      'the returned page carries the notice line',
+      8000,
+    );
+
+    const posts = stub.requests.filter((request) => request.method === 'POST');
+    assert.equal(posts.length, 1);
+    assert.equal(posts[0].path, '/api/tasks');
+    assert.match(posts[0].contentType, /^application\/x-www-form-urlencoded/);
+    assert.deepEqual(posts[0].fields, { title: 'Chase the bank' });
+    const landing = stub.requests.filter((request) => request.method === 'GET').slice(-1)[0];
+    assert.equal(landing.path, '/');
+    assert.equal(landing.query.notice, 'Task added. It is a draft.');
+    assert.deepEqual(page.exceptions, []);
   },
 );
