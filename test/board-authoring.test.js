@@ -1,10 +1,10 @@
-// The authoring surface, against serve-contract v1.
+// The authoring surface, against serve-contract v1.2.
 //
 // Two halves. The first reads the renderer's own markup: the artefact built
-// for `file://` carries no control, the served page carries the four real
-// forms, and the line is the engine's sentence escaped once. The second boots
-// a loopback stub and proves the server call a form post makes is the call an
-// XHR post of the same content makes.
+// for `file://` carries no control and no authoring client, the served page
+// carries the server's own action list, and the line is the server's sentence
+// escaped once. The second boots a loopback stub and proves the server call a
+// form post makes is the call an XHR post of the same content makes.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -57,16 +57,36 @@ function snapshotOf({ nodes, edges = [], statuses = [] } = {}) {
   };
 }
 
-// One board with every case the controls care about: a waiting task (a person
-// settles it), a ready task that holds two others up, a done task, and an
-// archived waiting task the page must not offer to settle.
+// One board with every case the controls care about: a waiting task (the
+// server offers a settle), a ready task (the server offers a start), a done
+// task, and an archived waiting task the server offers nothing for.
 function authoringModel() {
   return buildTree(
     snapshotOf({
       nodes: [
         node('root', '$root', 'ready', null),
-        node('plan', 'plan', 'waiting', 'root', { title: 'Sign off the plan' }),
-        node('write', 'write', 'ready', 'root', { title: 'Write the plan' }),
+        node('plan', 'plan', 'waiting', 'root', {
+          title: 'Sign off the plan',
+          actions: [
+            {
+              verb: 'complete',
+              label: 'Mark done',
+              path: '/api/tasks/plan/complete',
+              fields: { outcome: 'approve' },
+            },
+          ],
+        }),
+        node('write', 'write', 'ready', 'root', {
+          title: 'Write the plan',
+          actions: [
+            {
+              verb: 'start',
+              label: 'Start now',
+              path: '/api/tasks/write/start',
+              fields: {},
+            },
+          ],
+        }),
         node('ship', 'ship', 'blocked', 'root', { title: 'Ship the plan' }),
         node('tell', 'tell', 'blocked', 'root', { title: 'Announce the plan' }),
         node('done', 'done', 'done', 'root', { title: 'Draft the plan' }),
@@ -137,6 +157,15 @@ test('the committed file:// page renders no form and no notice line', () => {
     assert.equal(/id="page-line"/.test(markup), false, 'no notice line');
     assert.equal(/onclick/i.test(markup), false, 'no inline handler');
     assert.equal(/href="#"/.test(markup), false, 'no dead link');
+    // v1.2: the authoring client is not shipped where nothing can use it. The
+    // board client that draws the page is still there.
+    for (const name of ['postJson', 'noticeUrl', 'wireAuthoring']) {
+      assert.equal(html.includes(name), false, `the artefact carries no ${name}`);
+    }
+    assert.equal(/class="sheet-note-form"/.test(html), false, 'no note form');
+    assert.equal(html.includes('/api/tasks'), false, 'no write path in the artefact');
+    assert.equal(html.includes('.page-line {'), false, 'no authoring styles either');
+    assert.ok(html.includes('function buildSheet'), 'the board client still draws');
     const data = dataOf(html);
     assert.equal(data.served, undefined);
     assert.equal(
@@ -164,7 +193,7 @@ test('the served board carries the add line and the row actions', () => {
   assert.match(markup, /<input type="text" name="title"[^>]*placeholder="Add a task"/);
   assert.equal(/onclick/i.test(markup), false, 'no inline handler');
   assert.equal(/href="#"/.test(markup), false, 'no dead link');
-  // v1.1: the success sentences are the server's. The page only carries them
+  // v1.2: the success sentences are the server's. The page only carries them
   // from a response; none is a literal here.
   for (const sentence of [
     'Added as a draft',
@@ -175,16 +204,34 @@ test('the served board carries the add line and the row actions', () => {
     assert.equal(html.includes(sentence), false, `the page does not write "${sentence}"`);
   }
   assert.ok(html.includes('location.assign(noticeUrl('), 'a success follows the notice address');
+  assert.ok(html.includes('function wireAuthoring'), 'the served page wires its forms');
+  assert.ok(html.includes('.add-line {'), 'the served page carries its control styles');
 
   const data = dataOf(html);
   assert.equal(data.served, true);
-  assert.deepEqual(data.rows.plan.actions, { complete: true });
-  assert.deepEqual(data.rows.write.actions, { start: true });
-  assert.equal(data.rows.done.actions, undefined, 'a done task offers nothing');
-  assert.equal(
+  // v1.2: the row carries the server's own list, unchanged. The page does not
+  // derive a verb from state or lane.
+  assert.deepEqual(data.rows.plan.actions, [
+    {
+      verb: 'complete',
+      label: 'Mark done',
+      path: '/api/tasks/plan/complete',
+      fields: { outcome: 'approve' },
+    },
+  ]);
+  assert.deepEqual(data.rows.write.actions, [
+    {
+      verb: 'start',
+      label: 'Start now',
+      path: '/api/tasks/write/start',
+      fields: {},
+    },
+  ]);
+  assert.deepEqual(data.rows.done.actions, [], 'a row with nothing to do carries []');
+  assert.deepEqual(
     data.rows.closed.actions,
-    undefined,
-    'an archived task is not settled from here',
+    [],
+    'the archived row also carries the empty list',
   );
 });
 
@@ -205,7 +252,20 @@ test('the dialog forms carry the contract path and field for every verb', () => 
     'no id in the words a person reads',
   );
 
-  const actions = taskActionsHtml('tsk_one', { start: true, complete: true });
+  const actions = taskActionsHtml([
+    {
+      verb: 'start',
+      label: 'Start now',
+      path: '/api/tasks/tsk_one/start',
+      fields: {},
+    },
+    {
+      verb: 'complete',
+      label: 'Approve',
+      path: '/api/tasks/tsk_one/complete',
+      fields: { outcome: 'approve' },
+    },
+  ]);
   assert.match(
     actions,
     /action="\/api\/tasks\/tsk_one\/start"/,
@@ -214,20 +274,37 @@ test('the dialog forms carry the contract path and field for every verb', () => 
   assert.match(
     actions,
     /action="\/api\/tasks\/tsk_one\/complete"/,
-    'Mark done has the complete path',
+    'the settle has the complete path',
   );
   assert.ok(actions.includes('>Start now<'));
-  assert.ok(actions.includes('>Mark done<'));
+  assert.ok(
+    actions.includes('<input type="hidden" name="outcome" value="approve">'),
+    'the server\'s field rides with the button',
+  );
+  // v1.2: several verdicts are several buttons, each with its own label.
+  const verdicts = taskActionsHtml([
+    { verb: 'complete', label: 'Approve', path: '/a', fields: { outcome: 'approve' } },
+    { verb: 'complete', label: 'Reject', path: '/a', fields: { outcome: 'reject' } },
+  ]);
+  assert.equal((verdicts.match(/<form/g) ?? []).length, 2);
+  assert.ok(verdicts.includes('>Approve<'));
+  assert.ok(verdicts.includes('>Reject<'));
+  // A hostile label is escaped, not interpreted.
+  const hostile = taskActionsHtml([
+    { verb: 'complete', label: '<b>Approve</b>', path: '/a', fields: {} },
+  ]);
+  assert.equal(hostile.includes('<b>Approve</b>'), false);
+  assert.ok(hostile.includes('&lt;b&gt;Approve&lt;/b&gt;'));
   assert.equal(
     /tsk_/.test(actions.replace(/<[^>]*>/g, '')),
     false,
     'no id in the words a person reads',
   );
   // A row with no action renders no row at all.
-  assert.equal(taskActionsHtml('tsk_one', {}), '');
+  assert.equal(taskActionsHtml([]), '');
 });
 
-test('the line is the engine sentence, escaped, and only when given', () => {
+test('the line is the server sentence, escaped, and only when given', () => {
   const model = authoringModel();
   const blank = renderBoardPage(model, { served: true });
   assert.match(
@@ -317,8 +394,8 @@ test('a form post and an XHR post reach the stub as the same call', async () => 
     },
     {
       path: '/api/tasks/tsk_abc/complete',
-      form: {},
-      json: {},
+      form: { outcome: 'approve' },
+      json: { outcome: 'approve' },
       status: 200,
       notice: 'Marked done.',
     },
@@ -356,7 +433,7 @@ test('a form post and an XHR post reach the stub as the same call', async () => 
       });
       assert.equal(xhr.status, call.status, `${call.path} XHR status`);
       const answer = await xhr.json();
-      // v1.1: every success carries the same sentence on both paths.
+      // v1.2: every success carries the same sentence on both paths.
       assert.equal(answer.notice, call.notice, `${call.path} XHR notice`);
       if (call.path === '/api/tasks') {
         assert.equal(answer.task_id, STUB_TASK_ID);
@@ -478,7 +555,7 @@ test('a settle refusal keeps the engine name and shows the serve sentence', asyn
     assert.deepEqual(await json.json(), {
       refusal: 'settle-no-owner',
       message:
-        'Nobody is named to settle this task, so it cannot be marked done here.',
+        'This task has no one named to approve it, so it cannot be marked done here.',
     });
 
     const other = await fetch(
@@ -492,7 +569,22 @@ test('a settle refusal keeps the engine name and shows the serve sentence', asyn
     assert.equal(other.status, 403);
     const otherAnswer = await other.json();
     assert.equal(otherAnswer.refusal, 'settle-not-owner');
-    assert.equal(otherAnswer.message, 'This task is signed off by someone else.');
+    assert.equal(otherAnswer.message, 'This task is waiting for person:alice.');
+
+    // A declared-outcome refusal is also the serve layer's sentence.
+    const noOutcome = await fetch(
+      stub.origin + '/api/tasks/tsk_no_outcome/complete',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      },
+    );
+    assert.equal(noOutcome.status, 400);
+    assert.deepEqual(await noOutcome.json(), {
+      refusal: 'settle-outcome-undeclared',
+      message: 'This task does not accept that answer.',
+    });
 
     const form = await fetch(stub.origin + '/api/tasks/tsk_unowned/complete', {
       method: 'POST',
@@ -507,7 +599,7 @@ test('a settle refusal keeps the engine name and shows the serve sentence', asyn
     const html = await page.text();
     assert.ok(
       html.includes(
-        'Nobody is named to settle this task, so it cannot be marked done here.',
+        'This task has no one named to approve it, so it cannot be marked done here.',
       ),
     );
     assert.equal(html.includes('settle-no-owner'), false, 'the code is not copy');
@@ -516,7 +608,7 @@ test('a settle refusal keeps the engine name and shows the serve sentence', asyn
   }
 });
 
-test('boardData exposes actions only when served', () => {
+test('boardData passes the server\'s actions through, and only when served', () => {
   const model = authoringModel();
   const artefact = boardData(model);
   assert.equal(artefact.served, undefined);
@@ -526,5 +618,45 @@ test('boardData exposes actions only when served', () => {
   );
   const served = boardData(model, { served: true });
   assert.equal(served.served, true);
-  assert.deepEqual(served.rows.plan.actions, { complete: true });
+  assert.deepEqual(served.rows.plan.actions, [
+    {
+      verb: 'complete',
+      label: 'Mark done',
+      path: '/api/tasks/plan/complete',
+      fields: { outcome: 'approve' },
+    },
+  ]);
+
+  // The page does not gate by state or lane: a done row whose server sends an
+  // action still carries it, and a malformed entry is dropped rather than
+  // drawn as half a button.
+  const odd = buildTree(
+    snapshotOf({
+      nodes: [
+        node('root', '$root', 'ready', null),
+        node('closed', 'closed', 'done', 'root', {
+          title: 'Draft the plan',
+          actions: [
+            {
+              verb: 'complete',
+              label: 'Approve',
+              path: '/api/tasks/closed/complete',
+              fields: { outcome: 'approve' },
+            },
+            { verb: 'complete', label: 'No path' },
+            { verb: 'complete', label: '', path: '/api/tasks/closed/complete', fields: {} },
+          ],
+        }),
+      ],
+      statuses: [statusOf('closed', 'done', { title: 'Draft the plan' })],
+    }),
+  );
+  assert.deepEqual(boardData(odd, { served: true }).rows.closed.actions, [
+    {
+      verb: 'complete',
+      label: 'Approve',
+      path: '/api/tasks/closed/complete',
+      fields: { outcome: 'approve' },
+    },
+  ]);
 });

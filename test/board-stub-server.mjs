@@ -1,6 +1,6 @@
 // A tiny stand-in for the engine's board server, used by tests only.
 //
-// It implements exactly the writes in serve-contract v1.1: the four POST paths,
+// It implements exactly the writes in serve-contract v1.2: the four POST paths,
 // both encodings, a 303 with a notice or refusal line for a form post and
 // JSON for an XHR post. Every success carries the server's own sentence; it
 // records what arrived so a test can prove a form post and an XHR post of the
@@ -53,7 +53,7 @@ function answerFor(pathname, fields) {
       return {
         status: 400,
         refusal: 'invalid-body',
-        message: 'A task needs a title.',
+        message: 'That needs a little more before it can be saved.',
         notice: '',
       };
     }
@@ -76,7 +76,7 @@ function answerFor(pathname, fields) {
     return {
       status: 201,
       taskId: TASK_ID,
-      // Serve v1.1: the server writes the sentence, with the stored title.
+      // Serve v1.2: the server writes the sentence, with the stored title.
       notice: `Added as a draft: ${title}`,
     };
   }
@@ -95,7 +95,7 @@ function answerFor(pathname, fields) {
     return {
       status: 404,
       refusal: 'unknown-task',
-      message: 'There is no task with that name.',
+      message: 'That task no longer exists.',
       notice: '',
     };
   }
@@ -106,7 +106,8 @@ function answerFor(pathname, fields) {
     return {
       status: 403,
       refusal: 'settle-no-owner',
-      message: 'Nobody is named to settle this task, so it cannot be marked done here.',
+      message:
+        'This task has no one named to approve it, so it cannot be marked done here.',
       notice: '',
     };
   }
@@ -114,9 +115,19 @@ function answerFor(pathname, fields) {
     return {
       status: 403,
       refusal: 'settle-not-owner',
-      message: 'This task is signed off by someone else.',
+      message: 'This task is waiting for person:alice.',
       notice: '',
     };
+  }
+  if (taskId === 'tsk_no_outcome' && verb === 'complete') {
+    if (typeof fields.outcome !== 'string' || fields.outcome === '') {
+      return {
+        status: 400,
+        refusal: 'settle-outcome-undeclared',
+        message: 'This task does not accept that answer.',
+        notice: '',
+      };
+    }
   }
   if (verb === 'notes') {
     const text = typeof fields.text === 'string' ? fields.text.trim() : '';
@@ -124,7 +135,7 @@ function answerFor(pathname, fields) {
       return {
         status: 400,
         refusal: 'invalid-body',
-        message: 'A note needs some text.',
+        message: 'That needs a little more before it can be saved.',
         notice: '',
       };
     }
@@ -171,6 +182,7 @@ export async function startBoardStub({ render, holdMs = 0 }) {
         const html = render({
           notice: url.searchParams.get('notice') ?? '',
           refusal: url.searchParams.get('refusal') ?? '',
+          pathname: url.pathname,
         });
         const body = Buffer.from(html, 'utf8');
         response.writeHead(200, {

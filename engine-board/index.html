@@ -71,41 +71,6 @@ a { color: inherit; }
   font-size: 0.8rem; text-decoration: none; white-space: nowrap;
 }
 .views a.is-on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-/* The served page's one line about what the engine just said. Refusals keep
-   the defect tone; a plain notice stays quiet. */
-.page-line {
-  margin: 0 0 14px; padding: 8px 12px;
-  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
-  background: var(--accent-soft); color: var(--ink);
-  font-size: 0.86rem; line-height: 1.5;
-}
-.page-line.is-refusal {
-  border-left-color: var(--warning); background: var(--warning-soft);
-  color: var(--warning);
-}
-.page-line a {
-  margin-left: 8px; color: inherit; text-decoration: underline;
-  text-underline-offset: 0.16em;
-}
-/* Adding a task is the page's primary action, so it is the one filled control
-   on the page rather than a debug field beside the title. */
-.add-line { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
-.add-line input {
-  flex: 1 1 auto; min-width: 0; padding: 8px 12px;
-  border: 1px solid var(--line-strong); border-radius: 10px;
-  background: var(--surface); color: var(--ink);
-  font: inherit; font-size: 0.95rem;
-}
-.add-line input::placeholder { color: var(--faint); }
-.add-line button {
-  flex: none; padding: 8px 16px; border: 1px solid var(--accent);
-  border-radius: 10px; background: var(--accent); color: var(--paper);
-  font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
-}
-.add-line button:hover, .add-line button:focus-visible {
-  background: var(--ink); border-color: var(--ink);
-}
-.add-line button:disabled { opacity: 0.55; cursor: default; }
 .progress { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .progress-line {
   color: var(--muted); font-size: 0.85rem;
@@ -364,41 +329,6 @@ a { color: inherit; }
   color: var(--muted); font-size: 0.86rem;
 }
 .sheet-state .mono { font-family: var(--mono); font-size: 0.78rem; }
-/* The actions sit under the state line, where the task is. One is outlined in
-   the accent, the other stays quiet; both are real submit buttons. */
-.sheet-actions {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin-top: 14px;
-}
-.sheet-actions form { flex: none; margin: 0; }
-.sheet-actions button, .sheet-note-form button {
-  padding: 6px 13px; border: 1px solid var(--line-strong); border-radius: 9px;
-  background: var(--surface); color: var(--ink);
-  font: inherit; font-size: 0.84rem; white-space: nowrap; cursor: pointer;
-}
-.sheet-actions .is-start button { border-color: var(--accent); color: var(--accent); }
-.sheet-actions button:hover, .sheet-actions button:focus-visible,
-.sheet-note-form button:hover, .sheet-note-form button:focus-visible {
-  border-color: currentColor;
-}
-.sheet-actions button:disabled, .sheet-note-form button:disabled {
-  opacity: 0.55; cursor: default;
-}
-.sheet-note-form { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-.sheet-note-form label {
-  display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700;
-  letter-spacing: 0.02em; text-transform: uppercase;
-}
-.sheet-note-form textarea {
-  display: block; width: 100%; margin-top: 6px; padding: 9px 11px;
-  border: 1px solid var(--line-strong); border-radius: 9px;
-  background: var(--paper); color: var(--ink);
-  font: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;
-}
-.sheet-note-form .sheet-hint {
-  margin-top: 6px; color: var(--muted); font-size: 0.76rem; line-height: 1.4;
-}
-.sheet-note-form button { margin-top: 8px; }
 .sheet-section { margin-top: 18px; }
 .sheet-section h3 {
   margin: 0 0 6px; color: var(--muted); font-size: 0.72rem;
@@ -488,10 +418,6 @@ a { color: inherit; }
   .disclosure, .disclosure-spacer { flex: 0 0 40px; width: 40px; height: 40px; }
   .row-state { flex: 0 0 100%; margin-left: 0; margin-top: 2px; }
   .fact dt { flex-basis: 6rem; }
-  /* One hand: the field and the buttons keep a 40 px target, and the input is
-     16 px so the phone does not zoom on focus. */
-  .add-line input, .sheet-note-form textarea { font-size: 1rem; }
-  .add-line button, .sheet-actions button, .sheet-note-form button { min-height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
@@ -741,148 +667,7 @@ html.js .nojs-tree { display: none; }
     .join('');
 }
 
-  function taskActionsHtml(taskId        , actions             )         {
-  const entities                         = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  };
-  const id = taskId.replace(
-    /[&<>"']/g,
-    (character) => entities[character] ?? character,
-  );
-  const buttons           = [];
-  if (actions.start) {
-    buttons.push(
-      '<form class="sheet-action is-start" method="post" ' +
-        'action="/api/tasks/' +
-        id +
-        '/start" data-post><button type="submit">Start now</button></form>',
-    );
-  }
-  if (actions.complete) {
-    buttons.push(
-      '<form class="sheet-action" method="post" ' +
-        'action="/api/tasks/' +
-        id +
-        '/complete" data-post><button type="submit">Mark done</button></form>',
-    );
-  }
-  if (buttons.length === 0) {
-    return '';
-  }
-  return '<div class="sheet-actions">' + buttons.join('') + '</div>';
-}
 
-  function taskNoteHtml(taskId        )         {
-  const entities                         = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  };
-  const id = taskId.replace(
-    /[&<>"']/g,
-    (character) => entities[character] ?? character,
-  );
-  return (
-    '<form class="sheet-note-form" method="post" action="/api/tasks/' +
-    id +
-    '/notes" data-post>' +
-    '<label for="note-' +
-    id +
-    '">Add a note</label>' +
-    '<textarea id="note-' +
-    id +
-    '" name="text" rows="3" placeholder="Write a note" required></textarea>' +
-    '<p class="sheet-hint">A note is added under what is already there. ' +
-    'Nothing above it changes.</p>' +
-    '<button type="submit">Add note</button>' +
-    '</form>'
-  );
-}
-
-  // One JSON post for every form on the page. Serve v1.1: a success carries
-  // the sentence the server wrote, and the caller navigates to it. A rejection
-  // keeps the engine's own sentence; an unreadable answer is still an error,
-  // never silence.
-  function postJson(path, body) {
-    return fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).then(function (response) {
-      return response.text().then(function (raw) {
-        var payload = null;
-        try {
-          payload = raw ? JSON.parse(raw) : null;
-        } catch (error) {
-          payload = null;
-        }
-        if (response.status >= 200 && response.status < 300) {
-          return {
-            notice:
-              payload && typeof payload.notice === 'string'
-                ? payload.notice
-                : '',
-          };
-        }
-        var message =
-          payload && typeof payload.message === 'string' && payload.message
-            ? payload.message
-            : 'The engine refused that.';
-        var failure = new Error(message);
-        failure.refusal = payload && payload.refusal ? payload.refusal : '';
-        throw failure;
-      });
-    });
-  }
-
-  // The address the engine's sentence lives at. A success always lands on it,
-  // so a stale ?notice or ?refusal from an earlier page is replaced rather
-  // than reloaded. A success with no sentence (a server that broke v1.1) still
-  // goes to a clean page: the write happened, and retrying would duplicate it.
-  function noticeUrl(notice) {
-    return typeof notice === 'string' && notice !== ''
-      ? '/?notice=' + encodeURIComponent(notice)
-      : '/';
-  }
-
-  function formBody(form) {
-    var body = {};
-    Array.prototype.forEach.call(form.elements, function (field) {
-      if (!field.name) return;
-      if (field.type === 'checkbox' || field.type === 'radio') {
-        if (!field.checked) return;
-      }
-      body[field.name] = field.value;
-    });
-    return body;
-  }
-
-  // The server's line, reused in place. If the markup somehow lost it, one is
-  // made rather than an error vanishing.
-  function showLine(message, refused) {
-    var line = document.getElementById('page-line');
-    if (!line) {
-      line = document.createElement('p');
-      line.className = 'page-line';
-      line.id = 'page-line';
-      line.setAttribute('role', 'status');
-      var text = document.createElement('span');
-      text.className = 'page-line-text';
-      line.appendChild(text);
-      var page = document.querySelector('.page') || document.body;
-      page.insertBefore(line, page.firstChild);
-    }
-    var span = line.querySelector('.page-line-text');
-    if (span) span.textContent = message;
-    line.hidden = false;
-    line.classList.toggle('is-refusal', !!refused);
-  }
 
   function current() {
     var raw = location.hash.replace(/^#/, '');
@@ -1599,26 +1384,6 @@ html.js .nojs-tree { display: none; }
     mountSection(inner, section);
   }
 
-  function mountHtml(inner, html) {
-    if (!html) return;
-    var holder = document.createElement('div');
-    holder.innerHTML = html;
-    var made = holder.firstElementChild;
-    if (made) inner.appendChild(made);
-  }
-
-  // The write controls are drawn only on a served page, from the actions the
-  // server computed for this row. The dialog never decides for itself.
-  function appendActions(inner, data, taskId) {
-    if (!SERVED || !data.actions) return;
-    mountHtml(inner, taskActionsHtml(taskId, data.actions));
-  }
-
-  function appendNote(inner, taskId) {
-    if (!SERVED) return;
-    mountHtml(inner, taskNoteHtml(taskId));
-  }
-
   function buildSheet(taskId) {
     var data = ROWS[taskId];
     if (!data) return null;
@@ -1657,9 +1422,12 @@ html.js .nojs-tree { display: none; }
         ),
       );
     }
-    appendActions(inner, data, taskId);
+    if (SERVED) {
+      appendSheetLine(inner);
+      appendActions(inner, data);
+    }
     appendDescription(inner, data);
-    appendNote(inner, taskId);
+    if (SERVED) appendNote(inner, taskId);
     appendConditions(inner, data);
     // Ruling 2: no facts means no facts block, not an empty bordered list.
     if (data.primary && data.primary.length > 0) {
@@ -1707,6 +1475,8 @@ html.js .nojs-tree { display: none; }
     }
     if (!sheet) return;
     if (!sheet.parentNode) document.body.appendChild(sheet);
+    // A line left from this dialog's last refusal is not this visit's answer.
+    if (SERVED) resetSheetLine(sheet);
     showScrim();
     if (typeof sheet.showModal === 'function') {
       sheet.showModal();
@@ -1786,43 +1556,6 @@ html.js .nojs-tree { display: none; }
     syncViews(here.key);
   }
 
-  // B2: with scripting on every form posts the same JSON its fields describe,
-  // and one line reports the engine's answer. A double click is one send: the
-  // form stays busy until the answer arrives, and the control stays disabled
-  // only while it is in flight. A success follows the server's own notice
-  // address instead of reloading the current one, so the line is the server's
-  // sentence and an old one cannot survive.
-  function wireAuthoring() {
-    if (!SERVED) return;
-    document.addEventListener('submit', function (event) {
-      var form = event.target;
-      if (!form || form.tagName !== 'FORM' || !form.hasAttribute('data-post')) {
-        return;
-      }
-      event.preventDefault();
-      if (form.getAttribute('data-busy') === '1') return;
-      form.setAttribute('data-busy', '1');
-      var control = form.querySelector(
-        'button[type="submit"], input[type="submit"]',
-      );
-      if (control) control.disabled = true;
-      postJson(form.getAttribute('action'), formBody(form)).then(
-        function (answer) {
-          location.assign(noticeUrl(answer && answer.notice));
-        },
-        function (error) {
-          form.removeAttribute('data-busy');
-          if (control) control.disabled = false;
-          showLine(
-            error && error.message
-              ? error.message
-              : 'The engine did not answer.',
-            true,
-          );
-        },
-      );
-    });
-  }
 
   var boardRoot = document.getElementById('board-root');
   var stopped = FAILED;
@@ -1835,7 +1568,7 @@ html.js .nojs-tree { display: none; }
     window.addEventListener('hashchange', apply);
     apply();
     wireDisclosures();
-    wireAuthoring();
+
   }
 })();</script>
 </body>

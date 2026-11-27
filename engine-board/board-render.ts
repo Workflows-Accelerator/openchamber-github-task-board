@@ -16,6 +16,7 @@ import {
   type ContractCondition,
   type ReadProvenance,
   type RestState,
+  type TaskAction,
   type TreeModel,
   type TreeRow,
 } from './model.ts';
@@ -988,35 +989,13 @@ export function sheetFieldsHtml(fields: readonly DetailField[]): string {
     .join('');
 }
 
-// What a served page may post for one task. The server computes these from the
-// same read the page draws, and the dialog only draws what it is given: a
-// button the engine would refuse is not offered in the first place.
-export interface TaskActions {
-  complete?: boolean;
-  start?: boolean;
-}
-
-// A person settles a task the read says is waiting for one, and only on a live
-// (not archived) row. Starting is offered only on the lane the page calls
-// "Can start now". The tree's own container never reaches a row here, so it
-// cannot be offered. Both are computed here, not in the browser.
-function taskActions(row: TreeRow): TaskActions {
-  if (row.archived_at !== null) {
-    return {};
-  }
-  const actions: TaskActions = {};
-  if (row.rest_state === 'waiting') {
-    actions.complete = true;
-  }
-  if (laneOf(row.rest_state, row.phase) === 'can-start') {
-    actions.start = true;
-  }
-  return actions;
-}
-
-// The dialog's action row. Like `sheetFieldsHtml`, this function's source is
-// embedded in the page, so it escapes its own values and depends on nothing.
-export function taskActionsHtml(taskId: string, actions: TaskActions): string {
+// What a served page may post for one task: the serve layer's own list, passed
+// through unchanged. The page renders one button per action and decides nothing
+// by state or lane; a row with nothing the server can do carries no action.
+//
+// The dialog's action row is embedded in the page, so this function escapes its
+// own values and depends on nothing.
+export function taskActionsHtml(actions: readonly TaskAction[]): string {
   const entities: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
@@ -1024,27 +1003,33 @@ export function taskActionsHtml(taskId: string, actions: TaskActions): string {
     '"': '&quot;',
     "'": '&#39;',
   };
-  const id = taskId.replace(
-    /[&<>"']/g,
-    (character) => entities[character] ?? character,
-  );
-  const buttons: string[] = [];
-  if (actions.start) {
-    buttons.push(
-      '<form class="sheet-action is-start" method="post" ' +
-        'action="/api/tasks/' +
-        id +
-        '/start" data-post><button type="submit">Start now</button></form>',
+  const escape = (value: unknown): string =>
+    typeof value === 'string'
+      ? value.replace(/[&<>"']/g, (character) => entities[character] ?? character)
+      : '';
+  const buttons = actions.map((action) => {
+    const hidden = Object.entries(action.fields ?? {})
+      .map(
+        ([name, value]) =>
+          '<input type="hidden" name="' +
+          escape(name) +
+          '" value="' +
+          escape(value) +
+          '">',
+      )
+      .join('');
+    return (
+      '<form class="sheet-action is-' +
+      escape(action.verb) +
+      '" method="post" action="' +
+      escape(action.path) +
+      '" data-post>' +
+      hidden +
+      '<button type="submit">' +
+      escape(action.label) +
+      '</button></form>'
     );
-  }
-  if (actions.complete) {
-    buttons.push(
-      '<form class="sheet-action" method="post" ' +
-        'action="/api/tasks/' +
-        id +
-        '/complete" data-post><button type="submit">Mark done</button></form>',
-    );
-  }
+  });
   if (buttons.length === 0) {
     return '';
   }
@@ -1117,9 +1102,10 @@ export interface BoardRowData {
   // True when the payload carried no title; the page then says so instead of
   // passing the node key off as one. Absent means the title was read.
   title_missing?: boolean;
-  // Only on a served page: the write controls this row may draw. Absent means
-  // the row has no action, so the file:// artefact cannot show one.
-  actions?: TaskActions;
+  // Only on a served page: the writes the serve layer computed for this row.
+  // Present (possibly empty) means the server answered; absent means the page
+  // is the file:// artefact and may show no control at all.
+  actions?: TaskAction[];
 }
 
 export interface BoardData {
@@ -1184,10 +1170,7 @@ export function boardData(
       data.title_missing = true;
     }
     if (served) {
-      const actions = taskActions(row);
-      if (actions.complete || actions.start) {
-        data.actions = actions;
-      }
+      data.actions = row.actions;
     }
     rows[row.task_id] = data;
     record(row.node_key, row.children, row);
@@ -1449,41 +1432,6 @@ a { color: inherit; }
   font-size: 0.8rem; text-decoration: none; white-space: nowrap;
 }
 .views a.is-on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-/* The served page's one line about what the engine just said. Refusals keep
-   the defect tone; a plain notice stays quiet. */
-.page-line {
-  margin: 0 0 14px; padding: 8px 12px;
-  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
-  background: var(--accent-soft); color: var(--ink);
-  font-size: 0.86rem; line-height: 1.5;
-}
-.page-line.is-refusal {
-  border-left-color: var(--warning); background: var(--warning-soft);
-  color: var(--warning);
-}
-.page-line a {
-  margin-left: 8px; color: inherit; text-decoration: underline;
-  text-underline-offset: 0.16em;
-}
-/* Adding a task is the page's primary action, so it is the one filled control
-   on the page rather than a debug field beside the title. */
-.add-line { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
-.add-line input {
-  flex: 1 1 auto; min-width: 0; padding: 8px 12px;
-  border: 1px solid var(--line-strong); border-radius: 10px;
-  background: var(--surface); color: var(--ink);
-  font: inherit; font-size: 0.95rem;
-}
-.add-line input::placeholder { color: var(--faint); }
-.add-line button {
-  flex: none; padding: 8px 16px; border: 1px solid var(--accent);
-  border-radius: 10px; background: var(--accent); color: var(--paper);
-  font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
-}
-.add-line button:hover, .add-line button:focus-visible {
-  background: var(--ink); border-color: var(--ink);
-}
-.add-line button:disabled { opacity: 0.55; cursor: default; }
 .progress { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
 .progress-line {
   color: var(--muted); font-size: 0.85rem;
@@ -1742,41 +1690,6 @@ a { color: inherit; }
   color: var(--muted); font-size: 0.86rem;
 }
 .sheet-state .mono { font-family: var(--mono); font-size: 0.78rem; }
-/* The actions sit under the state line, where the task is. One is outlined in
-   the accent, the other stays quiet; both are real submit buttons. */
-.sheet-actions {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin-top: 14px;
-}
-.sheet-actions form { flex: none; margin: 0; }
-.sheet-actions button, .sheet-note-form button {
-  padding: 6px 13px; border: 1px solid var(--line-strong); border-radius: 9px;
-  background: var(--surface); color: var(--ink);
-  font: inherit; font-size: 0.84rem; white-space: nowrap; cursor: pointer;
-}
-.sheet-actions .is-start button { border-color: var(--accent); color: var(--accent); }
-.sheet-actions button:hover, .sheet-actions button:focus-visible,
-.sheet-note-form button:hover, .sheet-note-form button:focus-visible {
-  border-color: currentColor;
-}
-.sheet-actions button:disabled, .sheet-note-form button:disabled {
-  opacity: 0.55; cursor: default;
-}
-.sheet-note-form { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-.sheet-note-form label {
-  display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700;
-  letter-spacing: 0.02em; text-transform: uppercase;
-}
-.sheet-note-form textarea {
-  display: block; width: 100%; margin-top: 6px; padding: 9px 11px;
-  border: 1px solid var(--line-strong); border-radius: 9px;
-  background: var(--paper); color: var(--ink);
-  font: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;
-}
-.sheet-note-form .sheet-hint {
-  margin-top: 6px; color: var(--muted); font-size: 0.76rem; line-height: 1.4;
-}
-.sheet-note-form button { margin-top: 8px; }
 .sheet-section { margin-top: 18px; }
 .sheet-section h3 {
   margin: 0 0 6px; color: var(--muted); font-size: 0.72rem;
@@ -1866,20 +1779,297 @@ a { color: inherit; }
   .disclosure, .disclosure-spacer { flex: 0 0 40px; width: 40px; height: 40px; }
   .row-state { flex: 0 0 100%; margin-left: 0; margin-top: 2px; }
   .fact dt { flex-basis: 6rem; }
-  /* One hand: the field and the buttons keep a 40 px target, and the input is
-     16 px so the phone does not zoom on focus. */
-  .add-line input, .sheet-note-form textarea { font-size: 1rem; }
-  .add-line button, .sheet-actions button, .sheet-note-form button { min-height: 40px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
 `;
 
+// The styles the served page needs for the controls it alone carries. The
+// file:// artefact has no add line, no actions and no note box, so it ships
+// none of this: its stylesheet is the one it had before authoring existed.
+const AUTHORING_CSS = `
+/* The served page's one line about what the engine just said. Refusals keep
+   the defect tone; a plain notice stays quiet. */
+.page-line {
+  margin: 0 0 14px; padding: 8px 12px;
+  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+  background: var(--accent-soft); color: var(--ink);
+  font-size: 0.86rem; line-height: 1.5;
+}
+.page-line.is-refusal {
+  border-left-color: var(--warning); background: var(--warning-soft);
+  color: var(--warning);
+}
+.page-line a {
+  margin-left: 8px; color: inherit; text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+/* The same sentence inside the dialog that raised it, above its actions. The
+   modal's top layer puts it over the scrim, so it cannot be covered. */
+.sheet-line { margin: 12px 0 0; }
+/* Adding a task is the page's primary action, so it is the one filled control
+   on the page rather than a debug field beside the title. */
+.add-line { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; }
+.add-line input {
+  flex: 1 1 auto; min-width: 0; padding: 8px 12px;
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.95rem;
+}
+.add-line input::placeholder { color: var(--faint); }
+.add-line button {
+  flex: none; padding: 8px 16px; border: 1px solid var(--accent);
+  border-radius: 10px; background: var(--accent); color: var(--paper);
+  font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
+}
+.add-line button:hover, .add-line button:focus-visible {
+  background: var(--ink); border-color: var(--ink);
+}
+.add-line button:disabled { opacity: 0.55; cursor: default; }
+/* The actions sit under the state line, where the task is. One is outlined in
+   the accent, the other stays quiet; both are real submit buttons. */
+.sheet-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 14px;
+}
+.sheet-actions form { flex: none; margin: 0; }
+.sheet-actions button, .sheet-note-form button {
+  padding: 6px 13px; border: 1px solid var(--line-strong); border-radius: 9px;
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 0.84rem; white-space: nowrap; cursor: pointer;
+}
+.sheet-actions .is-start button { border-color: var(--accent); color: var(--accent); }
+.sheet-actions button:hover, .sheet-actions button:focus-visible,
+.sheet-note-form button:hover, .sheet-note-form button:focus-visible {
+  border-color: currentColor;
+}
+.sheet-actions button:disabled, .sheet-note-form button:disabled {
+  opacity: 0.55; cursor: default;
+}
+.sheet-note-form { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sheet-note-form label {
+  display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.02em; text-transform: uppercase;
+}
+.sheet-note-form textarea {
+  display: block; width: 100%; margin-top: 6px; padding: 9px 11px;
+  border: 1px solid var(--line-strong); border-radius: 9px;
+  background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;
+}
+.sheet-note-form .sheet-hint {
+  margin-top: 6px; color: var(--muted); font-size: 0.76rem; line-height: 1.4;
+}
+.sheet-note-form button { margin-top: 8px; }
+@media (max-width: 640px) {
+  /* One hand: the field and the buttons keep a 40 px target, and the input is
+     16 px so the phone does not zoom on focus. */
+  .add-line input, .sheet-note-form textarea { font-size: 1rem; }
+  .add-line button, .sheet-actions button, .sheet-note-form button { min-height: 40px; }
+}
+`;
+
+// The authoring client. Serve v1.2: only a served page gets it, and the
+// file:// artefact carries none of it. Every function here is a function
+// declaration, so its position inside the page's IIFE does not matter.
+const AUTHORING_SCRIPT = `
+  ${taskActionsHtml.toString()}
+
+  ${taskNoteHtml.toString()}
+
+  // One JSON post for every form on the page. A success carries the sentence
+  // the server wrote, and the caller navigates to it. A rejection keeps the
+  // server's sentence; an unreadable answer is still an error, never silence.
+  function postJson(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function (response) {
+      return response.text().then(function (raw) {
+        var payload = null;
+        try {
+          payload = raw ? JSON.parse(raw) : null;
+        } catch (error) {
+          payload = null;
+        }
+        if (response.status >= 200 && response.status < 300) {
+          return {
+            notice:
+              payload && typeof payload.notice === 'string'
+                ? payload.notice
+                : '',
+          };
+        }
+        var message =
+          payload && typeof payload.message === 'string' && payload.message
+            ? payload.message
+            : 'The engine refused that.';
+        var failure = new Error(message);
+        failure.refusal = payload && payload.refusal ? payload.refusal : '';
+        throw failure;
+      });
+    });
+  }
+
+  // The address the server's sentence lives at: the page the person is on,
+  // with its scope hash, so a write does not drop them at the top. A success
+  // with no sentence (a server that broke the contract) goes to the clean
+  // version of the same place: the write happened, and retrying would
+  // duplicate it.
+  function noticeUrl(notice) {
+    if (typeof notice === 'string' && notice !== '') {
+      return location.pathname + '?notice=' + encodeURIComponent(notice) + location.hash;
+    }
+    return location.pathname + location.hash;
+  }
+
+  function formBody(form) {
+    var body = {};
+    Array.prototype.forEach.call(form.elements, function (field) {
+      if (!field.name) return;
+      if (field.type === 'checkbox' || field.type === 'radio') {
+        if (!field.checked) return;
+      }
+      body[field.name] = field.value;
+    });
+    return body;
+  }
+
+  function setLine(line, message, refused) {
+    if (!line) return;
+    var span = line.querySelector('.page-line-text');
+    if (span) span.textContent = message;
+    line.hidden = false;
+    line.classList.toggle('is-refusal', !!refused);
+  }
+
+  function clearLine(line) {
+    if (!line) return;
+    var span = line.querySelector('.page-line-text');
+    if (span) span.textContent = '';
+    line.hidden = true;
+    line.classList.remove('is-refusal');
+  }
+
+  // Serve v1.2: a refusal raised from a dialog appears in that dialog too,
+  // above its actions. The dialog lives in the top layer, so the scrim cannot
+  // cover the sentence. If the markup somehow lost the top line, one is made
+  // rather than an error vanishing.
+  function showLine(message, refused) {
+    var line = document.getElementById('page-line');
+    if (!line) {
+      line = document.createElement('p');
+      line.className = 'page-line';
+      line.id = 'page-line';
+      line.setAttribute('role', 'status');
+      var text = document.createElement('span');
+      text.className = 'page-line-text';
+      line.appendChild(text);
+      var page = document.querySelector('.page') || document.body;
+      page.insertBefore(line, page.firstChild);
+    }
+    setLine(line, message, refused);
+    var sheet = document.querySelector('dialog.sheet[open]');
+    setLine(sheet ? sheet.querySelector('.sheet-line') : null, message, refused);
+  }
+
+  function clearSheetLine() {
+    var sheet = document.querySelector('dialog.sheet[open]');
+    clearLine(sheet ? sheet.querySelector('.sheet-line') : null);
+  }
+
+  // The write controls are drawn only on a served page, from the actions the
+  // server computed for this row. The page never decides which verbs exist.
+  function mountHtml(inner, html) {
+    if (!html) return;
+    var holder = document.createElement('div');
+    holder.innerHTML = html;
+    var made = holder.firstElementChild;
+    if (made) inner.appendChild(made);
+  }
+
+  // Serve v1.2: a refusal raised from this dialog is shown here, above its
+  // actions, not only at the top of a page the modal covers.
+  function appendSheetLine(inner) {
+    var local = document.createElement('p');
+    local.className = 'page-line sheet-line';
+    local.setAttribute('role', 'status');
+    local.hidden = true;
+    var localText = document.createElement('span');
+    localText.className = 'page-line-text';
+    local.appendChild(localText);
+    inner.appendChild(local);
+  }
+
+  function resetSheetLine(sheet) {
+    var local = sheet ? sheet.querySelector('.sheet-line') : null;
+    clearLine(local);
+  }
+
+  function appendActions(inner, data) {
+    if (!data.actions || data.actions.length === 0) return;
+    mountHtml(inner, taskActionsHtml(data.actions));
+  }
+
+  function appendNote(inner, taskId) {
+    mountHtml(inner, taskNoteHtml(taskId));
+  }
+
+  // Dismiss stays where the person is, not at the top of the page.
+  function syncDismiss() {
+    var line = document.getElementById('page-line');
+    var link = line ? line.querySelector('a') : null;
+    if (link) link.setAttribute('href', location.pathname + location.hash);
+  }
+
+  // B2: with scripting on every form posts the same JSON its fields describe,
+  // and one line reports the server's answer. A double click is one send: the
+  // form stays busy until the answer arrives, and the control stays disabled
+  // only while it is in flight. A success follows the server's own notice
+  // address, which keeps the view and the scope.
+  function wireAuthoring() {
+    if (!SERVED) return;
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (!form || form.tagName !== 'FORM' || !form.hasAttribute('data-post')) {
+        return;
+      }
+      event.preventDefault();
+      if (form.getAttribute('data-busy') === '1') return;
+      form.setAttribute('data-busy', '1');
+      clearSheetLine();
+      var control = form.querySelector(
+        'button[type="submit"], input[type="submit"]',
+      );
+      if (control) control.disabled = true;
+      postJson(form.getAttribute('action'), formBody(form)).then(
+        function (answer) {
+          location.assign(noticeUrl(answer && answer.notice));
+        },
+        function (error) {
+          form.removeAttribute('data-busy');
+          if (control) control.disabled = false;
+          showLine(
+            error && error.message
+              ? error.message
+              : 'The engine did not answer.',
+            true,
+          );
+        },
+      );
+    });
+    window.addEventListener('hashchange', syncDismiss);
+    syncDismiss();
+  }
+`;
+
 // No-JS floor: every scope section is visible until script marks the document.
 // The media queries and the `js` rules are the only things that hide a section,
 // and the first is the one script adds.
-const SCRIPT = `(function () {
+function pageScript(served: boolean): string {
+  return `(function () {
   var FILES = { board: 'index.html', list: 'list.html' };
   var LANES = ${JSON.stringify(LANE_ORDER)};
   var LANE_WORDS = ${JSON.stringify(LANE_WORDS)};
@@ -1913,88 +2103,7 @@ const SCRIPT = `(function () {
 
   ${sheetFieldsHtml.toString()}
 
-  ${taskActionsHtml.toString()}
-
-  ${taskNoteHtml.toString()}
-
-  // One JSON post for every form on the page. Serve v1.1: a success carries
-  // the sentence the server wrote, and the caller navigates to it. A rejection
-  // keeps the engine's own sentence; an unreadable answer is still an error,
-  // never silence.
-  function postJson(path, body) {
-    return fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).then(function (response) {
-      return response.text().then(function (raw) {
-        var payload = null;
-        try {
-          payload = raw ? JSON.parse(raw) : null;
-        } catch (error) {
-          payload = null;
-        }
-        if (response.status >= 200 && response.status < 300) {
-          return {
-            notice:
-              payload && typeof payload.notice === 'string'
-                ? payload.notice
-                : '',
-          };
-        }
-        var message =
-          payload && typeof payload.message === 'string' && payload.message
-            ? payload.message
-            : 'The engine refused that.';
-        var failure = new Error(message);
-        failure.refusal = payload && payload.refusal ? payload.refusal : '';
-        throw failure;
-      });
-    });
-  }
-
-  // The address the engine's sentence lives at. A success always lands on it,
-  // so a stale ?notice or ?refusal from an earlier page is replaced rather
-  // than reloaded. A success with no sentence (a server that broke v1.1) still
-  // goes to a clean page: the write happened, and retrying would duplicate it.
-  function noticeUrl(notice) {
-    return typeof notice === 'string' && notice !== ''
-      ? '/?notice=' + encodeURIComponent(notice)
-      : '/';
-  }
-
-  function formBody(form) {
-    var body = {};
-    Array.prototype.forEach.call(form.elements, function (field) {
-      if (!field.name) return;
-      if (field.type === 'checkbox' || field.type === 'radio') {
-        if (!field.checked) return;
-      }
-      body[field.name] = field.value;
-    });
-    return body;
-  }
-
-  // The server's line, reused in place. If the markup somehow lost it, one is
-  // made rather than an error vanishing.
-  function showLine(message, refused) {
-    var line = document.getElementById('page-line');
-    if (!line) {
-      line = document.createElement('p');
-      line.className = 'page-line';
-      line.id = 'page-line';
-      line.setAttribute('role', 'status');
-      var text = document.createElement('span');
-      text.className = 'page-line-text';
-      line.appendChild(text);
-      var page = document.querySelector('.page') || document.body;
-      page.insertBefore(line, page.firstChild);
-    }
-    var span = line.querySelector('.page-line-text');
-    if (span) span.textContent = message;
-    line.hidden = false;
-    line.classList.toggle('is-refusal', !!refused);
-  }
+${served ? AUTHORING_SCRIPT : ''}
 
   function current() {
     var raw = location.hash.replace(/^#/, '');
@@ -2711,26 +2820,6 @@ const SCRIPT = `(function () {
     mountSection(inner, section);
   }
 
-  function mountHtml(inner, html) {
-    if (!html) return;
-    var holder = document.createElement('div');
-    holder.innerHTML = html;
-    var made = holder.firstElementChild;
-    if (made) inner.appendChild(made);
-  }
-
-  // The write controls are drawn only on a served page, from the actions the
-  // server computed for this row. The dialog never decides for itself.
-  function appendActions(inner, data, taskId) {
-    if (!SERVED || !data.actions) return;
-    mountHtml(inner, taskActionsHtml(taskId, data.actions));
-  }
-
-  function appendNote(inner, taskId) {
-    if (!SERVED) return;
-    mountHtml(inner, taskNoteHtml(taskId));
-  }
-
   function buildSheet(taskId) {
     var data = ROWS[taskId];
     if (!data) return null;
@@ -2769,9 +2858,12 @@ const SCRIPT = `(function () {
         ),
       );
     }
-    appendActions(inner, data, taskId);
+    if (SERVED) {
+      appendSheetLine(inner);
+      appendActions(inner, data);
+    }
     appendDescription(inner, data);
-    appendNote(inner, taskId);
+    if (SERVED) appendNote(inner, taskId);
     appendConditions(inner, data);
     // Ruling 2: no facts means no facts block, not an empty bordered list.
     if (data.primary && data.primary.length > 0) {
@@ -2819,6 +2911,8 @@ const SCRIPT = `(function () {
     }
     if (!sheet) return;
     if (!sheet.parentNode) document.body.appendChild(sheet);
+    // A line left from this dialog's last refusal is not this visit's answer.
+    if (SERVED) resetSheetLine(sheet);
     showScrim();
     if (typeof sheet.showModal === 'function') {
       sheet.showModal();
@@ -2898,43 +2992,6 @@ const SCRIPT = `(function () {
     syncViews(here.key);
   }
 
-  // B2: with scripting on every form posts the same JSON its fields describe,
-  // and one line reports the engine's answer. A double click is one send: the
-  // form stays busy until the answer arrives, and the control stays disabled
-  // only while it is in flight. A success follows the server's own notice
-  // address instead of reloading the current one, so the line is the server's
-  // sentence and an old one cannot survive.
-  function wireAuthoring() {
-    if (!SERVED) return;
-    document.addEventListener('submit', function (event) {
-      var form = event.target;
-      if (!form || form.tagName !== 'FORM' || !form.hasAttribute('data-post')) {
-        return;
-      }
-      event.preventDefault();
-      if (form.getAttribute('data-busy') === '1') return;
-      form.setAttribute('data-busy', '1');
-      var control = form.querySelector(
-        'button[type="submit"], input[type="submit"]',
-      );
-      if (control) control.disabled = true;
-      postJson(form.getAttribute('action'), formBody(form)).then(
-        function (answer) {
-          location.assign(noticeUrl(answer && answer.notice));
-        },
-        function (error) {
-          form.removeAttribute('data-busy');
-          if (control) control.disabled = false;
-          showLine(
-            error && error.message
-              ? error.message
-              : 'The engine did not answer.',
-            true,
-          );
-        },
-      );
-    });
-  }
 
   var boardRoot = document.getElementById('board-root');
   var stopped = FAILED;
@@ -2947,9 +3004,10 @@ const SCRIPT = `(function () {
     window.addEventListener('hashchange', apply);
     apply();
     wireDisclosures();
-    wireAuthoring();
+${served ? '    wireAuthoring();' : ''}
   }
 })();`;
+}
 
 // The page's authoring surface, rendered on the server. Empty unless the engine
 // is serving this page: the file:// artefact carries no control that cannot
@@ -3008,7 +3066,7 @@ function shell(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(options.pageTitle)}</title>
-<style>${CSS}
+<style>${CSS}${served ? AUTHORING_CSS : ''}
 .pct-${pct} { width: ${pct}%; }
 .board-scope { display: none; }
 .nojs-tree { display: block; }
@@ -3030,7 +3088,7 @@ html.js .nojs-tree { display: none; }
   ${provenanceBlock(model)}
 </main>
 <div class="scrim" id="scrim" hidden></div>
-<script>${SCRIPT}</script>
+<script>${pageScript(served)}</script>
 </body>
 </html>
 `;

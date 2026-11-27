@@ -133,8 +133,36 @@ function authoringSnapshot() {
     graph: {
       nodes: [
         { task_id: 'root', node_key: '$root', rest_state: 'ready', parent_task_id: null },
-        { task_id: 'ready', node_key: 'write', rest_state: 'ready', parent_task_id: 'root', title: 'Write the plan' },
-        { task_id: 'waiting', node_key: 'sign', rest_state: 'waiting', parent_task_id: 'root', title: 'Sign off the plan' },
+        {
+          task_id: 'ready',
+          node_key: 'write',
+          rest_state: 'ready',
+          parent_task_id: 'root',
+          title: 'Write the plan',
+          actions: [
+            {
+              verb: 'start',
+              label: 'Start now',
+              path: '/api/tasks/ready/start',
+              fields: {},
+            },
+          ],
+        },
+        {
+          task_id: 'waiting',
+          node_key: 'sign',
+          rest_state: 'waiting',
+          parent_task_id: 'root',
+          title: 'Sign off the plan',
+          actions: [
+            {
+              verb: 'complete',
+              label: 'Mark done',
+              path: '/api/tasks/waiting/complete',
+              fields: { outcome: 'approve' },
+            },
+          ],
+        },
         { task_id: 'blocked', node_key: 'ship', rest_state: 'blocked', parent_task_id: 'root', title: 'Ship the plan' },
       ],
       edges: [
@@ -2524,8 +2552,10 @@ test(
     requireObscura();
     const model = buildTree(authoringSnapshot());
     const stub = await startBoardStub({
-      render: ({ notice, refusal }) =>
-        renderBoardPage(model, { served: true, notice, refusal }),
+      render: ({ notice, refusal, pathname }) =>
+        pathname === '/list.html'
+          ? renderListPage(model, { served: true, notice, refusal })
+          : renderBoardPage(model, { served: true, notice, refusal }),
     });
 
     const port = await freePort();
@@ -2545,14 +2575,15 @@ test(
     browser = connect(version.webSocketDebuggerUrl);
     await browser.open;
     const page = await openPage(browser, stub.origin + '/');
-    // Start on a page that already carries an old line: v1.1's navigation must
+    // Start on a page that already carries an old line: v1.2's navigation must
     // replace it, not reload it. A stale refusal key is present too.
     await page.navigate(
       stub.origin +
         '/?notice=' +
         encodeURIComponent('An old line') +
         '&refusal=' +
-        encodeURIComponent('An old refusal'),
+        encodeURIComponent('An old refusal') +
+        '#board',
     );
 
     await until(
@@ -2596,6 +2627,9 @@ test(
         complete: !!sheet.querySelector('form[action="/api/tasks/waiting/complete"]'),
         start: !!sheet.querySelector('form[action="/api/tasks/waiting/start"]'),
         markDone: (sheet.querySelector('form[action="/api/tasks/waiting/complete"] button') || {}).textContent || null,
+        localLine: !!sheet.querySelector('.sheet-line'),
+        localLineHidden: (sheet.querySelector('.sheet-line') || {}).hidden ?? null,
+        outcome: (sheet.querySelector('form[action="/api/tasks/waiting/complete"] input[name="outcome"]') || {}).value || null,
       };
     })()`);
     assert.deepEqual(waitingSheet, {
@@ -2604,6 +2638,9 @@ test(
       complete: true,
       start: false,
       markDone: 'Mark done',
+      localLine: true,
+      localLineHidden: true,
+      outcome: 'approve',
     });
 
     await page.evaluate(
@@ -2638,7 +2675,15 @@ test(
     );
 
     // ---- the form posts JSON, disables while in flight, and follows the
-    // server's notice address; the old line is gone
+    // server's notice address; the old line is gone and the scope survives
+    await page.evaluate(`(function () {
+      location.hash = '#board/write';
+    })()`);
+    await until(
+      page,
+      `new URL(location.href).hash === '#board/write'`,
+      'the scope hash is set before the add',
+    );
     stub.setHold(1200);
     await page.send('Emulation.setDeviceMetricsOverride', {
       width: 1280,
@@ -2686,17 +2731,24 @@ test(
     );
     const afterAdd = await page.evaluate(`(function () {
       var line = document.getElementById('page-line');
+      var dismiss = line ? line.querySelector('a') : null;
       return {
+        pathname: location.pathname,
+        hash: location.hash,
         notice: new URL(location.href).searchParams.get('notice'),
         refusal: new URL(location.href).searchParams.get('refusal'),
         line: line ? line.textContent : null,
+        dismiss: dismiss ? dismiss.getAttribute('href') : null,
       };
     })()`);
+    assert.equal(afterAdd.pathname, '/', 'the view is the one that posted');
+    assert.equal(afterAdd.hash, '#board/write', 'the scope survives the write');
     assert.equal(afterAdd.notice, 'Added as a draft: Chase the bank');
     assert.equal(afterAdd.refusal, null, 'the stale refusal key is gone');
     assert.ok(afterAdd.line && afterAdd.line.includes('Added as a draft: Chase the bank'));
     assert.equal(afterAdd.line.includes('An old line'), false, 'the old line is gone');
     assert.equal(afterAdd.line.includes('An old refusal'), false, 'the old refusal is gone');
+    assert.equal(afterAdd.dismiss, '/#board/write', 'Dismiss stays in the scope');
 
     // The landed page is live again: the same renderer, the same forms.
     await until(
@@ -2707,6 +2759,12 @@ test(
 
     // ---- a Mark done success also lands on its own sentence
     stub.setHold(0);
+    await page.navigate(stub.origin + '/');
+    await until(
+      page,
+      "document.querySelector('form.add-line input[name=\"title\"]') !== null",
+      'the board is back at the top scope',
+    );
     await page.evaluate(
       `document.querySelector('#board-root .card[data-task="waiting"] .enter').click()`,
     );
@@ -2726,7 +2784,7 @@ test(
     const completePost = stub.requests.filter((request) => request.method === 'POST').slice(-1)[0];
     assert.equal(completePost.path, '/api/tasks/waiting/complete');
     assert.match(completePost.contentType, /^application\/json/);
-    assert.deepEqual(completePost.fields, {});
+    assert.deepEqual(completePost.fields, { outcome: 'approve' });
     assert.ok(
       (await page.evaluate(`document.getElementById('page-line').textContent`)).includes(
         'Marked done.',
@@ -2766,19 +2824,85 @@ test(
     const afterRefusal = await page.evaluate(`(function () {
       var sheet = document.querySelector('dialog.sheet[open]');
       var form = sheet.querySelector('.sheet-note-form');
+      var local = sheet.querySelector('.sheet-line');
+      var box = local ? local.getBoundingClientRect() : null;
+      var hit = box
+        ? document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+        : null;
       return {
         lineTone: document.getElementById('page-line').className,
+        topText: document.getElementById('page-line').textContent,
         busy: form.getAttribute('data-busy'),
         disabled: form.querySelector('button[type="submit"]').disabled,
+        localText: local ? local.textContent : null,
+        localHidden: local ? local.hidden : null,
+        localOnTop: local ? (local === hit || local.contains(hit)) : false,
+        hit: hit ? hit.tagName : null,
       };
     })()`);
     assert.match(afterRefusal.lineTone, /is-refusal/);
     assert.equal(afterRefusal.busy, null);
     assert.equal(afterRefusal.disabled, false);
+    assert.equal(afterRefusal.localHidden, false, 'the dialog line is shown');
+    assert.equal(
+      afterRefusal.localText.includes('The engine would not keep that note.'),
+      true,
+      'the dialog line carries the same sentence',
+    );
+    // v1.2: the page shows the sentence the server wrote, never its name.
+    assert.equal(
+      afterRefusal.topText.includes('The engine would not keep that note.'),
+      true,
+      'the top line carries the same sentence',
+    );
+    assert.equal(
+      afterRefusal.topText.includes('note-refused'),
+      false,
+      'the refusal name is not copy',
+    );
+    assert.equal(
+      afterRefusal.localText.includes('note-refused'),
+      false,
+      'the dialog shows no refusal name either',
+    );
+    assert.equal(afterRefusal.localOnTop, true, 'the scrim does not cover it');
     assert.equal(stub.pageLoads(), loadsBefore, 'a refusal does not reload');
     const refused = stub.requests.filter((request) => request.method === 'POST').slice(-1)[0];
     assert.equal(refused.path, '/api/tasks/waiting/notes');
     assert.deepEqual(refused.fields, { text: 'Refuse this' });
+
+    // ---- a success on the List view keeps the List view and its scope (v1.2)
+    await page.navigate(stub.origin + '/list.html#list/write');
+    await until(
+      page,
+      "document.querySelector('form.add-line input[name=\"title\"]') !== null",
+      'the List page carries the add line',
+    );
+    await page.evaluate(`(function () {
+      var input = document.querySelector('form.add-line input[name="title"]');
+      input.value = 'List task';
+      document.querySelector('form.add-line button[type="submit"]').click();
+    })()`);
+    await until(
+      page,
+      `new URL(location.href).searchParams.get('notice') === 'Added as a draft: List task'`,
+      'the List add lands on its sentence',
+    );
+    const listLanding = await page.evaluate(`(function () {
+      var dismiss = document.querySelector('#page-line a');
+      return {
+        pathname: location.pathname,
+        hash: location.hash,
+        dismiss: dismiss ? dismiss.getAttribute('href') : null,
+      };
+    })()`);
+    assert.equal(listLanding.pathname, '/list.html', 'the List stays the List');
+    assert.equal(listLanding.hash, '#list/write', 'the List scope survives the write');
+    assert.equal(
+      listLanding.dismiss,
+      '/list.html#list/write',
+      'Dismiss stays on the List and in its scope',
+    );
 
     assert.deepEqual(await page.evaluate('window.__pageErrors'), []);
     assert.deepEqual(page.exceptions, []);

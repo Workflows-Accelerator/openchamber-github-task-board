@@ -210,6 +210,16 @@ export interface RerootedInfo {
   subtree_tasks: number;
 }
 
+// A write the serve layer says this row can take. The page renders one button
+// per action and never decides by state or lane which verbs exist: the server
+// knows the owner, the pinned contract's verdicts, and what it can start.
+export interface TaskAction {
+  verb: string;
+  label: string;
+  path: string;
+  fields: Record<string, string>;
+}
+
 export interface TreeRow {
   task_id: string;
   node_key: string;
@@ -266,6 +276,9 @@ export interface TreeRow {
   // Set only on a row the read lifted to depth 0 because its parent is outside
   // the read. `subtree_tasks` counts that row and every row under it.
   rerooted: RerootedInfo | null;
+  // The writes the serve layer computed for this row. Empty on a file:// read
+  // and on every row the serve layer can do nothing with.
+  actions: TaskAction[];
 }
 
 // What this read can answer, derived from the payloads themselves. A source
@@ -491,6 +504,48 @@ function parseConditions(value: unknown): ContractCondition[] {
   return value
     .map(parseCondition)
     .filter((condition): condition is ContractCondition => condition !== null);
+}
+
+// The serve layer attaches actions to the read it renders. A malformed entry is
+// dropped rather than drawn: the page may not invent a button, and it may not
+// print half an answer.
+function parseAction(value: unknown): TaskAction | null {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const verb = stringField(record, 'verb');
+  const label = stringField(record, 'label');
+  const path = stringField(record, 'path');
+  if (
+    verb === null ||
+    verb === '' ||
+    label === null ||
+    label === '' ||
+    path === null ||
+    path === ''
+  ) {
+    return null;
+  }
+  const fields: Record<string, string> = {};
+  const raw = record.fields;
+  if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [key, entry] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof entry === 'string') {
+        fields[key] = entry;
+      }
+    }
+  }
+  return { verb, label, path, fields };
+}
+
+function parseActions(value: unknown): TaskAction[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map(parseAction)
+    .filter((action): action is TaskAction => action !== null);
 }
 
 function edgeRefs(
@@ -767,6 +822,7 @@ export function buildTree(snapshot: EngineTreeSnapshot): TreeModel {
       rerooted: lifted
         ? { parent_task_id: parent, subtree_tasks: 0 }
         : null,
+      actions: parseActions(node.actions),
     };
   };
 
