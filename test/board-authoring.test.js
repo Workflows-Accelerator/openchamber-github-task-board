@@ -204,6 +204,10 @@ test('the served board carries the add line and the row actions', () => {
     assert.equal(html.includes(sentence), false, `the page does not write "${sentence}"`);
   }
   assert.ok(html.includes('location.assign(noticeUrl('), 'a success follows the notice address');
+  assert.ok(
+    html.includes('return location.pathname + location.hash;'),
+    'a silent success still keeps the view and scope',
+  );
   assert.ok(html.includes('function wireAuthoring'), 'the served page wires its forms');
   assert.ok(html.includes('.add-line {'), 'the served page carries its control styles');
 

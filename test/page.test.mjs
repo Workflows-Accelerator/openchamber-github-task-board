@@ -2796,6 +2796,38 @@ test(
       'the Mark done landing renders the add line',
     );
 
+    // ---- Start now is a real browser flow too, from the action the server sent
+    await page.evaluate(
+      `document.querySelector('#board-root .card[data-task="ready"] .enter').click()`,
+    );
+    await until(
+      page,
+      "document.querySelector('dialog.sheet[open] form[action=\"/api/tasks/ready/start\"]') !== null",
+      'the ready dialog carries the server start action',
+    );
+    await page.evaluate(
+      `document.querySelector('dialog.sheet[open] form[action="/api/tasks/ready/start"] button').click()`,
+    );
+    await until(
+      page,
+      `new URL(location.href).searchParams.get('notice') === 'Started.'`,
+      'Start now lands on its sentence',
+    );
+    const startPost = stub.requests.filter((request) => request.method === 'POST').slice(-1)[0];
+    assert.equal(startPost.path, '/api/tasks/ready/start');
+    assert.match(startPost.contentType, /^application\/json/);
+    assert.deepEqual(startPost.fields, {}, 'start carries no field it did not declare');
+    assert.ok(
+      (await page.evaluate(`document.getElementById('page-line').textContent`)).includes(
+        'Started.',
+      ),
+    );
+    await until(
+      page,
+      "document.querySelector('form.add-line input[name=\"title\"]') !== null",
+      'the Start now landing renders the add line',
+    );
+
     // ---- a refusal lands in the same line, in place, and re-enables the control
     await page.evaluate(
       `document.querySelector('#board-root .card[data-task="waiting"] .enter').click()`,
