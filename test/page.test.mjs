@@ -2662,8 +2662,12 @@ test(
     assert.deepEqual(inFlight, { busy: '1', disabled: true });
 
     await untilTrue(
-      () => stub.pageLoads() >= 2,
-      'the page navigates after the add',
+      () =>
+        stub.requests.some(
+          (request) =>
+            request.method === 'POST' && request.path === '/api/tasks',
+        ),
+      'the add reaches the stub',
       8000,
     );
     const posts = stub.requests.filter((request) => request.method === 'POST');
